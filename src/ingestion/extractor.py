@@ -11,17 +11,27 @@ Steps:
   4. Compute confidence score and tier
   5. Write Extraction + ReviewQueueItem records
   6. Track progress in ExtractionJob table
+
+Enhancements over initial implementation:
+  - Multi-extraction support (agents can return multiple items per passage)
+  - Concurrent agent execution via ThreadPoolExecutor
+  - Extraction deduplication (content-hash guard)
+  - Token usage tracking per extraction
+  - Structured logging for observability
 """
 
 from __future__ import annotations
 
+import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime
 
 import structlog
 from sqlalchemy import select
 
 from src.agents.ambiguity import AmbiguityAgent
-from src.agents.base import BaseExtractionAgent
+from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
@@ -36,7 +46,7 @@ from src.db.models import (
     ReviewQueueItem,
     ReviewStatus,
 )
-from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS, AbstentionResult
+from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
 logger = structlog.get_logger()
 
@@ -54,6 +64,24 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     "threshold_exception": [ExtractionType.threshold, ExtractionType.exception],
     "ambiguity": [ExtractionType.ambiguity],
 }
+
+
+@dataclass
+class TokenUsageSummary:
+    """Aggregate token usage across an extraction run."""
+
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_calls: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        return self.total_input_tokens + self.total_output_tokens
+
+    def add(self, input_tokens: int, output_tokens: int) -> None:
+        self.total_input_tokens += input_tokens
+        self.total_output_tokens += output_tokens
+        self.total_calls += 1
 
 
 def _get_agents() -> dict[str, BaseExtractionAgent]:
@@ -86,69 +114,159 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
     }
 
 
+def _content_hash(agent_name: str, text: str) -> str:
+    """Compute a deduplication hash for (agent, passage_text)."""
+    return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
+
+
+def _run_agent(
+    agent_name: str,
+    agent: BaseExtractionAgent,
+    passage: str,
+    context: dict,
+) -> tuple[str, ExtractionResult | Exception]:
+    """Run a single agent (designed for ThreadPoolExecutor)."""
+    try:
+        result = agent.extract(passage, context)
+        return agent_name, result
+    except Exception as e:
+        return agent_name, e
+
+
 def extract_single_record(
     db,
     record: NormalizedSourceRecord,
     agents: dict[str, BaseExtractionAgent],
     extraction_job: ExtractionJob | None = None,
     parse_quality: float | None = None,
+    token_usage: TokenUsageSummary | None = None,
+    existing_hashes: set[str] | None = None,
 ) -> int:
-    """Run all agents against a single passage. Returns extraction count."""
+    """Run all agents against a single passage. Returns extraction count.
+
+    Agents run concurrently via ThreadPoolExecutor for improved throughput.
+    Deduplication is based on a content hash of (agent_name, passage_text).
+    """
     ctx = _build_context(db, record)
     extractions_created = 0
 
-    for agent_name, agent in agents.items():
-        try:
-            result = agent.extract(record.text_content, ctx)
+    # Build futures for concurrent execution
+    agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []
 
-            if isinstance(result, AbstentionResult):
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {}
+        for agent_name, agent in agents.items():
+            # Deduplication guard
+            content_hash = _content_hash(agent_name, record.text_content)
+            if existing_hashes is not None and content_hash in existing_hashes:
+                logger.debug(
+                    "extraction_deduplicated",
+                    agent=agent_name,
+                    record_id=record.id,
+                )
                 continue
 
-            # Determine primary extraction type
-            primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-            schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
-
-            # Compute confidence score
-            evidence = result.get("evidence_spans", [])
-            confidence = compute_confidence(
-                schema_valid=True,
-                evidence_spans=evidence,
-                extraction_payload=result,
-                schema_class=schema_class,
-                parse_quality_score=parse_quality,
+            future = executor.submit(
+                _run_agent, agent_name, agent, record.text_content, ctx
             )
+            futures[future] = (agent_name, content_hash)
 
-            # Create extraction record
-            extraction = Extraction(
-                source_record_id=record.id,
-                extraction_type=primary_type,
-                payload=result,
-                evidence_spans=evidence,
-                confidence_score=confidence.total_score,
-                confidence_tier=ConfidenceTier(confidence.tier),
-                review_status=ReviewStatus.pending,
-                prompt_template_version=result.get("_prompt_hash"),
-                model_id=result.get("_model_id"),
-                extraction_job_id=extraction_job.id if extraction_job else None,
-            )
-            db.add(extraction)
-            db.flush()
+        # Collect results
+        for future in as_completed(futures):
+            agent_name, content_hash = futures[future]
+            name, result = future.result()
+            agent_results.append((name, content_hash, result))
 
-            # Route to review queue
-            db.add(ReviewQueueItem(
-                extraction_id=extraction.id,
-                priority=_confidence_to_priority(confidence.tier),
-                status=ReviewStatus.pending,
-            ))
-            extractions_created += 1
-
-        except Exception as e:
+    # Process results (back on main thread for DB writes)
+    for name, content_hash, result in agent_results:
+        if isinstance(result, Exception):
             logger.error(
-                "extraction_failed",
-                agent=agent_name,
+                "agent_extraction_failed",
+                agent=name,
                 record_id=record.id,
-                error=str(e),
+                error=str(result),
+                section_path=record.section_path,
             )
+            continue
+
+        # Track token usage
+        if token_usage is not None:
+            token_usage.add(result.input_tokens, result.output_tokens)
+
+        # Log structured result
+        logger.info(
+            "agent_extraction_completed",
+            agent=name,
+            record_id=record.id,
+            extraction_count=len(result.extractions),
+            abstained=result.abstention is not None,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            template_version=result.template_version,
+        )
+
+        if result.abstention is not None:
+            continue
+
+        # Mark hash as seen
+        if existing_hashes is not None:
+            existing_hashes.add(content_hash)
+
+        # Process each extraction from the multi-extraction result
+        primary_type = AGENT_EXTRACTION_TYPES[name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+
+        for item in result.extractions:
+            try:
+                evidence = item.get("evidence_spans", [])
+                confidence = compute_confidence(
+                    schema_valid=True,
+                    evidence_spans=evidence,
+                    extraction_payload=item,
+                    schema_class=schema_class,
+                    parse_quality_score=parse_quality,
+                )
+
+                extraction = Extraction(
+                    source_record_id=record.id,
+                    extraction_type=primary_type,
+                    payload=item,
+                    evidence_spans=evidence,
+                    confidence_score=confidence.total_score,
+                    confidence_tier=ConfidenceTier(confidence.tier),
+                    review_status=ReviewStatus.pending,
+                    prompt_template_version=result.prompt_hash,
+                    model_id=result.model_id,
+                    extraction_job_id=extraction_job.id if extraction_job else None,
+                )
+                db.add(extraction)
+                db.flush()
+
+                db.add(ReviewQueueItem(
+                    extraction_id=extraction.id,
+                    priority=_confidence_to_priority(confidence.tier),
+                    status=ReviewStatus.pending,
+                ))
+                extractions_created += 1
+
+                logger.info(
+                    "extraction_created",
+                    extraction_id=extraction.id,
+                    agent=name,
+                    record_id=record.id,
+                    confidence_score=confidence.total_score,
+                    confidence_tier=confidence.tier,
+                    evidence_verified=sum(1 for e in evidence if e.get("verified")),
+                    evidence_total=len(evidence),
+                )
+
+            except Exception as e:
+                logger.error(
+                    "extraction_record_failed",
+                    agent=name,
+                    record_id=record.id,
+                    error=str(e),
+                )
 
     return extractions_created
 
@@ -166,9 +284,13 @@ def run_extraction(
         on_progress: Optional callback(message: str) for status updates
 
     Returns:
-        Summary dict with counts.
+        Summary dict with counts and token usage.
     """
     agents = _get_agents()
+    token_usage = TokenUsageSummary()
+
+    # Build set of existing content hashes for deduplication
+    existing_hashes: set[str] = set()
 
     def _log(msg: str) -> None:
         if on_progress:
@@ -191,6 +313,11 @@ def run_extraction(
         "total_extractions": 0,
         "records_processed": 0,
         "records_failed": 0,
+        "token_usage": {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_calls": 0,
+        },
     }
 
     if not records:
@@ -242,7 +369,8 @@ def run_extraction(
         for i, record in enumerate(dv_group):
             try:
                 count = extract_single_record(
-                    db, record, agents, extraction_job, parse_quality
+                    db, record, agents, extraction_job, parse_quality,
+                    token_usage, existing_hashes,
                 )
                 job_extractions += count
                 extraction_job.records_processed += 1
@@ -270,5 +398,18 @@ def run_extraction(
             f"({job_failures} failures)"
         )
 
+    # Finalize token usage in summary
+    summary["token_usage"] = {
+        "input_tokens": token_usage.total_input_tokens,
+        "output_tokens": token_usage.total_output_tokens,
+        "total_tokens": token_usage.total_tokens,
+        "total_calls": token_usage.total_calls,
+    }
+
     _log(f"\nExtraction complete: {summary['total_extractions']} total extractions")
+    _log(
+        f"Token usage: {token_usage.total_input_tokens:,} input + "
+        f"{token_usage.total_output_tokens:,} output = "
+        f"{token_usage.total_tokens:,} total across {token_usage.total_calls} API calls"
+    )
     return summary

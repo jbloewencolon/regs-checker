@@ -31,7 +31,7 @@ TYPES OF AMBIGUITY:
 - conditional_ambiguity: Conditions that are difficult to evaluate
 
 OUTPUT FORMAT:
-Return a single JSON object matching the AmbiguityPayload schema. Include:
+Return a JSON object with a top-level "extractions" array. Each element includes:
 - ambiguous_text: The exact ambiguous passage
 - ambiguity_type: One of the types listed above
 - severity: low / medium / high / critical
@@ -39,6 +39,8 @@ Return a single JSON object matching the AmbiguityPayload schema. Include:
 - interpretation_notes: Analysis of why this is ambiguous
 - suggested_clarification: What would make the language clearer
 - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+
+If the passage contains MULTIPLE ambiguities, include one object per ambiguity.
 
 If the passage contains NO identifiable ambiguity, return:
 {"detected": false, "reason": "explanation"}
@@ -52,6 +54,9 @@ CRITICAL RULES:
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Analyze the following legislative passage for ambiguity, vagueness,
 conflicting provisions, or undefined references.
+
+If there are multiple ambiguities, return each as a separate object in
+the "extractions" array.
 
 PASSAGE:
 ---

@@ -6,6 +6,9 @@ Implements the simplified extraction pipeline:
   - Evidence span verification via string matching (Rec #3)
   - Pydantic v2 strict mode validation
   - Retry on validation failure (not on LLM opinion)
+  - Multi-extraction support (multiple items per passage)
+  - Token usage tracking per call
+  - Versioned prompt templates via YAML + Jinja2
 """
 
 from __future__ import annotations
@@ -13,16 +16,31 @@ from __future__ import annotations
 import json
 import hashlib
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any
 
 import anthropic
 import structlog
 from pydantic import BaseModel, ValidationError
 
+from src.agents.prompt_loader import load_prompt_template, render_prompt
 from src.core.config import settings
 from src.schemas.extraction import AbstentionResult, EvidenceSpan
 
 logger = structlog.get_logger()
+
+
+@dataclass
+class ExtractionResult:
+    """Result of a single agent extraction call, including metadata."""
+
+    extractions: list[dict[str, Any]]
+    abstention: AbstentionResult | None
+    input_tokens: int
+    output_tokens: int
+    prompt_hash: str
+    model_id: str
+    template_version: str | None
 
 
 class BaseExtractionAgent(ABC):
@@ -33,54 +51,95 @@ class BaseExtractionAgent(ABC):
 
     def __init__(self) -> None:
         self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._template = load_prompt_template(self.agent_name)
 
     @abstractmethod
     def get_system_prompt(self) -> str:
-        """Return the system prompt for this agent."""
+        """Return the system prompt for this agent (inline fallback)."""
 
     @abstractmethod
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
-        """Build the extraction prompt for a given passage."""
+        """Build the extraction prompt for a given passage (inline fallback)."""
 
     @abstractmethod
     def get_output_schema(self) -> type[BaseModel]:
         """Return the Pydantic model for validating extraction output."""
 
+    def _resolve_system_prompt(self) -> str:
+        """Resolve system prompt from template or inline fallback."""
+        if self._template and "system_prompt" in self._template:
+            return self._template["system_prompt"].strip()
+        return self.get_system_prompt()
+
+    def _resolve_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
+        """Resolve extraction prompt from template or inline fallback."""
+        if self._template and "extraction_prompt" in self._template:
+            render_ctx = {"passage": passage}
+            if context:
+                render_ctx.update(context)
+            return render_prompt(self._template["extraction_prompt"], render_ctx)
+        return self.get_extraction_prompt(passage, context)
+
     def extract(
         self, passage: str, context: dict | None = None
-    ) -> dict[str, Any] | AbstentionResult:
+    ) -> ExtractionResult:
         """Run extraction on a single passage.
 
-        This is a single LLM call that handles detection + extraction in one pass.
-        If the model determines nothing is extractable, it returns an AbstentionResult.
-        Validation is done via Pydantic + evidence span string matching (no self-check LLM call).
+        Returns an ExtractionResult containing either a list of validated
+        extractions or an abstention. Supports multi-extraction (multiple
+        items from a single passage).
         """
-        prompt = self.get_extraction_prompt(passage, context)
+        prompt = self._resolve_extraction_prompt(passage, context)
+        prompt_hash = self._prompt_hash(prompt)
+        template_version = self._template.get("version") if self._template else None
         attempt = 0
 
         while attempt <= self.max_retries:
             try:
-                raw_output = self._call_llm(prompt, attempt)
+                raw_output, usage = self._call_llm(prompt, attempt)
                 parsed = json.loads(raw_output)
 
                 # Check for abstention
                 if parsed.get("detected") is False:
-                    return AbstentionResult(**parsed)
+                    return ExtractionResult(
+                        extractions=[],
+                        abstention=AbstentionResult(**parsed),
+                        input_tokens=usage.input_tokens,
+                        output_tokens=usage.output_tokens,
+                        prompt_hash=prompt_hash,
+                        model_id=settings.extraction_model,
+                        template_version=template_version,
+                    )
 
-                # Validate against Pydantic schema (strict mode)
+                # Handle multi-extraction: look for "extractions" array
+                items = parsed.get("extractions", [parsed])
+                if not isinstance(items, list):
+                    items = [items]
+
+                validated_extractions = []
                 schema = self.get_output_schema()
-                validated = schema.model_validate(parsed)
 
-                # Evidence span verification via string matching (Rec #3)
-                evidence_spans = parsed.get("evidence_spans", [])
-                verified_spans = self._verify_evidence_spans(evidence_spans, passage)
+                for item in items:
+                    validated = schema.model_validate(item)
+                    evidence_spans = item.get("evidence_spans", [])
+                    verified_spans = self._verify_evidence_spans(evidence_spans, passage)
 
-                result = validated.model_dump(by_alias=True)
-                result["evidence_spans"] = verified_spans
-                result["_prompt_hash"] = self._prompt_hash(prompt)
-                result["_model_id"] = settings.extraction_model
+                    result = validated.model_dump(by_alias=True)
+                    result["evidence_spans"] = verified_spans
+                    result["_prompt_hash"] = prompt_hash
+                    result["_model_id"] = settings.extraction_model
+                    result["_template_version"] = template_version
+                    validated_extractions.append(result)
 
-                return result
+                return ExtractionResult(
+                    extractions=validated_extractions,
+                    abstention=None,
+                    input_tokens=usage.input_tokens,
+                    output_tokens=usage.output_tokens,
+                    prompt_hash=prompt_hash,
+                    model_id=settings.extraction_model,
+                    template_version=template_version,
+                )
 
             except (json.JSONDecodeError, ValidationError) as e:
                 logger.warning(
@@ -95,9 +154,9 @@ class BaseExtractionAgent(ABC):
 
         raise RuntimeError("Extraction failed after retries")
 
-    def _call_llm(self, prompt: str, attempt: int) -> str:
-        """Make a single LLM API call."""
-        system_prompt = self.get_system_prompt()
+    def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any]:
+        """Make a single LLM API call. Returns (text, usage)."""
+        system_prompt = self._resolve_system_prompt()
         if attempt > 0:
             system_prompt += (
                 "\n\nPREVIOUS ATTEMPT FAILED VALIDATION. "
@@ -113,7 +172,7 @@ class BaseExtractionAgent(ABC):
             messages=[{"role": "user", "content": prompt}],
         )
 
-        return response.content[0].text
+        return response.content[0].text, response.usage
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
