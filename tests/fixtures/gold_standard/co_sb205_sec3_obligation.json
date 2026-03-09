@@ -1,0 +1,31 @@
+{
+    "passage_id": "co_sb205_sec3_obligation",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 3 - Developer Duties",
+    "passage_text": "A developer of a high-risk artificial intelligence system shall use reasonable care to protect consumers from any known or reasonably foreseeable risks of algorithmic discrimination arising from the intended and contracted uses of the high-risk artificial intelligence system.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A developer of a high-risk artificial intelligence system",
+            "subject_normalized": "developer",
+            "modality": "shall",
+            "action": "use reasonable care to protect consumers from any known or reasonably foreseeable risks of algorithmic discrimination",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "CO",
+            "section_reference": "Section 3",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "reasonable care",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 3 - developer duty of care"],
+            "interpretation_notes": "The term 'reasonable care' is a standard of care that lacks specific criteria for AI systems",
+            "suggested_clarification": "Define specific technical or procedural standards that constitute 'reasonable care' in the context of AI systems"
+        }
+    }
+}
