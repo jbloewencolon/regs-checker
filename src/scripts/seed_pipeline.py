@@ -244,22 +244,22 @@ _URL_FIXES: dict[str, str] = {
     # Category B: legiscan.com 403s — replaced with direct state legislature URLs
     # -----------------------------------------------------------------------
     # NH — gencourt.state.nh.us
-    "100": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1596",  # AI Political Advertising
+    "100": "https://gencourt.state.nh.us/rsa/html/LXIII/664/664-14-c.htm",  # AI Political Advertising
     "101": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1432",  # Deepfake Act
     "103": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1688",  # State Agency AI Bill
     # MD — mgaleg.maryland.gov
-    "76": "https://mgaleg.maryland.gov/2024RS/bills/sb/sb0818E.pdf",  # AI Governance Act 2024
+    "76": "https://mgaleg.maryland.gov/2024RS/bills/sb/sb0818e.pdf",  # AI Governance Act 2024
     # RI — rilegislature.gov
-    "138": "https://webserver.rilegislature.gov/BillText/BillText24/SenateText24/S2500.pdf",  # Data Transparency & Privacy
+    "138": "https://webserver.rilegislature.gov/BillText/BillText24/SenateText24/S2500A.pdf",  # RI Data Privacy Act
     # TX — capitol.texas.gov
-    "154": "https://capitol.texas.gov/tlodocs/88R/billtext/pdf/SB01361F.pdf",  # Sexually Explicit Videos
+    "154": "https://capitol.texas.gov/tlodocs/88R/billtext/html/SB01361E.htm",  # Deepfake Explicit Videos
     # WI — docs.legis.wisconsin.gov
-    "178": "https://docs.legis.wisconsin.gov/2023/related/proposals/sb314.pdf",  # Amendment to CSAM Statute
+    "178": "https://docs.legis.wisconsin.gov/2023/proposals/reg/sen/bill/sb314",  # WI CSAM Amendment
     # -----------------------------------------------------------------------
     # Category B: ncleg.gov 403s — direct PDF links
     # -----------------------------------------------------------------------
-    "123": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC CSAM Laws
-    "124": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC Intimate Images
+    "123": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC CSAM Laws (same bill)
+    "124": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC Intimate Images (same bill)
     # -----------------------------------------------------------------------
     # Category B: NV leg.state.nv.us 403
     # -----------------------------------------------------------------------
