@@ -702,8 +702,9 @@ def _run_batch_extraction(
                 )
 
                 # Custom ID encodes record_id + agent for result matching
-                record_ids = ",".join(str(r.id) for r in passage.source_records)
-                custom_id = f"{record_ids}:{agent_name}"
+                # Batch API only allows [a-zA-Z0-9_-], max 64 chars
+                record_ids = "-".join(str(r.id) for r in passage.source_records)
+                custom_id = re.sub(r"[^a-zA-Z0-9_-]", "_", f"{record_ids}_{agent_name}")[:64]
 
                 batch_requests.append({
                     "custom_id": custom_id,
