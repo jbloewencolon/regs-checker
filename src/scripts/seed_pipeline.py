@@ -12,6 +12,13 @@ Usage:
 
     # Fetch with a limit (useful for testing):
     python -m src.scripts.seed_pipeline --mode fetch --limit 5
+
+    # Re-queue failed jobs back to pending and retry:
+    python -m src.scripts.seed_pipeline --mode retry-failed
+
+    # Re-queue only specific error types:
+    python -m src.scripts.seed_pipeline --mode retry-failed --error-filter 403
+    python -m src.scripts.seed_pipeline --mode retry-failed --error-filter "SSL"
 """
 
 from __future__ import annotations
@@ -214,17 +221,70 @@ def run_fetch(db, limit: int | None = None) -> dict:
     return run_pending_ingestion(db, limit=limit, on_progress=print)
 
 
+def retry_failed_jobs(db, error_filter: str | None = None) -> dict:
+    """Re-queue failed ingestion jobs back to pending, then re-run them.
+
+    Args:
+        db: SQLAlchemy session
+        error_filter: If set, only retry jobs whose error_message contains this
+                      substring (case-insensitive). E.g. "403", "SSL", "timeout".
+
+    Returns:
+        Summary dict with requeued count and fetch results.
+    """
+    from src.ingestion.pipeline import run_pending_ingestion
+
+    failed_jobs = db.query(IngestionJob).filter(
+        IngestionJob.status == IngestionStatus.failed
+    ).all()
+
+    if error_filter:
+        needle = error_filter.lower()
+        failed_jobs = [
+            j for j in failed_jobs
+            if j.error_message and needle in j.error_message.lower()
+        ]
+
+    if not failed_jobs:
+        print("No matching failed jobs found.")
+        return {"requeued": 0, "completed": 0, "failed": 0, "total_passages": 0}
+
+    # Show what we're about to retry
+    print(f"Re-queuing {len(failed_jobs)} failed jobs:")
+    for job in failed_jobs:
+        dv = job.document_version
+        label = "unknown"
+        if dv and dv.family:
+            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+        err_snippet = (job.error_message or "")[:80]
+        print(f"  Job #{job.id}: {label}  ({err_snippet})")
+
+    # Reset to pending
+    for job in failed_jobs:
+        job.status = IngestionStatus.pending
+        job.error_message = None
+    db.commit()
+
+    print(f"\nRe-queued {len(failed_jobs)} jobs. Starting fetch...\n")
+
+    # Now run the fetch pipeline on the re-queued jobs
+    summary = run_pending_ingestion(db, on_progress=print)
+    summary["requeued"] = len(failed_jobs)
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch"],
+        choices=["manual", "orrick", "fetch", "retry-failed"],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
             "'orrick' scrapes Orrick tracker, "
-            "'fetch' processes all pending ingestion jobs"
+            "'fetch' processes all pending ingestion jobs, "
+            "'retry-failed' re-queues and retries failed jobs"
         ),
     )
     parser.add_argument(
@@ -232,6 +292,12 @@ def main():
         type=int,
         default=None,
         help="Max number of jobs to process in fetch mode (default: all)",
+    )
+    parser.add_argument(
+        "--error-filter",
+        type=str,
+        default=None,
+        help="Only retry failed jobs matching this substring (e.g. '403', 'SSL', 'timeout')",
     )
     args = parser.parse_args()
 
@@ -256,10 +322,18 @@ def main():
         elif args.mode == "fetch":
             summary = run_fetch(db, limit=args.limit)
             print(f"\n{'=' * 60}")
-            print(f"Ingestion complete:")
+            print("Ingestion complete:")
             print(f"  Pending:         {summary['total_pending']}")
             print(f"  Completed:       {summary['completed']}")
             print(f"  Failed:          {summary['failed']}")
+            print(f"  Total passages:  {summary['total_passages']}")
+        elif args.mode == "retry-failed":
+            summary = retry_failed_jobs(db, error_filter=args.error_filter)
+            print(f"\n{'=' * 60}")
+            print("Retry complete:")
+            print(f"  Re-queued:       {summary['requeued']}")
+            print(f"  Completed:       {summary['completed']}")
+            print(f"  Still failed:    {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
     except Exception as e:
         db.rollback()
