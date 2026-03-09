@@ -4,8 +4,6 @@ Follows Dagster's asset-based lineage model. Each asset represents a
 materialized stage in the pipeline with full dependency tracking.
 """
 
-from datetime import datetime
-
 import dagster
 import structlog
 from sqlalchemy import select
@@ -20,19 +18,15 @@ from src.core.confidence import compute_confidence
 from src.db.engine import SessionLocal
 from src.db.models import (
     ConfidenceTier,
-    DocumentVersion,
     Extraction,
-    ExtractionJob,
     ExtractionType,
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
     ReviewQueueItem,
     ReviewStatus,
-    Source,
 )
-from src.ingestion.connector import fetch_document
-from src.ingestion.parser import parse_and_normalize
+from src.ingestion.pipeline import process_single_job
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS, AbstentionResult
 
 logger = structlog.get_logger()
@@ -65,52 +59,32 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
 def ingested_documents(context: dagster.AssetExecutionContext) -> list[int]:
     """Fetch, parse, and normalize documents into passage-level records.
 
+    Delegates to src.ingestion.pipeline which handles the full
+    fetch → S3 store → parse → chunk workflow per job.
+
     Returns list of document_version_ids that were successfully processed.
     """
     db = SessionLocal()
     try:
-        # Find pending ingestion jobs
         pending_jobs = db.scalars(
             select(IngestionJob).where(IngestionJob.status == IngestionStatus.pending)
         ).all()
 
         processed_versions = []
         for job in pending_jobs:
-            try:
-                # Fetch
-                job.status = IngestionStatus.fetching
-                job.fetch_started_at = datetime.utcnow()
-                db.commit()
-
-                raw_artifact = fetch_document(db, job)
-
-                job.status = IngestionStatus.fetched
-                job.fetch_completed_at = datetime.utcnow()
-                db.commit()
-
-                # Parse and normalize
-                job.status = IngestionStatus.parsing
-                job.parse_started_at = datetime.utcnow()
-                db.commit()
-
-                records = parse_and_normalize(db, job, raw_artifact)
-
-                job.status = IngestionStatus.completed
-                job.parse_completed_at = datetime.utcnow()
-                job.parse_quality_score = _compute_parse_quality(records)
-                db.commit()
-
+            passage_count = process_single_job(
+                db, job, on_progress=lambda msg: context.log.info(msg)
+            )
+            if job.status == IngestionStatus.completed:
                 processed_versions.append(job.document_version_id)
                 context.log.info(
                     f"Ingested document version {job.document_version_id}: "
-                    f"{len(records)} passages"
+                    f"{passage_count} passages"
                 )
-
-            except Exception as e:
-                job.status = IngestionStatus.failed
-                job.error_message = str(e)
-                db.commit()
-                context.log.error(f"Ingestion failed for job {job.id}: {e}")
+            else:
+                context.log.error(
+                    f"Ingestion failed for job {job.id}: {job.error_message}"
+                )
 
         return processed_versions
     finally:
@@ -222,22 +196,6 @@ def _build_context(db: Session, record: NormalizedSourceRecord) -> dict:
         "jurisdiction": s.jurisdiction_code if s else None,
         "section_path": record.section_path,
     }
-
-
-def _compute_parse_quality(records: list[NormalizedSourceRecord]) -> float:
-    """Simple parse quality heuristic based on record characteristics."""
-    if not records:
-        return 0.0
-    scores = []
-    for r in records:
-        text = r.text_content
-        score = 1.0
-        if len(text) < 20:
-            score *= 0.5
-        if len(text) > 5000:
-            score *= 0.8
-        scores.append(score)
-    return sum(scores) / len(scores)
 
 
 def _confidence_to_priority(tier: str) -> int:
