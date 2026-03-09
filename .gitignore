@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Dagster
+.dagster/
+storage/
+
+# Docker
+docker/data/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,20 @@
+{
+    "passage_id": "co_sb205_sec2_definitions",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "As used in this article, unless the context otherwise requires: (1) 'Algorithmic discrimination' means any condition in which the use of an artificial intelligence system results in an unlawful differential treatment or impact that disfavors an individual or group of individuals on the basis of their actual or perceived age, color, disability, ethnicity, genetic information, limited proficiency in the English language, national origin, race, religion, reproductive health, sex, veteran status, or any other classification protected under the laws of this state or federal law.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Algorithmic discrimination",
+            "definition_text": "any condition in which the use of an artificial intelligence system results in an unlawful differential treatment or impact that disfavors an individual or group of individuals on the basis of their actual or perceived age, color, disability, ethnicity, genetic information, limited proficiency in the English language, national origin, race, religion, reproductive health, sex, veteran status, or any other classification protected under the laws of this state or federal law",
+            "scope": "this article",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": []
+        },
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}
