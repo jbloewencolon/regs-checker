@@ -39,6 +39,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from src.agents.ambiguity import AmbiguityAgent
@@ -738,4 +739,271 @@ def _run_batch_extraction(
         "batch_id": batch.id,
         "requests_submitted": len(batch_requests),
         "status": batch.processing_status,
+    }
+
+
+def retrieve_batch_results(
+    db,
+    batch_id: str,
+    on_progress: callable | None = None,
+) -> dict:
+    """Retrieve and process results from a completed Anthropic Batch API run.
+
+    Parses each result's custom_id (format: "recordId1-recordId2_agentName")
+    to match results back to source records, then runs the same validation
+    and confidence scoring pipeline as the synchronous path.
+
+    Args:
+        db: SQLAlchemy session
+        batch_id: Anthropic batch ID (e.g. "msgbatch_01VGYkKdLkMjsacQdLVRBnfv")
+        on_progress: Optional callback(message: str) for status updates
+
+    Returns:
+        Summary dict with counts.
+    """
+    import json
+
+    import anthropic
+
+    from src.agents.base import BaseExtractionAgent
+    from src.core.config import settings
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+    # Check batch status
+    batch = client.messages.batches.retrieve(batch_id)
+    _log(f"Batch {batch_id}: status={batch.processing_status}")
+
+    if batch.processing_status != "ended":
+        _log(
+            f"Batch not yet complete. Status: {batch.processing_status}\n"
+            f"  Try again later."
+        )
+        return {
+            "batch_id": batch_id,
+            "status": batch.processing_status,
+            "extractions_created": 0,
+            "results_processed": 0,
+            "errors": 0,
+        }
+
+    # Retrieve results
+    _log("Retrieving batch results...")
+    results_iter = client.messages.batches.results(batch_id)
+
+    agents = _get_agents()
+    total_extractions = 0
+    results_processed = 0
+    errors = 0
+
+    for entry in results_iter:
+        results_processed += 1
+        custom_id = entry.custom_id
+
+        # Parse custom_id: "recordId1-recordId2_agentName"
+        # Find the last underscore to split record_ids from agent_name
+        last_underscore = custom_id.rfind("_")
+        if last_underscore == -1:
+            logger.error("batch_invalid_custom_id", custom_id=custom_id)
+            errors += 1
+            continue
+
+        record_ids_str = custom_id[:last_underscore]
+        agent_name = custom_id[last_underscore + 1:]
+
+        # Handle compound agent names (e.g., "threshold_exception")
+        # by checking if the parsed agent_name is valid
+        if agent_name not in AGENT_EXTRACTION_TYPES:
+            # Try splitting at second-to-last underscore
+            prefix = record_ids_str
+            suffix = agent_name
+            last2 = prefix.rfind("_")
+            if last2 != -1:
+                candidate = prefix[last2 + 1:] + "_" + suffix
+                if candidate in AGENT_EXTRACTION_TYPES:
+                    agent_name = candidate
+                    record_ids_str = prefix[:last2]
+
+        if agent_name not in AGENT_EXTRACTION_TYPES:
+            logger.error(
+                "batch_unknown_agent",
+                custom_id=custom_id,
+                parsed_agent=agent_name,
+            )
+            errors += 1
+            continue
+
+        # Parse record IDs
+        try:
+            record_ids = [int(rid) for rid in record_ids_str.split("-") if rid]
+        except ValueError:
+            logger.error("batch_invalid_record_ids", custom_id=custom_id)
+            errors += 1
+            continue
+
+        # Check result type
+        if entry.result.type == "errored":
+            logger.error(
+                "batch_result_error",
+                custom_id=custom_id,
+                error=str(entry.result.error),
+            )
+            errors += 1
+            continue
+
+        if entry.result.type != "succeeded":
+            logger.warning(
+                "batch_result_skipped",
+                custom_id=custom_id,
+                result_type=entry.result.type,
+            )
+            errors += 1
+            continue
+
+        # Extract text from response
+        message = entry.result.message
+        raw_text = ""
+        for block in message.content:
+            if block.type == "text":
+                raw_text = block.text
+                break
+
+        if not raw_text.strip():
+            logger.warning("batch_empty_response", custom_id=custom_id)
+            errors += 1
+            continue
+
+        # Parse JSON (with code fence stripping)
+        cleaned = BaseExtractionAgent._strip_code_fences(raw_text)
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.error(
+                "batch_json_parse_error",
+                custom_id=custom_id,
+                error=str(e),
+                raw_preview=raw_text[:200],
+            )
+            errors += 1
+            continue
+
+        # Check for abstention
+        if parsed.get("detected") is False:
+            logger.debug("batch_abstention", custom_id=custom_id)
+            continue
+
+        # Get agent and schema
+        agent = agents.get(agent_name)
+        if not agent:
+            logger.error("batch_agent_not_found", agent_name=agent_name)
+            errors += 1
+            continue
+
+        schema = agent.get_output_schema()
+        primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+
+        # Handle multi-extraction
+        items = parsed.get("extractions", [parsed])
+        if not isinstance(items, list):
+            items = [items]
+
+        # Load source records
+        source_records = db.scalars(
+            select(NormalizedSourceRecord).where(
+                NormalizedSourceRecord.id.in_(record_ids)
+            )
+        ).all()
+
+        if not source_records:
+            logger.error("batch_records_not_found", record_ids=record_ids)
+            errors += 1
+            continue
+
+        # Get parse quality for confidence scoring
+        first_record = source_records[0]
+        ingestion_job = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.document_version_id == first_record.document_version_id
+            )
+        ).first()
+        parse_quality = ingestion_job.parse_quality_score if ingestion_job else None
+
+        # Reconstruct passage text for evidence verification
+        passage_text = "\n".join(r.text_content for r in source_records)
+
+        for item in items:
+            try:
+                validated = schema.model_validate(item)
+                evidence_spans = item.get("evidence_spans", [])
+                verified_spans = agent._verify_evidence_spans(evidence_spans, passage_text)
+
+                result_dict = validated.model_dump(by_alias=True)
+                result_dict["evidence_spans"] = verified_spans
+                result_dict["_model_id"] = settings.extraction_model
+                result_dict["_batch_id"] = batch_id
+
+                confidence = compute_confidence(
+                    schema_valid=True,
+                    evidence_spans=verified_spans,
+                    extraction_payload=result_dict,
+                    schema_class=schema_class,
+                    parse_quality_score=parse_quality,
+                )
+
+                # Write extraction for each source record
+                for source_record in source_records:
+                    extraction = Extraction(
+                        source_record_id=source_record.id,
+                        extraction_type=primary_type,
+                        payload=result_dict,
+                        evidence_spans=verified_spans,
+                        confidence_score=confidence.total_score,
+                        confidence_tier=ConfidenceTier(confidence.tier),
+                        review_status=ReviewStatus.pending,
+                        model_id=settings.extraction_model,
+                    )
+                    db.add(extraction)
+                    db.flush()
+
+                    db.add(ReviewQueueItem(
+                        extraction_id=extraction.id,
+                        priority=_confidence_to_priority(confidence.tier),
+                        status=ReviewStatus.pending,
+                    ))
+                    total_extractions += 1
+
+            except (json.JSONDecodeError, ValidationError) as e:
+                logger.error(
+                    "batch_validation_error",
+                    custom_id=custom_id,
+                    error=str(e),
+                )
+                errors += 1
+
+        # Commit periodically
+        if results_processed % 50 == 0:
+            db.commit()
+            _log(f"  {results_processed} results processed...")
+
+    db.commit()
+
+    _log(
+        f"\nBatch results processed:"
+        f"\n  Results:     {results_processed}"
+        f"\n  Extractions: {total_extractions}"
+        f"\n  Errors:      {errors}"
+    )
+
+    return {
+        "batch_id": batch_id,
+        "status": "processed",
+        "results_processed": results_processed,
+        "extractions_created": total_extractions,
+        "errors": errors,
     }

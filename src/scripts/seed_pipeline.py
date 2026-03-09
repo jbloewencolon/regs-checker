@@ -234,6 +234,13 @@ def run_extract(db, limit: int | None = None, batch: bool = False) -> dict:
     return run_extraction(db, limit=limit, on_progress=print, batch_mode=batch)
 
 
+def run_batch_results(db, batch_id: str) -> dict:
+    """Retrieve and process results from a completed Batch API run."""
+    from src.ingestion.extractor import retrieve_batch_results
+
+    return retrieve_batch_results(db, batch_id=batch_id, on_progress=print)
+
+
 def run_evaluate() -> None:
     """Run the evaluation harness against gold-standard fixtures and print report."""
     from src.evaluation.harness import EvaluationHarness
@@ -430,7 +437,7 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "extract", "evaluate", "retry-failed", "fix-urls"],
+        choices=["manual", "orrick", "fetch", "extract", "batch-results", "evaluate", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
@@ -438,6 +445,7 @@ def main():
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
             "'extract' runs AI extraction agents on unprocessed passages, "
+            "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
             "'fix-urls' applies known URL corrections and data bug fixes"
@@ -454,6 +462,12 @@ def main():
         action="store_true",
         default=False,
         help="Use Anthropic Batch API for extraction (50%% discount, 24h turnaround)",
+    )
+    parser.add_argument(
+        "--batch-id",
+        type=str,
+        default=None,
+        help="Batch ID to retrieve results for (use with --mode batch-results)",
     )
     parser.add_argument(
         "--error-filter",
@@ -512,6 +526,18 @@ def main():
                     print(f"  Output tokens: {tokens['output_tokens']:,}")
                     print(f"  Total tokens:  {tokens['total_tokens']:,}")
                     print(f"  API calls:     {tokens['total_calls']}")
+        elif args.mode == "batch-results":
+            if not args.batch_id:
+                print("Error: --batch-id is required for batch-results mode", file=sys.stderr)
+                sys.exit(1)
+            summary = run_batch_results(db, batch_id=args.batch_id)
+            print(f"\n{'=' * 60}")
+            print("Batch results:")
+            print(f"  Batch ID:           {summary.get('batch_id')}")
+            print(f"  Status:             {summary.get('status')}")
+            print(f"  Results processed:  {summary.get('results_processed', 0)}")
+            print(f"  Extractions created: {summary.get('extractions_created', 0)}")
+            print(f"  Errors:             {summary.get('errors', 0)}")
         elif args.mode == "evaluate":
             run_evaluate()
         elif args.mode == "fix-urls":
