@@ -85,6 +85,7 @@ services:
     command: dagster-daemon run
     environment:
       DAGSTER_HOME: /opt/dagster/dagster_home
+      DAGSTER_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
       REGS_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
       REGS_S3_ENDPOINT_URL: http://minio:9000
     volumes:
@@ -109,6 +110,7 @@ services:
       - "8000:8000"
     volumes:
       - ../src:/app/src
+      - ../alembic:/app/alembic
     depends_on:
       postgres:
         condition: service_healthy

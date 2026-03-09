@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python dependencies
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e ".[dev]"
+RUN pip install --upgrade pip setuptools
+RUN pip install --no-cache-dir --no-build-isolation ".[dev]"
 
 # Application code
 COPY . .
