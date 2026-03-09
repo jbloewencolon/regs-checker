@@ -7,7 +7,9 @@ validated via string matching against the source passage (Recommendation #3).
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class EvidenceSpan(BaseModel):
@@ -88,6 +90,13 @@ class ActorMapping(BaseModel):
     actor_type: str | None = None  # e.g. "regulator", "developer", "deployer"
     responsibilities: list[str] = Field(default_factory=list)
 
+    @field_validator("responsibilities", mode="before")
+    @classmethod
+    def _coerce_responsibilities(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [v]
+        return v
+
 
 class FrameworkReference(BaseModel):
     """A reference to an external framework or standard."""
@@ -136,6 +145,13 @@ class ThresholdExceptionPayload(BaseModel):
         default=None, description="Type of threshold (numeric, categorical, etc.)"
     )
     threshold_value: str | None = None
+
+    @field_validator("threshold_value", mode="before")
+    @classmethod
+    def _coerce_threshold_value(cls, v: Any) -> str | None:
+        if v is None:
+            return None
+        return str(v)
     threshold_unit: str | None = None
     threshold_condition: str | None = Field(
         default=None, description="The condition expression"
