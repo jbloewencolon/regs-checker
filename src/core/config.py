@@ -34,9 +34,8 @@ class Settings(BaseSettings):
     # Review UI
     review_items_per_page: int = 25
 
-    # LegiScan API
-    legiscan_api_key: str = ""
-    legiscan_base_url: str = "https://api.legiscan.com/"
+    # Orrick AI Law Tracker
+    orrick_tracker_url: str = "https://ai-law-center.orrick.com/us-ai-law-tracker-see-all-states/"
 
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"
