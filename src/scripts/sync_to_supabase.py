@@ -106,12 +106,6 @@ def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict
             summary[table_name] = 0
             continue
 
-        if target_count > 0:
-            print(f"  {table_name}: target already has {target_count} rows, skipping")
-            print(f"    (use --force to overwrite)")
-            summary[table_name] = 0
-            continue
-
         # Fetch all rows from source
         rows = source_session.execute(text(f"SELECT * FROM {table_name}")).mappings().all()  # noqa: S608
 
@@ -119,13 +113,20 @@ def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict
             summary[table_name] = 0
             continue
 
-        # Get column names
+        # Get column names and primary key for upsert
         columns = list(rows[0].keys())
         col_list = ", ".join(columns)
         param_list = ", ".join(f":{c}" for c in columns)
 
-        # Insert into target
-        insert_sql = text(f"INSERT INTO {table_name} ({col_list}) VALUES ({param_list})")  # noqa: S608
+        pk_cols = target_inspector.get_pk_constraint(table_name).get("constrained_columns", [])
+        if pk_cols:
+            conflict_clause = f"ON CONFLICT ({', '.join(pk_cols)}) DO NOTHING"
+        else:
+            conflict_clause = "ON CONFLICT DO NOTHING"
+
+        insert_sql = text(  # noqa: S608
+            f"INSERT INTO {table_name} ({col_list}) VALUES ({param_list}) {conflict_clause}"
+        )
 
         batch_size = 500
         for i in range(0, len(rows), batch_size):
@@ -133,7 +134,6 @@ def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict
             target_session.execute(insert_sql, batch)
 
         # Reset sequences to max ID
-        pk_cols = target_inspector.get_pk_constraint(table_name).get("constrained_columns", [])
         for pk_col in pk_cols:
             if pk_col == "id":
                 target_session.execute(text(
@@ -143,9 +143,15 @@ def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict
 
         target_session.commit()
 
-        print(f"  {table_name}: synced {len(rows)} rows")
-        summary[table_name] = len(rows)
-        total_rows += len(rows)
+        # Count how many rows actually landed
+        new_target_count = target_session.execute(
+            text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608
+        ).scalar()
+        inserted = new_target_count - target_count
+
+        print(f"  {table_name}: {inserted} new rows inserted ({len(rows)} source, {target_count} already in target)")
+        summary[table_name] = inserted
+        total_rows += inserted
 
     source_session.close()
     target_session.close()
