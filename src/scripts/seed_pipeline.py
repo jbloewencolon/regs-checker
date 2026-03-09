@@ -227,11 +227,11 @@ def run_fetch(db, limit: int | None = None) -> dict:
     return run_pending_ingestion(db, limit=limit, on_progress=print)
 
 
-def run_extract(db, limit: int | None = None) -> dict:
+def run_extract(db, limit: int | None = None, batch: bool = False) -> dict:
     """Run AI extraction agents on all unprocessed passages."""
     from src.ingestion.extractor import run_extraction
 
-    return run_extraction(db, limit=limit, on_progress=print)
+    return run_extraction(db, limit=limit, on_progress=print, batch_mode=batch)
 
 
 def run_evaluate() -> None:
@@ -450,6 +450,12 @@ def main():
         help="Max number of jobs to process in fetch mode (default: all)",
     )
     parser.add_argument(
+        "--batch",
+        action="store_true",
+        default=False,
+        help="Use Anthropic Batch API for extraction (50%% discount, 24h turnaround)",
+    )
+    parser.add_argument(
         "--error-filter",
         type=str,
         default=None,
@@ -484,19 +490,28 @@ def main():
             print(f"  Failed:          {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
         elif args.mode == "extract":
-            summary = run_extract(db, limit=args.limit)
+            summary = run_extract(db, limit=args.limit, batch=args.batch)
             print(f"\n{'=' * 60}")
-            print("Extraction complete:")
-            print(f"  Passages processed: {summary['records_processed']}")
-            print(f"  Extractions created: {summary['total_extractions']}")
-            print(f"  Failures:           {summary['records_failed']}")
-            tokens = summary.get("token_usage", {})
-            if tokens.get("total_calls"):
-                print(f"\nToken usage:")
-                print(f"  Input tokens:  {tokens['input_tokens']:,}")
-                print(f"  Output tokens: {tokens['output_tokens']:,}")
-                print(f"  Total tokens:  {tokens['total_tokens']:,}")
-                print(f"  API calls:     {tokens['total_calls']}")
+            if args.batch:
+                print("Batch extraction submitted:")
+                print(f"  Batch ID:           {summary.get('batch_id')}")
+                print(f"  Requests submitted: {summary.get('requests_submitted')}")
+                print(f"  Status:             {summary.get('status')}")
+            else:
+                print("Extraction complete:")
+                print(f"  Passages processed: {summary['records_processed']}")
+                print(f"  Extractions created: {summary['total_extractions']}")
+                print(f"  Failures:           {summary['records_failed']}")
+                print(f"  Short skipped:      {summary.get('records_skipped_short', 0)}")
+                print(f"  Passages merged:    {summary.get('passages_merged', 0)}")
+                print(f"  Agents skipped:     {summary.get('agents_skipped_by_signal', 0)}")
+                tokens = summary.get("token_usage", {})
+                if tokens.get("total_calls"):
+                    print(f"\nToken usage:")
+                    print(f"  Input tokens:  {tokens['input_tokens']:,}")
+                    print(f"  Output tokens: {tokens['output_tokens']:,}")
+                    print(f"  Total tokens:  {tokens['total_tokens']:,}")
+                    print(f"  API calls:     {tokens['total_calls']}")
         elif args.mode == "evaluate":
             run_evaluate()
         elif args.mode == "fix-urls":

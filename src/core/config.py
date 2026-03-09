@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # Anthropic API
     anthropic_api_key: str = ""
-    extraction_model: str = "claude-sonnet-4-20250514"
+    extraction_model: str = "claude-haiku-4-5-20251001"
     extraction_temperature: float = 0.0
     extraction_max_tokens: int = 8192
 

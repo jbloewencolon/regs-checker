@@ -67,6 +67,13 @@ PASSAGE:
                 prompt += f"\nJURISDICTION: {context['jurisdiction']}"
             if context.get("section_path"):
                 prompt += f"\nSECTION: {context['section_path']}"
+            if context.get("key_requirements"):
+                prompt += (
+                    f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
+                    f"context to improve extraction accuracy):\n{context['key_requirements']}"
+                )
+            if context.get("enforcement_summary"):
+                prompt += f"\nENFORCEMENT SUMMARY: {context['enforcement_summary']}"
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

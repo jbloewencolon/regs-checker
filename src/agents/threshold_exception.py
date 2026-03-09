@@ -61,6 +61,11 @@ PASSAGE:
                 prompt += f"\n\nDOCUMENT: {context['document_title']}"
             if context.get("related_obligations"):
                 prompt += f"\nRELATED OBLIGATIONS: {context['related_obligations']}"
+            if context.get("key_requirements"):
+                prompt += (
+                    f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
+                    f"context to improve extraction accuracy):\n{context['key_requirements']}"
+                )
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:
