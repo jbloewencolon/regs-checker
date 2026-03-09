@@ -69,6 +69,12 @@ PASSAGE:
                 prompt += (
                     f"\nALREADY DEFINED TERMS: {', '.join(context['defined_terms'])}"
                 )
+            if context.get("key_requirements"):
+                prompt += (
+                    f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
+                    f"context to identify ambiguity in scope and applicability):\n"
+                    f"{context['key_requirements']}"
+                )
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

@@ -6,11 +6,13 @@ Shared logic used by both:
 
 Steps:
   1. Query NormalizedSourceRecords without extractions (or with pending ExtractionJob)
-  2. For each passage, run all 4 agents (obligation, definition_actor, threshold_exception, ambiguity)
-  3. Validate output via Pydantic, verify evidence spans via string matching
-  4. Compute confidence score and tier
-  5. Write Extraction + ReviewQueueItem records
-  6. Track progress in ExtractionJob table
+  2. Filter out tiny passages (<150 chars) and merge adjacent short fragments
+  3. Select agents per passage based on content signals (keyword pre-screening)
+  4. Run selected agents concurrently
+  5. Validate output via Pydantic, verify evidence spans via string matching
+  6. Compute confidence score and tier
+  7. Write Extraction + ReviewQueueItem records
+  8. Track progress in ExtractionJob table
 
 Enhancements over initial implementation:
   - Multi-extraction support (agents can return multiple items per passage)
@@ -18,14 +20,23 @@ Enhancements over initial implementation:
   - Extraction deduplication (content-hash guard)
   - Token usage tracking per extraction
   - Structured logging for observability
+
+Cost optimizations:
+  - Skip passages under MIN_PASSAGE_LENGTH chars (boilerplate/stubs)
+  - Merge consecutive short passages from same section into single API call
+  - Keyword-based agent selection skips irrelevant agents per passage
+  - Orrick key_requirements injected as extraction context for higher accuracy
+  - Batch API support via --batch flag (50% discount, 24h turnaround)
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -50,6 +61,19 @@ from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
 logger = structlog.get_logger()
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+# Passages shorter than this are legislative boilerplate (headers, stubs, etc.)
+MIN_PASSAGE_LENGTH = 150
+
+# Passages under this length from adjacent ordinals get merged
+MERGE_THRESHOLD = 300
+
+# Maximum merged passage length to avoid exceeding context
+MAX_MERGED_LENGTH = 2000
+
 # Agent registry — 4 consolidated agents per Recommendation #1
 AGENTS: dict[str, BaseExtractionAgent] = {}
 
@@ -65,6 +89,29 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     "ambiguity": [ExtractionType.ambiguity],
 }
 
+# ---------------------------------------------------------------------------
+# Keyword patterns for selective agent routing
+# ---------------------------------------------------------------------------
+
+_OBLIGATION_PATTERN = re.compile(
+    r"\b(shall|must|may\s+not|prohibited|required|require|obligat)"
+    r"\b",
+    re.IGNORECASE,
+)
+
+_THRESHOLD_EXCEPTION_PATTERN = re.compile(
+    r"(\b(unless|except|exempt|exclusion|carve.?out|safe.?harbor"
+    r"|if\b|within\b|more\s+than|less\s+than|at\s+least|exceed|threshold)"
+    r"\b|\d)",
+    re.IGNORECASE,
+)
+
+_DEFINITION_ACTOR_PATTERN = re.compile(
+    r'\b(means|defined\s+as|shall\s+mean|includes|"[A-Z][^"]{2,}"'
+    r"|refers\s+to|the\s+term)\b",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class TokenUsageSummary:
@@ -73,6 +120,9 @@ class TokenUsageSummary:
     total_input_tokens: int = 0
     total_output_tokens: int = 0
     total_calls: int = 0
+    skipped_short: int = 0
+    merged_passages: int = 0
+    agents_skipped: int = 0
 
     @property
     def total_tokens(self) -> int:
@@ -82,6 +132,18 @@ class TokenUsageSummary:
         self.total_input_tokens += input_tokens
         self.total_output_tokens += output_tokens
         self.total_calls += 1
+
+
+@dataclass
+class MergedPassage:
+    """A passage that may combine multiple short adjacent records."""
+
+    text: str
+    source_records: list[NormalizedSourceRecord] = field(default_factory=list)
+
+    @property
+    def primary_record(self) -> NormalizedSourceRecord:
+        return self.source_records[0]
 
 
 def _get_agents() -> dict[str, BaseExtractionAgent]:
@@ -103,20 +165,120 @@ def _confidence_to_priority(tier: str) -> int:
 
 
 def _build_context(db, record: NormalizedSourceRecord) -> dict:
-    """Build context dict for an extraction agent."""
+    """Build context dict for an extraction agent.
+
+    Includes Orrick key_requirements and enforcement metadata when available,
+    giving the model richer signal about what the passage is about.
+    """
     dv = record.document_version
     df = dv.family if dv else None
     s = df.source if df else None
-    return {
+    ctx: dict[str, Any] = {
         "document_title": df.canonical_title if df else None,
         "jurisdiction": s.jurisdiction_code if s else None,
         "section_path": record.section_path,
     }
 
+    # Inject Orrick tracker metadata as context when available
+    if df and df.metadata_:
+        key_reqs = df.metadata_.get("key_requirements")
+        if key_reqs:
+            ctx["key_requirements"] = key_reqs
+        enforcement = df.metadata_.get("enforcement")
+        if enforcement:
+            ctx["enforcement_summary"] = enforcement
+
+    return ctx
+
 
 def _content_hash(agent_name: str, text: str) -> str:
     """Compute a deduplication hash for (agent, passage_text)."""
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
+
+
+def _select_agents_for_passage(
+    text: str, all_agents: dict[str, BaseExtractionAgent]
+) -> dict[str, BaseExtractionAgent]:
+    """Select which agents to run based on passage content signals.
+
+    Keyword pre-screening avoids wasting API calls on passages that
+    are unlikely to contain content relevant to a specific agent.
+    Ambiguity always runs (catches vague terms even in short passages).
+    """
+    selected: dict[str, BaseExtractionAgent] = {}
+
+    # Ambiguity always runs
+    if "ambiguity" in all_agents:
+        selected["ambiguity"] = all_agents["ambiguity"]
+
+    # Obligation: needs modal verbs
+    if "obligation" in all_agents and _OBLIGATION_PATTERN.search(text):
+        selected["obligation"] = all_agents["obligation"]
+
+    # Threshold/exception: needs numbers, dates, or conditional language
+    if "threshold_exception" in all_agents and _THRESHOLD_EXCEPTION_PATTERN.search(text):
+        selected["threshold_exception"] = all_agents["threshold_exception"]
+
+    # Definition/actor: needs definitional language
+    if "definition_actor" in all_agents and _DEFINITION_ACTOR_PATTERN.search(text):
+        selected["definition_actor"] = all_agents["definition_actor"]
+
+    return selected
+
+
+def _merge_short_passages(
+    records: list[NormalizedSourceRecord],
+) -> list[MergedPassage]:
+    """Merge consecutive short passages from the same section.
+
+    Passages under MERGE_THRESHOLD chars from the same document_version_id
+    and adjacent ordinals are fragments of a single enumerated list that
+    got split during chunking. Recombining them means 1 API call instead
+    of many, and Claude gets the full context.
+
+    Long passages (>= MERGE_THRESHOLD) are passed through as-is.
+    """
+    if not records:
+        return []
+
+    # Sort by document_version_id then ordinal for adjacency detection
+    sorted_records = sorted(records, key=lambda r: (r.document_version_id, r.ordinal))
+
+    merged: list[MergedPassage] = []
+    current: MergedPassage | None = None
+
+    for record in sorted_records:
+        text_len = len(record.text_content)
+
+        if text_len >= MERGE_THRESHOLD:
+            # Long passage — flush any accumulator and emit standalone
+            if current is not None:
+                merged.append(current)
+                current = None
+            merged.append(MergedPassage(text=record.text_content, source_records=[record]))
+            continue
+
+        # Short passage — try to merge with current accumulator
+        if current is not None:
+            prev = current.source_records[-1]
+            same_doc = prev.document_version_id == record.document_version_id
+            adjacent = record.ordinal == prev.ordinal + 1
+            would_fit = len(current.text) + len(record.text_content) + 1 <= MAX_MERGED_LENGTH
+
+            if same_doc and adjacent and would_fit:
+                current.text += "\n" + record.text_content
+                current.source_records.append(record)
+                continue
+
+            # Can't merge — flush current
+            merged.append(current)
+
+        current = MergedPassage(text=record.text_content, source_records=[record])
+
+    if current is not None:
+        merged.append(current)
+
+    return merged
 
 
 def _run_agent(
@@ -135,29 +297,41 @@ def _run_agent(
 
 def extract_single_record(
     db,
-    record: NormalizedSourceRecord,
+    passage: MergedPassage,
     agents: dict[str, BaseExtractionAgent],
     extraction_job: ExtractionJob | None = None,
     parse_quality: float | None = None,
     token_usage: TokenUsageSummary | None = None,
     existing_hashes: set[str] | None = None,
 ) -> int:
-    """Run all agents against a single passage. Returns extraction count.
+    """Run selected agents against a (possibly merged) passage.
 
+    Returns extraction count. Agents are selected based on content signals.
     Agents run concurrently via ThreadPoolExecutor for improved throughput.
     Deduplication is based on a content hash of (agent_name, passage_text).
     """
+    record = passage.primary_record
     ctx = _build_context(db, record)
     extractions_created = 0
+
+    # Select agents based on passage content
+    selected_agents = _select_agents_for_passage(passage.text, agents)
+
+    if token_usage is not None:
+        token_usage.agents_skipped += len(agents) - len(selected_agents)
+
+    if not selected_agents:
+        logger.debug("all_agents_skipped", record_id=record.id)
+        return 0
 
     # Build futures for concurrent execution
     agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = {}
-        for agent_name, agent in agents.items():
+        for agent_name, agent in selected_agents.items():
             # Deduplication guard
-            content_hash = _content_hash(agent_name, record.text_content)
+            content_hash = _content_hash(agent_name, passage.text)
             if existing_hashes is not None and content_hash in existing_hashes:
                 logger.debug(
                     "extraction_deduplicated",
@@ -167,7 +341,7 @@ def extract_single_record(
                 continue
 
             future = executor.submit(
-                _run_agent, agent_name, agent, record.text_content, ctx
+                _run_agent, agent_name, agent, passage.text, ctx
             )
             futures[future] = (agent_name, content_hash)
 
@@ -216,57 +390,59 @@ def extract_single_record(
         primary_type = AGENT_EXTRACTION_TYPES[name][0]
         schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
 
-        for item in result.extractions:
-            try:
-                evidence = item.get("evidence_spans", [])
-                confidence = compute_confidence(
-                    schema_valid=True,
-                    evidence_spans=evidence,
-                    extraction_payload=item,
-                    schema_class=schema_class,
-                    parse_quality_score=parse_quality,
-                )
+        # Write extractions against all source records in the merged passage
+        for source_record in passage.source_records:
+            for item in result.extractions:
+                try:
+                    evidence = item.get("evidence_spans", [])
+                    confidence = compute_confidence(
+                        schema_valid=True,
+                        evidence_spans=evidence,
+                        extraction_payload=item,
+                        schema_class=schema_class,
+                        parse_quality_score=parse_quality,
+                    )
 
-                extraction = Extraction(
-                    source_record_id=record.id,
-                    extraction_type=primary_type,
-                    payload=item,
-                    evidence_spans=evidence,
-                    confidence_score=confidence.total_score,
-                    confidence_tier=ConfidenceTier(confidence.tier),
-                    review_status=ReviewStatus.pending,
-                    prompt_template_version=result.prompt_hash,
-                    model_id=result.model_id,
-                    extraction_job_id=extraction_job.id if extraction_job else None,
-                )
-                db.add(extraction)
-                db.flush()
+                    extraction = Extraction(
+                        source_record_id=source_record.id,
+                        extraction_type=primary_type,
+                        payload=item,
+                        evidence_spans=evidence,
+                        confidence_score=confidence.total_score,
+                        confidence_tier=ConfidenceTier(confidence.tier),
+                        review_status=ReviewStatus.pending,
+                        prompt_template_version=result.prompt_hash,
+                        model_id=result.model_id,
+                        extraction_job_id=extraction_job.id if extraction_job else None,
+                    )
+                    db.add(extraction)
+                    db.flush()
 
-                db.add(ReviewQueueItem(
-                    extraction_id=extraction.id,
-                    priority=_confidence_to_priority(confidence.tier),
-                    status=ReviewStatus.pending,
-                ))
-                extractions_created += 1
+                    db.add(ReviewQueueItem(
+                        extraction_id=extraction.id,
+                        priority=_confidence_to_priority(confidence.tier),
+                        status=ReviewStatus.pending,
+                    ))
+                    extractions_created += 1
 
-                logger.info(
-                    "extraction_created",
-                    extraction_id=extraction.id,
-                    agent=name,
-                    record_id=record.id,
-                    confidence_score=confidence.total_score,
-                    confidence_tier=confidence.tier,
-                    evidence_verified=sum(1 for e in evidence if e.get("verified")),
-                    evidence_total=len(evidence),
-                )
+                    logger.info(
+                        "extraction_created",
+                        extraction_id=extraction.id,
+                        agent=name,
+                        record_id=source_record.id,
+                        confidence_score=confidence.total_score,
+                        confidence_tier=confidence.tier,
+                        evidence_verified=sum(1 for e in evidence if e.get("verified")),
+                        evidence_total=len(evidence),
+                    )
 
-            except Exception as e:
-                logger.error(
-                    "extraction_record_failed",
-                    agent=name,
-                    record_id=record.id,
-                    error=str(e),
-                )
+                except Exception as e:
+                    logger.error(
+                        "extraction_record_failed",
+                        agent=name,
+                        record_id=source_record.id,
+                        error=str(e),
+                    )
 
     return extractions_created
 
@@ -275,6 +451,7 @@ def run_extraction(
     db,
     limit: int | None = None,
     on_progress: callable | None = None,
+    batch_mode: bool = False,
 ) -> dict:
     """Run extraction agents against all unprocessed passages.
 
@@ -282,10 +459,15 @@ def run_extraction(
         db: SQLAlchemy session
         limit: Max passages to process (None = all unprocessed)
         on_progress: Optional callback(message: str) for status updates
+        batch_mode: If True, submit requests via Anthropic Batch API
+                    (50% discount, results within 24h)
 
     Returns:
         Summary dict with counts and token usage.
     """
+    if batch_mode:
+        return _run_batch_extraction(db, limit=limit, on_progress=on_progress)
+
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
@@ -308,11 +490,14 @@ def run_extraction(
 
     records = db.scalars(query).all()
 
-    summary = {
+    summary: dict[str, Any] = {
         "total_records": len(records),
         "total_extractions": 0,
         "records_processed": 0,
         "records_failed": 0,
+        "records_skipped_short": 0,
+        "passages_merged": 0,
+        "agents_skipped_by_signal": 0,
         "token_usage": {
             "input_tokens": 0,
             "output_tokens": 0,
@@ -326,6 +511,16 @@ def run_extraction(
 
     _log(f"Found {len(records)} passages to extract from")
 
+    # Filter out tiny passages
+    original_count = len(records)
+    records = [r for r in records if len(r.text_content) >= MIN_PASSAGE_LENGTH]
+    skipped_short = original_count - len(records)
+    summary["records_skipped_short"] = skipped_short
+    token_usage.skipped_short = skipped_short
+
+    if skipped_short:
+        _log(f"Skipped {skipped_short} passages under {MIN_PASSAGE_LENGTH} chars")
+
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}
     for record in records:
@@ -335,6 +530,12 @@ def run_extraction(
     _log(f"Spanning {len(dv_records)} document versions")
 
     for dv_id, dv_group in dv_records.items():
+        # Merge consecutive short passages
+        merged_passages = _merge_short_passages(dv_group)
+        merge_count = len(dv_group) - len(merged_passages)
+        summary["passages_merged"] += merge_count
+        token_usage.merged_passages += merge_count
+
         # Create ExtractionJob for tracking
         extraction_job = ExtractionJob(
             document_version_id=dv_id,
@@ -361,31 +562,38 @@ def run_extraction(
         if dv and dv.family:
             label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
 
-        _log(f"\n[{label}] Processing {len(dv_group)} passages...")
+        _log(
+            f"\n[{label}] Processing {len(merged_passages)} passages "
+            f"({len(dv_group)} records, {merge_count} merged)..."
+        )
 
         job_extractions = 0
         job_failures = 0
 
-        for i, record in enumerate(dv_group):
+        for i, passage in enumerate(merged_passages):
             try:
                 count = extract_single_record(
-                    db, record, agents, extraction_job, parse_quality,
+                    db, passage, agents, extraction_job, parse_quality,
                     token_usage, existing_hashes,
                 )
                 job_extractions += count
-                extraction_job.records_processed += 1
-                summary["records_processed"] += 1
+                extraction_job.records_processed += len(passage.source_records)
+                summary["records_processed"] += len(passage.source_records)
 
                 # Commit in batches of 10 to avoid holding huge transactions
                 if (i + 1) % 10 == 0:
                     db.commit()
-                    _log(f"  {i + 1}/{len(dv_group)} passages processed...")
+                    _log(f"  {i + 1}/{len(merged_passages)} passages processed...")
 
             except Exception as e:
                 job_failures += 1
-                extraction_job.records_failed += 1
-                summary["records_failed"] += 1
-                logger.error("record_extraction_error", record_id=record.id, error=str(e))
+                extraction_job.records_failed += len(passage.source_records)
+                summary["records_failed"] += len(passage.source_records)
+                logger.error(
+                    "record_extraction_error",
+                    record_id=passage.primary_record.id,
+                    error=str(e),
+                )
 
         # Finalize extraction job
         extraction_job.status = "completed" if job_failures == 0 else "completed_with_errors"
@@ -394,9 +602,11 @@ def run_extraction(
 
         summary["total_extractions"] += job_extractions
         _log(
-            f"  Done: {job_extractions} extractions from {len(dv_group)} passages "
+            f"  Done: {job_extractions} extractions from {len(merged_passages)} passages "
             f"({job_failures} failures)"
         )
+
+    summary["agents_skipped_by_signal"] = token_usage.agents_skipped
 
     # Finalize token usage in summary
     summary["token_usage"] = {
@@ -412,4 +622,119 @@ def run_extraction(
         f"{token_usage.total_output_tokens:,} output = "
         f"{token_usage.total_tokens:,} total across {token_usage.total_calls} API calls"
     )
+    _log(
+        f"Savings: {token_usage.skipped_short} short passages skipped, "
+        f"{token_usage.merged_passages} passages merged, "
+        f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
+    )
     return summary
+
+
+# ---------------------------------------------------------------------------
+# Batch API support
+# ---------------------------------------------------------------------------
+
+
+def _run_batch_extraction(
+    db,
+    limit: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Submit extraction requests via Anthropic Batch API (50% cost discount).
+
+    Collects all (passage, agent, prompt) combinations, submits them as a
+    single batch, and returns a summary with the batch ID for later retrieval.
+
+    Results are available within 24 hours. Use `retrieve_batch_results()`
+    to process completed batches.
+    """
+    import anthropic
+
+    from src.agents.base import BaseExtractionAgent
+    from src.core.config import settings
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    agents = _get_agents()
+
+    # Find passages without extractions
+    query = (
+        select(NormalizedSourceRecord)
+        .outerjoin(Extraction)
+        .where(Extraction.id.is_(None))
+    )
+    if limit:
+        query = query.limit(limit)
+
+    records = db.scalars(query).all()
+
+    # Filter short passages
+    records = [r for r in records if len(r.text_content) >= MIN_PASSAGE_LENGTH]
+
+    if not records:
+        _log("No unprocessed passages found.")
+        return {"batch_id": None, "requests_submitted": 0}
+
+    # Merge short passages
+    dv_records: dict[int, list[NormalizedSourceRecord]] = {}
+    for record in records:
+        dv_records.setdefault(record.document_version_id, []).append(record)
+
+    # Build batch requests
+    batch_requests = []
+    for dv_id, dv_group in dv_records.items():
+        merged_passages = _merge_short_passages(dv_group)
+
+        for passage in merged_passages:
+            record = passage.primary_record
+            ctx = _build_context(db, record)
+            selected = _select_agents_for_passage(passage.text, agents)
+
+            for agent_name, agent in selected.items():
+                prompt = agent._resolve_extraction_prompt(passage.text, ctx)
+                system_prompt = agent._resolve_system_prompt()
+                system_prompt += (
+                    "\n\nReturn only raw JSON with no markdown formatting, "
+                    "no code fences, and no preamble."
+                )
+
+                # Custom ID encodes record_id + agent for result matching
+                record_ids = ",".join(str(r.id) for r in passage.source_records)
+                custom_id = f"{record_ids}:{agent_name}"
+
+                batch_requests.append({
+                    "custom_id": custom_id,
+                    "params": {
+                        "model": settings.extraction_model,
+                        "max_tokens": settings.extraction_max_tokens,
+                        "temperature": settings.extraction_temperature,
+                        "system": system_prompt,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                })
+
+    if not batch_requests:
+        _log("No batch requests to submit (all filtered/deduplicated).")
+        return {"batch_id": None, "requests_submitted": 0}
+
+    _log(f"Submitting {len(batch_requests)} requests to Batch API...")
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    batch = client.messages.batches.create(requests=batch_requests)
+
+    _log(
+        f"Batch submitted: {batch.id}\n"
+        f"  Requests: {len(batch_requests)}\n"
+        f"  Status: {batch.processing_status}\n"
+        f"  Results will be available within 24 hours.\n"
+        f"  Retrieve with: --mode batch-results --batch-id {batch.id}"
+    )
+
+    return {
+        "batch_id": batch.id,
+        "requests_submitted": len(batch_requests),
+        "status": batch.processing_status,
+    }
