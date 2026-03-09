@@ -52,13 +52,17 @@ class TestConfidenceScoring:
             schema_valid=True,
             evidence_spans=[
                 {"field_name": "subject", "text": "x", "verified": True},
-                {"field_name": "action", "text": "y", "verified": False},
+                {"field_name": "action", "text": "y", "verified": True},
             ],
             extraction_payload={
                 "subject": "Developer",
                 "modality": "shall",
                 "action": "comply",
                 "jurisdiction": "CO",
+                "subject_normalized": "developer",
+                "object": "AI system",
+                "condition": "when deploying",
+                "section_reference": "§ 6-1-1502",
             },
             schema_class=ObligationPayload,
             parse_quality_score=0.8,

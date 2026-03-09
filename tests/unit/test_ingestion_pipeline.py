@@ -116,7 +116,11 @@ class TestProcessSingleJob:
         job.id = 3
         job.fetch_url = "https://example.com/bill.html"
 
-        mock_fetch.return_value = MagicMock(spec=RawArtifact)
+        artifact = MagicMock(spec=RawArtifact)
+        artifact.content_type = "application/pdf"
+        artifact.size_bytes = 1024
+        artifact.sha256_hash = "abc123def456"
+        mock_fetch.return_value = artifact
         mock_parse.side_effect = Exception("PDF parsing failed: corrupted file")
 
         count = process_single_job(db, job)

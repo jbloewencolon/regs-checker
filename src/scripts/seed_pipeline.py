@@ -13,6 +13,12 @@ Usage:
     # Fetch with a limit (useful for testing):
     python -m src.scripts.seed_pipeline --mode fetch --limit 5
 
+    # Run AI extraction on all unprocessed passages:
+    python -m src.scripts.seed_pipeline --mode extract
+
+    # Extract with a limit (test first!):
+    python -m src.scripts.seed_pipeline --mode extract --limit 20
+
     # Re-queue failed jobs back to pending and retry:
     python -m src.scripts.seed_pipeline --mode retry-failed
 
@@ -221,18 +227,63 @@ def run_fetch(db, limit: int | None = None) -> dict:
     return run_pending_ingestion(db, limit=limit, on_progress=print)
 
 
+def run_extract(db, limit: int | None = None) -> dict:
+    """Run AI extraction agents on all unprocessed passages."""
+    from src.ingestion.extractor import run_extraction
+
+    return run_extraction(db, limit=limit, on_progress=print)
+
+
 # ---------------------------------------------------------------------------
 # Known bad URL corrections — keyed by ingestion_job.id or (state_code, short_cite)
 # These are jobs where the Orrick tracker seeded the wrong URL or the original
 # source is permanently dead and we have a known-good replacement.
 # ---------------------------------------------------------------------------
 _URL_FIXES: dict[str, str] = {
-    # Category B: legiscan.com 403s — replace with direct state legislature URLs
-    # (add entries as: "STATE-ShortCite": "https://direct-url" )
-    # Category C: dead links with known replacements
-    # NH bills: gencourt.state.nh.us is the working source
-    # NC bills: ncleg.gov direct PDF links
-    # NV bills: leg.state.nv.us NELIS system
+    # -----------------------------------------------------------------------
+    # Category B: legiscan.com 403s — replaced with direct state legislature URLs
+    # -----------------------------------------------------------------------
+    # NH — gencourt.state.nh.us
+    "100": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1596",  # AI Political Advertising
+    "101": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1432",  # Deepfake Act
+    "103": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1688",  # State Agency AI Bill
+    # MD — mgaleg.maryland.gov
+    "76": "https://mgaleg.maryland.gov/2024RS/bills/sb/sb0818E.pdf",  # AI Governance Act 2024
+    # RI — rilegislature.gov
+    "138": "https://webserver.rilegislature.gov/BillText/BillText24/SenateText24/S2500.pdf",  # Data Transparency & Privacy
+    # TX — capitol.texas.gov
+    "154": "https://capitol.texas.gov/tlodocs/88R/billtext/pdf/SB01361F.pdf",  # Sexually Explicit Videos
+    # WI — docs.legis.wisconsin.gov
+    "178": "https://docs.legis.wisconsin.gov/2023/related/proposals/sb314.pdf",  # Amendment to CSAM Statute
+    # -----------------------------------------------------------------------
+    # Category B: ncleg.gov 403s — direct PDF links
+    # -----------------------------------------------------------------------
+    "123": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC CSAM Laws
+    "124": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC Intimate Images
+    # -----------------------------------------------------------------------
+    # Category B: NV leg.state.nv.us 403
+    # -----------------------------------------------------------------------
+    "99": "https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10280/Text",  # NV AI Political Advertising (AB468)
+    # -----------------------------------------------------------------------
+    # Category C: NJ connection refused — use www subdomain
+    # -----------------------------------------------------------------------
+    "105": "https://www.njleg.state.nj.us/Bills/2024/A4000/3540_R3.PDF",  # Criminal Penalties Deepfakes
+    "106": "https://www.njleg.state.nj.us/Bills/2022/PL23/266_.PDF",  # NJ Data Privacy Act
+    # -----------------------------------------------------------------------
+    # Category C: MD casetext 410 → mgaleg.maryland.gov
+    # (also handled by _ALTERNATIVE_URL_RULES in connector.py, but explicit fix
+    # ensures the stored URL is correct for future retries)
+    # -----------------------------------------------------------------------
+    "75": "https://mgaleg.maryland.gov/2024RS/bills/hb/hb0033E.pdf",  # Amendment to MD CSAM Statute
+    # -----------------------------------------------------------------------
+    # Category C: MS SSL — billstatus.ls.state.ms.us (SSL bypass in connector.py)
+    # Job #85 should resolve with SSL bypass on retry; no URL change needed.
+    # -----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Bug: Job #116 — NY law with wrong CT URL (handled separately in fix_known_bad_urls)
+    # The correct URL needs to be found at legislation.nysenate.gov for the
+    # NY Algorithmic Pricing Disclosure Act.
+    # -----------------------------------------------------------------------
 }
 
 
@@ -369,13 +420,14 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "retry-failed", "fix-urls"],
+        choices=["manual", "orrick", "fetch", "extract", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
+            "'extract' runs AI extraction agents on unprocessed passages, "
             "'retry-failed' re-queues and retries failed jobs, "
             "'fix-urls' applies known URL corrections and data bug fixes"
         ),
@@ -420,6 +472,13 @@ def main():
             print(f"  Completed:       {summary['completed']}")
             print(f"  Failed:          {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
+        elif args.mode == "extract":
+            summary = run_extract(db, limit=args.limit)
+            print(f"\n{'=' * 60}")
+            print("Extraction complete:")
+            print(f"  Passages processed: {summary['records_processed']}")
+            print(f"  Extractions created: {summary['total_extractions']}")
+            print(f"  Failures:           {summary['records_failed']}")
         elif args.mode == "fix-urls":
             fixed = fix_known_bad_urls(db)
             print(f"\n{'=' * 60}")
