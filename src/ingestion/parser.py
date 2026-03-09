@@ -149,8 +149,8 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
 def _parse_pdf(content: bytes) -> list[tuple[str, str, int, int]]:
     """Parse PDF content into passages.
 
-    Uses pdfplumber for text extraction, then segments with the standard
-    legislative text segmenter.
+    Uses pdfplumber for text extraction. If the PDF is scanned (no text layer),
+    falls back to OCR via pytesseract + pdf2image.
     """
     try:
         import io
@@ -164,9 +164,11 @@ def _parse_pdf(content: bytes) -> list[tuple[str, str, int, int]]:
                     text_parts.append(page_text)
 
         full_text = "\n\n".join(text_parts)
+
+        # If pdfplumber got no text, the PDF is likely scanned — try OCR
         if not full_text.strip():
-            logger.warning("pdf_no_text_extracted")
-            return []
+            logger.info("pdf_no_text_layer, attempting OCR")
+            return _parse_pdf_ocr(content)
 
         return _segment_text(full_text)
 
@@ -176,6 +178,44 @@ def _parse_pdf(content: bytes) -> list[tuple[str, str, int, int]]:
     except Exception as e:
         logger.error("pdf_parse_error", error=str(e))
         return _parse_plaintext(content)
+
+
+def _parse_pdf_ocr(content: bytes) -> list[tuple[str, str, int, int]]:
+    """OCR fallback for scanned PDFs with no text layer.
+
+    Uses pdf2image to render pages, then pytesseract for OCR.
+    Requires system packages: tesseract-ocr, poppler-utils.
+    """
+    try:
+        from pdf2image import convert_from_bytes
+        import pytesseract
+
+        images = convert_from_bytes(content, dpi=300)
+        text_parts = []
+        for image in images:
+            page_text = pytesseract.image_to_string(image, lang="eng")
+            if page_text and page_text.strip():
+                text_parts.append(page_text)
+
+        full_text = "\n\n".join(text_parts)
+        if not full_text.strip():
+            logger.warning("pdf_ocr_no_text_extracted")
+            return []
+
+        logger.info("pdf_ocr_success", pages=len(images), chars=len(full_text))
+        return _segment_text(full_text)
+
+    except ImportError as e:
+        logger.warning(
+            "pdf_ocr_deps_missing",
+            error=str(e),
+            hint="Install: pip install pdf2image pytesseract; "
+            "System: apt-get install tesseract-ocr poppler-utils",
+        )
+        return []
+    except Exception as e:
+        logger.error("pdf_ocr_failed", error=str(e))
+        return []
 
 
 def _fetch_content_from_s3(s3_key: str) -> bytes:
