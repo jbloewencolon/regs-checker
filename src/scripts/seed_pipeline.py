@@ -6,6 +6,12 @@ Usage:
 
     # Discover and seed all bills from Orrick AI Law Tracker:
     python -m src.scripts.seed_pipeline --mode orrick
+
+    # Fetch + parse + chunk all pending ingestion jobs:
+    python -m src.scripts.seed_pipeline --mode fetch
+
+    # Fetch with a limit (useful for testing):
+    python -m src.scripts.seed_pipeline --mode fetch --limit 5
 """
 
 from __future__ import annotations
@@ -201,13 +207,31 @@ def seed_via_orrick(db) -> list[IngestionJob]:
     return jobs
 
 
+def run_fetch(db, limit: int | None = None) -> dict:
+    """Fetch, store, parse, and chunk all pending ingestion jobs."""
+    from src.ingestion.pipeline import run_pending_ingestion
+
+    return run_pending_ingestion(db, limit=limit, on_progress=print)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick"],
+        choices=["manual", "orrick", "fetch"],
         default="manual",
-        help="Seeding mode: 'manual' for hardcoded docs, 'orrick' for Orrick tracker scrape",
+        help=(
+            "Pipeline mode: "
+            "'manual' seeds hardcoded docs, "
+            "'orrick' scrapes Orrick tracker, "
+            "'fetch' processes all pending ingestion jobs"
+        ),
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Max number of jobs to process in fetch mode (default: all)",
     )
     args = parser.parse_args()
 
@@ -229,6 +253,14 @@ def main():
                     f"  Job #{job.id}: {dv.family.source.jurisdiction_code} - "
                     f"{dv.family.short_cite}"
                 )
+        elif args.mode == "fetch":
+            summary = run_fetch(db, limit=args.limit)
+            print(f"\n{'=' * 60}")
+            print(f"Ingestion complete:")
+            print(f"  Pending:         {summary['total_pending']}")
+            print(f"  Completed:       {summary['completed']}")
+            print(f"  Failed:          {summary['failed']}")
+            print(f"  Total passages:  {summary['total_passages']}")
     except Exception as e:
         db.rollback()
         print(f"Error: {e}", file=sys.stderr)
