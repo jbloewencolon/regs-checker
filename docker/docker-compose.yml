@@ -1,10 +1,17 @@
 # Docker Compose — Recommendation #4, #5, #10
 # Postgres + MinIO + Dagster only. No Neo4j. Redis added when caching is needed.
+#
+# Database routing:
+#   REGS_DATABASE_URL  — application data (sources, documents, extractions).
+#                        Set in ../.env to point at Supabase for production,
+#                        or leave default for local-only development.
+#   DAGSTER_DATABASE_URL — Dagster internal storage (runs, events, schedules).
+#                          Always points at the local Docker postgres.
 version: "3.8"
 
 services:
   # ---------------------------------------------------------------------------
-  # PostgreSQL — single database for all data (tables + graph edges + views)
+  # PostgreSQL — Dagster internal storage + local dev fallback
   # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
@@ -66,8 +73,9 @@ services:
     command: dagster-webserver -h 0.0.0.0 -p 3000
     environment:
       DAGSTER_HOME: /opt/dagster/dagster_home
-      REGS_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
-      REGS_S3_ENDPOINT_URL: http://minio:9000
+      DAGSTER_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
+      REGS_DATABASE_URL: ${REGS_DATABASE_URL:-postgresql://regs:regs@postgres:5432/regs_checker}
+      REGS_S3_ENDPOINT_URL: ${REGS_S3_ENDPOINT_URL:-http://minio:9000}
     ports:
       - "3000:3000"
     volumes:
@@ -86,8 +94,8 @@ services:
     environment:
       DAGSTER_HOME: /opt/dagster/dagster_home
       DAGSTER_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
-      REGS_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
-      REGS_S3_ENDPOINT_URL: http://minio:9000
+      REGS_DATABASE_URL: ${REGS_DATABASE_URL:-postgresql://regs:regs@postgres:5432/regs_checker}
+      REGS_S3_ENDPOINT_URL: ${REGS_S3_ENDPOINT_URL:-http://minio:9000}
     volumes:
       - dagster_home:/opt/dagster/dagster_home
     depends_on:
@@ -103,8 +111,8 @@ services:
       dockerfile: docker/Dockerfile
     command: uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      REGS_DATABASE_URL: postgresql://regs:regs@postgres:5432/regs_checker
-      REGS_S3_ENDPOINT_URL: http://minio:9000
+      REGS_DATABASE_URL: ${REGS_DATABASE_URL:-postgresql://regs:regs@postgres:5432/regs_checker}
+      REGS_S3_ENDPOINT_URL: ${REGS_S3_ENDPOINT_URL:-http://minio:9000}
       REGS_DEBUG: "true"
     ports:
       - "8000:8000"
