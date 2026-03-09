@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 
@@ -42,6 +43,18 @@ SYNC_TABLES = [
     "api_keys",
     "export_jobs",
 ]
+
+
+def _serialize_row(row) -> dict:
+    """Serialize a row dict so JSONB columns (dict/list) become JSON strings.
+
+    psycopg2 cannot auto-serialize Python dicts into PostgreSQL JSONB params,
+    so we must json.dumps() them before passing to execute().
+    """
+    return {
+        k: json.dumps(v) if isinstance(v, (dict, list)) else v
+        for k, v in dict(row).items()
+    }
 
 
 def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict:
@@ -116,7 +129,7 @@ def sync_tables(source_url: str, target_url: str, dry_run: bool = False) -> dict
 
         batch_size = 500
         for i in range(0, len(rows), batch_size):
-            batch = [dict(row) for row in rows[i : i + batch_size]]
+            batch = [_serialize_row(row) for row in rows[i : i + batch_size]]
             target_session.execute(insert_sql, batch)
 
         # Reset sequences to max ID
