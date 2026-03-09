@@ -1,0 +1,27 @@
+{
+    "passage_id": "co_sb205_sec2_high_risk_definition",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "As used in this article, unless the context otherwise requires: (4) 'High-risk artificial intelligence system' means any artificial intelligence system that, when deployed, makes, or is a substantial factor in making, a consequential decision.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "High-risk artificial intelligence system",
+            "definition_text": "any artificial intelligence system that, when deployed, makes, or is a substantial factor in making, a consequential decision",
+            "scope": "this article",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": []
+        },
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "substantial factor",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 2 - high-risk AI system classification"],
+            "interpretation_notes": "The term 'substantial factor' lacks a quantitative threshold, making it unclear when an AI system's contribution to a decision crosses the high-risk boundary",
+            "suggested_clarification": "Define specific criteria or percentage thresholds for what constitutes a 'substantial factor' in decision-making"
+        }
+    }
+}

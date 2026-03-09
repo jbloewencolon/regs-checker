@@ -1,0 +1,24 @@
+{
+    "passage_id": "co_sb205_sec3_developer_transparency",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 3 - Developer Duties",
+    "passage_text": "A developer of a high-risk artificial intelligence system shall make available to any deployer or other developer of the developer's high-risk artificial intelligence system: (a) A general description of the reasonably foreseeable uses and known harmful or inappropriate uses of the high-risk artificial intelligence system; (b) Documentation that is sufficient to allow the deployer to understand the outputs and monitor the performance of the high-risk artificial intelligence system for risks of algorithmic discrimination; (c) A high-level summary of the type of data used to train the high-risk artificial intelligence system.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A developer of a high-risk artificial intelligence system",
+            "subject_normalized": "developer",
+            "modality": "shall",
+            "action": "make available to any deployer or other developer documentation including description of uses, performance monitoring documentation, and training data summary",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "CO",
+            "section_reference": "Section 3",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

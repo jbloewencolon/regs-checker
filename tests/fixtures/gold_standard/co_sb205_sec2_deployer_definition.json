@@ -1,0 +1,40 @@
+{
+    "passage_id": "co_sb205_sec2_deployer_definition",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "As used in this article, unless the context otherwise requires: (3) 'Deployer' means any person doing business in this state that deploys a high-risk artificial intelligence system. 'Deployer' does not include a person who deploys a high-risk artificial intelligence system for the person's own personal use.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Deployer",
+            "definition_text": "any person doing business in this state that deploys a high-risk artificial intelligence system",
+            "scope": "this article",
+            "cross_references": [],
+            "actors": [
+                {
+                    "actor_name": "deployer",
+                    "actor_type": "deployer",
+                    "responsibilities": []
+                }
+            ],
+            "framework_refs": []
+        },
+        "threshold_exception": {
+            "threshold_type": "categorical",
+            "threshold_value": "doing business in this state",
+            "threshold_unit": null,
+            "threshold_condition": "person doing business in this state",
+            "applies_to_obligation": "deployer classification",
+            "exceptions": [
+                {
+                    "exception_type": "exemption",
+                    "description": "A person who deploys a high-risk artificial intelligence system for the person's own personal use",
+                    "conditions": "personal use only",
+                    "scope": "deployer definition"
+                }
+            ]
+        },
+        "ambiguity": null
+    }
+}

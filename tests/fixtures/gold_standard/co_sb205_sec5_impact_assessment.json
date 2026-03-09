@@ -1,0 +1,30 @@
+{
+    "passage_id": "co_sb205_sec5_impact_assessment",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 5 - Impact Assessments",
+    "passage_text": "A deployer of a high-risk artificial intelligence system shall, on at least an annual basis, complete an impact assessment for any high-risk artificial intelligence system that the deployer currently deploys. The impact assessment must include, at a minimum: (a) A statement of the purpose, intended use cases, and deployment context of the high-risk artificial intelligence system; (b) An analysis of whether the high-risk artificial intelligence system poses any known or reasonably foreseeable risks of algorithmic discrimination and, if so, the nature of the algorithmic discrimination and the steps that have been taken to mitigate the risks.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A deployer of a high-risk artificial intelligence system",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "complete an impact assessment for any high-risk artificial intelligence system that the deployer currently deploys",
+            "object": "high-risk artificial intelligence system",
+            "condition": "on at least an annual basis",
+            "jurisdiction": "CO",
+            "section_reference": "Section 5",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": null,
+                "sunset_date": null,
+                "phase_in_period": "annual",
+                "timeline_text": "on at least an annual basis"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

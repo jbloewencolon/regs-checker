@@ -1,0 +1,24 @@
+{
+    "passage_id": "co_sb205_sec6_notice",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 6 - Consumer Disclosure",
+    "passage_text": "A deployer of a high-risk artificial intelligence system shall provide to any consumer that is subject to a consequential decision made by the deployer's high-risk artificial intelligence system a statement disclosing: (a) That the deployer has deployed a high-risk artificial intelligence system to make, or be a substantial factor in making, the consequential decision; (b) A description of the high-risk artificial intelligence system's purpose, including the nature of the consequential decision and the key factors upon which the consequential decision was based; and (c) Contact information for the deployer and a description of the deployer's processes for a consumer to appeal a consequential decision.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A deployer of a high-risk artificial intelligence system",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "provide to any consumer that is subject to a consequential decision a statement disclosing the deployment of the high-risk AI system, its purpose, and appeal processes",
+            "object": "high-risk artificial intelligence system",
+            "condition": "consumer is subject to a consequential decision",
+            "jurisdiction": "CO",
+            "section_reference": "Section 6",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}
