@@ -1,74 +1,51 @@
-"""Dagster ops and jobs for LegiScan discovery and multi-state expansion."""
+"""Dagster ops and jobs for Orrick AI law tracker scraping."""
 
 import dagster
 import structlog
 
 from src.db.engine import SessionLocal
-from src.ingestion.legiscan import (
-    SUPPORTED_STATES,
-    discover_ai_bills,
-    seed_bill_for_ingestion,
-)
+from src.ingestion.orrick_scraper import scrape_tracker, seed_from_tracker
 
 logger = structlog.get_logger()
 
 
 @dagster.op(
-    description="Discover AI-related bills via LegiScan API and seed for ingestion",
+    description="Scrape Orrick AI Law Tracker and seed new legislation for ingestion",
 )
-def discover_and_seed_bills(context: dagster.OpExecutionContext) -> int:
-    """Discover new AI bills across supported states and create ingestion jobs.
+def scrape_and_seed_orrick(context: dagster.OpExecutionContext) -> int:
+    """Scrape the Orrick AI law tracker table and create ingestion jobs.
 
-    Returns the number of new bills seeded.
+    Returns the number of new laws seeded.
     """
     db = SessionLocal()
-    seeded = 0
 
     try:
-        # Discover across all supported states
-        states = list(SUPPORTED_STATES.keys())
-        context.log.info(f"Starting LegiScan discovery for states: {states}")
+        context.log.info("Starting Orrick AI Law Tracker scrape")
+        records = scrape_tracker()
+        context.log.info(f"Parsed {len(records)} rows from Orrick tracker")
 
-        bills = discover_ai_bills(db, states=states)
-        context.log.info(f"Discovered {len(bills)} unique AI-related bills")
-
-        for bill in bills:
-            state = bill.get("state", "")
-            state_info = SUPPORTED_STATES.get(state)
-            if not state_info:
-                continue
-
-            try:
-                job = seed_bill_for_ingestion(
-                    db,
-                    legiscan_bill_id=bill["legiscan_bill_id"],
-                    jurisdiction_code=state,
-                    jurisdiction_name=state_info["name"],
-                )
-                if job:
-                    seeded += 1
-                    context.log.info(
-                        f"Seeded: {bill.get('bill_number')} ({state}) - job #{job.id}"
-                    )
-            except Exception as e:
-                context.log.warning(
-                    f"Failed to seed {bill.get('bill_number', '?')} ({state}): {e}"
-                )
-
+        jobs = seed_from_tracker(db, records)
         db.commit()
-        context.log.info(f"Discovery complete: {seeded} new bills seeded")
-        return seeded
+
+        context.log.info(f"Seeded {len(jobs)} new laws for ingestion")
+        for job in jobs:
+            dv = job.document_version
+            context.log.info(
+                f"  Job #{job.id}: {dv.family.source.jurisdiction_code} - "
+                f"{dv.family.short_cite}"
+            )
+        return len(jobs)
 
     except Exception as e:
         db.rollback()
-        context.log.error(f"Discovery job failed: {e}")
+        context.log.error(f"Orrick scrape job failed: {e}")
         raise
     finally:
         db.close()
 
 
-legiscan_discovery_job = dagster.GraphDefinition(
-    name="legiscan_discovery",
-    description="Discover and seed AI legislation from LegiScan",
-    node_defs=[discover_and_seed_bills],
+orrick_discovery_job = dagster.GraphDefinition(
+    name="orrick_discovery",
+    description="Scrape Orrick AI Law Tracker and seed legislation for ingestion",
+    node_defs=[scrape_and_seed_orrick],
 ).to_job()

@@ -1,14 +1,11 @@
 """Seed script for populating the database with initial documents for ingestion.
 
 Usage:
-    # Seed Colorado SB205 manually (no LegiScan API key needed):
+    # Seed Colorado SB205 manually:
     python -m src.scripts.seed_pipeline --mode manual
 
-    # Discover and seed bills from LegiScan API:
-    python -m src.scripts.seed_pipeline --mode legiscan --states CO
-
-    # Discover bills from multiple states:
-    python -m src.scripts.seed_pipeline --mode legiscan --states CO,CA,CT
+    # Discover and seed all bills from Orrick AI Law Tracker:
+    python -m src.scripts.seed_pipeline --mode orrick
 """
 
 from __future__ import annotations
@@ -195,28 +192,12 @@ def seed_federal_nist_ai_rmf(db) -> IngestionJob:
     return job
 
 
-def seed_via_legiscan(db, states: list[str]) -> list[IngestionJob]:
-    """Use LegiScan API to discover and seed AI bills."""
-    from src.ingestion.legiscan import discover_ai_bills, seed_bill_for_ingestion, SUPPORTED_STATES
+def seed_via_orrick(db) -> list[IngestionJob]:
+    """Scrape Orrick AI Law Tracker and seed all discovered bills."""
+    from src.ingestion.orrick_scraper import scrape_tracker, seed_from_tracker
 
-    bills = discover_ai_bills(db, states=states)
-    jobs = []
-
-    for bill in bills:
-        state = bill.get("state", "")
-        state_info = SUPPORTED_STATES.get(state, {})
-        if not state_info:
-            continue
-
-        job = seed_bill_for_ingestion(
-            db,
-            legiscan_bill_id=bill["legiscan_bill_id"],
-            jurisdiction_code=state,
-            jurisdiction_name=state_info["name"],
-        )
-        if job:
-            jobs.append(job)
-
+    records = scrape_tracker()
+    jobs = seed_from_tracker(db, records)
     return jobs
 
 
@@ -224,14 +205,9 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "legiscan"],
+        choices=["manual", "orrick"],
         default="manual",
-        help="Seeding mode: 'manual' for hardcoded docs, 'legiscan' for API discovery",
-    )
-    parser.add_argument(
-        "--states",
-        default="CO",
-        help="Comma-separated state codes for LegiScan discovery (default: CO)",
+        help="Seeding mode: 'manual' for hardcoded docs, 'orrick' for Orrick tracker scrape",
     )
     args = parser.parse_args()
 
@@ -243,14 +219,16 @@ def main():
             db.commit()
             print(f"Seeded CO SB21-169: IngestionJob #{job1.id} (status: {job1.status})")
             print(f"Seeded NIST AI RMF: IngestionJob #{job2.id} (status: {job2.status})")
-        elif args.mode == "legiscan":
-            states = [s.strip().upper() for s in args.states.split(",")]
-            jobs = seed_via_legiscan(db, states)
+        elif args.mode == "orrick":
+            jobs = seed_via_orrick(db)
             db.commit()
-            print(f"Seeded {len(jobs)} bills from LegiScan for states: {args.states}")
+            print(f"Seeded {len(jobs)} laws from Orrick AI Law Tracker")
             for job in jobs:
                 dv = job.document_version
-                print(f"  Job #{job.id}: {dv.family.short_cite} - {dv.family.canonical_title[:60]}")
+                print(
+                    f"  Job #{job.id}: {dv.family.source.jurisdiction_code} - "
+                    f"{dv.family.short_cite}"
+                )
     except Exception as e:
         db.rollback()
         print(f"Error: {e}", file=sys.stderr)

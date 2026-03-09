@@ -3,11 +3,11 @@
 import dagster
 
 from src.dagster_pipelines.assets import extracted_obligations, ingested_documents
-from src.dagster_pipelines.jobs import legiscan_discovery_job
+from src.dagster_pipelines.jobs import orrick_discovery_job
 
 defs = dagster.Definitions(
     assets=[ingested_documents, extracted_obligations],
-    jobs=[legiscan_discovery_job],
+    jobs=[orrick_discovery_job],
     schedules=[
         # Daily ingestion: process any pending ingestion jobs at 6 AM UTC
         dagster.ScheduleDefinition(
@@ -23,12 +23,12 @@ defs = dagster.Definitions(
             target=dagster.AssetSelection.keys("extracted_obligations"),
             default_status=dagster.DefaultScheduleStatus.RUNNING,
         ),
-        # Weekly discovery: discover new AI bills via LegiScan every Sunday midnight
+        # Monthly discovery: scrape Orrick AI tracker on the 1st at midnight UTC
         dagster.ScheduleDefinition(
-            name="weekly_legiscan_discovery",
-            cron_schedule="0 0 * * 0",
-            target=legiscan_discovery_job,
-            default_status=dagster.DefaultScheduleStatus.STOPPED,
+            name="monthly_orrick_discovery",
+            cron_schedule="0 0 1 * *",
+            target=orrick_discovery_job,
+            default_status=dagster.DefaultScheduleStatus.RUNNING,
         ),
     ],
 )
