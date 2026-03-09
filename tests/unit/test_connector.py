@@ -24,6 +24,12 @@ class TestSSLBypassDomains:
     def test_hawaii_domains(self):
         assert "capitol.hawaii.gov" in _SSL_BYPASS_DOMAINS
 
+    def test_ny_legislation_domain(self):
+        assert "legislation.nysenate.gov" in _SSL_BYPASS_DOMAINS
+
+    def test_mississippi_domains(self):
+        assert "billstatus.ls.state.ms.us" in _SSL_BYPASS_DOMAINS
+
 
 class TestAlternativeURLRules:
     def test_ny_senate_rewrite(self):
@@ -32,6 +38,10 @@ class TestAlternativeURLRules:
 
     def test_nj_rewrite(self):
         assert "pub.njleg.state.nj.us" in _ALTERNATIVE_URL_RULES
+
+    def test_md_casetext_rewrite(self):
+        assert "casetext.com" in _ALTERNATIVE_URL_RULES
+        assert _ALTERNATIVE_URL_RULES["casetext.com"] == "mgaleg.maryland.gov"
 
 
 class TestBrowserHeaders:
@@ -55,6 +65,16 @@ class TestOrrickTrackerConnector:
 
     def test_should_not_verify_ssl_hawaii(self):
         assert self.connector._should_verify_ssl("https://capitol.hawaii.gov/measure") is False
+
+    def test_should_not_verify_ssl_ny_legislation(self):
+        assert self.connector._should_verify_ssl(
+            "https://legislation.nysenate.gov/api/3/bills/2023/S7543"
+        ) is False
+
+    def test_should_not_verify_ssl_mississippi(self):
+        assert self.connector._should_verify_ssl(
+            "https://billstatus.ls.state.ms.us/2024/pdf/history/SB/SB2158.xml"
+        ) is False
 
     def test_rewrite_url_ny_senate(self):
         original = "https://www.nysenate.gov/legislation/bills/2023/S7543"

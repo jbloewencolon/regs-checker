@@ -67,10 +67,13 @@ _BROWSER_HEADERS = {
 # Domains with known SSL certificate problems — skip verification
 # ---------------------------------------------------------------------------
 _SSL_BYPASS_DOMAINS = {
-    "cga.ct.gov",          # Connecticut General Assembly
+    "cga.ct.gov",                # Connecticut General Assembly
     "www.cga.ct.gov",
-    "capitol.hawaii.gov",  # Hawaii State Legislature
+    "capitol.hawaii.gov",        # Hawaii State Legislature
     "www.capitol.hawaii.gov",
+    "legislation.nysenate.gov",  # NY Open Legislation — drops SSL connections
+    "billstatus.ls.state.ms.us", # Mississippi Bill Status System
+    "index.ls.state.ms.us",      # Mississippi MLIS
 }
 
 # ---------------------------------------------------------------------------
@@ -82,10 +85,11 @@ _ALTERNATIVE_URL_RULES: dict[str, str] = {
     # NY Senate blocks non-browser requests → use Open Legislation API
     "www.nysenate.gov": "legislation.nysenate.gov",
     "nysenate.gov": "legislation.nysenate.gov",
-    # LegScan links sometimes block → use state source directly
-    # (no generic rewrite — handled per-job via retry-failed with manual URL fix)
     # NJ pub server is down → use njleg.state.nj.us mirror
     "pub.njleg.state.nj.us": "www.njleg.state.nj.us",
+    # Maryland casetext removed content → official GA site
+    "casetext.com": "mgaleg.maryland.gov",
+    "www.casetext.com": "mgaleg.maryland.gov",
 }
 
 
