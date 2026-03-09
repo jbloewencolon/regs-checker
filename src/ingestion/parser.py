@@ -30,6 +30,8 @@ def parse_and_normalize(
 
     if artifact.content_type in ("text/html", "application/xhtml+xml"):
         passages = _parse_html(content)
+    elif artifact.content_type in ("application/pdf",):
+        passages = _parse_pdf(content)
     elif artifact.content_type in ("text/plain",):
         passages = _parse_plaintext(content)
     else:
@@ -142,6 +144,38 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
         offset += len(para) + 2
 
     return passages
+
+
+def _parse_pdf(content: bytes) -> list[tuple[str, str, int, int]]:
+    """Parse PDF content into passages.
+
+    Uses pdfplumber for text extraction, then segments with the standard
+    legislative text segmenter.
+    """
+    try:
+        import io
+        import pdfplumber
+
+        text_parts = []
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+
+        full_text = "\n\n".join(text_parts)
+        if not full_text.strip():
+            logger.warning("pdf_no_text_extracted")
+            return []
+
+        return _segment_text(full_text)
+
+    except ImportError:
+        logger.warning("pdfplumber_not_installed, falling back to plaintext")
+        return _parse_plaintext(content)
+    except Exception as e:
+        logger.error("pdf_parse_error", error=str(e))
+        return _parse_plaintext(content)
 
 
 def _fetch_content_from_s3(s3_key: str) -> bytes:

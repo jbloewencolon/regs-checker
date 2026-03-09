@@ -63,6 +63,28 @@ class FederalNISTConnector(BaseConnector):
         return response.content, content_type
 
 
+@register_connector("legiscan")
+class LegiScanConnector(BaseConnector):
+    """Connector that fetches bill text via the LegiScan API.
+
+    Falls back to direct URL fetch if no LegiScan doc_id is available.
+    """
+
+    def fetch(self, url: str) -> tuple[bytes, str]:
+        # Try direct URL fetch first (state_link from LegiScan metadata)
+        response = httpx.get(url, follow_redirects=True, timeout=30.0)
+        response.raise_for_status()
+        content_type = response.headers.get("content-type", "text/html").split(";")[0]
+        return response.content, content_type
+
+    def fetch_via_api(self, doc_id: int) -> tuple[bytes, str]:
+        """Fetch bill text directly via LegiScan API (base64-decoded)."""
+        from src.ingestion.legiscan import LegiScanClient
+
+        client = LegiScanClient()
+        return client.get_bill_text(doc_id)
+
+
 def fetch_document(db, job: IngestionJob) -> RawArtifact:
     """Fetch a document and store it as a content-addressable raw artifact.
 
@@ -78,8 +100,16 @@ def fetch_document(db, job: IngestionJob) -> RawArtifact:
     connector_cls = CONNECTORS.get(connector_id, ColoradoConnector)
     connector = connector_cls()
 
-    # Fetch
-    content_bytes, content_type = connector.fetch(url)
+    # Fetch — use LegiScan API if doc_id available, else direct URL
+    legiscan_doc_id = (job.metadata_ or {}).get("legiscan_doc_id")
+    if connector_id == "legiscan" and legiscan_doc_id and isinstance(connector, LegiScanConnector):
+        try:
+            content_bytes, content_type = connector.fetch_via_api(legiscan_doc_id)
+        except Exception:
+            logger.info("legiscan_api_fallback_to_url", url=url)
+            content_bytes, content_type = connector.fetch(url)
+    else:
+        content_bytes, content_type = connector.fetch(url)
 
     # Content-addressable storage
     sha256 = hashlib.sha256(content_bytes).hexdigest()

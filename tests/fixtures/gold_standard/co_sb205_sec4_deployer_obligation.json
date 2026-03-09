@@ -1,0 +1,24 @@
+{
+    "passage_id": "co_sb205_sec4_deployer_obligation",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 4 - Deployer Duties",
+    "passage_text": "A deployer of a high-risk artificial intelligence system shall implement a risk management policy and program to govern the deployer's deployment and use of high-risk artificial intelligence systems. The risk management policy and program must specify and incorporate the principles, processes, and personnel that the deployer uses to identify, document, and mitigate known or reasonably foreseeable risks of algorithmic discrimination that may arise from the deployment or use of the high-risk artificial intelligence system.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A deployer of a high-risk artificial intelligence system",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "implement a risk management policy and program to govern the deployer's deployment and use of high-risk artificial intelligence systems",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "CO",
+            "section_reference": "Section 4",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

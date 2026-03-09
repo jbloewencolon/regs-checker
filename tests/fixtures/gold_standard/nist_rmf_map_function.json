@@ -1,0 +1,31 @@
+{
+    "passage_id": "nist_rmf_map_function",
+    "source_document": "NIST AI Risk Management Framework (AI RMF 1.0)",
+    "jurisdiction": "US",
+    "section_path": "MAP Function",
+    "passage_text": "MAP 1.5: Organizational risk tolerances are determined and documented. AI system risk tolerances are established based on the organization's risk appetite and in alignment with relevant AI policies, organizational risk management strategies, and AI risk management frameworks such as the NIST AI RMF and ISO/IEC 23894.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Organizational risk tolerances",
+            "definition_text": "AI system risk tolerances established based on the organization's risk appetite and in alignment with relevant AI policies, organizational risk management strategies, and AI risk management frameworks",
+            "scope": "MAP function",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [
+                {
+                    "framework_name": "NIST AI RMF",
+                    "section_or_standard": "AI Risk Management Framework",
+                    "relationship": "aligns with"
+                },
+                {
+                    "framework_name": "ISO/IEC 23894",
+                    "section_or_standard": null,
+                    "relationship": "aligns with"
+                }
+            ]
+        },
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

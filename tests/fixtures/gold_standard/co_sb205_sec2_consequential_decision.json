@@ -1,0 +1,27 @@
+{
+    "passage_id": "co_sb205_sec2_consequential_decision",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "As used in this article, unless the context otherwise requires: (2) 'Consequential decision' means a decision that has a material legal or similarly significant effect on the provision or denial to any consumer of: (a) Education enrollment or an education opportunity; (b) Employment or an employment opportunity; (c) A financial or lending service; (d) An essential government service; (e) Health-care services; (f) Housing; (g) Insurance; or (h) A legal service.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Consequential decision",
+            "definition_text": "a decision that has a material legal or similarly significant effect on the provision or denial to any consumer of: education enrollment, employment, financial or lending service, essential government service, health-care services, housing, insurance, or a legal service",
+            "scope": "this article",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": []
+        },
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "similarly significant effect",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 2 - consequential decision classification"],
+            "interpretation_notes": "The qualifier 'similarly significant' alongside 'material legal' creates uncertainty about what non-legal effects qualify as consequential",
+            "suggested_clarification": "Provide examples or criteria for what constitutes a 'similarly significant' non-legal effect"
+        }
+    }
+}

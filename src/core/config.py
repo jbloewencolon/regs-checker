@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Review UI
     review_items_per_page: int = 25
 
+    # LegiScan API
+    legiscan_api_key: str = ""
+    legiscan_base_url: str = "https://api.legiscan.com/"
+
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"
 

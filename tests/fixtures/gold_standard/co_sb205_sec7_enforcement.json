@@ -1,0 +1,30 @@
+{
+    "passage_id": "co_sb205_sec7_enforcement",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 7 - Enforcement",
+    "passage_text": "The attorney general has exclusive authority to enforce this article. A violation of this article constitutes a deceptive trade practice under section 6-1-105 of the Colorado Consumer Protection Act. There is no private right of action under this article.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "The attorney general",
+            "subject_normalized": "regulator",
+            "modality": "shall",
+            "action": "enforce this article",
+            "object": "this article",
+            "condition": null,
+            "jurisdiction": "CO",
+            "section_reference": "Section 7",
+            "timeline": null,
+            "enforcement": {
+                "enforcing_body": "attorney general",
+                "penalty_type": "deceptive trade practice",
+                "penalty_description": "A violation constitutes a deceptive trade practice under section 6-1-105 of the Colorado Consumer Protection Act",
+                "private_right_of_action": false,
+                "enforcement_text": "The attorney general has exclusive authority to enforce this article. A violation of this article constitutes a deceptive trade practice under section 6-1-105 of the Colorado Consumer Protection Act. There is no private right of action under this article."
+            }
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

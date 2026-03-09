@@ -1,0 +1,24 @@
+{
+    "passage_id": "nist_rmf_govern_function",
+    "source_document": "NIST AI Risk Management Framework (AI RMF 1.0)",
+    "jurisdiction": "US",
+    "section_path": "GOVERN Function",
+    "passage_text": "GOVERN 1.1: Legal and regulatory requirements involving AI are understood, managed, and documented. Suggested Actions: Maintain awareness of all applicable AI-related legal and regulatory requirements. Document compliance efforts related to AI legal and regulatory requirements. Organizations should track proposed AI-related legislation across relevant jurisdictions.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "Organizations",
+            "subject_normalized": "organization",
+            "modality": "should",
+            "action": "maintain awareness of and document compliance with applicable AI-related legal and regulatory requirements",
+            "object": "AI-related legal and regulatory requirements",
+            "condition": null,
+            "jurisdiction": "US",
+            "section_reference": "GOVERN 1.1",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

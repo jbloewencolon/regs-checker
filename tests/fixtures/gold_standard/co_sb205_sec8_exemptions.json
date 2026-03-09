@@ -1,0 +1,46 @@
+{
+    "passage_id": "co_sb205_sec8_exemptions",
+    "source_document": "Colorado SB21-169 (AI Act)",
+    "jurisdiction": "CO",
+    "section_path": "Section 8 - Exemptions",
+    "passage_text": "This article does not apply to: (a) A person that has fewer than fifty full-time employees, unless the person uses an artificial intelligence system that the person has developed; (b) A financial institution or affiliate subject to and in compliance with the federal Equal Credit Opportunity Act, 15 U.S.C. sec. 1691 et seq., and its implementing regulation, Regulation B, 12 CFR part 1002; or (c) An insurer, insurance producer, or other person subject to and in compliance with applicable insurance regulations regarding the use of artificial intelligence systems.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": "numeric",
+            "threshold_value": "50",
+            "threshold_unit": "full-time employees",
+            "threshold_condition": "fewer than fifty full-time employees",
+            "applies_to_obligation": "entire article",
+            "exceptions": [
+                {
+                    "exception_type": "exemption",
+                    "description": "Small businesses with fewer than fifty full-time employees",
+                    "conditions": "unless the person uses an artificial intelligence system that the person has developed",
+                    "scope": "entire article"
+                },
+                {
+                    "exception_type": "safe-harbor",
+                    "description": "Financial institutions in compliance with the federal Equal Credit Opportunity Act",
+                    "conditions": "subject to and in compliance with ECOA and Regulation B",
+                    "scope": "entire article"
+                },
+                {
+                    "exception_type": "safe-harbor",
+                    "description": "Insurers subject to applicable insurance regulations regarding AI systems",
+                    "conditions": "subject to and in compliance with applicable insurance regulations",
+                    "scope": "entire article"
+                }
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "applicable insurance regulations regarding the use of artificial intelligence systems",
+            "ambiguity_type": "undefined_reference",
+            "severity": "medium",
+            "affected_obligations": ["Section 8 - insurance exemption"],
+            "interpretation_notes": "The reference to 'applicable insurance regulations' does not specify which regulations, potentially creating uncertainty about the scope of the exemption",
+            "suggested_clarification": "Enumerate specific insurance regulations that qualify for this exemption"
+        }
+    }
+}
