@@ -97,6 +97,12 @@ class BaseExtractionAgent(ABC):
         while attempt <= self.max_retries:
             try:
                 raw_output, usage = self._call_llm(prompt, attempt)
+                logger.debug(
+                    "extraction_pre_parse",
+                    agent=self.agent_name,
+                    attempt=attempt,
+                    raw_output_preview=raw_output[:300],
+                )
                 parsed = json.loads(raw_output)
 
                 # Check for abstention
@@ -141,7 +147,7 @@ class BaseExtractionAgent(ABC):
                     template_version=template_version,
                 )
 
-            except (json.JSONDecodeError, ValidationError) as e:
+            except (json.JSONDecodeError, ValidationError, ValueError) as e:
                 logger.warning(
                     "extraction_validation_failed",
                     agent=self.agent_name,
@@ -172,7 +178,31 @@ class BaseExtractionAgent(ABC):
             messages=[{"role": "user", "content": prompt}],
         )
 
-        return response.content[0].text, response.usage
+        # Extract text from the first text block, skipping non-text blocks
+        raw_text = ""
+        for block in response.content:
+            if block.type == "text":
+                raw_text = block.text
+                break
+
+        logger.debug(
+            "llm_raw_response",
+            agent=self.agent_name,
+            attempt=attempt,
+            response_length=len(raw_text),
+            stop_reason=response.stop_reason,
+            content_types=[b.type for b in response.content],
+            raw_text_preview=raw_text[:500] if raw_text else "<empty>",
+        )
+
+        if not raw_text.strip():
+            raise ValueError(
+                f"Empty text response from model "
+                f"(stop_reason={response.stop_reason}, "
+                f"content_types={[b.type for b in response.content]})"
+            )
+
+        return raw_text, response.usage
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
