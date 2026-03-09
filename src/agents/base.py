@@ -103,7 +103,8 @@ class BaseExtractionAgent(ABC):
                     attempt=attempt,
                     raw_output_preview=raw_output[:300],
                 )
-                parsed = json.loads(raw_output)
+                cleaned = self._strip_code_fences(raw_output)
+                parsed = json.loads(cleaned)
 
                 # Check for abstention
                 if parsed.get("detected") is False:
@@ -160,9 +161,24 @@ class BaseExtractionAgent(ABC):
 
         raise RuntimeError("Extraction failed after retries")
 
+    @staticmethod
+    def _strip_code_fences(text: str) -> str:
+        """Remove markdown code fences (```json ... ```) wrapping JSON output."""
+        text = text.strip()
+        if text.startswith("```"):
+            # Strip opening ```json or ``` line
+            text = "\n".join(text.split("\n")[1:])
+            # Strip closing ```
+            text = text.rsplit("```", 1)[0].strip()
+        return text
+
     def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any]:
         """Make a single LLM API call. Returns (text, usage)."""
         system_prompt = self._resolve_system_prompt()
+        system_prompt += (
+            "\n\nReturn only raw JSON with no markdown formatting, "
+            "no code fences, and no preamble."
+        )
         if attempt > 0:
             system_prompt += (
                 "\n\nPREVIOUS ATTEMPT FAILED VALIDATION. "
