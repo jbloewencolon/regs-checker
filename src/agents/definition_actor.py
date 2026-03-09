@@ -24,7 +24,7 @@ You MUST co-extract:
 3. Any references to external frameworks or standards (e.g., NIST AI RMF, ISO standards)
 
 OUTPUT FORMAT:
-Return a single JSON object matching the DefinitionActorPayload schema. Include:
+Return a JSON object with a top-level "extractions" array. Each element includes:
 - term: The defined term
 - definition_text: The full definition
 - scope: Scope or applicability of the definition
@@ -32,6 +32,8 @@ Return a single JSON object matching the DefinitionActorPayload schema. Include:
 - actors: Array of {actor_name, actor_type, responsibilities}
 - framework_refs: Array of {framework_name, section_or_standard, relationship}
 - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+
+If the passage defines MULTIPLE terms, include one object per definition.
 
 If the passage contains NO extractable definition, return:
 {"detected": false, "reason": "explanation"}
@@ -45,6 +47,9 @@ CRITICAL RULES:
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all definitions, actor role mappings, and framework references from
 the following legislative passage.
+
+If there are multiple definitions, return each as a separate object in the
+"extractions" array.
 
 PASSAGE:
 ---

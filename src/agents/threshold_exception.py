@@ -25,7 +25,7 @@ Your task is to extract boundary conditions from legislative text:
   does NOT apply (e.g., "except for small businesses", "does not apply to research purposes")
 
 OUTPUT FORMAT:
-Return a single JSON object matching the ThresholdExceptionPayload schema. Include:
+Return a JSON object with a top-level "extractions" array. Each element includes:
 - threshold_type: Type of threshold (numeric, categorical, temporal, etc.)
 - threshold_value: The threshold value
 - threshold_unit: Unit of measurement if applicable
@@ -33,6 +33,8 @@ Return a single JSON object matching the ThresholdExceptionPayload schema. Inclu
 - applies_to_obligation: Which obligation this threshold modifies
 - exceptions: Array of {exception_type, description, conditions, scope}
 - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+
+If the passage contains MULTIPLE boundary conditions, include one object per condition.
 
 If the passage contains NO extractable thresholds or exceptions, return:
 {"detected": false, "reason": "explanation"}
@@ -46,6 +48,9 @@ CRITICAL RULES:
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all thresholds and exceptions from the following legislative passage.
 Identify boundary conditions that determine when obligations apply or don't apply.
+
+If there are multiple boundary conditions, return each as a separate object in
+the "extractions" array.
 
 PASSAGE:
 ---

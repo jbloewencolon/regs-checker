@@ -234,6 +234,16 @@ def run_extract(db, limit: int | None = None) -> dict:
     return run_extraction(db, limit=limit, on_progress=print)
 
 
+def run_evaluate() -> None:
+    """Run the evaluation harness against gold-standard fixtures and print report."""
+    from src.evaluation.harness import EvaluationHarness
+
+    harness = EvaluationHarness()
+    result = harness.run()
+    report = harness.print_report(result)
+    print(report)
+
+
 # ---------------------------------------------------------------------------
 # Known bad URL corrections — keyed by ingestion_job.id or (state_code, short_cite)
 # These are jobs where the Orrick tracker seeded the wrong URL or the original
@@ -420,7 +430,7 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "extract", "retry-failed", "fix-urls"],
+        choices=["manual", "orrick", "fetch", "extract", "evaluate", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
@@ -428,6 +438,7 @@ def main():
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
             "'extract' runs AI extraction agents on unprocessed passages, "
+            "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
             "'fix-urls' applies known URL corrections and data bug fixes"
         ),
@@ -479,6 +490,15 @@ def main():
             print(f"  Passages processed: {summary['records_processed']}")
             print(f"  Extractions created: {summary['total_extractions']}")
             print(f"  Failures:           {summary['records_failed']}")
+            tokens = summary.get("token_usage", {})
+            if tokens.get("total_calls"):
+                print(f"\nToken usage:")
+                print(f"  Input tokens:  {tokens['input_tokens']:,}")
+                print(f"  Output tokens: {tokens['output_tokens']:,}")
+                print(f"  Total tokens:  {tokens['total_tokens']:,}")
+                print(f"  API calls:     {tokens['total_calls']}")
+        elif args.mode == "evaluate":
+            run_evaluate()
         elif args.mode == "fix-urls":
             fixed = fix_known_bad_urls(db)
             print(f"\n{'=' * 60}")

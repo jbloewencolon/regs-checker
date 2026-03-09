@@ -23,7 +23,7 @@ enforcement mechanisms, because these are typically co-located in the same claus
 or adjacent clauses.
 
 OUTPUT FORMAT:
-Return a single JSON object matching the ObligationPayload schema. Include:
+Return a JSON object with a top-level "extractions" array. Each element includes:
 - subject: Who must comply (the regulated entity)
 - subject_normalized: Normalized category (e.g., "developer", "deployer", "operator")
 - modality: must / shall / may / should / prohibited
@@ -35,6 +35,8 @@ Return a single JSON object matching the ObligationPayload schema. Include:
 - timeline: Object with effective_date, compliance_deadline, sunset_date, phase_in_period, timeline_text
 - enforcement: Object with enforcing_body, penalty_type, penalty_description, private_right_of_action, enforcement_text
 - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+
+If the passage contains MULTIPLE obligations, include one object per obligation.
 
 If the passage contains NO extractable obligation, return:
 {"detected": false, "reason": "explanation"}
@@ -50,6 +52,9 @@ CRITICAL RULES:
 Co-extract any timeline information (effective dates, deadlines, sunset dates) and
 enforcement mechanisms (penalties, enforcing bodies, private rights of action) that
 are associated with each obligation.
+
+If there are multiple distinct obligations, return each as a separate object in the
+"extractions" array.
 
 PASSAGE:
 ---
