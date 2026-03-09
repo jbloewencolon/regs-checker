@@ -221,6 +221,98 @@ def run_fetch(db, limit: int | None = None) -> dict:
     return run_pending_ingestion(db, limit=limit, on_progress=print)
 
 
+# ---------------------------------------------------------------------------
+# Known bad URL corrections — keyed by ingestion_job.id or (state_code, short_cite)
+# These are jobs where the Orrick tracker seeded the wrong URL or the original
+# source is permanently dead and we have a known-good replacement.
+# ---------------------------------------------------------------------------
+_URL_FIXES: dict[str, str] = {
+    # Category B: legiscan.com 403s — replace with direct state legislature URLs
+    # (add entries as: "STATE-ShortCite": "https://direct-url" )
+    # Category C: dead links with known replacements
+    # NH bills: gencourt.state.nh.us is the working source
+    # NC bills: ncleg.gov direct PDF links
+    # NV bills: leg.state.nv.us NELIS system
+}
+
+
+def fix_known_bad_urls(db) -> int:
+    """Update ingestion job URLs using the _URL_FIXES map and fix known data bugs.
+
+    Also handles:
+      - Job #116: NY Algorithmic Pricing Disclosure Act had a CT URL (wrong state)
+    """
+    from src.db.models import DocumentFamily
+
+    fixed = 0
+
+    # --- Fix Job #116: wrong URL (CT URL for NY law) ---
+    job_116 = db.query(IngestionJob).filter_by(id=116).first()
+    if job_116 and job_116.fetch_url and "cga.ct.gov" in job_116.fetch_url:
+        # This job is for NY Algorithmic Pricing Disclosure Act but was seeded
+        # with a CT URL. Mark it as needing manual URL replacement.
+        dv = job_116.document_version
+        if dv and dv.family:
+            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+        else:
+            label = f"Job #{job_116.id}"
+        logger.warning(
+            "job_116_wrong_url",
+            job_id=116,
+            label=label,
+            current_url=job_116.fetch_url,
+            action="marked_failed_wrong_url",
+        )
+        job_116.status = IngestionStatus.failed
+        job_116.error_message = (
+            "DATA BUG: Orrick seeded CT URL for NY law. "
+            "Needs manual URL update to correct NY legislature link."
+        )
+        fixed += 1
+
+    # --- Apply _URL_FIXES map ---
+    for key, new_url in _URL_FIXES.items():
+        # Try by job ID first
+        if key.isdigit():
+            job = db.query(IngestionJob).filter_by(id=int(key)).first()
+        else:
+            # Try by "STATE-ShortCite"
+            parts = key.split("-", 1)
+            if len(parts) == 2:
+                state_code, short_cite = parts
+                job = (
+                    db.query(IngestionJob)
+                    .join(IngestionJob.document_version)
+                    .join(DocumentVersion.family)
+                    .join(DocumentFamily.source)
+                    .filter(
+                        Source.jurisdiction_code == state_code,
+                        DocumentFamily.short_cite == short_cite,
+                    )
+                    .first()
+                )
+            else:
+                continue
+
+        if job and job.fetch_url != new_url:
+            logger.info(
+                "url_fixed",
+                job_id=job.id,
+                old_url=job.fetch_url[:80],
+                new_url=new_url[:80],
+            )
+            job.fetch_url = new_url
+            if job.status == IngestionStatus.failed:
+                job.status = IngestionStatus.pending
+                job.error_message = None
+            fixed += 1
+
+    if fixed:
+        db.commit()
+    print(f"Fixed {fixed} job URLs.")
+    return fixed
+
+
 def retry_failed_jobs(db, error_filter: str | None = None) -> dict:
     """Re-queue failed ingestion jobs back to pending, then re-run them.
 
@@ -277,14 +369,15 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "retry-failed"],
+        choices=["manual", "orrick", "fetch", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
-            "'retry-failed' re-queues and retries failed jobs"
+            "'retry-failed' re-queues and retries failed jobs, "
+            "'fix-urls' applies known URL corrections and data bug fixes"
         ),
     )
     parser.add_argument(
@@ -327,6 +420,11 @@ def main():
             print(f"  Completed:       {summary['completed']}")
             print(f"  Failed:          {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
+        elif args.mode == "fix-urls":
+            fixed = fix_known_bad_urls(db)
+            print(f"\n{'=' * 60}")
+            print(f"URL fix complete: {fixed} jobs updated")
+            print("Run --mode retry-failed to re-process the fixed jobs.")
         elif args.mode == "retry-failed":
             summary = retry_failed_jobs(db, error_filter=args.error_filter)
             print(f"\n{'=' * 60}")
