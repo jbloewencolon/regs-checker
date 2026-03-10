@@ -11,8 +11,14 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
-    # Database (PostgreSQL)
+    # Database (PostgreSQL) — local development
     database_url: str = "postgresql://regs:regs@localhost:5432/regs_checker"
+
+    # Supabase — Regs Checker pipeline DB (extraction source)
+    supabase_url: str = ""
+
+    # Supabase — Policy Navigator product DB (sync target)
+    policy_navigator_url: str = ""
 
     # Object Storage (S3 / MinIO)
     s3_endpoint_url: str = "http://localhost:9000"
