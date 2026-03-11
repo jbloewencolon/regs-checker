@@ -742,6 +742,238 @@ def _run_batch_extraction(
     }
 
 
+def run_recovery_extraction(
+    db,
+    limit: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Re-extract passages that have partial results (some agents succeeded, others failed).
+
+    The original batch run dropped ~637 extractions due to Pydantic validation bugs
+    (int threshold_value, bare-string responsibilities). Those bugs are now fixed,
+    but the affected passages already have *some* extractions so the normal
+    ``run_extraction()`` query (``WHERE Extraction.id IS NULL``) skips them.
+
+    This function:
+      1. Finds passages with at least one extraction
+      2. Determines which agents SHOULD have run (keyword screening)
+      3. Checks which extraction types already exist
+      4. Re-runs only the missing agents
+
+    Args:
+        db: SQLAlchemy session
+        limit: Max passages to process (None = all)
+        on_progress: Optional callback for status messages
+
+    Returns:
+        Summary dict with counts.
+    """
+    from sqlalchemy import distinct, func as sqlfunc
+
+    agents = _get_agents()
+    token_usage = TokenUsageSummary()
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Step 1: Find all passages that HAVE extractions
+    records_with_extractions = (
+        db.execute(
+            select(
+                NormalizedSourceRecord.id,
+                sqlfunc.array_agg(distinct(Extraction.extraction_type)),
+            )
+            .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+            .group_by(NormalizedSourceRecord.id)
+        )
+        .all()
+    )
+
+    if not records_with_extractions:
+        _log("No passages with existing extractions found.")
+        return {"total_checked": 0, "gaps_found": 0, "extractions_created": 0}
+
+    _log(f"Checking {len(records_with_extractions)} passages for missing agent results...")
+
+    # Step 2: For each passage, determine gaps
+    gaps: list[tuple[int, list[str]]] = []  # (record_id, [missing_agent_names])
+
+    for record_id, existing_types_raw in records_with_extractions:
+        # existing_types_raw is an array of ExtractionType enum values
+        existing_types = set()
+        for t in existing_types_raw:
+            if isinstance(t, ExtractionType):
+                existing_types.add(t)
+            else:
+                try:
+                    existing_types.add(ExtractionType(t))
+                except ValueError:
+                    pass
+
+        # Load the record to check keyword signals
+        record = db.get(NormalizedSourceRecord, record_id)
+        if not record or len(record.text_content) < MIN_PASSAGE_LENGTH:
+            continue
+
+        # Which agents should have run?
+        expected_agents = _select_agents_for_passage(record.text_content, agents)
+
+        # Which agents' extraction types are missing?
+        missing_agents = []
+        for agent_name in expected_agents:
+            agent_types = AGENT_EXTRACTION_TYPES[agent_name]
+            # If NONE of this agent's types exist, the agent didn't produce results
+            if not any(t in existing_types for t in agent_types):
+                missing_agents.append(agent_name)
+
+        if missing_agents:
+            gaps.append((record_id, missing_agents))
+
+    if not gaps:
+        _log("No gaps found — all passages have complete extraction coverage.")
+        return {
+            "total_checked": len(records_with_extractions),
+            "gaps_found": 0,
+            "extractions_created": 0,
+        }
+
+    if limit:
+        gaps = gaps[:limit]
+
+    _log(f"Found {len(gaps)} passages with missing agent results. Re-extracting...")
+
+    # Count missing agents by type for reporting
+    agent_gap_counts: dict[str, int] = {}
+    for _, missing in gaps:
+        for agent_name in missing:
+            agent_gap_counts[agent_name] = agent_gap_counts.get(agent_name, 0) + 1
+    for agent_name, count in sorted(agent_gap_counts.items()):
+        _log(f"  {agent_name}: {count} passages missing")
+
+    # Step 3: Re-run missing agents
+    total_extractions = 0
+    errors = 0
+    existing_hashes: set[str] = set()
+
+    for i, (record_id, missing_agents) in enumerate(gaps):
+        record = db.get(NormalizedSourceRecord, record_id)
+        if not record:
+            continue
+
+        ctx = _build_context(db, record)
+        passage = MergedPassage(text=record.text_content, source_records=[record])
+
+        # Only run the missing agents
+        selected = {name: agents[name] for name in missing_agents if name in agents}
+
+        # Get parse quality
+        ingestion_job = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.document_version_id == record.document_version_id
+            )
+        ).first()
+        parse_quality = ingestion_job.parse_quality_score if ingestion_job else None
+
+        for agent_name, agent in selected.items():
+            content_hash = _content_hash(agent_name, record.text_content)
+            if content_hash in existing_hashes:
+                continue
+
+            try:
+                result = agent.extract(record.text_content, ctx)
+
+                if token_usage is not None:
+                    token_usage.add(result.input_tokens, result.output_tokens)
+
+                if result.abstention is not None:
+                    continue
+
+                existing_hashes.add(content_hash)
+                primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+                schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+
+                for item in result.extractions:
+                    try:
+                        evidence = item.get("evidence_spans", [])
+                        confidence = compute_confidence(
+                            schema_valid=True,
+                            evidence_spans=evidence,
+                            extraction_payload=item,
+                            schema_class=schema_class,
+                            parse_quality_score=parse_quality,
+                        )
+
+                        extraction = Extraction(
+                            source_record_id=record.id,
+                            extraction_type=primary_type,
+                            payload=item,
+                            evidence_spans=evidence,
+                            confidence_score=confidence.total_score,
+                            confidence_tier=ConfidenceTier(confidence.tier),
+                            review_status=ReviewStatus.pending,
+                            prompt_template_version=result.prompt_hash,
+                            model_id=result.model_id,
+                        )
+                        db.add(extraction)
+                        db.flush()
+
+                        db.add(ReviewQueueItem(
+                            extraction_id=extraction.id,
+                            priority=_confidence_to_priority(confidence.tier),
+                            status=ReviewStatus.pending,
+                        ))
+                        total_extractions += 1
+
+                    except Exception as e:
+                        logger.error(
+                            "recovery_extraction_failed",
+                            agent=agent_name,
+                            record_id=record.id,
+                            error=str(e),
+                        )
+                        errors += 1
+
+            except Exception as e:
+                logger.error(
+                    "recovery_agent_error",
+                    agent=agent_name,
+                    record_id=record.id,
+                    error=str(e),
+                )
+                errors += 1
+
+        # Commit every 10 passages
+        if (i + 1) % 10 == 0:
+            db.commit()
+            _log(f"  {i + 1}/{len(gaps)} passages processed...")
+
+    db.commit()
+
+    _log(
+        f"\nRecovery complete:"
+        f"\n  Passages checked:    {len(records_with_extractions)}"
+        f"\n  Gaps found:          {len(gaps)}"
+        f"\n  Extractions created: {total_extractions}"
+        f"\n  Errors:              {errors}"
+        f"\n  Token usage:         {token_usage.total_tokens:,} tokens across {token_usage.total_calls} calls"
+    )
+
+    return {
+        "total_checked": len(records_with_extractions),
+        "gaps_found": len(gaps),
+        "extractions_created": total_extractions,
+        "errors": errors,
+        "token_usage": {
+            "input_tokens": token_usage.total_input_tokens,
+            "output_tokens": token_usage.total_output_tokens,
+            "total_tokens": token_usage.total_tokens,
+            "total_calls": token_usage.total_calls,
+        },
+    }
+
+
 def retrieve_batch_results(
     db,
     batch_id: str,

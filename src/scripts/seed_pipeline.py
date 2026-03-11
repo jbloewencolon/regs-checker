@@ -234,6 +234,13 @@ def run_extract(db, limit: int | None = None, batch: bool = False) -> dict:
     return run_extraction(db, limit=limit, on_progress=print, batch_mode=batch)
 
 
+def run_recover(db, limit: int | None = None) -> dict:
+    """Re-extract passages with partial results (missing agent outputs)."""
+    from src.ingestion.extractor import run_recovery_extraction
+
+    return run_recovery_extraction(db, limit=limit, on_progress=print)
+
+
 def run_batch_results(db, batch_id: str) -> dict:
     """Retrieve and process results from a completed Batch API run."""
     from src.ingestion.extractor import retrieve_batch_results
@@ -437,7 +444,7 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "extract", "batch-results", "evaluate", "retry-failed", "fix-urls"],
+        choices=["manual", "orrick", "fetch", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
@@ -445,6 +452,7 @@ def main():
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
             "'extract' runs AI extraction agents on unprocessed passages, "
+            "'recover' re-extracts passages with partial results (missing agents), "
             "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
@@ -526,6 +534,21 @@ def main():
                     print(f"  Output tokens: {tokens['output_tokens']:,}")
                     print(f"  Total tokens:  {tokens['total_tokens']:,}")
                     print(f"  API calls:     {tokens['total_calls']}")
+        elif args.mode == "recover":
+            summary = run_recover(db, limit=args.limit)
+            print(f"\n{'=' * 60}")
+            print("Recovery extraction complete:")
+            print(f"  Passages checked:    {summary['total_checked']}")
+            print(f"  Gaps found:          {summary['gaps_found']}")
+            print(f"  Extractions created: {summary['extractions_created']}")
+            print(f"  Errors:              {summary.get('errors', 0)}")
+            tokens = summary.get("token_usage", {})
+            if tokens.get("total_calls"):
+                print(f"\nToken usage:")
+                print(f"  Input tokens:  {tokens['input_tokens']:,}")
+                print(f"  Output tokens: {tokens['output_tokens']:,}")
+                print(f"  Total tokens:  {tokens['total_tokens']:,}")
+                print(f"  API calls:     {tokens['total_calls']}")
         elif args.mode == "batch-results":
             if not args.batch_id:
                 print("Error: --batch-id is required for batch-results mode", file=sys.stderr)

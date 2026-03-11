@@ -1,6 +1,6 @@
 # Engineering Handoff: Regs Checker Extraction Pipeline
 
-**Date:** 2026-03-10
+**Date:** 2026-03-11 (updated)
 **Branch:** `claude/define-leadership-structure-H5Jvc`
 **Session:** All work across PRs #9–#13 plus unmerged commits on the feature branch.
 
@@ -160,7 +160,7 @@ Local Docker PG                          Regs Checker Supabase          Policy N
 | Laws ingested | 180 |
 | Passages in Regs Checker Supabase | 9,182 |
 | Extractions in Regs Checker Supabase | 28,885 |
-| Extractions in Policy Navigator | 0 (first sync pending) |
+| Extractions in Policy Navigator | 28,885 (synced 2026-03-11) |
 | Default extraction model | `claude-haiku-4-5-20251001` |
 | Unit tests passing | 100/100 |
 
@@ -170,17 +170,17 @@ Local Docker PG                          Regs Checker Supabase          Policy N
 
 ### Immediate (before next extraction batch)
 
-1. **Run sync_monitor.py against live Supabase** — Verify the 40% Tier C and 65% ambiguity thresholds against actual data. If alerts fire, investigate before running more extraction batches.
+1. ~~**Run sync_monitor.py against live Supabase**~~ — **DONE (2026-03-11).** Zero sync lag, 28,885 in both databases.
 
-2. **Run sync_extractions.py** — First sync of 28,885 extractions from Regs Checker → Policy Navigator. Start with `--dry-run`, then live.
+2. ~~**Run sync_extractions.py**~~ — **DONE (2026-03-11).** First cross-system sync: 28,885 extractions, zero skipped, zero errors. Required fixing IPv6 connectivity (switched to Supabase connection pooler) and a schema mismatch between the sync script and the product table.
 
-3. **Merge this PR** — Commits `1594ba3` through `33511d3` are on the feature branch, not yet in main.
+3. **Merge this PR** — Feature branch has all work. Create PR and merge to main.
 
-4. **Set env vars** — `REGS_SUPABASE_URL` and `REGS_POLICY_NAVIGATOR_URL` need to be configured wherever the sync scripts run.
+4. ~~**Set env vars**~~ — **DONE.** Both Supabase URLs configured.
 
 ### Short-term
 
-5. **Re-run failed passages with fixed schemas** — The Pydantic coercion fixes (`threshold_value` int→str, `responsibilities` str→list) should recover the ~637 extractions that failed validation in the batch run. These need to be re-submitted through the extraction pipeline.
+5. **Recover 637 failed extractions** — Run `python -m src.scripts.seed_pipeline --mode recover`. This new mode finds passages with partial extraction coverage (some agents succeeded, others failed due to pre-fix Pydantic validation bugs) and re-runs only the missing agents. Test with `--limit 10` first.
 
 6. **Sonnet re-extraction for Tier C** — The pipeline defaults to Haiku for cost. Low-confidence (Tier C) extractions could be re-run with Sonnet (`REGS_EXTRACTION_MODEL=claude-sonnet-4-20250514`) for higher quality. This is a targeted re-run, not a full corpus pass.
 
