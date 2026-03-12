@@ -19,14 +19,14 @@ defs = dagster.Definitions(
             name="daily_ingestion",
             cron_schedule="0 6 * * *",
             target=dagster.AssetSelection.keys("ingested_documents"),
-            default_status=dagster.DefaultScheduleStatus.RUNNING,
+            default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
         # Weekly extraction: run agents on unprocessed passages every Monday 7 AM UTC
         dagster.ScheduleDefinition(
             name="weekly_extraction",
             cron_schedule="0 7 * * 1",
             target=dagster.AssetSelection.keys("extracted_obligations"),
-            default_status=dagster.DefaultScheduleStatus.RUNNING,
+            default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
         # Daily sync: push new extractions to Policy Navigator at 8 AM UTC
         dagster.ScheduleDefinition(
@@ -47,7 +47,7 @@ defs = dagster.Definitions(
             name="monthly_orrick_discovery",
             cron_schedule="0 0 1 * *",
             target=orrick_discovery_job,
-            default_status=dagster.DefaultScheduleStatus.RUNNING,
+            default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
     ],
 )
