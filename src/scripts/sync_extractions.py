@@ -44,6 +44,9 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from src.core.payload_adapter import adapt_payload_for_sync
+from src.core.sync_exclusions import is_excluded
+
 
 def _load_bridge(target_session) -> dict[int, int]:
     """Load law_document_bridge from Policy Navigator into memory.
@@ -199,6 +202,7 @@ def sync_extractions(
 
         # Build insert batches
         insert_batch = []
+        skipped_excluded = 0
 
         for row in rows:
             extraction_id = row["extraction_id"]
@@ -211,11 +215,25 @@ def sync_extractions(
                 max_id = max(max_id, extraction_id)
                 continue
 
+            # Check sync exclusion list (known bad law_ids)
+            if is_excluded(law_id):
+                skipped_excluded += 1
+                max_id = max(max_id, extraction_id)
+                continue
+
+            # Adapt payload to Policy Navigator's expected format
+            raw_payload = row["payload"]
+            if isinstance(raw_payload, str):
+                raw_payload = json.loads(raw_payload)
+            adapted_payload = adapt_payload_for_sync(
+                row["extraction_type"], raw_payload or {}
+            )
+
             insert_batch.append({
                 "system_a_extraction_id": extraction_id,
                 "law_id": law_id,
                 "extraction_type": row["extraction_type"],
-                "payload": _serialize_value(row["payload"]),
+                "payload": _serialize_value(adapted_payload),
                 "evidence_spans": _serialize_value(row["evidence_spans"]),
                 "confidence_score": row["confidence_score"],
                 "confidence_tier": row["confidence_tier"],
@@ -244,9 +262,10 @@ def sync_extractions(
         target_session.commit()
 
         print(f"\nSync complete:")
-        print(f"  Synced:            {synced}")
+        print(f"  Synced:              {synced}")
         print(f"  Skipped (no bridge): {skipped_no_bridge}")
-        print(f"  Cursor:            {cursor} → {max_id}")
+        print(f"  Skipped (excluded):  {skipped_excluded}")
+        print(f"  Cursor:              {cursor} → {max_id}")
 
         return {
             "cursor_start": cursor,
@@ -254,6 +273,7 @@ def sync_extractions(
             "source_pending": source_pending,
             "synced": synced,
             "skipped_no_bridge": skipped_no_bridge,
+            "skipped_excluded": skipped_excluded,
             "bridge_entries": len(bridge),
         }
 
