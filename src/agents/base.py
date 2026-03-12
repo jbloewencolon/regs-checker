@@ -19,12 +19,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-import anthropic
 import structlog
 from pydantic import BaseModel, ValidationError
 
 from src.agents.prompt_loader import load_prompt_template, render_prompt
 from src.core.config import settings
+from src.core.llm_provider import get_extraction_provider
 from src.schemas.extraction import AbstentionResult, EvidenceSpan
 
 logger = structlog.get_logger()
@@ -50,7 +50,7 @@ class BaseExtractionAgent(ABC):
     max_retries: int = 1
 
     def __init__(self) -> None:
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._provider = get_extraction_provider()
         self._template = load_prompt_template(self.agent_name)
 
     @abstractmethod
@@ -114,7 +114,7 @@ class BaseExtractionAgent(ABC):
                         input_tokens=usage.input_tokens,
                         output_tokens=usage.output_tokens,
                         prompt_hash=prompt_hash,
-                        model_id=settings.extraction_model,
+                        model_id=self._provider.model_id,
                         template_version=template_version,
                     )
 
@@ -134,7 +134,7 @@ class BaseExtractionAgent(ABC):
                     result = validated.model_dump(by_alias=True)
                     result["evidence_spans"] = verified_spans
                     result["_prompt_hash"] = prompt_hash
-                    result["_model_id"] = settings.extraction_model
+                    result["_model_id"] = self._provider.model_id
                     result["_template_version"] = template_version
                     validated_extractions.append(result)
 
@@ -173,7 +173,10 @@ class BaseExtractionAgent(ABC):
         return text
 
     def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any]:
-        """Make a single LLM API call. Returns (text, usage)."""
+        """Make a single LLM API call via the provider abstraction.
+
+        Returns (text, usage) where usage is an LLMUsage dataclass.
+        """
         system_prompt = self._resolve_system_prompt()
         system_prompt += (
             "\n\nReturn only raw JSON with no markdown formatting, "
@@ -186,39 +189,24 @@ class BaseExtractionAgent(ABC):
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
-        response = self.client.messages.create(
-            model=settings.extraction_model,
+        response = self._provider.call(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
             max_tokens=settings.extraction_max_tokens,
             temperature=settings.extraction_temperature,
-            system=system_prompt,
-            messages=[{"role": "user", "content": prompt}],
         )
-
-        # Extract text from the first text block, skipping non-text blocks
-        raw_text = ""
-        for block in response.content:
-            if block.type == "text":
-                raw_text = block.text
-                break
 
         logger.debug(
             "llm_raw_response",
             agent=self.agent_name,
             attempt=attempt,
-            response_length=len(raw_text),
+            response_length=len(response.text),
             stop_reason=response.stop_reason,
-            content_types=[b.type for b in response.content],
-            raw_text_preview=raw_text[:500] if raw_text else "<empty>",
+            model_id=response.model_id,
+            raw_text_preview=response.text[:500] if response.text else "<empty>",
         )
 
-        if not raw_text.strip():
-            raise ValueError(
-                f"Empty text response from model "
-                f"(stop_reason={response.stop_reason}, "
-                f"content_types={[b.type for b in response.content]})"
-            )
-
-        return raw_text, response.usage
+        return response.text, response.usage
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
