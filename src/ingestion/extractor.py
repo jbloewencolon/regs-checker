@@ -48,6 +48,10 @@ from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.confidence import compute_confidence
+from src.core.jurisdiction_check import (
+    JurisdictionMismatch,
+    validate_extraction_jurisdiction,
+)
 from src.db.models import (
     ConfidenceTier,
     Extraction,
@@ -192,6 +196,45 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
     return ctx
 
 
+def _check_jurisdiction(db, record: NormalizedSourceRecord, passage_text: str) -> bool:
+    """Run jurisdiction cross-check before extraction.
+
+    Returns True if the passage passes validation, False if it should be skipped.
+    Logs a warning on mismatch rather than raising, so the pipeline continues
+    processing other passages.
+    """
+    dv = record.document_version
+    if not dv or not dv.family or not dv.family.source:
+        return True  # No metadata to check against
+
+    source = dv.family.source
+    expected_jurisdiction = source.jurisdiction_code
+
+    try:
+        result = validate_extraction_jurisdiction(
+            expected_jurisdiction=expected_jurisdiction,
+            source_jurisdiction=expected_jurisdiction,  # same for metadata
+            passage_text=passage_text,
+            document_family_id=dv.family.id,
+            strict=False,
+        )
+        if not result["valid"]:
+            logger.warning(
+                "extraction_skipped_jurisdiction_mismatch",
+                record_id=record.id,
+                family_id=dv.family.id,
+                expected=result["expected"],
+                detected=result["detected"],
+                method=result["method"],
+                reason=result["reason"],
+            )
+            return False
+        return True
+    except Exception as e:
+        logger.error("jurisdiction_check_error", record_id=record.id, error=str(e))
+        return True  # Fail open — don't block extraction on check errors
+
+
 def _content_hash(agent_name: str, text: str) -> str:
     """Compute a deduplication hash for (agent, passage_text)."""
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
@@ -314,6 +357,10 @@ def extract_single_record(
     record = passage.primary_record
     ctx = _build_context(db, record)
     extractions_created = 0
+
+    # Jurisdiction cross-check: skip if document state doesn't match law state
+    if not _check_jurisdiction(db, record, passage.text):
+        return 0
 
     # Select agents based on passage content
     selected_agents = _select_agents_for_passage(passage.text, agents)
