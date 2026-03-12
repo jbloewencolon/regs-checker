@@ -4,6 +4,7 @@ import dagster
 
 from src.dagster_pipelines.assets import (
     bridge_gap_report,
+    discovered_legislation,
     extracted_obligations,
     ingested_documents,
     synced_extractions,
@@ -11,7 +12,7 @@ from src.dagster_pipelines.assets import (
 from src.dagster_pipelines.jobs import orrick_discovery_job
 
 defs = dagster.Definitions(
-    assets=[ingested_documents, extracted_obligations, synced_extractions, bridge_gap_report],
+    assets=[discovered_legislation, ingested_documents, extracted_obligations, synced_extractions, bridge_gap_report],
     jobs=[orrick_discovery_job],
     schedules=[
         # Daily ingestion: process any pending ingestion jobs at 6 AM UTC
@@ -40,6 +41,13 @@ defs = dagster.Definitions(
             name="weekly_bridge_gap_check",
             cron_schedule="0 9 * * 1",
             target=dagster.AssetSelection.keys("bridge_gap_report"),
+            default_status=dagster.DefaultScheduleStatus.STOPPED,
+        ),
+        # Weekly AI bill classification: classify candidate URLs every Monday 5 AM UTC
+        dagster.ScheduleDefinition(
+            name="weekly_bill_classification",
+            cron_schedule="0 5 * * 1",
+            target=dagster.AssetSelection.keys("discovered_legislation"),
             default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
         # Monthly discovery: scrape Orrick AI tracker on the 1st at midnight UTC

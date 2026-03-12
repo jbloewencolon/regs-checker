@@ -27,11 +27,20 @@ class Settings(BaseSettings):
     s3_bucket_raw: str = "raw-artifacts"
     s3_bucket_processed: str = "processed-artifacts"
 
+    # LLM Provider routing
+    llm_provider: str = "anthropic"  # Default provider: "anthropic" or "local"
+    discovery_provider: str = "local"  # Provider for discovery tasks
+    extraction_provider: str = "anthropic"  # Provider for extraction tasks
+
     # Anthropic API
     anthropic_api_key: str = ""
     extraction_model: str = "claude-haiku-4-5-20251001"
     extraction_temperature: float = 0.0
     extraction_max_tokens: int = 8192
+
+    # Local LLM (OpenAI-compatible API: llama.cpp, vLLM, Ollama)
+    local_llm_url: str = ""  # e.g. http://localhost:8080
+    local_llm_model: str = "llama-3.1-8b"  # Model name for local server
 
     # FastAPI
     api_host: str = "0.0.0.0"

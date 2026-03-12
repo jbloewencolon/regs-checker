@@ -1,11 +1,12 @@
-"""Dagster asset definitions for the ingestion, extraction, and sync pipeline.
+"""Dagster asset definitions for the discovery, ingestion, extraction, and sync pipeline.
 
 Follows Dagster's asset-based lineage model. Each asset represents a
 materialized stage in the pipeline with full dependency tracking.
 
 Assets:
+  - discovered_legislation: Classify and extract metadata from candidate bills (local LLM)
   - ingested_documents: Fetch + parse documents into passages
-  - extracted_obligations: Run AI extraction agents on passages
+  - extracted_obligations: Run AI extraction agents on passages (Anthropic Haiku)
   - synced_extractions: Sync extractions to Policy Navigator DB
   - bridge_gap_report: Detect document families without bridge rows
 """
@@ -26,6 +27,130 @@ from src.ingestion.extractor import run_extraction
 from src.ingestion.pipeline import process_single_job
 
 logger = structlog.get_logger()
+
+
+@dagster.asset(
+    description="Classify candidate bills and extract metadata using local LLM",
+    group_name="discovery",
+)
+def discovered_legislation(context: dagster.AssetExecutionContext) -> dict:
+    """Use local LLM (Llama 3.1 8B) to classify and extract metadata from candidate bills.
+
+    Scans the candidate_urls table for unprocessed URLs, fetches their content,
+    and uses the discovery agent to:
+      1. Classify whether the text is AI-related legislation
+      2. Extract structured metadata (title, jurisdiction, bill number, etc.)
+
+    Bills that pass classification are flagged for ingestion.
+    Returns a summary dict with counts of classified and accepted bills.
+    """
+    from src.agents.discovery import DiscoveryAgent
+
+    db = SessionLocal()
+    try:
+        # Query for unprocessed candidate URLs
+        from sqlalchemy import text
+
+        candidates = db.execute(
+            text(
+                "SELECT id, url, raw_text FROM candidate_urls "
+                "WHERE classification_status = 'pending' "
+                "ORDER BY created_at LIMIT 100"
+            )
+        ).mappings().all()
+
+        if not candidates:
+            context.log.info("No pending candidate URLs to classify")
+            return {"classified": 0, "accepted": 0, "rejected": 0}
+
+        agent = DiscoveryAgent()
+        accepted = 0
+        rejected = 0
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        for candidate in candidates:
+            raw_text = candidate["raw_text"]
+            if not raw_text or len(raw_text.strip()) < 100:
+                db.execute(
+                    text(
+                        "UPDATE candidate_urls SET classification_status = 'rejected', "
+                        "classification_reason = 'too_short' WHERE id = :id"
+                    ),
+                    {"id": candidate["id"]},
+                )
+                rejected += 1
+                continue
+
+            result = agent.classify_bill(raw_text)
+            total_input_tokens += result.input_tokens
+            total_output_tokens += result.output_tokens
+
+            if result.is_ai_legislation and result.confidence >= 0.7:
+                # Extract metadata for accepted bills
+                metadata = agent.extract_metadata(raw_text)
+                total_input_tokens += metadata.input_tokens
+                total_output_tokens += metadata.output_tokens
+
+                db.execute(
+                    text(
+                        "UPDATE candidate_urls SET "
+                        "classification_status = 'accepted', "
+                        "classification_confidence = :confidence, "
+                        "classification_reason = :reasoning, "
+                        "extracted_title = :title, "
+                        "extracted_jurisdiction = :jurisdiction, "
+                        "extracted_bill_number = :bill_number "
+                        "WHERE id = :id"
+                    ),
+                    {
+                        "id": candidate["id"],
+                        "confidence": result.confidence,
+                        "reasoning": result.reasoning,
+                        "title": metadata.title,
+                        "jurisdiction": metadata.jurisdiction_code,
+                        "bill_number": metadata.bill_number,
+                    },
+                )
+                accepted += 1
+            else:
+                db.execute(
+                    text(
+                        "UPDATE candidate_urls SET "
+                        "classification_status = 'rejected', "
+                        "classification_confidence = :confidence, "
+                        "classification_reason = :reasoning "
+                        "WHERE id = :id"
+                    ),
+                    {
+                        "id": candidate["id"],
+                        "confidence": result.confidence,
+                        "reasoning": result.reasoning,
+                    },
+                )
+                rejected += 1
+
+        db.commit()
+
+        context.log.info(
+            f"Discovery complete: {len(candidates)} candidates processed, "
+            f"{accepted} accepted, {rejected} rejected, "
+            f"tokens: {total_input_tokens} in / {total_output_tokens} out"
+        )
+
+        return {
+            "classified": len(candidates),
+            "accepted": accepted,
+            "rejected": rejected,
+            "input_tokens": total_input_tokens,
+            "output_tokens": total_output_tokens,
+        }
+    except Exception as e:
+        db.rollback()
+        context.log.error(f"Discovery failed: {e}")
+        raise
+    finally:
+        db.close()
 
 
 @dagster.asset(

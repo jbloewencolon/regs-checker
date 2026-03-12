@@ -187,8 +187,8 @@ class TestConfidenceToPriority:
 class TestBaseAgentTemplateIntegration:
     """Test that agents correctly resolve prompts from templates vs inline."""
 
-    @patch("src.agents.base.anthropic.Anthropic")
-    def test_obligation_agent_uses_template(self, mock_anthropic):
+    @patch("src.agents.base.get_extraction_provider")
+    def test_obligation_agent_uses_template(self, mock_get_provider):
         """ObligationAgent should load its template and use it."""
         load_prompt_template.cache_clear()
         from src.agents.obligation import ObligationAgent
@@ -196,8 +196,8 @@ class TestBaseAgentTemplateIntegration:
         assert agent._template is not None
         assert agent._template["version"] == "1.0"
 
-    @patch("src.agents.base.anthropic.Anthropic")
-    def test_system_prompt_from_template(self, mock_anthropic):
+    @patch("src.agents.base.get_extraction_provider")
+    def test_system_prompt_from_template(self, mock_get_provider):
         """System prompt should come from template when available."""
         load_prompt_template.cache_clear()
         from src.agents.obligation import ObligationAgent
@@ -205,8 +205,8 @@ class TestBaseAgentTemplateIntegration:
         prompt = agent._resolve_system_prompt()
         assert "extractions" in prompt.lower() or "obligation" in prompt.lower()
 
-    @patch("src.agents.base.anthropic.Anthropic")
-    def test_extraction_prompt_renders_context(self, mock_anthropic):
+    @patch("src.agents.base.get_extraction_provider")
+    def test_extraction_prompt_renders_context(self, mock_get_provider):
         """Extraction prompt should render passage and context variables."""
         load_prompt_template.cache_clear()
         from src.agents.obligation import ObligationAgent
