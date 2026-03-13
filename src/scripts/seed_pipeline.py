@@ -13,6 +13,18 @@ Usage:
     # Fetch with a limit (useful for testing):
     python -m src.scripts.seed_pipeline --mode fetch --limit 5
 
+    # === PRIMARY EXTRACTION WORKFLOW (Claude Code — $0 extra) ===
+
+    # Export passages for Claude Code/Chat extraction:
+    python -m src.scripts.seed_pipeline --mode export-passages
+    python -m src.scripts.seed_pipeline --mode export-passages --limit 30 --batch-size 10
+
+    # Import Claude's JSON responses back into the database:
+    python -m src.scripts.seed_pipeline --mode import-extractions
+    python -m src.scripts.seed_pipeline --mode import-extractions --input export/batch_001_results.json
+
+    # === SECONDARY EXTRACTION WORKFLOW (API — costs money) ===
+
     # Run AI extraction on all unprocessed passages:
     python -m src.scripts.seed_pipeline --mode extract
 
@@ -444,14 +456,16 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
+        choices=["manual", "orrick", "fetch", "export-passages", "import-extractions", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
             "'orrick' scrapes Orrick tracker, "
             "'fetch' processes all pending ingestion jobs, "
-            "'extract' runs AI extraction agents on unprocessed passages, "
+            "'export-passages' exports unprocessed passages for Claude Code (PRIMARY), "
+            "'import-extractions' imports JSON results from Claude Code (PRIMARY), "
+            "'extract' runs AI extraction agents via API (SECONDARY — costs money), "
             "'recover' re-extracts passages with partial results (missing agents), "
             "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
@@ -483,6 +497,18 @@ def main():
         default=None,
         help="Only retry failed jobs matching this substring (e.g. '403', 'SSL', 'timeout')",
     )
+    parser.add_argument(
+        "--input",
+        type=str,
+        default=None,
+        help="Input JSON file for import-extractions mode (default: all export/batch_*_results.json)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=15,
+        help="Passages per export file in export-passages mode (default: 15)",
+    )
     args = parser.parse_args()
 
     db = SessionLocal()
@@ -511,6 +537,12 @@ def main():
             print(f"  Completed:       {summary['completed']}")
             print(f"  Failed:          {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
+        elif args.mode == "export-passages":
+            from src.scripts.manual_extraction import export_passages
+            export_passages(db, limit=args.limit, batch_size=args.batch_size)
+        elif args.mode == "import-extractions":
+            from src.scripts.manual_extraction import import_extractions
+            import_extractions(db, input_path=args.input)
         elif args.mode == "extract":
             summary = run_extract(db, limit=args.limit, batch=args.batch)
             print(f"\n{'=' * 60}")
