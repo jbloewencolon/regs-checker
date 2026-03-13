@@ -1,0 +1,332 @@
+{% extends "layout.html" %}
+{% set title = "Pipeline Dashboard" %}
+
+{% block content %}
+<div class="pipeline">
+  <h2>Extraction Pipeline</h2>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot auto"></div>
+      <span><strong>Automated</strong> — runs with one click, no input needed</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot manual"></div>
+      <span><strong>Your Action</strong> — needs you to copy/paste or review</span>
+    </div>
+  </div>
+
+  <div class="step-list">
+
+    <!-- ============================================================ -->
+    <!-- STEP 1: Discovery -->
+    <!-- ============================================================ -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">1</div>
+        <div class="step-title">Find New AI Laws</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-description">
+        Scrapes the Orrick AI Law Tracker for new state AI bills.
+        Adds them to the database for processing.
+        <br><em>Uses: web scraping (no AI, no cost)</em>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-primary"
+                hx-post="/dashboard/api/run/orrick-discovery"
+                hx-target="#step1-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Scan for New Laws</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Scanning...</span>
+        </button>
+      </div>
+      <div class="step-status" id="step1-result">
+        {% if stats.pending_ingestion > 0 %}
+        <span class="count">{{ stats.pending_ingestion }}</span> laws waiting to be fetched
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 2: Fetch & Parse -->
+    <!-- ============================================================ -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">2</div>
+        <div class="step-title">Fetch & Parse Documents</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-description">
+        Downloads bill PDFs/HTML from state legislature websites,
+        extracts the text, and splits it into passages for analysis.
+        <br><em>Uses: web requests + PDF parsing (no AI, no cost)</em>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-primary"
+                hx-post="/dashboard/api/run/fetch"
+                hx-target="#step2-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Fetch All Pending</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Fetching...</span>
+        </button>
+        <button class="btn"
+                hx-post="/dashboard/api/run/fetch?limit=5"
+                hx-target="#step2-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Fetch 5 (Test)</span>
+          <span class="htmx-indicator"><span class="spinner"></span></span>
+        </button>
+      </div>
+      <div class="step-status" id="step2-result">
+        {% if stats.total_passages > 0 %}
+        <span class="count">{{ stats.total_passages }}</span> passages in database
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 3: Export Passages -->
+    <!-- ============================================================ -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">3</div>
+        <div class="step-title">Prepare Passages for Extraction</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-description">
+        Bundles unprocessed passages into text files with instructions.
+        Each file contains ~15 passages ready to paste into Claude.
+        <br><em>Creates files in the <code>export/</code> folder</em>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-primary"
+                hx-post="/dashboard/api/run/export-passages"
+                hx-target="#step3-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Export Passages</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Exporting...</span>
+        </button>
+        <button class="btn"
+                hx-post="/dashboard/api/run/export-passages?limit=15"
+                hx-target="#step3-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Export 15 (Test)</span>
+          <span class="htmx-indicator"><span class="spinner"></span></span>
+        </button>
+      </div>
+      <div class="step-status" id="step3-result">
+        {% if stats.unprocessed_passages > 0 %}
+        <span class="count">{{ stats.unprocessed_passages }}</span> passages waiting for extraction
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 4: Claude Code Extraction (MANUAL) -->
+    <!-- ============================================================ -->
+    <div class="step" style="border-color: var(--manual-text); border-width: 2px;">
+      <div class="step-header">
+        <div class="step-number manual">4</div>
+        <div class="step-title">Extract with Claude</div>
+        <span class="step-badge manual">Your Action</span>
+      </div>
+      <div class="step-description">
+        Open each exported batch file, paste the contents into
+        <strong>Claude Code</strong> or <strong>Claude Chat</strong>,
+        and save the JSON response.
+        This is the core analysis step — Claude reads each passage and
+        extracts obligations, definitions, thresholds, and ambiguities.
+      </div>
+      <div class="step-actions" style="flex-direction: column; align-items: flex-start; gap: 16px;">
+        <div>
+          <strong style="font-size: 14px;">How to do this:</strong>
+          <ol style="margin: 8px 0 0 20px; font-size: 14px; color: var(--text-muted); line-height: 2;">
+            <li>Open a file from the <code>export/</code> folder (e.g., <code>batch_001.txt</code>)</li>
+            <li>Copy all the text in that file</li>
+            <li>Paste it into Claude Code or Claude Chat</li>
+            <li>Wait for Claude's response (a JSON array)</li>
+            <li>Save the JSON response as <code>export/batch_001_results.json</code></li>
+            <li>Repeat for each batch file</li>
+          </ol>
+        </div>
+
+        {% if export_files %}
+        <div style="width: 100%;">
+          <strong style="font-size: 14px;">Batch files ready for extraction:</strong>
+          <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for file in export_files %}
+            <span class="btn btn-sm"
+                  style="cursor: default; {% if file.has_result %}background: var(--success-bg); color: #166534;{% endif %}">
+              {{ file.name }}
+              {% if file.has_result %} &#10003;{% endif %}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 5: Import Results -->
+    <!-- ============================================================ -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">5</div>
+        <div class="step-title">Import Extraction Results</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-description">
+        Reads the JSON files you saved from Claude, validates each extraction,
+        verifies that quoted evidence actually appears in the source text,
+        and saves everything to the database with confidence scores.
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-primary"
+                hx-post="/dashboard/api/run/import-extractions"
+                hx-target="#step5-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Import All Results</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Importing...</span>
+        </button>
+      </div>
+      <div class="step-status" id="step5-result">
+        {% if stats.pending_results > 0 %}
+        <span class="count">{{ stats.pending_results }}</span> result files ready to import
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 6: Review (MANUAL) -->
+    <!-- ============================================================ -->
+    <div class="step" style="border-color: var(--manual-text); border-width: 2px;">
+      <div class="step-header">
+        <div class="step-number manual">6</div>
+        <div class="step-title">Review Extractions</div>
+        <span class="step-badge manual">Your Action</span>
+      </div>
+      <div class="step-description">
+        Browse the extracted obligations, definitions, and other data.
+        Approve good extractions, reject bad ones, or flag items that need revision.
+        Focus on <strong>Tier C and D</strong> items (lower confidence).
+      </div>
+
+      {% if stats.pending_review > 0 %}
+      <div class="step-status">
+        <span class="count">{{ stats.pending_review }}</span> items awaiting review
+        {% if stats.review_by_tier %}
+          ({{ stats.review_by_tier.get('A', 0) }} Tier A,
+           {{ stats.review_by_tier.get('B', 0) }} Tier B,
+           {{ stats.review_by_tier.get('C', 0) }} Tier C,
+           {{ stats.review_by_tier.get('D', 0) }} Tier D)
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="step-actions">
+        <a href="/dashboard/review" class="btn btn-primary">
+          Open Review Queue
+        </a>
+      </div>
+    </div>
+
+    <div class="step-connector">&#8595;</div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 7: Sync to Policy Navigator -->
+    <!-- ============================================================ -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">7</div>
+        <div class="step-title">Sync to Policy Navigator</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-description">
+        Pushes approved extractions to the US Policy Navigator database
+        so they appear in the product. Only syncs approved items with valid
+        bridge mappings.
+        <br><em>Requires both Supabase connections configured</em>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn-success"
+                hx-post="/dashboard/api/run/sync"
+                hx-target="#step7-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this"
+                hx-confirm="This will push data to the Policy Navigator database. Continue?">
+          <span class="btn-label">Sync to Policy Navigator</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Syncing...</span>
+        </button>
+        <button class="btn"
+                hx-post="/dashboard/api/run/bridge-check"
+                hx-target="#step7-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Check Bridge Gaps</span>
+          <span class="htmx-indicator"><span class="spinner"></span></span>
+        </button>
+      </div>
+      <div class="step-status" id="step7-result">
+        {% if stats.total_extractions > 0 %}
+        <span class="count">{{ stats.total_extractions }}</span> total extractions,
+        <span class="count">{{ stats.approved_extractions }}</span> approved
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- Secondary: API Extraction (collapsed by default) -->
+<!-- ============================================================ -->
+<div class="pipeline" style="margin-top: 40px; padding-top: 24px; border-top: 2px dashed var(--border);">
+  <h2 style="color: var(--text-muted); font-size: 15px;">
+    Alternative: API Extraction
+    <span style="font-weight: 400; font-size: 13px;">(costs money — uses Anthropic API)</span>
+  </h2>
+  <div class="step" style="opacity: 0.7;">
+    <div class="step-header">
+      <div class="step-number auto" style="background: #f1f5f9; color: #64748b;">$</div>
+      <div class="step-title" style="color: var(--text-muted);">Run API Extraction</div>
+      <span class="step-badge auto" style="background: #f1f5f9; color: #64748b;">Paid</span>
+    </div>
+    <div class="step-description">
+      Sends passages directly to the Anthropic API for automated extraction.
+      Faster but costs ~$0.02-0.05 per bill. Use this when you have many documents
+      and want unattended processing.
+    </div>
+    <div class="step-actions">
+      <button class="btn"
+              hx-post="/dashboard/api/run/extract?limit=10"
+              hx-target="#api-extract-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="this"
+              hx-confirm="This will make paid API calls to Anthropic. Extract 10 passages?">
+        <span class="btn-label">Extract 10 (API)</span>
+        <span class="htmx-indicator"><span class="spinner"></span></span>
+      </button>
+    </div>
+    <div class="step-status" id="api-extract-result"></div>
+  </div>
+</div>
+
+{% endblock %}
