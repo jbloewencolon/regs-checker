@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+{% set title = "Review Queue" %}
+
+{% block content %}
+<div class="pipeline">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Review Queue</h2>
+    <a href="/dashboard" class="btn btn-sm">&larr; Back to Pipeline</a>
+  </div>
+
+  <div class="tabs">
+    <button class="tab {% if filter_status == 'pending' %}active{% endif %}"
+            hx-get="/dashboard/review?status=pending" hx-target="main" hx-push-url="true">
+      Pending ({{ counts.get('pending', 0) }})
+    </button>
+    <button class="tab {% if filter_status == 'approved' %}active{% endif %}"
+            hx-get="/dashboard/review?status=approved" hx-target="main" hx-push-url="true">
+      Approved ({{ counts.get('approved', 0) }})
+    </button>
+    <button class="tab {% if filter_status == 'rejected' %}active{% endif %}"
+            hx-get="/dashboard/review?status=rejected" hx-target="main" hx-push-url="true">
+      Rejected ({{ counts.get('rejected', 0) }})
+    </button>
+  </div>
+
+  {% if items %}
+  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+    <table class="review-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;">Tier</th>
+          <th>Type</th>
+          <th>Summary</th>
+          <th>Document</th>
+          <th style="width: 100px;">Score</th>
+          <th style="width: 160px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <span class="tier-badge tier-{{ item.confidence_tier }}">
+              {{ item.confidence_tier }}
+            </span>
+          </td>
+          <td>{{ item.extraction_type }}</td>
+          <td style="max-width: 300px;">
+            <div style="font-size: 13px;">
+              {% if item.extraction_type == 'obligation' %}
+                <strong>{{ item.payload.get('subject', '?') }}</strong>
+                {{ item.payload.get('modality', '') }}
+                {{ item.payload.get('action', '')[:80] }}
+              {% elif item.extraction_type == 'definition' %}
+                <strong>{{ item.payload.get('term', '?') }}</strong>:
+                {{ item.payload.get('definition_text', '')[:80] }}
+              {% elif item.extraction_type == 'threshold' %}
+                {{ item.payload.get('threshold_condition', item.payload.get('threshold_type', '?'))[:80] }}
+              {% elif item.extraction_type == 'ambiguity' %}
+                {{ item.payload.get('ambiguous_text', '?')[:80] }}
+              {% else %}
+                {{ item.payload | string | truncate(80) }}
+              {% endif %}
+            </div>
+          </td>
+          <td style="font-size: 13px; color: var(--text-muted);">
+            {{ item.jurisdiction_code or '?' }} — {{ item.short_cite or '' }}
+          </td>
+          <td>
+            <span style="font-weight: 600;">{{ "%.0f" | format(item.confidence_score * 100) }}%</span>
+          </td>
+          <td>
+            {% if item.review_status == 'pending' %}
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-sm btn-success"
+                      hx-post="/dashboard/api/review/{{ item.queue_id }}/approve"
+                      hx-target="closest tr"
+                      hx-swap="outerHTML"
+                      title="Approve">&#10003;</button>
+              <button class="btn btn-sm"
+                      hx-post="/dashboard/api/review/{{ item.queue_id }}/reject"
+                      hx-target="closest tr"
+                      hx-swap="outerHTML"
+                      title="Reject"
+                      style="color: var(--danger);">&#10007;</button>
+              <a href="/dashboard/review/{{ item.queue_id }}" class="btn btn-sm" title="View details">&#8230;</a>
+            </div>
+            {% else %}
+            <span style="font-size: 13px; color: var(--text-muted);">
+              {{ item.review_status }}
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+    {% for p in range(1, total_pages + 1) %}
+    <a href="/dashboard/review?status={{ filter_status }}&page={{ p }}"
+       class="btn btn-sm {% if p == current_page %}btn-primary{% endif %}">
+      {{ p }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="result-panel info">
+    No {{ filter_status }} items in the review queue.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
