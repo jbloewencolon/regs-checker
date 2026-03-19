@@ -57,13 +57,19 @@ class BaseLLMProvider(ABC):
         user_prompt: str,
         max_tokens: int = 8192,
         temperature: float = 0.0,
+        model_override: str | None = None,
     ) -> LLMResponse:
-        """Make a single LLM call. Returns provider-agnostic response."""
+        """Make a single LLM call. Returns provider-agnostic response.
+
+        Args:
+            model_override: If provided, use this model instead of the default.
+                            Supported by LocalLLMProvider; ignored by AnthropicProvider.
+        """
 
     @property
     @abstractmethod
     def model_id(self) -> str:
-        """Return the model identifier for tracking."""
+        """Return the default model identifier for tracking."""
 
 
 class AnthropicProvider(BaseLLMProvider):
@@ -85,7 +91,10 @@ class AnthropicProvider(BaseLLMProvider):
         user_prompt: str,
         max_tokens: int = 8192,
         temperature: float = 0.0,
+        model_override: str | None = None,
     ) -> LLMResponse:
+        # model_override is accepted for interface compatibility but ignored;
+        # Anthropic models are selected via settings.extraction_model.
         response = self._client.messages.create(
             model=self._model,
             max_tokens=max_tokens,
@@ -165,11 +174,14 @@ class LocalLLMProvider(BaseLLMProvider):
         user_prompt: str,
         max_tokens: int = 4096,
         temperature: float = 0.0,
+        model_override: str | None = None,
     ) -> LLMResponse:
         import httpx
 
+        effective_model = model_override or self._model
+
         payload = {
-            "model": self._model,
+            "model": effective_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -201,12 +213,14 @@ class LocalLLMProvider(BaseLLMProvider):
         if not text or not text.strip():
             raise ValueError(
                 f"Empty response from local LLM "
-                f"(finish_reason={finish_reason}, model={self._model})"
+                f"(finish_reason={finish_reason}, model={effective_model})"
             )
+
+        effective_model_id = f"local:{effective_model}"
 
         logger.debug(
             "local_llm_response",
-            model=self._model,
+            model=effective_model,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             finish_reason=finish_reason,
@@ -216,7 +230,7 @@ class LocalLLMProvider(BaseLLMProvider):
         return LLMResponse(
             text=text,
             usage=usage,
-            model_id=self.model_id,
+            model_id=effective_model_id,
             stop_reason=finish_reason,
         )
 

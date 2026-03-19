@@ -9,12 +9,14 @@ Implements the simplified extraction pipeline:
   - Multi-extraction support (multiple items per passage)
   - Token usage tracking per call
   - Versioned prompt templates via YAML + Jinja2
+  - Per-agent model override for local LLM routing
 """
 
 from __future__ import annotations
 
 import json
 import hashlib
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
@@ -48,6 +50,7 @@ class BaseExtractionAgent(ABC):
 
     agent_name: str = "base"
     max_retries: int = 1
+    model_override: str | None = None
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
@@ -96,7 +99,7 @@ class BaseExtractionAgent(ABC):
 
         while attempt <= self.max_retries:
             try:
-                raw_output, usage = self._call_llm(prompt, attempt)
+                raw_output, usage, response_model_id = self._call_llm(prompt, attempt)
                 logger.debug(
                     "extraction_pre_parse",
                     agent=self.agent_name,
@@ -104,6 +107,7 @@ class BaseExtractionAgent(ABC):
                     raw_output_preview=raw_output[:300],
                 )
                 cleaned = self._strip_code_fences(raw_output)
+                cleaned = self._strip_think_blocks(cleaned)
                 parsed = json.loads(cleaned)
 
                 # Check for abstention
@@ -114,7 +118,7 @@ class BaseExtractionAgent(ABC):
                         input_tokens=usage.input_tokens,
                         output_tokens=usage.output_tokens,
                         prompt_hash=prompt_hash,
-                        model_id=self._provider.model_id,
+                        model_id=response_model_id,
                         template_version=template_version,
                     )
 
@@ -134,7 +138,7 @@ class BaseExtractionAgent(ABC):
                     result = validated.model_dump(by_alias=True)
                     result["evidence_spans"] = verified_spans
                     result["_prompt_hash"] = prompt_hash
-                    result["_model_id"] = self._provider.model_id
+                    result["_model_id"] = response_model_id
                     result["_template_version"] = template_version
                     validated_extractions.append(result)
 
@@ -144,7 +148,7 @@ class BaseExtractionAgent(ABC):
                     input_tokens=usage.input_tokens,
                     output_tokens=usage.output_tokens,
                     prompt_hash=prompt_hash,
-                    model_id=settings.extraction_model,
+                    model_id=response_model_id,
                     template_version=template_version,
                 )
 
@@ -172,10 +176,21 @@ class BaseExtractionAgent(ABC):
             text = text.rsplit("```", 1)[0].strip()
         return text
 
-    def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any]:
+    @staticmethod
+    def _strip_think_blocks(text: str) -> str:
+        """Remove <think>...</think> blocks from model output.
+
+        DeepSeek-R1 and similar reasoning models emit chain-of-thought
+        wrapped in <think> tags before the actual JSON response. These
+        blocks must be stripped before JSON parsing.
+        """
+        return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+    def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any, str]:
         """Make a single LLM API call via the provider abstraction.
 
-        Returns (text, usage) where usage is an LLMUsage dataclass.
+        Returns (text, usage, model_id) where usage is an LLMUsage dataclass
+        and model_id is the actual model that served the request.
         """
         system_prompt = self._resolve_system_prompt()
         system_prompt += (
@@ -194,6 +209,7 @@ class BaseExtractionAgent(ABC):
             user_prompt=prompt,
             max_tokens=settings.extraction_max_tokens,
             temperature=settings.extraction_temperature,
+            model_override=self.model_override,
         )
 
         logger.debug(
@@ -206,7 +222,7 @@ class BaseExtractionAgent(ABC):
             raw_text_preview=response.text[:500] if response.text else "<empty>",
         )
 
-        return response.text, response.usage
+        return response.text, response.usage, response.model_id
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str

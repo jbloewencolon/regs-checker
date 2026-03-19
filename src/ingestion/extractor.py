@@ -695,11 +695,22 @@ def _run_batch_extraction(
 
     Results are available within 24 hours. Use `retrieve_batch_results()`
     to process completed batches.
+
+    Raises:
+        ValueError: If extraction_provider is not "anthropic".
     """
+    from src.core.config import settings
+
+    if settings.extraction_provider != "anthropic":
+        raise ValueError(
+            f"Batch mode requires extraction_provider='anthropic', "
+            f"but got '{settings.extraction_provider}'. "
+            f"The Anthropic Batch API is not available for local models."
+        )
+
     import anthropic
 
     from src.agents.base import BaseExtractionAgent
-    from src.core.config import settings
 
     def _log(msg: str) -> None:
         if on_progress:
@@ -1039,13 +1050,24 @@ def retrieve_batch_results(
 
     Returns:
         Summary dict with counts.
+
+    Raises:
+        ValueError: If extraction_provider is not "anthropic".
     """
+    from src.core.config import settings
+
+    if settings.extraction_provider != "anthropic":
+        raise ValueError(
+            f"Batch result retrieval requires extraction_provider='anthropic', "
+            f"but got '{settings.extraction_provider}'. "
+            f"The Anthropic Batch API is not available for local models."
+        )
+
     import json
 
     import anthropic
 
     from src.agents.base import BaseExtractionAgent
-    from src.core.config import settings
 
     def _log(msg: str) -> None:
         if on_progress:
