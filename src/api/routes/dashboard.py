@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from src.db.engine import get_db
 from src.db.models import (
     ConfidenceTier,
+    DocumentVersion,
     Extraction,
     ExtractionType,
     IngestionJob,
@@ -156,6 +157,52 @@ def run_orrick_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(
             f'<div class="result-panel success">'
             f'Found {len(records)} laws on tracker, seeded {len(jobs)} new ones for ingestion.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {e}</div>'
+        )
+
+
+@router.post("/api/run/status-check")
+def run_status_check(
+    dry_run: bool = False,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Check bill statuses against Orrick and IAPP trackers."""
+    try:
+        from src.ingestion.status_checker import check_all_statuses
+        result = check_all_statuses(db, dry_run=dry_run)
+
+        if result.changed == 0:
+            return HTMLResponse(
+                f'<div class="result-panel info">'
+                f'Checked {result.checked} bills against '
+                f'Orrick ({result.orrick_records} records) and '
+                f'IAPP ({result.iapp_records} records). '
+                f'No status changes detected.'
+                f'</div>'
+            )
+
+        mode = "Would change" if dry_run else "Updated"
+        changes_html = "".join(
+            f'<li><strong>{c.jurisdiction_code}</strong> — {c.family_title}: '
+            f'<span style="text-decoration: line-through;">{c.old_status}</span> → '
+            f'<strong>{c.new_status}</strong> '
+            f'<em>(via {c.source})</em></li>'
+            for c in result.changes[:20]
+        )
+        extra = f" (+{result.changed - 20} more)" if result.changed > 20 else ""
+
+        panel_class = "warning" if dry_run else "success"
+        return HTMLResponse(
+            f'<div class="result-panel {panel_class}">'
+            f'{mode} {result.changed} bill statuses '
+            f'(checked {result.checked} bills). '
+            f'{result.errors} errors.{extra}'
+            f'<ul style="margin: 8px 0 0 16px; font-size: 13px;">{changes_html}</ul>'
             f'</div>'
         )
     except Exception as e:
@@ -430,6 +477,18 @@ def _get_pipeline_stats(db: Session) -> dict:
         ) or 0
         review_by_tier[tier] = count
 
+    # Status summary — count document versions by temporal status
+    status_summary = {}
+    status_rows = db.execute(
+        select(
+            DocumentVersion.temporal_status,
+            func.count(),
+        ).group_by(DocumentVersion.temporal_status)
+    ).all()
+    for row in status_rows:
+        status_val = row[0].value if hasattr(row[0], "value") else str(row[0])
+        status_summary[status_val] = row[1]
+
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
 
@@ -442,6 +501,7 @@ def _get_pipeline_stats(db: Session) -> dict:
         "pending_review": pending_review,
         "review_by_tier": review_by_tier,
         "pending_results": pending_results,
+        "status_summary": status_summary,
     }
 
 

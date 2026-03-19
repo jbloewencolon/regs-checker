@@ -270,6 +270,52 @@ def synced_extractions(context: dagster.AssetExecutionContext) -> int:
 
 
 @dagster.asset(
+    description="Check legislative status of all tracked bills via Orrick and IAPP",
+    group_name="discovery",
+)
+def bill_status_check(context: dagster.AssetExecutionContext) -> dict:
+    """Cross-reference all tracked bills against Orrick and IAPP trackers.
+
+    Detects when bills change status (e.g. pending → enacted, pending → dead)
+    and updates DocumentVersion.temporal_status + logs a LegalEvent.
+
+    Returns summary dict with counts of checked, changed, and errored bills.
+    """
+    from src.ingestion.status_checker import check_all_statuses
+
+    db = SessionLocal()
+    try:
+        result = check_all_statuses(db, dry_run=False)
+
+        for change in result.changes:
+            context.log.info(
+                f"Status changed: {change.jurisdiction_code} — "
+                f"{change.family_title}: {change.old_status} → {change.new_status} "
+                f"(source: {change.source})"
+            )
+
+        context.log.info(
+            f"Status check complete: {result.checked} bills checked, "
+            f"{result.changed} status changes detected, "
+            f"{result.errors} errors"
+        )
+
+        return {
+            "checked": result.checked,
+            "changed": result.changed,
+            "errors": result.errors,
+            "orrick_records": result.orrick_records,
+            "iapp_records": result.iapp_records,
+        }
+    except Exception as e:
+        db.rollback()
+        context.log.error(f"Status check failed: {e}")
+        raise
+    finally:
+        db.close()
+
+
+@dagster.asset(
     description="Detect document families without bridge rows in Policy Navigator",
     group_name="sync",
     deps=[extracted_obligations],

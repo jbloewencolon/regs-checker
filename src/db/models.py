@@ -92,11 +92,20 @@ class ReviewStatus(str, enum.Enum):
 
 
 class TemporalStatus(str, enum.Enum):
+    # Pre-enactment (bill still in legislature)
+    introduced = "introduced"
+    pending = "pending"
+    passed_one_chamber = "passed_one_chamber"
+    # Post-enactment
     enacted = "enacted"
     active = "active"
     future_effective = "future_effective"
     repealed = "repealed"
     stayed = "stayed"
+    # Terminal / dead
+    vetoed = "vetoed"
+    dead = "dead"
+    withdrawn = "withdrawn"
 
 
 class LegalEventType(str, enum.Enum):
@@ -106,6 +115,12 @@ class LegalEventType(str, enum.Enum):
     stay = "stay"
     effective = "effective"
     sunset = "sunset"
+    introduction = "introduction"
+    passage_one_chamber = "passage_one_chamber"
+    veto = "veto"
+    death = "death"
+    withdrawal = "withdrawal"
+    status_check = "status_check"
 
 
 class DependencyType(str, enum.Enum):
