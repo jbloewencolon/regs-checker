@@ -114,9 +114,7 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).select_from(DocumentVersion)
     ) or 0
     ingestion_completed = db.scalar(
-        select(func.count()).where(
-            IngestionJob.status.in_([IngestionStatus.completed, IngestionStatus.completed_with_warnings])
-        )
+        select(func.count()).where(IngestionJob.status == IngestionStatus.completed)
     ) or 0
     ingestion_pending = db.scalar(
         select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
@@ -124,10 +122,16 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
     ingestion_failed = db.scalar(
         select(func.count()).where(IngestionJob.status == IngestionStatus.failed)
     ) or 0
-    ingestion_running = db.scalar(
-        select(func.count()).where(IngestionJob.status == IngestionStatus.running)
+    ingestion_in_progress = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status.in_([
+                IngestionStatus.fetching,
+                IngestionStatus.parsing,
+                IngestionStatus.normalizing,
+            ])
+        )
     ) or 0
-    total_ingestion = ingestion_completed + ingestion_pending + ingestion_failed + ingestion_running
+    total_ingestion = ingestion_completed + ingestion_pending + ingestion_failed + ingestion_in_progress
 
     step1 = StepProgress(
         step=1,
@@ -135,7 +139,7 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         total=total_ingestion,
         completed=ingestion_completed,
         failed=ingestion_failed,
-        in_progress=ingestion_running,
+        in_progress=ingestion_in_progress,
     )
 
     # Step 2: Fetch & Parse — ingestion jobs that have produced passages
@@ -145,7 +149,7 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         total=total_ingestion,
         completed=ingestion_completed,
         failed=ingestion_failed,
-        in_progress=ingestion_running,
+        in_progress=ingestion_in_progress,
     )
 
     # Step 3+4+5: Extraction — passages that have been extracted
