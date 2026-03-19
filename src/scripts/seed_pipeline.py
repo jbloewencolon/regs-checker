@@ -4,8 +4,8 @@ Usage:
     # Seed Colorado SB205 manually:
     python -m src.scripts.seed_pipeline --mode manual
 
-    # Discover and seed all bills from Orrick AI Law Tracker:
-    python -m src.scripts.seed_pipeline --mode orrick
+    # Discover and seed all bills from Orrick PDF tracker:
+    python -m src.scripts.seed_pipeline --mode pdf
 
     # Fetch + parse + chunk all pending ingestion jobs:
     python -m src.scripts.seed_pipeline --mode fetch
@@ -223,11 +223,11 @@ def seed_federal_nist_ai_rmf(db) -> IngestionJob:
     return job
 
 
-def seed_via_orrick(db) -> list[IngestionJob]:
-    """Scrape Orrick AI Law Tracker and seed all discovered bills."""
-    from src.ingestion.orrick_scraper import scrape_tracker, seed_from_tracker
+def seed_via_pdf(db) -> list[IngestionJob]:
+    """Parse Orrick PDF tracker and seed all discovered bills."""
+    from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
 
-    records = scrape_tracker()
+    records = parse_tracker_pdf()
     jobs = seed_from_tracker(db, records)
     return jobs
 
@@ -456,12 +456,12 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "orrick", "fetch", "export-passages", "import-extractions", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
+        choices=["manual", "pdf", "fetch", "export-passages", "import-extractions", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
-            "'orrick' scrapes Orrick tracker, "
+            "'pdf' parses Orrick PDF tracker, "
             "'fetch' processes all pending ingestion jobs, "
             "'export-passages' exports unprocessed passages for Claude Code (PRIMARY), "
             "'import-extractions' imports JSON results from Claude Code (PRIMARY), "
@@ -519,10 +519,10 @@ def main():
             db.commit()
             print(f"Seeded CO SB21-169: IngestionJob #{job1.id} (status: {job1.status})")
             print(f"Seeded NIST AI RMF: IngestionJob #{job2.id} (status: {job2.status})")
-        elif args.mode == "orrick":
-            jobs = seed_via_orrick(db)
+        elif args.mode == "pdf":
+            jobs = seed_via_pdf(db)
             db.commit()
-            print(f"Seeded {len(jobs)} laws from Orrick AI Law Tracker")
+            print(f"Seeded {len(jobs)} laws from Orrick PDF tracker")
             for job in jobs:
                 dv = job.document_version
                 print(

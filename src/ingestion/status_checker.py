@@ -1,19 +1,21 @@
-"""Legislative status checker — cross-references Orrick and IAPP trackers.
+"""Legislative status checker — cross-references PDF tracker and IAPP data.
 
-Checks the current status of every bill in our database by scraping both
-the Orrick AI Law Tracker and the IAPP US State AI Legislation Tracker.
+Checks the current status of every bill in our database by comparing
+against the Orrick PDF tracker data (already in DB metadata) and the
+IAPP US State AI Legislation Tracker.
+
 When a bill's status has changed (e.g. pending → enacted, or pending → dead),
 updates the DocumentVersion.temporal_status and logs a LegalEvent.
 
 Designed to run on a schedule (weekly) or on-demand from the dashboard.
 
 Strategy:
-  1. Scrape Orrick tracker → get enacted/active laws with effective dates
+  1. Load PDF tracker records from the database (seeded by pdf_tracker.py)
   2. Scrape IAPP tracker → get full lifecycle statuses (introduced → dead/enacted)
   3. For each DocumentVersion in our DB, match against both sources
   4. If either source reports a status change, update and log it
   5. IAPP is the primary status source (more lifecycle granularity)
-  6. Orrick confirms enacted/active status and provides effective dates
+  6. PDF tracker confirms enacted/active status and provides effective dates
 """
 
 from __future__ import annotations
@@ -81,7 +83,7 @@ class StatusChange:
     jurisdiction_code: str
     old_status: str
     new_status: str
-    source: str  # "orrick", "iapp", or "both"
+    source: str  # "pdf_tracker", "iapp", or "both"
     detail: str = ""
 
 
@@ -93,12 +95,12 @@ class StatusCheckResult:
     changed: int = 0
     errors: int = 0
     changes: list[StatusChange] = field(default_factory=list)
-    orrick_records: int = 0
+    pdf_records: int = 0
     iapp_records: int = 0
 
 
 def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResult:
-    """Cross-reference all tracked bills against Orrick and IAPP.
+    """Cross-reference all tracked bills against PDF tracker and IAPP.
 
     Args:
         db: Database session.
@@ -109,15 +111,15 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
     """
     result = StatusCheckResult()
 
-    # Step 1: Scrape both trackers
-    orrick_index = _scrape_orrick_index()
+    # Step 1: Build indexes from both sources
+    pdf_index = _build_pdf_index(db)
     iapp_index = _scrape_iapp_index()
 
-    result.orrick_records = len(orrick_index)
+    result.pdf_records = len(pdf_index)
     result.iapp_records = len(iapp_index)
     logger.info(
         "status_check_sources_loaded",
-        orrick=len(orrick_index),
+        pdf_tracker=len(pdf_index),
         iapp=len(iapp_index),
     )
 
@@ -147,7 +149,7 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
 
         # Step 3: Look up this bill in both sources
         new_status = _resolve_status(
-            jurisdiction, law_name, current_status, orrick_index, iapp_index
+            jurisdiction, law_name, current_status, pdf_index, iapp_index
         )
 
         if new_status and new_status.new_status != current_status:
@@ -172,26 +174,51 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
     return result
 
 
-def _scrape_orrick_index() -> dict[tuple[str, str], dict]:
-    """Build a lookup index from Orrick tracker data.
+def _build_pdf_index(db: Session) -> dict[tuple[str, str], dict]:
+    """Build a lookup index from PDF tracker data already in the database.
+
+    Uses DocumentFamily metadata (key_requirements, enforcement, ai_scope)
+    that was seeded by parse_tracker_pdf() → seed_from_tracker().
 
     Returns dict keyed by (state_code, normalized_law_name) → record.
     """
-    try:
-        from src.ingestion.orrick_scraper import scrape_tracker
-        records = scrape_tracker()
-    except Exception as e:
-        logger.warning("orrick_scrape_failed", error=str(e))
-        return {}
-
     index = {}
-    for r in records:
-        code = r.get("state_code", "")
-        name = _normalize_name(r.get("law_name", ""))
+
+    families = db.scalars(
+        select(DocumentFamily)
+        .join(Source)
+        .where(Source.connector_id.in_(["pdf_tracker", "orrick_tracker"]))
+    ).all()
+
+    for family in families:
+        source = family.source
+        if not source:
+            continue
+        code = source.jurisdiction_code
+        name = _normalize_name(family.short_cite or "")
         if code and name:
-            # Orrick mostly tracks enacted laws
-            r["normalized_status"] = "active" if r.get("effective_date") else "enacted"
-            index[(code, name)] = r
+            meta = family.metadata_ or {}
+            # Determine status from the latest version
+            latest_version = None
+            for v in family.versions:
+                if latest_version is None or (v.effective_date and (
+                    latest_version.effective_date is None or
+                    v.effective_date > latest_version.effective_date
+                )):
+                    latest_version = v
+
+            effective_date = latest_version.effective_date if latest_version else None
+            normalized_status = "active" if effective_date else "enacted"
+
+            index[(code, name)] = {
+                "state_code": code,
+                "law_name": family.short_cite,
+                "effective_date": str(effective_date) if effective_date else "",
+                "key_requirements": meta.get("key_requirements", ""),
+                "enforcement": meta.get("enforcement", ""),
+                "normalized_status": normalized_status,
+            }
+
     return index
 
 
@@ -228,10 +255,7 @@ def _scrape_iapp_index() -> dict[tuple[str, str], dict]:
 
 
 def _normalize_name(name: str) -> str:
-    """Normalize a law/bill name for fuzzy matching.
-
-    Strips whitespace, lowercases, removes punctuation.
-    """
+    """Normalize a law/bill name for fuzzy matching."""
     import re
     name = name.strip().lower()
     name = re.sub(r"[^a-z0-9\s]", "", name)
@@ -243,19 +267,19 @@ def _resolve_status(
     jurisdiction: str,
     law_name: str,
     current_status: str,
-    orrick_index: dict,
+    pdf_index: dict,
     iapp_index: dict,
 ) -> StatusChange | None:
     """Determine if a bill's status has changed based on external sources.
 
-    Checks IAPP first (richer lifecycle data), then Orrick (enacted confirmation).
+    Checks IAPP first (richer lifecycle data), then PDF tracker (enacted confirmation).
     Only returns a change if the transition is valid.
     """
     norm_name = _normalize_name(law_name)
     key = (jurisdiction, norm_name)
 
     iapp_record = iapp_index.get(key)
-    orrick_record = orrick_index.get(key)
+    pdf_record = pdf_index.get(key)
 
     # Determine new status — IAPP has priority for pre-enactment lifecycle
     new_status = None
@@ -267,14 +291,14 @@ def _resolve_status(
             new_status = iapp_status
             source_label = "iapp"
 
-    if orrick_record:
-        orrick_status = orrick_record.get("normalized_status", "")
-        if orrick_status and orrick_status != current_status:
-            if new_status and new_status == orrick_status:
+    if pdf_record:
+        pdf_status = pdf_record.get("normalized_status", "")
+        if pdf_status and pdf_status != current_status:
+            if new_status and new_status == pdf_status:
                 source_label = "both"  # Both agree
             elif not new_status:
-                new_status = orrick_status
-                source_label = "orrick"
+                new_status = pdf_status
+                source_label = "pdf_tracker"
             # If they disagree, prefer IAPP (more lifecycle detail)
 
     if not new_status:
@@ -295,8 +319,8 @@ def _resolve_status(
     detail = ""
     if iapp_record:
         detail = iapp_record.get("last_action", "")
-    if orrick_record and not detail:
-        detail = orrick_record.get("effective_date", "")
+    if pdf_record and not detail:
+        detail = pdf_record.get("effective_date", "")
 
     return StatusChange(
         document_version_id=0,  # filled in by caller
@@ -314,10 +338,7 @@ def _apply_status_change(
     version: DocumentVersion,
     change: StatusChange,
 ) -> None:
-    """Write a status change to the database.
-
-    Updates DocumentVersion.temporal_status and appends a LegalEvent.
-    """
+    """Write a status change to the database."""
     old = change.old_status
     new = change.new_status
 
@@ -331,10 +352,8 @@ def _apply_status_change(
         source=change.source,
     )
 
-    # Update version status
     version.temporal_status = TemporalStatus(new)
 
-    # Log the event
     event_type = STATUS_TO_EVENT.get(new, LegalEventType.status_check)
     db.add(LegalEvent(
         document_version_id=version.id,

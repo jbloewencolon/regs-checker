@@ -300,17 +300,17 @@ def get_confidence_chart(db: Session = Depends(get_db)) -> HTMLResponse:
     return HTMLResponse(f'<div class="chart-bars">{bars}</div>')
 
 
-@router.post("/api/run/orrick-discovery")
-def run_orrick_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Run Orrick tracker scrape."""
+@router.post("/api/run/pdf-discovery")
+def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Parse Orrick PDF tracker and seed new legislation."""
     try:
-        from src.ingestion.orrick_scraper import scrape_tracker, seed_from_tracker
-        records = scrape_tracker()
+        from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
+        records = parse_tracker_pdf()
         jobs = seed_from_tracker(db, records)
         db.commit()
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Found {len(records)} laws on tracker, seeded {len(jobs)} new ones for ingestion.'
+            f'Parsed {len(records)} laws from PDF, seeded {len(jobs)} new ones for ingestion.'
             f'</div>'
         )
     except Exception as e:
@@ -334,7 +334,7 @@ def run_status_check(
             return HTMLResponse(
                 f'<div class="result-panel info">'
                 f'Checked {result.checked} bills against '
-                f'Orrick ({result.orrick_records} records) and '
+                f'PDF tracker ({result.pdf_records} records) and '
                 f'IAPP ({result.iapp_records} records). '
                 f'No status changes detected.'
                 f'</div>'

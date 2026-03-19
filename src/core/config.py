@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     # Review UI
     review_items_per_page: int = 25
 
-    # Orrick AI Law Tracker
-    orrick_tracker_url: str = "https://ai-law-center.orrick.com/us-ai-law-tracker-see-all-states/"
+    # Orrick PDF Tracker
+    orrick_pdf_path: str = "static/Orrick-US-AI-Law-Tracker.pdf"
 
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"
