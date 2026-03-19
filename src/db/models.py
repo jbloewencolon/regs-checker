@@ -187,6 +187,9 @@ class DocumentFamily(Base):
     canonical_title = Column(Text, nullable=False)
     short_cite = Column(String(200))
     subject_area = Column(String(200))
+    primary_source_url = Column(Text)  # Direct .gov / legislature link to bill text
+    orrick_reference_url = Column(Text)  # Orrick AI Law Center reference page
+    iapp_reference_url = Column(Text)  # IAPP US AI Legislation Tracker PDF
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
 
