@@ -303,10 +303,37 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
                 "orrick_ai_scope": ai_scope,
                 "key_requirements": record["key_requirements"],
                 "enforcement": record["enforcement"],
+                "orrick_last_refreshed": datetime.utcnow().isoformat(),
             },
         )
         db.add(family)
         db.flush()
+    else:
+        # Always refresh Orrick metadata so updates are captured
+        new_meta = {
+            "orrick_ai_scope": ai_scope,
+            "key_requirements": record["key_requirements"],
+            "enforcement": record["enforcement"],
+            "orrick_last_refreshed": datetime.utcnow().isoformat(),
+        }
+        old_meta = family.metadata_ or {}
+        if (
+            old_meta.get("key_requirements") != new_meta["key_requirements"]
+            or old_meta.get("enforcement") != new_meta["enforcement"]
+            or old_meta.get("orrick_ai_scope") != new_meta["orrick_ai_scope"]
+        ):
+            family.metadata_ = {**old_meta, **new_meta}
+            family.subject_area = _normalize_scope(ai_scope)
+            logger.info(
+                "orrick_metadata_refreshed",
+                state=state_code,
+                law=law_name,
+                changed_fields=[
+                    k for k in ("key_requirements", "enforcement", "orrick_ai_scope")
+                    if old_meta.get(k) != new_meta[k]
+                ],
+            )
+            db.flush()
 
     # --- DocumentVersion ---
     version_label = "Current"
