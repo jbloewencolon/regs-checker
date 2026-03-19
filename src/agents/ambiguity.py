@@ -14,6 +14,7 @@ from src.schemas.extraction import AmbiguityPayload
 
 class AmbiguityAgent(BaseExtractionAgent):
     agent_name = "ambiguity"
+    model_override = "deepseek-r1:32b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal analysis agent specializing in identifying ambiguity in legislative text.

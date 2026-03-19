@@ -14,6 +14,7 @@ from src.schemas.extraction import ThresholdExceptionPayload
 
 class ThresholdExceptionAgent(BaseExtractionAgent):
     agent_name = "threshold_exception"
+    model_override = "qwen2.5:32b-instruct-q4_K_M"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in thresholds and exceptions.
