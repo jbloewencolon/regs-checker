@@ -1,9 +1,10 @@
 {% extends "layout.html" %}
 {% set title = "Review Queue" %}
+{% set active_nav = "review" %}
 
 {% block content %}
-<div class="pipeline">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<section class="section">
+  <div class="section-header">
     <h2>Review Queue</h2>
     <a href="/dashboard" class="btn btn-sm">&larr; Back to Pipeline</a>
   </div>
@@ -11,20 +12,20 @@
   <div class="tabs">
     <button class="tab {% if filter_status == 'pending' %}active{% endif %}"
             hx-get="/dashboard/review?status=pending" hx-target="main" hx-push-url="true">
-      Pending ({{ counts.get('pending', 0) }})
+      Pending <span class="tab-count">{{ counts.get('pending', 0) }}</span>
     </button>
     <button class="tab {% if filter_status == 'approved' %}active{% endif %}"
             hx-get="/dashboard/review?status=approved" hx-target="main" hx-push-url="true">
-      Approved ({{ counts.get('approved', 0) }})
+      Approved <span class="tab-count">{{ counts.get('approved', 0) }}</span>
     </button>
     <button class="tab {% if filter_status == 'rejected' %}active{% endif %}"
             hx-get="/dashboard/review?status=rejected" hx-target="main" hx-push-url="true">
-      Rejected ({{ counts.get('rejected', 0) }})
+      Rejected <span class="tab-count">{{ counts.get('rejected', 0) }}</span>
     </button>
   </div>
 
   {% if items %}
-  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+  <div class="table-wrap">
     <table class="review-table">
       <thead>
         <tr>
@@ -32,8 +33,9 @@
           <th>Type</th>
           <th>Summary</th>
           <th>Document</th>
-          <th style="width: 100px;">Score</th>
-          <th style="width: 160px;">Actions</th>
+          <th style="width: 200px;">Confidence</th>
+          <th style="width: 70px;">Model</th>
+          <th style="width: 140px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -44,9 +46,11 @@
               {{ item.confidence_tier }}
             </span>
           </td>
-          <td>{{ item.extraction_type }}</td>
-          <td style="max-width: 300px;">
-            <div style="font-size: 13px;">
+          <td>
+            <span class="type-tag">{{ item.extraction_type }}</span>
+          </td>
+          <td style="max-width: 280px;">
+            <div class="summary-text">
               {% if item.extraction_type == 'obligation' %}
                 <strong>{{ item.payload.get('subject', '?') }}</strong>
                 {{ item.payload.get('modality', '') }}
@@ -62,33 +66,65 @@
                 {{ item.payload | string | truncate(80) }}
               {% endif %}
             </div>
+            {% if item.evidence_spans %}
+            <div class="evidence-count">{{ item.evidence_spans | length }} evidence spans</div>
+            {% endif %}
           </td>
-          <td style="font-size: 13px; color: var(--text-muted);">
+          <td class="doc-cell">
             {{ item.jurisdiction_code or '?' }} — {{ item.short_cite or '' }}
           </td>
           <td>
-            <span style="font-weight: 600;">{{ "%.0f" | format(item.confidence_score * 100) }}%</span>
+            <!-- Confidence score + mini breakdown -->
+            <div class="confidence-cell">
+              <span class="confidence-score">{{ "%.0f" | format(item.confidence_score * 100) }}%</span>
+              {% if item.confidence_breakdown %}
+              <div class="confidence-breakdown-mini">
+                {% set bd = item.confidence_breakdown %}
+                <div class="breakdown-bar" title="Schema: {{ (bd.get('schema_validity', 0) * 100) | round }}%">
+                  <div class="breakdown-fill breakdown-schema" style="width: {{ (bd.get('schema_validity', 0) * 100) | round }}%;"></div>
+                </div>
+                <div class="breakdown-bar" title="Evidence: {{ (bd.get('evidence_grounding', 0) * 100) | round }}%">
+                  <div class="breakdown-fill breakdown-evidence" style="width: {{ (bd.get('evidence_grounding', 0) * 100) | round }}%;"></div>
+                </div>
+                <div class="breakdown-bar" title="Completeness: {{ (bd.get('completeness', 0) * 100) | round }}%">
+                  <div class="breakdown-fill breakdown-complete" style="width: {{ (bd.get('completeness', 0) * 100) | round }}%;"></div>
+                </div>
+                <div class="breakdown-bar" title="Source Quality: {{ (bd.get('source_quality', 0) * 100) | round }}%">
+                  <div class="breakdown-fill breakdown-source" style="width: {{ (bd.get('source_quality', 0) * 100) | round }}%;"></div>
+                </div>
+                <div class="breakdown-bar" title="Orrick Alignment: {{ (bd.get('orrick_alignment', 0) * 100) | round }}%">
+                  <div class="breakdown-fill breakdown-orrick" style="width: {{ (bd.get('orrick_alignment', 0) * 100) | round }}%;"></div>
+                </div>
+              </div>
+              <div class="breakdown-legend-mini">
+                <span class="bl-dot" style="background: #2563eb;" title="Schema"></span>
+                <span class="bl-dot" style="background: #16a34a;" title="Evidence"></span>
+                <span class="bl-dot" style="background: #7c3aed;" title="Completeness"></span>
+                <span class="bl-dot" style="background: #0891b2;" title="Source"></span>
+                <span class="bl-dot" style="background: #ea580c;" title="Orrick"></span>
+              </div>
+              {% endif %}
+            </div>
+          </td>
+          <td class="model-cell">
+            {{ (item.model_id or '?') | truncate(12) }}
           </td>
           <td>
             {% if item.review_status == 'pending' %}
-            <div style="display: flex; gap: 4px;">
+            <div class="action-btns">
               <button class="btn btn-sm btn-success"
                       hx-post="/dashboard/api/review/{{ item.queue_id }}/approve"
                       hx-target="closest tr"
                       hx-swap="outerHTML"
-                      title="Approve">&#10003;</button>
-              <button class="btn btn-sm"
+                      title="Approve">Approve</button>
+              <button class="btn btn-sm btn-danger"
                       hx-post="/dashboard/api/review/{{ item.queue_id }}/reject"
                       hx-target="closest tr"
                       hx-swap="outerHTML"
-                      title="Reject"
-                      style="color: var(--danger);">&#10007;</button>
-              <a href="/dashboard/review/{{ item.queue_id }}" class="btn btn-sm" title="View details">&#8230;</a>
+                      title="Reject">Reject</button>
             </div>
             {% else %}
-            <span style="font-size: 13px; color: var(--text-muted);">
-              {{ item.review_status }}
-            </span>
+            <span class="review-status-label">{{ item.review_status }}</span>
             {% endif %}
           </td>
         </tr>
@@ -97,8 +133,17 @@
     </table>
   </div>
 
+  <!-- Confidence breakdown legend -->
+  <div class="breakdown-legend">
+    <span><span class="bl-swatch" style="background: #2563eb;"></span> Schema (20%)</span>
+    <span><span class="bl-swatch" style="background: #16a34a;"></span> Evidence (30%)</span>
+    <span><span class="bl-swatch" style="background: #7c3aed;"></span> Completeness (20%)</span>
+    <span><span class="bl-swatch" style="background: #0891b2;"></span> Source Quality (15%)</span>
+    <span><span class="bl-swatch" style="background: #ea580c;"></span> Orrick Alignment (15%)</span>
+  </div>
+
   {% if total_pages > 1 %}
-  <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+  <div class="pagination">
     {% for p in range(1, total_pages + 1) %}
     <a href="/dashboard/review?status={{ filter_status }}&page={{ p }}"
        class="btn btn-sm {% if p == current_page %}btn-primary{% endif %}">
@@ -113,5 +158,5 @@
     No {{ filter_status }} items in the review queue.
   </div>
   {% endif %}
-</div>
+</section>
 {% endblock %}
