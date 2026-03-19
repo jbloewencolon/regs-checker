@@ -90,14 +90,14 @@ class TestResolveStatus:
         assert change.new_status == "enacted"
         assert change.source == "iapp"
 
-    def test_orrick_detects_change(self):
+    def test_pdf_tracker_detects_change(self):
         orrick_index = {
             ("CO", "sb 205"): {"normalized_status": "active", "effective_date": "2/1/2026"},
         }
         change = _resolve_status("CO", "SB 205", "enacted", orrick_index, {})
         assert change is not None
         assert change.new_status == "active"
-        assert change.source == "orrick"
+        assert change.source == "pdf_tracker"
 
     def test_both_sources_agree(self):
         orrick_index = {
