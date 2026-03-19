@@ -36,11 +36,6 @@ logger = structlog.get_logger()
 # Constants
 # ---------------------------------------------------------------------------
 
-IAPP_TRACKER_URL = (
-    "https://iapp.org/media/pdf/resource_center/"
-    "IAPP-US-State-AI-Governance-Legislation-Tracker.pdf"
-)
-
 ORRICK_BASE_URL = "https://ai-law-center.orrick.com"
 
 # Domains that indicate a real government / official legislative source
@@ -351,7 +346,7 @@ def classify_url(source_url: str, state_name: str | None) -> dict[str, str | Non
     result: dict[str, str | None] = {
         "primary_source_url": None,
         "orrick_reference_url": None,
-        "iapp_reference_url": IAPP_TRACKER_URL,
+        "iapp_reference_url": None,  # Populated by extract_iapp_links.py
     }
 
     # Orrick reference URL (generated from state)
