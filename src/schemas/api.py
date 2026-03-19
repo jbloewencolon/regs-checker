@@ -16,6 +16,17 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 
+class ConfidenceBreakdownResponse(BaseModel):
+    """Detailed confidence score component breakdown."""
+
+    schema_validity: float = 0.0
+    evidence_grounding: float = 0.0
+    completeness: float = 0.0
+    source_quality: float = 0.0
+    orrick_alignment: float = 0.0
+    orrick_matched_tokens: list[str] = Field(default_factory=list)
+
+
 class ExtractionResponse(BaseModel):
     """Standard extraction response used by both internal and external APIs."""
 
@@ -25,7 +36,9 @@ class ExtractionResponse(BaseModel):
     evidence_spans: list[dict]
     confidence_score: float
     confidence_tier: str
+    confidence_breakdown: ConfidenceBreakdownResponse | None = None
     review_status: str
+    model_id: str | None = None
     source_text: str | None = None
     section_path: str | None = None
     document_title: str | None = None

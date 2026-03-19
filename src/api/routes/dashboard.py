@@ -1,7 +1,10 @@
 """Dashboard routes — HTML UI for the extraction pipeline.
 
-Serves a simple HTMX-powered dashboard that lets non-technical users
-run each pipeline step, track progress, and review extractions.
+Serves an HTMX-powered dashboard with:
+  - Real-time progress tracking with % completion and ETA
+  - Pipeline step controls (run each step or run-all)
+  - Analytics: confidence breakdown, model comparison, jurisdiction view
+  - Review queue with confidence component visualization
 """
 
 from __future__ import annotations
@@ -51,12 +54,34 @@ def _render(request: Request, template: str, context: dict = None) -> HTMLRespon
 @router.get("/", response_class=HTMLResponse)
 def dashboard_page(request: Request, db: Session = Depends(get_db)):
     """Main pipeline dashboard page."""
+    from src.api.progress import compute_pipeline_progress
+
     stats = _get_pipeline_stats(db)
     export_files = _get_export_files()
+    progress = compute_pipeline_progress(db)
 
     return _render(request, "dashboard.html", {
         "stats": stats,
         "export_files": export_files,
+        "progress": progress.to_dict(),
+    })
+
+
+@router.get("/analytics", response_class=HTMLResponse)
+def analytics_page(request: Request, db: Session = Depends(get_db)):
+    """Analytics and evaluation page."""
+    from src.api.progress import (
+        get_confidence_distribution,
+        get_extraction_by_type,
+        get_jurisdiction_summary,
+        get_model_comparison,
+    )
+
+    return _render(request, "analytics.html", {
+        "confidence": get_confidence_distribution(db),
+        "by_type": get_extraction_by_type(db),
+        "models": get_model_comparison(db),
+        "jurisdictions": get_jurisdiction_summary(db),
     })
 
 
@@ -99,6 +124,11 @@ def review_page(
         df = dv.family if dv else None
         src = df.source if df else None
 
+        # Try to get confidence breakdown from metadata
+        breakdown = None
+        if e and e.metadata_:
+            breakdown = e.metadata_.get("confidence_breakdown")
+
         items.append({
             "queue_id": qi.id,
             "extraction_id": e.id if e else None,
@@ -106,9 +136,13 @@ def review_page(
             "payload": e.payload if e else {},
             "confidence_score": e.confidence_score if e else 0,
             "confidence_tier": e.confidence_tier.value if e and hasattr(e.confidence_tier, 'value') else 'D',
+            "confidence_breakdown": breakdown,
+            "model_id": e.model_id if e else None,
+            "evidence_spans": e.evidence_spans if e else [],
             "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,
+            "source_text": nsr.passage_text if nsr else None,
         })
 
     total = counts.get(status, 0)
@@ -131,19 +165,139 @@ def review_page(
 @router.get("/api/stats")
 def get_stats(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return stats HTML fragment for the header bar."""
+    from src.api.progress import compute_pipeline_progress
+
     stats = _get_pipeline_stats(db)
+    progress = compute_pipeline_progress(db)
+
+    eta_html = ""
+    if progress.estimated_remaining_seconds:
+        hrs = progress.estimated_remaining_seconds // 3600
+        mins = (progress.estimated_remaining_seconds % 3600) // 60
+        if hrs > 0:
+            eta_html = f'<span class="stat"><span class="stat-label">ETA</span> <span class="stat-value">{hrs}h {mins}m</span></span>'
+        else:
+            eta_html = f'<span class="stat"><span class="stat-label">ETA</span> <span class="stat-value">{mins}m</span></span>'
+
     html = f"""
     <span class="stat">
-      <span class="stat-value">{stats['total_passages']}</span> passages
+      <span class="stat-label">Progress</span>
+      <span class="stat-value">{progress.overall_percent}%</span>
     </span>
     <span class="stat">
-      <span class="stat-value">{stats['total_extractions']}</span> extractions
+      <span class="stat-value">{stats['total_passages']}</span>
+      <span class="stat-label">passages</span>
     </span>
     <span class="stat">
-      <span class="stat-value">{stats['pending_review']}</span> to review
+      <span class="stat-value">{stats['total_extractions']}</span>
+      <span class="stat-label">extractions</span>
     </span>
+    <span class="stat">
+      <span class="stat-value">{stats['pending_review']}</span>
+      <span class="stat-label">to review</span>
+    </span>
+    {eta_html}
     """
     return HTMLResponse(html)
+
+
+@router.get("/api/progress")
+def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return progress ring + ETA HTML fragment, polled every 5s during runs."""
+    from src.api.progress import compute_pipeline_progress
+
+    progress = compute_pipeline_progress(db)
+    p = progress.to_dict()
+
+    # Build step bars
+    step_bars = ""
+    for s in p["steps"]:
+        bar_color = "var(--success)" if s["is_complete"] else "var(--primary)"
+        step_bars += f"""
+        <div class="progress-step-row">
+          <span class="progress-step-label">{s['name']}</span>
+          <div class="progress-step-bar">
+            <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
+          </div>
+          <span class="progress-step-pct">{s['percent']}%</span>
+          <span class="progress-step-count">{s['completed']}/{s['total']}</span>
+        </div>
+        """
+
+    # ETA
+    eta_text = "Calculating..."
+    if progress.estimated_remaining_seconds is not None:
+        if progress.estimated_remaining_seconds == 0:
+            eta_text = "Complete"
+        else:
+            hrs = progress.estimated_remaining_seconds // 3600
+            mins = (progress.estimated_remaining_seconds % 3600) // 60
+            eta_text = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m remaining"
+
+    rate_text = ""
+    if progress.items_per_minute:
+        rate_text = f'<div class="progress-rate">{progress.items_per_minute} items/min</div>'
+
+    # SVG ring
+    radius = 54
+    circumference = 2 * 3.14159 * radius
+    offset = circumference * (1 - p["overall_percent"] / 100)
+
+    html = f"""
+    <div class="progress-overview">
+      <div class="progress-ring-container">
+        <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+          <circle class="progress-ring-bg" cx="70" cy="70" r="{radius}"
+                  fill="none" stroke="var(--border)" stroke-width="10"/>
+          <circle class="progress-ring-fill" cx="70" cy="70" r="{radius}"
+                  fill="none" stroke="var(--primary)" stroke-width="10"
+                  stroke-dasharray="{circumference}"
+                  stroke-dashoffset="{offset}"
+                  stroke-linecap="round"
+                  transform="rotate(-90 70 70)"/>
+        </svg>
+        <div class="progress-ring-text">
+          <span class="progress-ring-pct">{p['overall_percent']}%</span>
+          <span class="progress-ring-label">complete</span>
+        </div>
+      </div>
+      <div class="progress-details">
+        <div class="progress-eta">{eta_text}</div>
+        {rate_text}
+        <div class="progress-steps-breakdown">
+          {step_bars}
+        </div>
+      </div>
+    </div>
+    """
+    return HTMLResponse(html)
+
+
+@router.get("/api/analytics/confidence")
+def get_confidence_chart(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return confidence distribution as an HTML chart."""
+    from src.api.progress import get_confidence_distribution
+
+    data = get_confidence_distribution(db)
+    tiers = data["tier_distribution"]
+    total = data["total_extractions"] or 1
+
+    colors = {"A": "var(--success)", "B": "var(--info)", "C": "var(--warning)", "D": "var(--danger)"}
+    bars = ""
+    for tier in ["A", "B", "C", "D"]:
+        count = tiers.get(tier, 0)
+        pct = round(count / total * 100, 1) if total > 0 else 0
+        bars += f"""
+        <div class="chart-bar-group">
+          <div class="chart-bar-label">Tier {tier}</div>
+          <div class="chart-bar-track">
+            <div class="chart-bar-fill" style="width: {pct}%; background: {colors[tier]};"></div>
+          </div>
+          <div class="chart-bar-value">{count} ({pct}%)</div>
+        </div>
+        """
+
+    return HTMLResponse(f'<div class="chart-bars">{bars}</div>')
 
 
 @router.post("/api/run/orrick-discovery")
@@ -388,6 +542,70 @@ def run_bridge_check() -> HTMLResponse:
         )
 
 
+@router.post("/api/run/evaluate")
+def run_evaluate(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Run evaluation harness against gold standard fixtures."""
+    try:
+        from src.evaluation.harness import run_evaluation
+        result = run_evaluation(db)
+        html = f"""
+        <div class="result-panel success">
+          <strong>Evaluation complete</strong><br>
+          Macro F1: <strong>{result.macro_f1:.3f}</strong> |
+          Tested: {result.passages_tested} passages |
+          Agents: {', '.join(f'{a.agent_name}: F1={a.f1:.3f}' for a in result.agent_scores)}
+        </div>
+        """
+        return HTMLResponse(html)
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {e}</div>'
+        )
+
+
+@router.post("/api/run/compare-models")
+def run_compare_models(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Run model comparison (Haiku vs new models)."""
+    try:
+        from src.evaluation.compare_models import compare_models
+        result = compare_models(db)
+
+        rows = ""
+        for model in result:
+            tiers = model.get("tiers", {})
+            rows += f"""
+            <tr>
+              <td><strong>{model['model_id']}</strong></td>
+              <td>{model['count']}</td>
+              <td>{model['avg_confidence']:.1%}</td>
+              <td>{model.get('json_valid_pct', 'N/A')}</td>
+              <td>{tiers.get('A', 0)}</td>
+              <td>{tiers.get('B', 0)}</td>
+              <td>{tiers.get('C', 0)}</td>
+              <td>{tiers.get('D', 0)}</td>
+            </tr>
+            """
+
+        html = f"""
+        <div class="result-panel info">
+          <table class="review-table" style="margin-top: 8px;">
+            <thead>
+              <tr>
+                <th>Model</th><th>Count</th><th>Avg Conf</th><th>JSON Valid</th>
+                <th>A</th><th>B</th><th>C</th><th>D</th>
+              </tr>
+            </thead>
+            <tbody>{rows}</tbody>
+          </table>
+        </div>
+        """
+        return HTMLResponse(html)
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {e}</div>'
+        )
+
+
 @router.post("/api/review/{queue_id}/approve")
 def approve_item(queue_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     """Quick-approve a review queue item."""
@@ -406,7 +624,7 @@ def _review_action(db: Session, queue_id: int, action: str) -> HTMLResponse:
 
     item = db.get(ReviewQueueItem, queue_id)
     if not item:
-        return HTMLResponse('<tr><td colspan="6">Item not found</td></tr>')
+        return HTMLResponse('<tr><td colspan="7">Item not found</td></tr>')
 
     status = ReviewStatus(action)
     db.add(ReviewAction(
@@ -421,7 +639,7 @@ def _review_action(db: Session, queue_id: int, action: str) -> HTMLResponse:
     color = "var(--success)" if action == "approved" else "var(--danger)"
     return HTMLResponse(
         f'<tr style="opacity: 0.5;">'
-        f'<td colspan="5" style="color: {color}; font-style: italic;">'
+        f'<td colspan="6" style="color: {color}; font-style: italic;">'
         f'Item #{queue_id} {action}'
         f'</td>'
         f'<td></td></tr>'

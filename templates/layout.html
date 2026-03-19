@@ -9,14 +9,25 @@
 </head>
 <body>
   <header>
-    <div class="container">
-      <div>
+    <div class="container header-inner">
+      <div class="header-left">
         <h1>Regs Checker</h1>
         <span class="subtitle">AI Legislation Extraction Pipeline</span>
       </div>
+      <nav class="header-nav">
+        <a href="/dashboard" class="nav-link {% if active_nav == 'pipeline' or not active_nav %}active{% endif %}">Pipeline</a>
+        <a href="/dashboard/analytics" class="nav-link {% if active_nav == 'analytics' %}active{% endif %}">Analytics</a>
+        <a href="/dashboard/review" class="nav-link {% if active_nav == 'review' %}active{% endif %}">
+          Review
+          <span class="nav-badge" id="review-count"
+                hx-get="/dashboard/api/stats"
+                hx-trigger="load"
+                hx-swap="none"></span>
+        </a>
+      </nav>
       <div class="status-bar" id="status-bar"
            hx-get="/dashboard/api/stats"
-           hx-trigger="load, every 30s"
+           hx-trigger="load, every 15s"
            hx-swap="innerHTML">
         <span class="stat">Loading...</span>
       </div>
@@ -34,6 +45,14 @@
       const btn = el.parentElement.querySelector('.copy-btn');
       btn.textContent = 'Copied!';
       setTimeout(() => btn.textContent = 'Copy', 2000);
+    }
+
+    // Toggle detail panels
+    function toggleDetail(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('expanded');
+      }
     }
   </script>
 </body>

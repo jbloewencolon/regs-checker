@@ -1,0 +1,208 @@
+{% extends "layout.html" %}
+{% set title = "Analytics & Evaluation" %}
+{% set active_nav = "analytics" %}
+
+{% block content %}
+
+<!-- ================================================================== -->
+<!-- CONFIDENCE DISTRIBUTION                                            -->
+<!-- ================================================================== -->
+<section class="section">
+  <h2>Confidence Distribution</h2>
+
+  <div class="analytics-grid">
+    <!-- Tier distribution -->
+    <div class="analytics-card">
+      <h3>By Tier</h3>
+      <div class="tier-bars">
+        {% set total = confidence.total_extractions or 1 %}
+        {% set colors = {'A': 'var(--success)', 'B': 'var(--info)', 'C': 'var(--warning)', 'D': 'var(--danger)'} %}
+        {% for tier in ['A', 'B', 'C', 'D'] %}
+        {% set count = confidence.tier_distribution.get(tier, 0) %}
+        {% set pct = (count / total * 100) | round(1) %}
+        <div class="chart-bar-group">
+          <div class="chart-bar-label">
+            <span class="tier-badge tier-{{ tier }}">{{ tier }}</span>
+            Tier {{ tier }}
+          </div>
+          <div class="chart-bar-track">
+            <div class="chart-bar-fill" style="width: {{ pct }}%; background: {{ colors[tier] }};"></div>
+          </div>
+          <div class="chart-bar-value">{{ count }} <span class="chart-bar-pct">({{ pct }}%)</span></div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="analytics-total">{{ confidence.total_extractions }} total extractions</div>
+    </div>
+
+    <!-- Score histogram -->
+    <div class="analytics-card">
+      <h3>Score Distribution</h3>
+      <div class="histogram">
+        {% set max_count = namespace(val=1) %}
+        {% for bucket in confidence.score_histogram %}
+        {% if bucket.count > max_count.val %}{% set max_count.val = bucket.count %}{% endif %}
+        {% endfor %}
+        {% for bucket in confidence.score_histogram %}
+        {% set height = (bucket.count / max_count.val * 100) | round %}
+        <div class="histogram-col">
+          <div class="histogram-bar" style="height: {{ height }}%;"
+               title="{{ bucket.count }} extractions">
+            {% if bucket.count > 0 %}<span class="histogram-count">{{ bucket.count }}</span>{% endif %}
+          </div>
+          <div class="histogram-label">{{ bucket.range[:3] }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- EXTRACTION TYPES                                                   -->
+<!-- ================================================================== -->
+<section class="section">
+  <h2>Extractions by Type</h2>
+  <div class="type-grid">
+    {% set type_colors = {
+      'obligation': '#2563eb',
+      'definition': '#7c3aed',
+      'actor_mapping': '#0891b2',
+      'threshold': '#ca8a04',
+      'exception': '#ea580c',
+      'enforcement': '#dc2626',
+      'timeline': '#16a34a',
+      'framework_ref': '#6366f1',
+      'ambiguity': '#64748b'
+    } %}
+    {% set type_total = by_type.values() | sum or 1 %}
+    {% for type_name, count in by_type.items() %}
+    <div class="type-card" style="border-left: 4px solid {{ type_colors.get(type_name, '#64748b') }};">
+      <div class="type-count">{{ count }}</div>
+      <div class="type-name">{{ type_name.replace('_', ' ') | title }}</div>
+      <div class="type-pct">{{ (count / type_total * 100) | round(1) }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- MODEL COMPARISON                                                   -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h2>Model Comparison</h2>
+    <button class="btn btn-sm"
+            hx-post="/dashboard/api/run/compare-models"
+            hx-target="#model-compare-result"
+            hx-swap="innerHTML"
+            hx-disabled-elt="this">
+      <span class="btn-label">Run Comparison</span>
+      <span class="htmx-indicator"><span class="spinner"></span></span>
+    </button>
+  </div>
+
+  {% if models %}
+  <div class="model-table-wrap">
+    <table class="review-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Extractions</th>
+          <th>Avg Confidence</th>
+          <th>Tier A</th>
+          <th>Tier B</th>
+          <th>Tier C</th>
+          <th>Tier D</th>
+          <th>Quality</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for model in models %}
+        {% set tiers = model.tiers %}
+        {% set total = model.count or 1 %}
+        {% set a_pct = ((tiers.get('A', 0) + tiers.get('B', 0)) / total * 100) | round(1) %}
+        <tr>
+          <td><strong>{{ model.model_id }}</strong></td>
+          <td>{{ model.count }}</td>
+          <td>
+            <div class="confidence-inline">
+              <div class="confidence-bar-mini">
+                <div class="confidence-bar-fill" style="width: {{ (model.avg_confidence * 100) | round }}%; background: var(--primary);"></div>
+              </div>
+              <span>{{ (model.avg_confidence * 100) | round(1) }}%</span>
+            </div>
+          </td>
+          <td><span class="tier-badge tier-A">{{ tiers.get('A', 0) }}</span></td>
+          <td><span class="tier-badge tier-B">{{ tiers.get('B', 0) }}</span></td>
+          <td><span class="tier-badge tier-C">{{ tiers.get('C', 0) }}</span></td>
+          <td><span class="tier-badge tier-D">{{ tiers.get('D', 0) }}</span></td>
+          <td>
+            <div class="quality-bar">
+              <div class="quality-fill quality-good" style="width: {{ a_pct }}%;"></div>
+            </div>
+            <span class="quality-label">{{ a_pct }}% A+B</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="result-panel info">No extractions with model IDs found yet. Run an extraction first.</div>
+  {% endif %}
+
+  <div id="model-compare-result"></div>
+</section>
+
+<!-- ================================================================== -->
+<!-- JURISDICTIONS                                                      -->
+<!-- ================================================================== -->
+<section class="section">
+  <h2>By Jurisdiction</h2>
+  {% if jurisdictions %}
+  <div class="jurisdiction-grid">
+    {% set jur_max = namespace(val=1) %}
+    {% for j in jurisdictions %}
+    {% if j.extraction_count > jur_max.val %}{% set jur_max.val = j.extraction_count %}{% endif %}
+    {% endfor %}
+    {% for j in jurisdictions %}
+    {% set bar_pct = (j.extraction_count / jur_max.val * 100) | round %}
+    <div class="jurisdiction-row">
+      <span class="jurisdiction-code">{{ j.jurisdiction }}</span>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width: {{ bar_pct }}%; background: var(--primary);"></div>
+      </div>
+      <span class="jurisdiction-count">{{ j.extraction_count }}</span>
+      <span class="jurisdiction-conf">{{ (j.avg_confidence * 100) | round(1) }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="result-panel info">No jurisdiction data available yet.</div>
+  {% endif %}
+</section>
+
+<!-- ================================================================== -->
+<!-- EVALUATION HARNESS                                                 -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h2>Evaluation</h2>
+    <button class="btn btn-primary"
+            hx-post="/dashboard/api/run/evaluate"
+            hx-target="#eval-result"
+            hx-swap="innerHTML"
+            hx-disabled-elt="this">
+      <span class="btn-label">Run Evaluation Harness</span>
+      <span class="htmx-indicator"><span class="spinner"></span> Evaluating...</span>
+    </button>
+  </div>
+  <div class="step-description" style="padding-left: 0;">
+    Tests extraction accuracy against gold-standard annotated passages.
+    Computes precision, recall, and F1 per agent.
+  </div>
+  <div id="eval-result"></div>
+</section>
+
+{% endblock %}
