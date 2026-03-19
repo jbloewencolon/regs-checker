@@ -279,6 +279,8 @@ def run_pending_ingestion(
         "failed": 0,
         "skipped": 0,
         "total_passages": 0,
+        "failed_jobs": [],       # List of {job_id, label, url, error} for UI
+        "manual_review_jobs": [],  # Jobs needing manual doc insertion
     }
 
     if not pending_jobs:
@@ -299,12 +301,46 @@ def run_pending_ingestion(
 
         passage_count = process_single_job(db, job, on_progress=on_progress)
 
+        dv = job.document_version
+        label = "unknown"
+        if dv and dv.family:
+            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+
         if job.status == IngestionStatus.completed:
             summary["completed"] += 1
             summary["total_passages"] += passage_count
         elif job.status == IngestionStatus.failed:
             summary["failed"] += 1
+            failure_info = {
+                "job_id": job.id,
+                "label": label,
+                "url": job.fetch_url,
+                "error": job.error_message,
+            }
+            summary["failed_jobs"].append(failure_info)
             if on_progress:
-                on_progress(f"  FAILED: {job.error_message}")
+                on_progress(
+                    f"  FAILED: {job.error_message}\n"
+                    f"    URL: {job.fetch_url}\n"
+                    f"    → To fix: manually insert the document or update the URL"
+                )
+        elif job.status == IngestionStatus.requires_manual_review:
+            summary["skipped"] += 1
+            review_info = {
+                "job_id": job.id,
+                "label": label,
+                "url": job.fetch_url,
+                "ai_suggested_url": getattr(job, "ai_suggested_url", None),
+                "error": job.error_message,
+            }
+            summary["manual_review_jobs"].append(review_info)
+            if on_progress:
+                suggested = getattr(job, "ai_suggested_url", None)
+                on_progress(
+                    f"  NEEDS MANUAL REVIEW: {job.error_message}\n"
+                    f"    Original URL: {job.fetch_url}"
+                    + (f"\n    AI-suggested URL: {suggested}" if suggested else "")
+                    + "\n    → Insert the document manually or approve the suggested URL"
+                )
 
     return summary

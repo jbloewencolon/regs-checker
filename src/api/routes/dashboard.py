@@ -375,11 +375,50 @@ def run_fetch(
     try:
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
+
+        # Build failure detail HTML
+        failure_html = ""
+        for f in summary.get("failed_jobs", []):
+            failure_html += (
+                f'<li><strong>{f["label"]}</strong> — '
+                f'<code style="word-break:break-all;">{f["url"]}</code><br>'
+                f'<span style="color:var(--danger);">{f["error"]}</span></li>'
+            )
+
+        manual_html = ""
+        for m in summary.get("manual_review_jobs", []):
+            suggested = m.get("ai_suggested_url")
+            suggested_line = (
+                f'<br>AI-suggested: <code style="word-break:break-all;">{suggested}</code>'
+                if suggested else ""
+            )
+            manual_html += (
+                f'<li><strong>{m["label"]}</strong> — '
+                f'<code style="word-break:break-all;">{m["url"]}</code>'
+                f'{suggested_line}<br>'
+                f'<span style="color:var(--warning);">{m["error"]}</span></li>'
+            )
+
+        details = ""
+        if failure_html:
+            details += (
+                f'<div style="margin-top:8px;"><strong>Failed downloads '
+                f'(need manual doc insertion):</strong>'
+                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{failure_html}</ul></div>'
+            )
+        if manual_html:
+            details += (
+                f'<div style="margin-top:8px;"><strong>Needs manual review:</strong>'
+                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{manual_html}</ul></div>'
+            )
+
+        panel_class = "success" if summary["failed"] == 0 else "warning"
         return HTMLResponse(
-            f'<div class="result-panel success">'
+            f'<div class="result-panel {panel_class}">'
             f'Completed: {summary["completed"]} documents, '
             f'{summary["total_passages"]} passages extracted. '
-            f'{summary["failed"]} failed.'
+            f'{summary["failed"]} failed, {summary["skipped"]} need review.'
+            f'{details}'
             f'</div>'
         )
     except Exception as e:

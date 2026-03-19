@@ -17,9 +17,13 @@ import pytest
 from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.prompt_loader import load_prompt_template, render_prompt, get_template_version
 from src.ingestion.extractor import (
+    CIRCUIT_BREAKER_THRESHOLD,
+    CircuitBreakerTripped,
+    MergedPassage,
     TokenUsageSummary,
     _content_hash,
     _confidence_to_priority,
+    _wrap_passages,
 )
 from src.schemas.extraction import AbstentionResult
 
@@ -217,3 +221,111 @@ class TestBaseAgentTemplateIntegration:
         )
         assert "Test passage text here" in prompt
         assert "CO SB205" in prompt
+
+
+# ---------------------------------------------------------------------------
+# _wrap_passages (replaces _merge_short_passages)
+# ---------------------------------------------------------------------------
+
+
+class TestWrapPassages:
+    def test_empty_records(self):
+        assert _wrap_passages([]) == []
+
+    def test_single_record(self):
+        rec = MagicMock()
+        rec.text_content = "Some legislative text here."
+        rec.document_version_id = 1
+        rec.ordinal = 0
+        result = _wrap_passages([rec])
+        assert len(result) == 1
+        assert result[0].text == "Some legislative text here."
+        assert result[0].source_records == [rec]
+
+    def test_no_merging_even_for_short_adjacent(self):
+        """Short adjacent passages should NOT be merged (merging disabled)."""
+        r1 = MagicMock()
+        r1.text_content = "Short A"
+        r1.document_version_id = 1
+        r1.ordinal = 0
+
+        r2 = MagicMock()
+        r2.text_content = "Short B"
+        r2.document_version_id = 1
+        r2.ordinal = 1
+
+        result = _wrap_passages([r1, r2])
+        assert len(result) == 2
+        # Each passage wraps exactly one record
+        assert len(result[0].source_records) == 1
+        assert len(result[1].source_records) == 1
+
+    def test_sorted_by_doc_version_and_ordinal(self):
+        """Records should be sorted by (document_version_id, ordinal)."""
+        r1 = MagicMock()
+        r1.text_content = "Doc2 Passage"
+        r1.document_version_id = 2
+        r1.ordinal = 0
+
+        r2 = MagicMock()
+        r2.text_content = "Doc1 Passage"
+        r2.document_version_id = 1
+        r2.ordinal = 0
+
+        result = _wrap_passages([r1, r2])
+        assert result[0].text == "Doc1 Passage"
+        assert result[1].text == "Doc2 Passage"
+
+
+# ---------------------------------------------------------------------------
+# CircuitBreakerTripped
+# ---------------------------------------------------------------------------
+
+
+class TestCircuitBreaker:
+    def test_threshold_constant(self):
+        assert CIRCUIT_BREAKER_THRESHOLD == 3
+
+    def test_exception_is_runtime_error(self):
+        assert issubclass(CircuitBreakerTripped, RuntimeError)
+
+    def test_exception_message(self):
+        exc = CircuitBreakerTripped("test message")
+        assert "test message" in str(exc)
+
+
+# ---------------------------------------------------------------------------
+# Batch custom_id format
+# ---------------------------------------------------------------------------
+
+
+class TestBatchCustomIdFormat:
+    """Verify the new '--' delimiter produces unambiguous custom IDs."""
+
+    def test_new_format_single_record(self):
+        """Single record ID with simple agent name."""
+        custom_id = "123--obligation"
+        record_ids_str, _, agent_name = custom_id.partition("--")
+        assert record_ids_str == "123"
+        assert agent_name == "obligation"
+        assert [int(r) for r in record_ids_str.split("-")] == [123]
+
+    def test_new_format_compound_agent(self):
+        """Compound agent name (threshold_exception) parses without ambiguity."""
+        custom_id = "456--threshold_exception"
+        record_ids_str, _, agent_name = custom_id.partition("--")
+        assert record_ids_str == "456"
+        assert agent_name == "threshold_exception"
+
+    def test_new_format_multiple_records(self):
+        """Multiple record IDs separated by single dashes."""
+        custom_id = "10-20-30--definition_actor"
+        record_ids_str, _, agent_name = custom_id.partition("--")
+        assert record_ids_str == "10-20-30"
+        assert agent_name == "definition_actor"
+        assert [int(r) for r in record_ids_str.split("-")] == [10, 20, 30]
+
+    def test_legacy_format_detected(self):
+        """Legacy format without '--' should be detected."""
+        custom_id = "123_obligation"
+        assert "--" not in custom_id  # Falls to legacy parsing path

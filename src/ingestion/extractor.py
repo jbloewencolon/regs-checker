@@ -74,11 +74,9 @@ logger = structlog.get_logger()
 # Passages shorter than this are legislative boilerplate (headers, stubs, etc.)
 MIN_PASSAGE_LENGTH = 150
 
-# Passages under this length from adjacent ordinals get merged
-MERGE_THRESHOLD = 300
-
-# Maximum merged passage length to avoid exceeding context
-MAX_MERGED_LENGTH = 2000
+# Circuit breaker: abort extraction if this many consecutive agent calls fail.
+# Prevents silently skipping data when Ollama/GPU is down.
+CIRCUIT_BREAKER_THRESHOLD = 3
 
 # Agent registry — 4 consolidated agents per Recommendation #1
 AGENTS: dict[str, BaseExtractionAgent] = {}
@@ -117,6 +115,15 @@ _DEFINITION_ACTOR_PATTERN = re.compile(
     r"|refers\s+to|the\s+term)\b",
     re.IGNORECASE,
 )
+
+
+class CircuitBreakerTripped(RuntimeError):
+    """Raised when too many consecutive agent calls fail.
+
+    Signals that the AI backend (Ollama, Anthropic API, etc.) is likely
+    down or misconfigured. The pipeline should abort so the operator can
+    check GPU/model status rather than silently skipping all remaining data.
+    """
 
 
 @dataclass
@@ -280,59 +287,29 @@ def _select_agents_for_passage(
     return selected
 
 
-def _merge_short_passages(
+def _wrap_passages(
     records: list[NormalizedSourceRecord],
 ) -> list[MergedPassage]:
-    """Merge consecutive short passages from the same section.
+    """Wrap each record into a single-record MergedPassage (no merging).
 
-    Passages under MERGE_THRESHOLD chars from the same document_version_id
-    and adjacent ordinals are fragments of a single enumerated list that
-    got split during chunking. Recombining them means 1 API call instead
-    of many, and Claude gets the full context.
+    Passage merging was a cost-optimization for cloud API calls.  Running
+    locally on dedicated hardware (e.g. R9700 + Ollama) makes merging
+    unnecessary, and disabling it eliminates two classes of bugs:
+      - Evidence span char-offsets becoming invalid after concatenation
+      - N×M extraction duplication when multi-extraction agents run on
+        merged passages with multiple source_records
 
-    Long passages (>= MERGE_THRESHOLD) are passed through as-is.
+    Records are still sorted by (document_version_id, ordinal) so agents
+    process passages in document order.
     """
     if not records:
         return []
 
-    # Sort by document_version_id then ordinal for adjacency detection
     sorted_records = sorted(records, key=lambda r: (r.document_version_id, r.ordinal))
-
-    merged: list[MergedPassage] = []
-    current: MergedPassage | None = None
-
-    for record in sorted_records:
-        text_len = len(record.text_content)
-
-        if text_len >= MERGE_THRESHOLD:
-            # Long passage — flush any accumulator and emit standalone
-            if current is not None:
-                merged.append(current)
-                current = None
-            merged.append(MergedPassage(text=record.text_content, source_records=[record]))
-            continue
-
-        # Short passage — try to merge with current accumulator
-        if current is not None:
-            prev = current.source_records[-1]
-            same_doc = prev.document_version_id == record.document_version_id
-            adjacent = record.ordinal == prev.ordinal + 1
-            would_fit = len(current.text) + len(record.text_content) + 1 <= MAX_MERGED_LENGTH
-
-            if same_doc and adjacent and would_fit:
-                current.text += "\n" + record.text_content
-                current.source_records.append(record)
-                continue
-
-            # Can't merge — flush current
-            merged.append(current)
-
-        current = MergedPassage(text=record.text_content, source_records=[record])
-
-    if current is not None:
-        merged.append(current)
-
-    return merged
+    return [
+        MergedPassage(text=r.text_content, source_records=[r])
+        for r in sorted_records
+    ]
 
 
 def _run_agent(
@@ -373,8 +350,9 @@ def extract_single_record(
     parse_quality: float | None = None,
     token_usage: TokenUsageSummary | None = None,
     existing_hashes: set[str] | None = None,
+    consecutive_failures: list[int] | None = None,
 ) -> int:
-    """Run selected agents against a (possibly merged) passage.
+    """Run selected agents against a passage.
 
     Returns extraction count. Agents are selected based on content signals.
 
@@ -383,6 +361,12 @@ def extract_single_record(
     within the same model group still run concurrently.
 
     Deduplication is based on a content hash of (agent_name, passage_text).
+
+    Args:
+        consecutive_failures: Single-element list used as a mutable counter
+            for consecutive agent failures across calls.  When the count
+            reaches CIRCUIT_BREAKER_THRESHOLD, a CircuitBreakerTripped
+            exception is raised so the caller can abort the run.
     """
     record = passage.primary_record
     ctx = _build_context(db, record)
@@ -442,7 +426,20 @@ def extract_single_record(
                 error=str(result),
                 section_path=record.section_path,
             )
+            # Circuit breaker: track consecutive failures
+            if consecutive_failures is not None:
+                consecutive_failures[0] += 1
+                if consecutive_failures[0] >= CIRCUIT_BREAKER_THRESHOLD:
+                    raise CircuitBreakerTripped(
+                        f"Aborting extraction: {consecutive_failures[0]} consecutive "
+                        f"agent failures. Last error from '{name}': {result}. "
+                        f"Check your Ollama/GPU status."
+                    )
             continue
+
+        # Successful call — reset consecutive failure counter
+        if consecutive_failures is not None:
+            consecutive_failures[0] = 0
 
         # Track token usage
         if token_usage is not None:
@@ -614,12 +611,12 @@ def run_extraction(
 
     _log(f"Spanning {len(dv_records)} document versions")
 
+    # Circuit breaker: mutable counter shared across all passages.
+    # A single-element list so extract_single_record can mutate it.
+    consecutive_failures: list[int] = [0]
+
     for dv_id, dv_group in dv_records.items():
-        # Merge consecutive short passages
-        merged_passages = _merge_short_passages(dv_group)
-        merge_count = len(dv_group) - len(merged_passages)
-        summary["passages_merged"] += merge_count
-        token_usage.merged_passages += merge_count
+        merged_passages = _wrap_passages(dv_group)
 
         # Create ExtractionJob for tracking
         extraction_job = ExtractionJob(
@@ -649,7 +646,7 @@ def run_extraction(
 
         _log(
             f"\n[{label}] Processing {len(merged_passages)} passages "
-            f"({len(dv_group)} records, {merge_count} merged)..."
+            f"({len(dv_group)} records)..."
         )
 
         job_extractions = 0
@@ -659,7 +656,7 @@ def run_extraction(
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
-                    token_usage, existing_hashes,
+                    token_usage, existing_hashes, consecutive_failures,
                 )
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
@@ -669,6 +666,21 @@ def run_extraction(
                 if (i + 1) % 10 == 0:
                     db.commit()
                     _log(f"  {i + 1}/{len(merged_passages)} passages processed...")
+
+            except CircuitBreakerTripped:
+                # Commit what we have so far, then abort the entire run
+                extraction_job.status = "failed"
+                extraction_job.completed_at = datetime.utcnow()
+                db.commit()
+                summary["total_extractions"] += job_extractions
+                summary["circuit_breaker_tripped"] = True
+                _log(
+                    f"\n*** CIRCUIT BREAKER TRIPPED ***\n"
+                    f"  {consecutive_failures[0]} consecutive agent failures.\n"
+                    f"  Pipeline aborted. Check Ollama/GPU status before retrying.\n"
+                    f"  Partial results committed: {job_extractions} extractions."
+                )
+                return summary
 
             except Exception as e:
                 job_failures += 1
@@ -782,7 +794,7 @@ def _run_batch_extraction(
     # Build batch requests
     batch_requests = []
     for dv_id, dv_group in dv_records.items():
-        merged_passages = _merge_short_passages(dv_group)
+        merged_passages = _wrap_passages(dv_group)
 
         for passage in merged_passages:
             record = passage.primary_record
@@ -797,10 +809,12 @@ def _run_batch_extraction(
                     "no code fences, and no preamble."
                 )
 
-                # Custom ID encodes record_id + agent for result matching
-                # Batch API only allows [a-zA-Z0-9_-], max 64 chars
+                # Custom ID encodes record_id + agent for result matching.
+                # Batch API only allows [a-zA-Z0-9_-], max 64 chars.
+                # Use "--" as an unambiguous delimiter: record IDs use
+                # single "-", and agent names never contain "--".
                 record_ids = "-".join(str(r.id) for r in passage.source_records)
-                custom_id = re.sub(r"[^a-zA-Z0-9_-]", "_", f"{record_ids}_{agent_name}")[:64]
+                custom_id = f"{record_ids}--{agent_name}"[:64]
 
                 batch_requests.append({
                     "custom_id": custom_id,
@@ -1145,29 +1159,31 @@ def retrieve_batch_results(
         results_processed += 1
         custom_id = entry.custom_id
 
-        # Parse custom_id: "recordId1-recordId2_agentName"
-        # Find the last underscore to split record_ids from agent_name
-        last_underscore = custom_id.rfind("_")
-        if last_underscore == -1:
-            logger.error("batch_invalid_custom_id", custom_id=custom_id)
-            errors += 1
-            continue
-
-        record_ids_str = custom_id[:last_underscore]
-        agent_name = custom_id[last_underscore + 1:]
-
-        # Handle compound agent names (e.g., "threshold_exception")
-        # by checking if the parsed agent_name is valid
-        if agent_name not in AGENT_EXTRACTION_TYPES:
-            # Try splitting at second-to-last underscore
-            prefix = record_ids_str
-            suffix = agent_name
-            last2 = prefix.rfind("_")
-            if last2 != -1:
-                candidate = prefix[last2 + 1:] + "_" + suffix
-                if candidate in AGENT_EXTRACTION_TYPES:
-                    agent_name = candidate
-                    record_ids_str = prefix[:last2]
+        # Parse custom_id: "recordId1-recordId2--agentName"
+        # The "--" delimiter is unambiguous: record IDs use single "-"
+        # and agent names never contain "--".
+        # Fall back to legacy "_"-based parsing for old batches.
+        if "--" in custom_id:
+            record_ids_str, _, agent_name = custom_id.partition("--")
+        else:
+            # Legacy format: "recordId1-recordId2_agentName"
+            last_underscore = custom_id.rfind("_")
+            if last_underscore == -1:
+                logger.error("batch_invalid_custom_id", custom_id=custom_id)
+                errors += 1
+                continue
+            record_ids_str = custom_id[:last_underscore]
+            agent_name = custom_id[last_underscore + 1:]
+            # Handle compound agent names (e.g., "threshold_exception")
+            if agent_name not in AGENT_EXTRACTION_TYPES:
+                prefix = record_ids_str
+                suffix = agent_name
+                last2 = prefix.rfind("_")
+                if last2 != -1:
+                    candidate = prefix[last2 + 1:] + "_" + suffix
+                    if candidate in AGENT_EXTRACTION_TYPES:
+                        agent_name = candidate
+                        record_ids_str = prefix[:last2]
 
         if agent_name not in AGENT_EXTRACTION_TYPES:
             logger.error(
