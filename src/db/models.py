@@ -63,6 +63,7 @@ class IngestionStatus(str, enum.Enum):
     normalizing = "normalizing"
     completed = "completed"
     failed = "failed"
+    requires_manual_review = "requires_manual_review"
 
 
 class ExtractionType(str, enum.Enum):
@@ -186,6 +187,9 @@ class DocumentFamily(Base):
     canonical_title = Column(Text, nullable=False)
     short_cite = Column(String(200))
     subject_area = Column(String(200))
+    primary_source_url = Column(Text)  # Direct .gov / legislature link to bill text
+    orrick_reference_url = Column(Text)  # Orrick AI Law Center reference page
+    iapp_reference_url = Column(Text)  # IAPP US AI Legislation Tracker PDF
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -242,6 +246,7 @@ class IngestionJob(Base):
     parse_completed_at = Column(DateTime)
     parse_quality_score = Column(Float)
     error_message = Column(Text)
+    ai_suggested_url = Column(Text)  # Set by VerificationAgent when fetch_url is stale
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

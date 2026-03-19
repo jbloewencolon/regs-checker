@@ -40,7 +40,14 @@ class Settings(BaseSettings):
 
     # Local LLM (OpenAI-compatible API: llama.cpp, vLLM, Ollama)
     local_llm_url: str = ""  # e.g. http://localhost:8080
-    local_llm_model: str = "llama-3.1-8b"  # Model name for local server
+    local_llm_model: str = "llama-3.2-3b"  # Default model for discovery tasks
+
+    # Web search (for fallback URL verification)
+    search_provider: str = ""  # "tavily", "serper", or "google_cse"
+    tavily_api_key: str = ""
+    serper_api_key: str = ""
+    google_cse_api_key: str = ""
+    google_cse_cx: str = ""  # Custom Search Engine ID
 
     # FastAPI
     api_host: str = "0.0.0.0"
