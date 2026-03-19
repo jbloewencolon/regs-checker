@@ -339,6 +339,22 @@ def _run_agent(
         return agent_name, e
 
 
+def _group_agents_by_model(
+    agents: dict[str, BaseExtractionAgent],
+) -> list[dict[str, BaseExtractionAgent]]:
+    """Group agents by model_override to minimise VRAM model swaps.
+
+    Returns a list of dicts (one per model group), ordered so agents sharing
+    the same model run together. Agents within a group can run concurrently;
+    groups run sequentially so Ollama only loads one model at a time.
+    """
+    groups: dict[str | None, dict[str, BaseExtractionAgent]] = {}
+    for name, agent in agents.items():
+        key = agent.model_override
+        groups.setdefault(key, {})[name] = agent
+    return list(groups.values())
+
+
 def extract_single_record(
     db,
     passage: MergedPassage,
@@ -351,7 +367,11 @@ def extract_single_record(
     """Run selected agents against a (possibly merged) passage.
 
     Returns extraction count. Agents are selected based on content signals.
-    Agents run concurrently via ThreadPoolExecutor for improved throughput.
+
+    To avoid VRAM thrashing when using local models via Ollama, agents are
+    grouped by their model_override and each group runs sequentially.  Agents
+    within the same model group still run concurrently.
+
     Deduplication is based on a content hash of (agent_name, passage_text).
     """
     record = passage.primary_record
@@ -372,32 +392,35 @@ def extract_single_record(
         logger.debug("all_agents_skipped", record_id=record.id)
         return 0
 
-    # Build futures for concurrent execution
+    # Group agents by model to minimise Ollama VRAM model swaps.
+    # Each group runs sequentially; agents within a group run concurrently.
+    model_groups = _group_agents_by_model(selected_agents)
     agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = {}
-        for agent_name, agent in selected_agents.items():
-            # Deduplication guard
-            content_hash = _content_hash(agent_name, passage.text)
-            if existing_hashes is not None and content_hash in existing_hashes:
-                logger.debug(
-                    "extraction_deduplicated",
-                    agent=agent_name,
-                    record_id=record.id,
+    for group in model_groups:
+        with ThreadPoolExecutor(max_workers=len(group)) as executor:
+            futures = {}
+            for agent_name, agent in group.items():
+                # Deduplication guard
+                content_hash = _content_hash(agent_name, passage.text)
+                if existing_hashes is not None and content_hash in existing_hashes:
+                    logger.debug(
+                        "extraction_deduplicated",
+                        agent=agent_name,
+                        record_id=record.id,
+                    )
+                    continue
+
+                future = executor.submit(
+                    _run_agent, agent_name, agent, passage.text, ctx
                 )
-                continue
+                futures[future] = (agent_name, content_hash)
 
-            future = executor.submit(
-                _run_agent, agent_name, agent, passage.text, ctx
-            )
-            futures[future] = (agent_name, content_hash)
-
-        # Collect results
-        for future in as_completed(futures):
-            agent_name, content_hash = futures[future]
-            name, result = future.result()
-            agent_results.append((name, content_hash, result))
+            # Collect results for this model group
+            for future in as_completed(futures):
+                agent_name, content_hash = futures[future]
+                name, result = future.result()
+                agent_results.append((name, content_hash, result))
 
     # Process results (back on main thread for DB writes)
     for name, content_hash, result in agent_results:

@@ -218,6 +218,41 @@ def _parse_pdf_ocr(content: bytes) -> list[tuple[str, str, int, int]]:
         return []
 
 
+def extract_text_sample(artifact, max_chars: int = 4000) -> str:
+    """Extract a text sample from a raw artifact for classification.
+
+    This is a lightweight extraction used by the pipeline's Discovery Agent
+    to classify content before full parsing. Returns the first `max_chars`
+    characters of extracted text.
+    """
+    content = _fetch_content_from_s3(artifact.s3_key)
+
+    if artifact.content_type in ("text/html", "application/xhtml+xml"):
+        soup = BeautifulSoup(content, "lxml")
+        for element in soup(["script", "style", "nav", "footer", "header"]):
+            element.decompose()
+        body = soup.find("body") or soup
+        text = body.get_text(separator="\n", strip=True)
+    elif artifact.content_type == "application/pdf":
+        try:
+            import io
+            import pdfplumber
+
+            text_parts = []
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                for page in pdf.pages[:3]:  # First 3 pages only
+                    page_text = page.extract_text()
+                    if page_text:
+                        text_parts.append(page_text)
+            text = "\n\n".join(text_parts)
+        except Exception:
+            text = content.decode("utf-8", errors="replace")
+    else:
+        text = content.decode("utf-8", errors="replace")
+
+    return text[:max_chars]
+
+
 def _fetch_content_from_s3(s3_key: str) -> bytes:
     """Fetch content from S3/MinIO."""
     import boto3
