@@ -184,6 +184,15 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         "section_path": record.section_path,
     }
 
+    # Surface reference URLs so agents can cite authoritative sources
+    if df:
+        if df.primary_source_url:
+            ctx["primary_source_url"] = df.primary_source_url
+        if df.orrick_reference_url:
+            ctx["orrick_reference_url"] = df.orrick_reference_url
+        if df.iapp_reference_url:
+            ctx["iapp_reference_url"] = df.iapp_reference_url
+
     # Inject Orrick tracker metadata as context when available
     if df and df.metadata_:
         key_reqs = df.metadata_.get("key_requirements")
