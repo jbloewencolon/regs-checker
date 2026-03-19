@@ -241,3 +241,34 @@ sources, document_families, document_versions, ingestion_jobs, raw_artifacts, no
 | `templates/analytics.html` | Analytics UI |
 | `templates/review.html` | Review queue UI |
 | `static/css/style.css` | All styling |
+
+---
+
+## Pending Database Migrations
+
+Two Alembic migrations exist but may not yet be applied to your database. If you see errors about missing columns, run:
+
+```bash
+python -m alembic upgrade head
+```
+
+### Migration: `b7d4e1f3a502` — Manual review status + AI suggested URL
+- Adds `requires_manual_review` value to the `ingestionstatus` enum
+- Adds `ai_suggested_url` (Text, nullable) column to `ingestion_jobs` — set by the VerificationAgent when a fetch URL is stale
+
+Without this migration, the "Fetch & Parse" step will fail with:
+```
+(psycopg2.errors.UndefinedColumn) column ingestion_jobs.ai_suggested_url does not exist
+```
+
+### Migration: `c9e2a4d5b703` — Structured URL columns
+- Adds `primary_source_url` (Text, nullable) to `document_families`
+- Adds `orrick_reference_url` (Text, nullable) to `document_families`
+- Adds `iapp_reference_url` (Text, nullable) to `document_families`
+
+---
+
+## Known Issues Fixed
+
+### `IngestionStatus` enum mismatch in progress tracking (fixed)
+`src/api/progress.py` previously referenced `IngestionStatus.completed_with_warnings` and `IngestionStatus.running`, which do not exist in the enum. The actual enum values are: `pending`, `fetching`, `fetched`, `parsing`, `parsed`, `normalizing`, `completed`, `failed`, `requires_manual_review`. This caused a 500 error on `/dashboard/`. Fixed by using the correct enum values (`fetching`, `parsing`, `normalizing` for in-progress jobs).
