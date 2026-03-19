@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Regs Checker is an AI-powered pipeline that extracts structured legal obligations from US state AI legislation. It scrapes bills from Orrick and IAPP trackers, fetches the full text, splits it into passages, runs extraction agents (obligations, definitions, thresholds, ambiguities), scores confidence, and pushes approved results to a Policy Navigator product database.
+Regs Checker is an AI-powered pipeline that extracts structured legal obligations from US state AI legislation. It discovers bills from the Orrick PDF tracker and IAPP, fetches the full text from primary legislature URLs, splits it into passages, runs extraction agents (obligations, definitions, thresholds, ambiguities), scores confidence, and pushes approved results to a Policy Navigator product database.
 
 **Current state:** 180 laws ingested, 9,182 passages parsed, 28,885 extractions produced. Default model: `claude-haiku-4-5-20251001`. 100/100 unit tests passing.
 
@@ -73,7 +73,7 @@ Below the progress section are the **7 pipeline steps**, each with action button
 
 | Step | Name                    | Type      | What It Does                                              |
 |------|-------------------------|-----------|-----------------------------------------------------------|
-| 1    | Find New Laws           | Automated | Scrapes Orrick + IAPP for new AI bills                    |
+| 1    | Find New Laws           | Automated | Parses Orrick PDF + IAPP for new AI bills                 |
 | 2    | Fetch & Parse           | Automated | Downloads PDFs/HTML, extracts text, splits into passages  |
 | 3    | Prepare for Extraction  | Automated | Bundles passages into batch files in `export/`            |
 | 4    | Extract with Claude     | Manual    | You paste batch files into Claude and save JSON results   |
@@ -153,7 +153,7 @@ Everything the UI does can also be run from the command line:
 
 ```bash
 # Discovery
-python -m src.scripts.seed_pipeline --mode orrick
+python -m src.scripts.seed_pipeline --mode pdf
 
 # Fetch documents
 python -m src.scripts.seed_pipeline --mode fetch --limit 10

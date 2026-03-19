@@ -10,11 +10,11 @@ from src.dagster_pipelines.assets import (
     ingested_documents,
     synced_extractions,
 )
-from src.dagster_pipelines.jobs import orrick_discovery_job
+from src.dagster_pipelines.jobs import pdf_discovery_job
 
 defs = dagster.Definitions(
     assets=[discovered_legislation, ingested_documents, extracted_obligations, synced_extractions, bridge_gap_report, bill_status_check],
-    jobs=[orrick_discovery_job],
+    jobs=[pdf_discovery_job],
     schedules=[
         # Daily ingestion: process any pending ingestion jobs at 6 AM UTC
         dagster.ScheduleDefinition(
@@ -51,14 +51,14 @@ defs = dagster.Definitions(
             target=dagster.AssetSelection.keys("discovered_legislation"),
             default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
-        # Monthly discovery: scrape Orrick AI tracker on the 1st at midnight UTC
+        # Monthly discovery: parse PDF tracker on the 1st at midnight UTC
         dagster.ScheduleDefinition(
-            name="monthly_orrick_discovery",
+            name="monthly_pdf_discovery",
             cron_schedule="0 0 1 * *",
-            target=orrick_discovery_job,
+            target=pdf_discovery_job,
             default_status=dagster.DefaultScheduleStatus.STOPPED,
         ),
-        # Weekly status check: cross-reference Orrick + IAPP every Wednesday 6 AM UTC
+        # Weekly status check: cross-reference PDF tracker + IAPP every Wednesday 6 AM UTC
         dagster.ScheduleDefinition(
             name="weekly_status_check",
             cron_schedule="0 6 * * 3",

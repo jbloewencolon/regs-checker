@@ -45,18 +45,18 @@
       </div>
       <div class="step-body">
         <div class="step-description">
-          Scrapes <a href="https://ai-law-center.orrick.com/us-ai-law-tracker-see-all-states/" target="_blank">Orrick</a>
-          and <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
+          Parses the Orrick PDF tracker (<code>static/Orrick-US-AI-Law-Tracker.pdf</code>) and
+          cross-references <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
           for new AI bills and status changes.
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
-                  hx-post="/dashboard/api/run/orrick-discovery"
+                  hx-post="/dashboard/api/run/pdf-discovery"
                   hx-target="#step1-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
-            <span class="btn-label">Scan for New Laws</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Scanning...</span>
+            <span class="btn-label">Scan PDF for New Laws</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Parsing PDF...</span>
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/status-check"

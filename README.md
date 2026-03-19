@@ -16,9 +16,9 @@ AI-powered regulatory obligation extraction and compliance serving platform. Ing
 ## Architecture
 
 ```
-                    Orrick AI Law Tracker
+             Orrick PDF Tracker + IAPP
                            │
-                      (scrape + fetch)
+                      (parse + fetch)
                            ▼
 ┌─────────────────────────────────────────────────┐
 │              Local Docker Postgres               │
@@ -56,7 +56,7 @@ src/
     threshold_exception.py # Threshold + exception co-extraction
     ambiguity.py        #   Vague/ambiguous language detection
   ingestion/            # Source connectors, parsers, extraction pipeline
-    orrick_scraper.py   #   Orrick AI Law Tracker scraper
+    pdf_tracker.py      #   Orrick PDF tracker parser (replaces web scraper)
     connector.py        #   Document fetching with retry + fallback
     parser.py           #   PDF/HTML → passage chunking
     extractor.py        #   Extraction orchestrator (filtering, merging, batch API)
@@ -95,7 +95,7 @@ archive/                # Historical planning documents
 cd docker && docker compose up -d
 
 # Run the full pipeline (ingest → parse → extract)
-python -m src.scripts.seed_pipeline --mode orrick      # Scrape Orrick tracker
+python -m src.scripts.seed_pipeline --mode pdf          # Parse Orrick PDF tracker
 python -m src.scripts.seed_pipeline --mode fetch        # Fetch document text
 python -m src.scripts.seed_pipeline --mode extract      # Run extraction agents
 
@@ -148,7 +148,7 @@ pytest tests/
 - Keyword-based agent selection (skip irrelevant agents)
 - Default to Haiku model (20x cheaper than Sonnet)
 - Batch API (50% discount)
-- Orrick metadata context injection
+- PDF tracker metadata context injection
 
 ## Design Principles
 

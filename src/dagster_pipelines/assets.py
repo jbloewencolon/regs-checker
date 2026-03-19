@@ -304,7 +304,7 @@ def bill_status_check(context: dagster.AssetExecutionContext) -> dict:
             "checked": result.checked,
             "changed": result.changed,
             "errors": result.errors,
-            "orrick_records": result.orrick_records,
+            "pdf_records": result.pdf_records,
             "iapp_records": result.iapp_records,
         }
     except Exception as e:
