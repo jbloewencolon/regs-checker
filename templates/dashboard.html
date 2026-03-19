@@ -19,17 +19,20 @@
   <div class="step-list">
 
     <!-- ============================================================ -->
-    <!-- STEP 1: Discovery -->
+    <!-- STEP 1: Discovery + Status Check -->
     <!-- ============================================================ -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">1</div>
-        <div class="step-title">Find New AI Laws</div>
+        <div class="step-title">Find New Laws & Check Statuses</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-description">
-        Scrapes the Orrick AI Law Tracker for new state AI bills.
-        Adds them to the database for processing.
+        <strong>Discovery:</strong> Scrapes the Orrick AI Law Tracker for new state AI bills.<br>
+        <strong>Status Check:</strong> Cross-references both
+        <a href="https://ai-law-center.orrick.com/us-ai-law-tracker-see-all-states/" target="_blank">Orrick</a> and
+        <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
+        to detect when bills change status (introduced &rarr; pending &rarr; enacted or dead).
         <br><em>Uses: web scraping (no AI, no cost)</em>
       </div>
       <div class="step-actions">
@@ -41,10 +44,43 @@
           <span class="btn-label">Scan for New Laws</span>
           <span class="htmx-indicator"><span class="spinner"></span> Scanning...</span>
         </button>
+        <button class="btn"
+                hx-post="/dashboard/api/run/status-check"
+                hx-target="#step1-status-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Check All Statuses</span>
+          <span class="htmx-indicator"><span class="spinner"></span> Checking Orrick + IAPP...</span>
+        </button>
+        <button class="btn btn-sm"
+                hx-post="/dashboard/api/run/status-check?dry_run=true"
+                hx-target="#step1-status-result"
+                hx-swap="innerHTML"
+                hx-disabled-elt="this">
+          <span class="btn-label">Preview Changes</span>
+          <span class="htmx-indicator"><span class="spinner"></span></span>
+        </button>
       </div>
       <div class="step-status" id="step1-result">
         {% if stats.pending_ingestion > 0 %}
         <span class="count">{{ stats.pending_ingestion }}</span> laws waiting to be fetched
+        {% endif %}
+      </div>
+      <div class="step-status" id="step1-status-result">
+        {% if stats.status_summary %}
+        <div style="margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;">
+          {% for status, count in stats.status_summary.items() %}
+          <span>
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+              {% if status in ('active', 'enacted') %}background: var(--success);
+              {% elif status in ('dead', 'vetoed', 'withdrawn') %}background: var(--danger);
+              {% elif status in ('pending', 'introduced', 'passed_one_chamber') %}background: var(--warning);
+              {% else %}background: var(--text-muted);{% endif %}
+            "></span>
+            {{ count }} {{ status.replace('_', ' ') }}
+          </span>
+          {% endfor %}
+        </div>
         {% endif %}
       </div>
     </div>
