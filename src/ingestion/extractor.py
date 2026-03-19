@@ -48,6 +48,7 @@ from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.confidence import compute_confidence
+from src.core.orrick_validation import validate_extraction_against_orrick
 from src.core.jurisdiction_check import (
     JurisdictionMismatch,
     validate_extraction_jurisdiction,
@@ -183,6 +184,15 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         "jurisdiction": s.jurisdiction_code if s else None,
         "section_path": record.section_path,
     }
+
+    # Surface reference URLs so agents can cite authoritative sources
+    if df:
+        if df.primary_source_url:
+            ctx["primary_source_url"] = df.primary_source_url
+        if df.orrick_reference_url:
+            ctx["orrick_reference_url"] = df.orrick_reference_url
+        if df.iapp_reference_url:
+            ctx["iapp_reference_url"] = df.iapp_reference_url
 
     # Inject Orrick tracker metadata as context when available
     if df and df.metadata_:
@@ -466,12 +476,14 @@ def extract_single_record(
             for item in result.extractions:
                 try:
                     evidence = item.get("evidence_spans", [])
+                    orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
                         schema_valid=True,
                         evidence_spans=evidence,
                         extraction_payload=item,
                         schema_class=schema_class,
                         parse_quality_score=parse_quality,
+                        orrick_similarity=orrick_sim,
                     )
 
                     extraction = Extraction(
@@ -505,6 +517,8 @@ def extract_single_record(
                         confidence_tier=confidence.tier,
                         evidence_verified=sum(1 for e in evidence if e.get("verified")),
                         evidence_total=len(evidence),
+                        orrick_alignment=confidence.orrick_alignment,
+                        orrick_matched_tokens=confidence.orrick_matched_tokens[:5],
                     )
 
                 except Exception as e:
@@ -978,12 +992,14 @@ def run_recovery_extraction(
                 for item in result.extractions:
                     try:
                         evidence = item.get("evidence_spans", [])
+                        orrick_sim = validate_extraction_against_orrick(item, ctx)
                         confidence = compute_confidence(
                             schema_valid=True,
                             evidence_spans=evidence,
                             extraction_payload=item,
                             schema_class=schema_class,
                             parse_quality_score=parse_quality,
+                            orrick_similarity=orrick_sim,
                         )
 
                         extraction = Extraction(
@@ -1261,6 +1277,9 @@ def retrieve_batch_results(
         # Reconstruct passage text for evidence verification
         passage_text = "\n".join(r.text_content for r in source_records)
 
+        # Build context for Orrick similarity validation
+        batch_ctx = _build_context(db, first_record)
+
         for item in items:
             try:
                 validated = schema.model_validate(item)
@@ -1272,12 +1291,14 @@ def retrieve_batch_results(
                 result_dict["_model_id"] = settings.extraction_model
                 result_dict["_batch_id"] = batch_id
 
+                orrick_sim = validate_extraction_against_orrick(result_dict, batch_ctx)
                 confidence = compute_confidence(
                     schema_valid=True,
                     evidence_spans=verified_spans,
                     extraction_payload=result_dict,
                     schema_class=schema_class,
                     parse_quality_score=parse_quality,
+                    orrick_similarity=orrick_sim,
                 )
 
                 # Write extraction for each source record

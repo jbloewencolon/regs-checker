@@ -92,6 +92,9 @@ def _verify_content_or_fallback(
             "title": df.canonical_title if df else None,
             "jurisdiction": s.jurisdiction_code if s else None,
             "bill_number": df.short_cite if df else None,
+            "primary_source_url": df.primary_source_url if df else None,
+            "orrick_reference_url": df.orrick_reference_url if df else None,
+            "iapp_reference_url": df.iapp_reference_url if df else None,
         }
 
         # Check if search is configured
