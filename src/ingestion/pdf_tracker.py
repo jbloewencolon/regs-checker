@@ -356,6 +356,9 @@ def _extract_rows_from_page(page, col_boundaries: list[float]) -> list[list[str]
     if not words:
         return []
 
+    # Filter out page header/footer noise before grouping into rows
+    words = [w for w in words if not _is_noise_word(w["text"])]
+
     # Group words into rows by y-position (words within 3pts vertically = same row)
     words_sorted = sorted(words, key=lambda w: (w["top"], w["x0"]))
 
@@ -444,6 +447,27 @@ def _merge_continuation_rows(rows: list[list[str]], num_cols: int) -> list[list[
     return merged
 
 
+_NOISE_PATTERNS = re.compile(
+    r"^(Page \d+ of \d+|Last updated .*|U\.S\. AI Law Tracker|"
+    r"Which states have AI|This tracker summarizes|Please visit our|"
+    r"For more, please).*$"
+)
+
+
+def _is_noise_word(text: str) -> bool:
+    """Check if a word/phrase is page header/footer noise."""
+    return bool(_NOISE_PATTERNS.match(text.strip()))
+
+
+def _clean_cell(text: str) -> str:
+    """Remove page footer fragments from merged cell text."""
+    # Remove "Page X of Y" fragments
+    text = re.sub(r"\s*Page \d+ of \d+\s*", " ", text)
+    # Remove "Last updated ..." fragments
+    text = re.sub(r"\s*Last updated [A-Za-z]+ \d{1,2},? \d{4}\s*", " ", text)
+    return text.strip()
+
+
 def _match_state_name(text: str) -> str:
     """Match text against known state names, handling multi-line cell content."""
     text = text.strip()
@@ -477,7 +501,7 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
         if len(row) < 3:
             continue
 
-        state_cell = row[0].strip() if row[0] else ""
+        state_cell = _clean_cell(row[0] if row[0] else "")
         scope_cell = row[1].strip() if len(row) > 1 else ""
 
         # Skip header rows
@@ -496,12 +520,12 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
         if not state_code:
             continue
 
-        ai_scope = scope_cell
-        law_name = (row[2].strip() if len(row) > 2 else "")
-        bill_id = (row[3].strip() if len(row) > 3 else "")
-        effective_date = (row[4].strip() if len(row) > 4 else "")
-        key_requirements = (row[5].strip() if len(row) > 5 else "")
-        enforcement = (row[6].strip() if len(row) > 6 else "")
+        ai_scope = _clean_cell(scope_cell)
+        law_name = _clean_cell(row[2] if len(row) > 2 else "")
+        bill_id = _clean_cell(row[3] if len(row) > 3 else "")
+        effective_date = _clean_cell(row[4] if len(row) > 4 else "")
+        key_requirements = _clean_cell(row[5] if len(row) > 5 else "")
+        enforcement = _clean_cell(row[6] if len(row) > 6 else "")
 
         # Skip rows with no meaningful content
         if not law_name and not bill_id and not ai_scope:
