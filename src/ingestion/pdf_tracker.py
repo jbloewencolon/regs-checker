@@ -460,11 +460,13 @@ def _is_noise_word(text: str) -> bool:
 
 
 def _clean_cell(text: str) -> str:
-    """Remove page footer fragments from merged cell text."""
+    """Remove page footer fragments and normalize whitespace in cell text."""
     # Remove "Page X of Y" fragments
     text = re.sub(r"\s*Page \d+ of \d+\s*", " ", text)
     # Remove "Last updated ..." fragments
     text = re.sub(r"\s*Last updated [A-Za-z]+ \d{1,2},? \d{4}\s*", " ", text)
+    # Collapse all runs of whitespace (PDF line-break artifacts) into single spaces
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
@@ -584,6 +586,8 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
              4=Effective Date, 5=Key Requirements, 6=Enforcement
     """
     records = []
+    seen: set[tuple[str, str]] = set()  # (state_code, law_name) dedup
+    url_index = 0
     current_state = ""
 
     for row in rows:
@@ -620,12 +624,25 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
         if not law_name and not bill_id and not ai_scope:
             continue
 
+        # Match a URL from extracted hyperlinks
+        law_url = ""
+        if url_index < len(law_urls):
+            law_url = law_urls[url_index]
+            url_index += 1
+
+        final_name = law_name or bill_id
+        dedup_key = (state_code, final_name.lower())
+        if dedup_key in seen:
+            logger.debug("skipping_duplicate_record", state=state_code, law=final_name)
+            continue
+        seen.add(dedup_key)
+
         records.append({
             "state": current_state,
             "state_code": state_code,
             "ai_scope": ai_scope,
-            "law_name": law_name or bill_id,
-            "law_url": "",  # Assigned below by _assign_urls_to_records
+            "law_name": final_name,
+            "law_url": law_url,
             "bill_id": bill_id,
             "effective_date": effective_date,
             "key_requirements": key_requirements,
@@ -697,6 +714,8 @@ def _parse_tabular_text(lines: list[str], law_urls: list[str]) -> list[dict]:
     and parse each row by identifying the structural pattern.
     """
     records = []
+    seen: set[tuple[str, str]] = set()  # (state_code, law_name) dedup
+    url_index = 0  # Track which URL we're on
 
     # Build state name set for detection
     state_names = set(STATE_CODES.keys())
@@ -769,12 +788,25 @@ def _parse_tabular_text(lines: list[str], law_urls: list[str]) -> list[dict]:
             # Next: enforcement penalties
             enforcement, i = _read_enforcement(lines, i)
 
+            # Match a URL from the extracted hyperlinks
+            law_url = ""
+            if url_index < len(law_urls):
+                law_url = law_urls[url_index]
+                url_index += 1
+
+            final_name = law_name or bill_id
+            dedup_key = (state_code, final_name.lower())
+            if dedup_key in seen:
+                logger.debug("skipping_duplicate_record", state=state_code, law=final_name)
+                continue
+            seen.add(dedup_key)
+
             records.append({
                 "state": current_state,
                 "state_code": state_code,
                 "ai_scope": ai_scope,
-                "law_name": law_name or bill_id,
-                "law_url": "",  # Assigned below by _assign_urls_to_records
+                "law_name": final_name,
+                "law_url": law_url,
                 "bill_id": bill_id,
                 "effective_date": effective_date,
                 "key_requirements": key_requirements,
@@ -833,7 +865,7 @@ def _read_law_name(lines: list[str], i: int) -> tuple[str, int]:
         i += 1
         if len(parts) >= 4:  # Law names are at most a few lines
             break
-    return " ".join(parts), i
+    return re.sub(r"\s+", " ", " ".join(parts)).strip(), i
 
 
 def _read_bill_id(lines: list[str], i: int) -> tuple[str, int]:
@@ -854,7 +886,7 @@ def _read_bill_id(lines: list[str], i: int) -> tuple[str, int]:
         i += 1
         if len(parts) >= 3:
             break
-    return " ".join(parts), i
+    return re.sub(r"\s+", " ", " ".join(parts)).strip(), i
 
 
 def _read_effective_date(lines: list[str], i: int) -> tuple[str, int]:
@@ -898,7 +930,7 @@ def _read_requirements(lines: list[str], i: int) -> tuple[str, int]:
             continue
         parts.append(line)
         i += 1
-    return " ".join(parts), i
+    return re.sub(r"\s+", " ", " ".join(parts)).strip(), i
 
 
 def _read_enforcement(lines: list[str], i: int) -> tuple[str, int]:
@@ -922,7 +954,7 @@ def _read_enforcement(lines: list[str], i: int) -> tuple[str, int]:
             continue
         parts.append(line)
         i += 1
-    return " ".join(parts), i
+    return re.sub(r"\s+", " ", " ".join(parts)).strip(), i
 
 
 # ---------------------------------------------------------------------------
