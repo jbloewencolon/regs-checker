@@ -664,9 +664,12 @@ def run_status_check(
         if result.changed == 0:
             return HTMLResponse(
                 f'<div class="result-panel info">'
-                f'Checked <strong>{result.checked}</strong> bills against '
-                f'PDF tracker (<strong>{result.pdf_records}</strong> matched) and '
-                f'IAPP (<strong>{result.iapp_records}</strong> matched). '
+                f'Checked <strong>{result.checked}</strong> bills. '
+                f'Cross-referenced against PDF tracker '
+                f'(<strong>{result.pdf_matched}</strong>/{result.checked} matched '
+                f'from {result.pdf_records} index records) and '
+                f'IAPP (<strong>{result.iapp_matched}</strong>/{result.checked} matched '
+                f'from {result.iapp_records} index records). '
                 f'No status changes detected.'
                 f'{iapp_note}'
                 f'</div>'
@@ -1926,7 +1929,11 @@ def _get_pipeline_stats(db: Session) -> dict:
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
 
+    # Tracker CSV row count for the collapsible header
+    tracker_count = len(_read_tracker())
+
     return {
+        "tracker_count": tracker_count,
         "pending_ingestion": pending_ingestion,
         "total_passages": total_passages,
         "unprocessed_passages": unprocessed_passages,

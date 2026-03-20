@@ -115,6 +115,7 @@ class FederalNISTConnector(BaseConnector):
         return response.content, content_type
 
 
+@register_connector("pdf_tracker")
 @register_connector("orrick_tracker")
 class OrrickTrackerConnector(BaseConnector):
     """Connector for bills discovered via the Orrick AI Law Tracker.
