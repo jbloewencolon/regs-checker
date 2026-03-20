@@ -246,17 +246,33 @@ class IAPPScrapeResult:
 def _scrape_iapp_index() -> IAPPScrapeResult:
     """Build a lookup index from IAPP tracker data.
 
+    Tries the local IAPP PDF first (fast, no network), then falls back
+    to web scraping if the PDF is not available.
+
     Returns an IAPPScrapeResult so callers can distinguish:
-      - success=True,  index={...}  → scraped OK, got data
-      - success=True,  index={}     → scraped OK, zero bills matched
-      - success=False, index={}     → scrape failed (network, parse, etc.)
+      - success=True,  index={...}  → parsed/scraped OK, got data
+      - success=True,  index={}     → parsed/scraped OK, zero bills matched
+      - success=False, index={}     → both methods failed
     """
+    records = None
+
+    # Strategy 1: Parse local IAPP PDF (preferred — no network dependency)
     try:
-        from src.ingestion.iapp_scraper import scrape_tracker
-        records = scrape_tracker()
+        from src.ingestion.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+        if IAPP_PDF_PATH.exists():
+            records = parse_iapp_pdf()
+            logger.info("iapp_loaded_from_pdf", records=len(records))
     except Exception as e:
-        logger.warning("iapp_scrape_failed", error=str(e))
-        return IAPPScrapeResult({}, success=False, error=str(e))
+        logger.warning("iapp_pdf_parse_failed", error=str(e)[:200])
+
+    # Strategy 2: Fall back to web scraping
+    if records is None:
+        try:
+            from src.ingestion.iapp_scraper import scrape_tracker
+            records = scrape_tracker()
+        except Exception as e:
+            logger.warning("iapp_scrape_failed", error=str(e))
+            return IAPPScrapeResult({}, success=False, error=str(e))
 
     index = {}
     for r in records:

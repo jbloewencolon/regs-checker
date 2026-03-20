@@ -228,7 +228,7 @@ def seed_via_pdf(db) -> list[IngestionJob]:
     from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
 
     records = parse_tracker_pdf()
-    jobs = seed_from_tracker(db, records)
+    jobs, _stats = seed_from_tracker(db, records)
     return jobs
 
 

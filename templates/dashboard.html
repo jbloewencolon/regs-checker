@@ -104,6 +104,9 @@
       <div class="step-body">
         <div class="step-description">
           Downloads bill PDFs/HTML, extracts text, splits into passages.
+          {% if stats.total_passages > 0 %}
+          <strong>{{ stats.total_passages }}</strong> passages in database.
+          {% endif %}
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -122,21 +125,32 @@
             <span class="btn-label">Fetch 5 (Test)</span>
             <span class="htmx-indicator"><span class="spinner"></span></span>
           </button>
-          <button class="btn btn-sm"
-                  hx-get="/dashboard/api/documents"
-                  hx-target="#step2-docs"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Browse Documents</span>
-            <span class="htmx-indicator"><span class="spinner"></span></span>
+        </div>
+        <div class="step-result" id="step2-result"></div>
+
+        <!-- Document tabs -->
+        <div class="tabs" id="step2-tabs" style="margin-top:12px;">
+          <button class="tab active" onclick="switchStep2Tab('browse')">
+            Browse Documents
+          </button>
+          <button class="tab" onclick="switchStep2Tab('failed')">
+            Failed Documents
           </button>
         </div>
-        <div class="step-result" id="step2-result">
-          {% if stats.total_passages > 0 %}
-          <span class="count">{{ stats.total_passages }}</span> passages in database
-          {% endif %}
+
+        <div class="step2-tab-panel" id="step2-tab-browse"
+             hx-get="/dashboard/api/documents"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+          <span class="spinner"></span> Loading...
         </div>
-        <div id="step2-docs"></div>
+        <div class="step2-tab-panel" id="step2-tab-failed" style="display:none;">
+          <div hx-get="/dashboard/api/failed-documents"
+               hx-trigger="load"
+               hx-swap="innerHTML">
+            <span class="spinner"></span> Loading...
+          </div>
+        </div>
       </div>
     </div>
 
@@ -403,7 +417,7 @@
   </div>
 </section>
 
-<!-- Tab switching for extraction methods -->
+<!-- Tab switching -->
 <script>
 function switchExtractTab(tab) {
   document.querySelectorAll('.extract-tab-panel').forEach(function(el) {
@@ -413,6 +427,17 @@ function switchExtractTab(tab) {
     el.classList.remove('active');
   });
   document.getElementById('tab-' + tab).style.display = 'block';
+  event.currentTarget.classList.add('active');
+}
+
+function switchStep2Tab(tab) {
+  document.querySelectorAll('.step2-tab-panel').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('#step2-tabs .tab').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('step2-tab-' + tab).style.display = 'block';
   event.currentTarget.classList.add('active');
 }
 </script>

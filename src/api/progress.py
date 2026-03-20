@@ -109,10 +109,27 @@ DEFAULT_RATES = {
 def compute_pipeline_progress(db: Session) -> PipelineProgress:
     """Compute current pipeline progress across all steps."""
 
-    # Step 1: Discovery — count document families vs ingestion jobs
+    from src.db.models import DocumentFamily
+
+    # Step 1: Discovery — how many document families have been found
     total_families = db.scalar(
-        select(func.count()).select_from(DocumentVersion)
+        select(func.count()).select_from(DocumentFamily)
     ) or 0
+    families_with_jobs = db.scalar(
+        select(func.count(DocumentFamily.id.distinct()))
+        .select_from(DocumentFamily)
+        .join(DocumentVersion)
+        .join(IngestionJob)
+    ) or 0
+
+    step1 = StepProgress(
+        step=1,
+        name="Discovery",
+        total=total_families,
+        completed=families_with_jobs,
+    )
+
+    # Step 2: Fetch & Parse — ingestion job outcomes
     ingestion_completed = db.scalar(
         select(func.count()).where(IngestionJob.status == IngestionStatus.completed)
     ) or 0
@@ -120,7 +137,12 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
     ingestion_failed = db.scalar(
-        select(func.count()).where(IngestionJob.status == IngestionStatus.failed)
+        select(func.count()).where(
+            IngestionJob.status.in_([
+                IngestionStatus.failed,
+                IngestionStatus.requires_manual_review,
+            ])
+        )
     ) or 0
     ingestion_in_progress = db.scalar(
         select(func.count()).where(
@@ -133,16 +155,6 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
     ) or 0
     total_ingestion = ingestion_completed + ingestion_pending + ingestion_failed + ingestion_in_progress
 
-    step1 = StepProgress(
-        step=1,
-        name="Discovery",
-        total=total_ingestion,
-        completed=ingestion_completed,
-        failed=ingestion_failed,
-        in_progress=ingestion_in_progress,
-    )
-
-    # Step 2: Fetch & Parse — ingestion jobs that have produced passages
     step2 = StepProgress(
         step=2,
         name="Fetch & Parse",

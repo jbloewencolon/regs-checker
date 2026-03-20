@@ -24,10 +24,13 @@ def parse_and_seed_pdf(context: dagster.OpExecutionContext) -> int:
         records = parse_tracker_pdf()
         context.log.info(f"Parsed {len(records)} rows from PDF tracker")
 
-        jobs = seed_from_tracker(db, records)
+        jobs, stats = seed_from_tracker(db, records)
         db.commit()
 
-        context.log.info(f"Seeded {len(jobs)} new laws for ingestion")
+        context.log.info(
+            f"Seeded {stats['new_jobs']} new, {stats['existing']} existing, "
+            f"{len(stats['skipped_no_url'])} skipped (no URL)"
+        )
         for job in jobs:
             dv = job.document_version
             context.log.info(
