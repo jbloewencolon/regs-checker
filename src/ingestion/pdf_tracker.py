@@ -864,7 +864,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
         records = parse_tracker_pdf()
 
     jobs_created = []
-    skipped_no_url = []
+    seeded_no_url = []
     skipped_no_state = []
     skipped_existing = 0
 
@@ -888,9 +888,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
 
             law_url = record["law_url"]
             if not law_url:
-                skipped_no_url.append(f"{state_code} - {record['law_name']}")
-                logger.warning("skipping_no_url", state=state_code, law=record["law_name"])
-                continue
+                seeded_no_url.append(f"{state_code} - {record['law_name']}")
 
             try:
                 job = _seed_single_law(db, record)
@@ -920,7 +918,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
             "total_parsed": len(records),
             "new_jobs": len(jobs_created),
             "existing": skipped_existing,
-            "skipped_no_url": skipped_no_url,
+            "seeded_no_url": seeded_no_url,
             "skipped_no_state": skipped_no_state,
         }
 
@@ -930,18 +928,18 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
         total_parsed=len(records),
         jobs_created=len(jobs_created),
         skipped_existing=skipped_existing,
-        skipped_no_url=len(skipped_no_url),
+        seeded_no_url=len(seeded_no_url),
         skipped_no_state=len(skipped_no_state),
     )
-    if skipped_no_url:
-        logger.warning("records_missing_urls", count=len(skipped_no_url), records=skipped_no_url[:10])
+    if seeded_no_url:
+        logger.warning("records_missing_urls", count=len(seeded_no_url), records=seeded_no_url[:10])
 
     # Attach skip info for callers (dashboard) to display
     return jobs_created, {
         "total_parsed": len(records),
         "new_jobs": len(jobs_created),
         "existing": skipped_existing,
-        "skipped_no_url": skipped_no_url,
+        "seeded_no_url": seeded_no_url,
         "skipped_no_state": skipped_no_state,
     }
 
@@ -952,6 +950,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
     state_name = record["state"]
     law_name = record["law_name"]
     law_url = record["law_url"]
+    bill_id = record.get("bill_id", "")
     ai_scope = record["ai_scope"]
     effective_date = _parse_effective_date(record["effective_date"])
 
@@ -991,8 +990,10 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
             canonical_title=f"{state_name} - {law_name}",
             short_cite=law_name,
             subject_area=_normalize_scope(ai_scope),
+            primary_source_url=law_url or None,
             metadata_={
                 "ai_scope": ai_scope,
+                "bill_id": bill_id,
                 "key_requirements": record["key_requirements"],
                 "enforcement": record["enforcement"],
                 "pdf_last_parsed": datetime.utcnow().isoformat(),
@@ -1004,6 +1005,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         # Refresh metadata if changed
         new_meta = {
             "ai_scope": ai_scope,
+            "bill_id": bill_id,
             "key_requirements": record["key_requirements"],
             "enforcement": record["enforcement"],
             "pdf_last_parsed": datetime.utcnow().isoformat(),
@@ -1013,15 +1015,19 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
             old_meta.get("key_requirements") != new_meta["key_requirements"]
             or old_meta.get("enforcement") != new_meta["enforcement"]
             or old_meta.get("ai_scope") != new_meta["ai_scope"]
+            or old_meta.get("bill_id") != new_meta["bill_id"]
         ):
             family.metadata_ = {**old_meta, **new_meta}
             family.subject_area = _normalize_scope(ai_scope)
+            # Update primary_source_url if we have one now and didn't before
+            if law_url and not family.primary_source_url:
+                family.primary_source_url = law_url
             logger.info(
                 "metadata_refreshed",
                 state=state_code,
                 law=law_name,
                 changed_fields=[
-                    k for k in ("key_requirements", "enforcement", "ai_scope")
+                    k for k in ("key_requirements", "enforcement", "ai_scope", "bill_id")
                     if old_meta.get(k) != new_meta[k]
                 ],
             )
@@ -1052,6 +1058,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         effective_date=effective_date,
         metadata_={
             "law_url": law_url,
+            "bill_id": bill_id,
             "ai_scope": ai_scope,
         },
     )
@@ -1069,10 +1076,23 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         ))
 
     # --- IngestionJob ---
+    # If no URL was extracted from the PDF, mark the job as needing manual
+    # upload so it appears in the Failed Documents tab immediately.
+    if law_url:
+        job_status = IngestionStatus.pending
+        error_msg = None
+    else:
+        job_status = IngestionStatus.failed
+        error_msg = (
+            "No URL found in tracker PDF for this law. "
+            "Upload the document manually or edit the fetch URL."
+        )
+
     job = IngestionJob(
         document_version_id=version.id,
-        status=IngestionStatus.pending,
-        fetch_url=law_url,
+        status=job_status,
+        fetch_url=law_url or None,
+        error_message=error_msg,
         metadata_={
             "ai_scope": ai_scope,
             "source": "pdf_tracker",
@@ -1086,7 +1106,8 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         state=state_code,
         law=law_name,
         effective_date=str(effective_date),
-        url=law_url[:80],
+        url=(law_url[:80] if law_url else "(no URL)"),
         job_id=job.id,
+        needs_manual_upload=not bool(law_url),
     )
     return job

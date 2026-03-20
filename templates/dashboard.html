@@ -136,6 +136,9 @@
           <button class="tab" onclick="switchStep2Tab('failed')">
             Failed Documents
           </button>
+          <button class="tab" onclick="switchStep2Tab('crossref')">
+            Cross-Reference
+          </button>
         </div>
 
         <div class="step2-tab-panel" id="step2-tab-browse"
@@ -150,6 +153,23 @@
                hx-swap="innerHTML">
             <span class="spinner"></span> Loading...
           </div>
+        </div>
+        <div class="step2-tab-panel" id="step2-tab-crossref" style="display:none;">
+          <div class="step-description" style="margin-bottom:8px;">
+            Compare Orrick and IAPP tracker records to find discrepancies in titles,
+            URLs, effective dates, and AI topics. Choose which source's value to use as primary.
+          </div>
+          <div class="step-actions">
+            <button class="btn btn-primary"
+                    hx-post="/dashboard/api/run/cross-reference"
+                    hx-target="#crossref-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Run Cross-Reference</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Comparing...</span>
+            </button>
+          </div>
+          <div id="crossref-result" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>

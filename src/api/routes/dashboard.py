@@ -220,16 +220,51 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     for s in p["steps"]:
         bar_color = "var(--success)" if s["is_complete"] else "var(--primary)"
         failed_tag = f' <span style="color:var(--danger);font-size:11px;">({s["failed"]} failed)</span>' if s.get("failed", 0) > 0 else ""
-        step_bars += f"""
-        <div class="progress-step-row">
-          <span class="progress-step-label">{s['name']}</span>
-          <div class="progress-step-bar">
-            <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
-          </div>
-          <span class="progress-step-pct">{s['percent']}%</span>
-          <span class="progress-step-count">{s['completed']}/{s['total']}{failed_tag}</span>
-        </div>
-        """
+
+        if s.get("display_mode") == "found":
+            # One-shot step (Discovery): show "N found" instead of "N/N"
+            if s["total"] > 0:
+                count_label = f'{s["total"]} found'
+                pct = "100.0"
+                fill_pct = 100
+            else:
+                count_label = "Not run"
+                pct = "—"
+                fill_pct = 0
+            step_bars += f"""
+            <div class="progress-step-row">
+              <span class="progress-step-label">{s['name']}</span>
+              <div class="progress-step-bar">
+                <div class="progress-step-fill" style="width: {fill_pct}%; background: {bar_color};"></div>
+              </div>
+              <span class="progress-step-pct">{pct}{'%' if s['total'] > 0 else ''}</span>
+              <span class="progress-step-count">{count_label}</span>
+            </div>
+            """
+        else:
+            # Show breakdown: completed + failed + pending = total
+            pending = s.get("pending", 0)
+            failed = s.get("failed", 0)
+            in_prog = s.get("in_progress", 0)
+            detail_parts = []
+            if failed > 0:
+                detail_parts.append(f'<span style="color:var(--danger);">{failed} failed</span>')
+            if pending > 0:
+                detail_parts.append(f'<span style="color:var(--text-muted);">{pending} pending</span>')
+            if in_prog > 0:
+                detail_parts.append(f'<span style="color:var(--warning);">{in_prog} in progress</span>')
+            detail_tag = f' <span style="font-size:11px;">({", ".join(detail_parts)})</span>' if detail_parts else ""
+
+            step_bars += f"""
+            <div class="progress-step-row">
+              <span class="progress-step-label">{s['name']}</span>
+              <div class="progress-step-bar">
+                <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
+              </div>
+              <span class="progress-step-pct">{s['percent']}%</span>
+              <span class="progress-step-count">{s['completed']}/{s['total']}{detail_tag}</span>
+            </div>
+            """
 
     # ETA
     eta_text = "Calculating..."
@@ -461,28 +496,29 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
         if stats["existing"] > 0:
             parts.append(f'{stats["existing"]} already in database.')
 
-        skip_notes = ""
-        if stats["skipped_no_url"]:
-            skip_items = "".join(
-                f'<li>{html_escape(s)}</li>' for s in stats["skipped_no_url"][:10]
+        notes = ""
+        if stats["seeded_no_url"]:
+            no_url_items = "".join(
+                f'<li>{html_escape(s)}</li>' for s in stats["seeded_no_url"][:10]
             )
-            extra = f" (+{len(stats['skipped_no_url']) - 10} more)" if len(stats["skipped_no_url"]) > 10 else ""
-            skip_notes += (
+            extra = f" (+{len(stats['seeded_no_url']) - 10} more)" if len(stats["seeded_no_url"]) > 10 else ""
+            notes += (
                 f'<div style="margin-top:6px;"><span style="color:var(--warning);">'
-                f'{len(stats["skipped_no_url"])} records skipped (no URL in PDF):</span>{extra}'
-                f'<ul style="margin:4px 0 0 16px;font-size:12px;">{skip_items}</ul></div>'
+                f'{len(stats["seeded_no_url"])} records have no URL in PDF '
+                f'(need manual upload):</span>{extra}'
+                f'<ul style="margin:4px 0 0 16px;font-size:12px;">{no_url_items}</ul></div>'
             )
         if stats["skipped_no_state"]:
-            skip_notes += (
+            notes += (
                 f'<div style="margin-top:4px;font-size:12px;color:var(--warning);">'
                 f'{len(stats["skipped_no_state"])} records had unrecognized state names.</div>'
             )
 
-        panel_class = "success" if not stats["skipped_no_url"] else "warning"
+        panel_class = "success" if not stats["seeded_no_url"] and not stats["skipped_no_state"] else "warning"
         return HTMLResponse(
             f'<div class="result-panel {panel_class}">'
             f'{" ".join(parts)}'
-            f'{skip_notes}'
+            f'{notes}'
             f'</div>'
         )
     except Exception as e:
@@ -1055,6 +1091,22 @@ async def edit_document_metadata(
         changes.append(f"subject_area updated")
         family.subject_area = new_subject
 
+    # IAPP bill number and status (stored in family metadata)
+    meta = dict(family.metadata_ or {})
+    meta_changed = False
+    new_iapp_bill = form.get("iapp_bill_number", "").strip()
+    if new_iapp_bill and new_iapp_bill != meta.get("iapp_bill_number", ""):
+        meta["iapp_bill_number"] = new_iapp_bill
+        meta_changed = True
+        changes.append(f"IAPP bill number → {new_iapp_bill}")
+    new_iapp_status = form.get("iapp_status", "").strip()
+    if new_iapp_status and new_iapp_status != meta.get("iapp_status", ""):
+        meta["iapp_status"] = new_iapp_status
+        meta_changed = True
+        changes.append(f"IAPP status → {new_iapp_status}")
+    if meta_changed:
+        family.metadata_ = meta
+
     # Fetch URL
     new_url = form.get("fetch_url", "").strip()
     if new_url and new_url != job.fetch_url:
@@ -1112,11 +1164,15 @@ async def upload_document(
             f'<div class="result-panel error">Job #{job_id} not found.</div>'
         )
 
-    if job.status not in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+    if job.status not in (
+        IngestionStatus.pending,
+        IngestionStatus.failed,
+        IngestionStatus.requires_manual_review,
+    ):
         return HTMLResponse(
             f'<div class="result-panel warning">'
-            f'Job #{job_id} is not in a failed state (status: {job.status.value}). '
-            f'Only failed or manual-review jobs can receive uploads.'
+            f'Job #{job_id} cannot receive uploads (status: {job.status.value}). '
+            f'Only pending, failed, or manual-review jobs can receive uploads.'
             f'</div>'
         )
 
@@ -1202,6 +1258,189 @@ async def upload_document(
         )
 
 
+@router.post("/api/run/cross-reference")
+def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Cross-reference Orrick and IAPP tracker records to find discrepancies."""
+    try:
+        from src.ingestion.cross_reference import (
+            cross_reference_trackers,
+            link_discrepancies_to_jobs,
+        )
+        from src.ingestion.pdf_tracker import parse_tracker_pdf
+
+        orrick_records = parse_tracker_pdf()
+
+        # Load IAPP records
+        iapp_records = []
+        try:
+            from src.ingestion.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+            if IAPP_PDF_PATH.exists():
+                iapp_records = parse_iapp_pdf()
+        except Exception:
+            pass
+        if not iapp_records:
+            try:
+                from src.ingestion.iapp_scraper import scrape_tracker
+                iapp_records = scrape_tracker()
+            except Exception:
+                pass
+
+        if not iapp_records:
+            return HTMLResponse(
+                '<div class="result-panel warning">'
+                'IAPP data unavailable. Place the IAPP PDF at '
+                '<code>static/IAPP_Legislation_tracker.pdf</code> to enable cross-referencing.'
+                '</div>'
+            )
+
+        result = cross_reference_trackers(orrick_records, iapp_records)
+        link_discrepancies_to_jobs(db, result.discrepancies)
+
+        if not result.discrepancies:
+            return HTMLResponse(
+                f'<div class="result-panel success">'
+                f'Cross-referenced {result.matched} bills between Orrick ({result.orrick_total}) '
+                f'and IAPP ({result.iapp_total}). No discrepancies found.'
+                f'<br><span style="font-size:12px;color:var(--text-muted);">'
+                f'{result.orrick_only} Orrick-only, {result.iapp_only} IAPP-only.</span>'
+                f'</div>'
+            )
+
+        # Render discrepancy table
+        rows_html = ""
+        for disc in result.discrepancies:
+            field_rows = ""
+            for f in disc.fields:
+                jid = disc.job_id or 0
+                field_rows += (
+                    f'<div style="margin:4px 0;font-size:12px;">'
+                    f'<strong>{html_escape(f.field_name)}</strong>: '
+                    f'<span style="color:var(--info);">Orrick:</span> '
+                    f'<code style="word-break:break-all;">{html_escape(f.orrick_value[:100])}</code> '
+                )
+                if jid and f.field_name in ("url", "title"):
+                    form_field = "fetch_url" if f.field_name == "url" else "title"
+                    field_rows += (
+                        f'<button class="btn btn-sm" style="font-size:11px;padding:1px 6px;" '
+                        f'hx-post="/dashboard/api/resolve-discrepancy/{jid}" '
+                        f'hx-vals=\'{{"field": "{form_field}", "value": "{html_escape(f.orrick_value)}"}}\' '
+                        f'hx-target="#disc-result-{jid}" hx-swap="innerHTML" '
+                        f'hx-disabled-elt="this">Use Orrick</button> '
+                    )
+
+                field_rows += (
+                    f'<br><span style="color:var(--warning);">IAPP:</span> '
+                    f'<code style="word-break:break-all;">{html_escape(f.iapp_value[:100])}</code> '
+                )
+                if jid and f.field_name in ("url", "title"):
+                    form_field = "fetch_url" if f.field_name == "url" else "title"
+                    field_rows += (
+                        f'<button class="btn btn-sm" style="font-size:11px;padding:1px 6px;" '
+                        f'hx-post="/dashboard/api/resolve-discrepancy/{jid}" '
+                        f'hx-vals=\'{{"field": "{form_field}", "value": "{html_escape(f.iapp_value)}"}}\' '
+                        f'hx-target="#disc-result-{jid}" hx-swap="innerHTML" '
+                        f'hx-disabled-elt="this">Use IAPP</button> '
+                    )
+
+                field_rows += '</div>'
+
+            jid = disc.job_id or 0
+            rows_html += f"""
+            <tr>
+              <td><strong>{html_escape(disc.state_code)}</strong></td>
+              <td style="font-size:12px;">{html_escape(disc.orrick_title[:40])}</td>
+              <td style="font-size:12px;">{len(disc.fields)} field(s)</td>
+              <td>{field_rows}<div id="disc-result-{jid}"></div></td>
+            </tr>
+            """
+
+        return HTMLResponse(
+            f'<div class="result-panel warning">'
+            f'Cross-referenced <strong>{result.matched}</strong> bills. '
+            f'Found <strong>{len(result.discrepancies)}</strong> with discrepancies.'
+            f'<br><span style="font-size:12px;color:var(--text-muted);">'
+            f'Orrick: {result.orrick_total} | IAPP: {result.iapp_total} | '
+            f'Matched: {result.matched} | Orrick-only: {result.orrick_only} | '
+            f'IAPP-only: {result.iapp_only}</span>'
+            f'</div>'
+            f'<div class="table-wrap" style="margin-top:8px;">'
+            f'<table class="review-table">'
+            f'<thead><tr>'
+            f'<th>Jur.</th><th>Bill</th><th>Diffs</th><th>Details</th>'
+            f'</tr></thead>'
+            f'<tbody>{rows_html}</tbody>'
+            f'</table></div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e)[:500])}</div>'
+        )
+
+
+@router.post("/api/resolve-discrepancy/{job_id}")
+async def resolve_discrepancy(
+    job_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Apply a chosen value from Orrick or IAPP to resolve a discrepancy.
+
+    Accepts JSON body: {"field": "fetch_url"|"title"|"short_cite", "value": "..."}
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = dict(await request.form())
+
+    field_name = data.get("field", "")
+    value = data.get("value", "")
+
+    if not field_name or not value:
+        return HTMLResponse(
+            '<span style="color:var(--danger);font-size:12px;">Missing field or value.</span>'
+        )
+
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<span style="color:var(--danger);font-size:12px;">Job #{job_id} not found.</span>'
+        )
+
+    dv = job.document_version
+    family = dv.family if dv else None
+
+    if not family:
+        return HTMLResponse(
+            '<span style="color:var(--danger);font-size:12px;">No document family found.</span>'
+        )
+
+    if field_name == "fetch_url":
+        old = job.fetch_url or ""
+        job.fetch_url = value
+        # Reset failed jobs so they can retry with the new URL
+        if job.status in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+            job.status = IngestionStatus.pending
+            job.error_message = None
+        db.commit()
+        return HTMLResponse(
+            f'<span style="color:var(--success);font-size:12px;">'
+            f'URL updated. Job reset to pending.</span>'
+        )
+    elif field_name == "title":
+        family.canonical_title = f"{family.source.jurisdiction_code} - {value}"
+        family.short_cite = value
+        db.commit()
+        return HTMLResponse(
+            f'<span style="color:var(--success);font-size:12px;">'
+            f'Title updated to: {html_escape(value[:60])}</span>'
+        )
+    else:
+        return HTMLResponse(
+            f'<span style="color:var(--warning);font-size:12px;">'
+            f'Unknown field: {html_escape(field_name)}</span>'
+        )
+
+
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     """List all failed and manual-review ingestion jobs with upload + edit forms."""
@@ -1229,6 +1468,10 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         short_cite = ""
         title = ""
         subject = ""
+        bill_title = ""
+        iapp_bill_number = ""
+        iapp_status = ""
+        leg_status = ""
         if dv and dv.family:
             source = dv.family.source
             jurisdiction = source.jurisdiction_code if source else ""
@@ -1236,19 +1479,39 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             title = dv.family.canonical_title or ""
             subject = dv.family.subject_area or ""
             label = short_cite or title or "unknown"
+            meta = dv.family.metadata_ or {}
+            iapp_bill_number = meta.get("iapp_bill_number", "")
+            iapp_status = meta.get("iapp_status", "")
+            bill_title = title or iapp_bill_number or ""
+        if dv and dv.temporal_status:
+            leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         status_class = "danger" if job.status == IngestionStatus.failed else "warning"
         status_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+
+        # Show IAPP legislative status alongside ingestion status
+        iapp_badge = ""
+        if iapp_status:
+            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_status)}</span>'
+        elif leg_status:
+            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">{html_escape(leg_status)}</span>'
 
         error_short = html_escape(str(job.error_message or "")[:150])
         url_display = html_escape(str(job.fetch_url or ""))
         jid = job.id
 
+        # Bill title line: show IAPP bill number if different from label
+        bill_info = ""
+        if iapp_bill_number and iapp_bill_number != label:
+            bill_info = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_bill_number)}</span>'
+
         rows_html += f"""
         <tr id="failed-row-{jid}">
           <td><strong>{html_escape(jurisdiction)}</strong></td>
-          <td>{html_escape(label)}</td>
-          <td><span style="color:var(--{status_class});">{status_label}</span></td>
+          <td>{html_escape(label)}{bill_info}
+              <div style="font-size:10px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                   title="{html_escape(bill_title)}">{html_escape(bill_title)}</div></td>
+          <td><span style="color:var(--{status_class});">{status_label}</span>{iapp_badge}</td>
           <td style="font-size:11px;max-width:250px;">
             <code style="word-break:break-all;">{url_display[:80]}</code>
             <br><span style="color:var(--{status_class});">{error_short}</span>
@@ -1288,9 +1551,19 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                        style="width:180px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
-                Title
+                Bill Title
                 <input type="text" name="title" value="{html_escape(title)}"
                        style="width:200px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Bill Number (IAPP)
+                <input type="text" name="iapp_bill_number" value="{html_escape(iapp_bill_number)}"
+                       style="width:120px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                IAPP Status
+                <input type="text" name="iapp_status" value="{html_escape(iapp_status)}"
+                       style="width:140px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Fetch URL
@@ -1370,15 +1643,33 @@ def export_failed_txt(db: Session = Depends(get_db)):
         dv = job.document_version
         jurisdiction = ""
         label = "unknown"
+        bill_title = ""
+        iapp_bill_number = ""
+        iapp_status = ""
+        leg_status = ""
         if dv and dv.family:
             source = dv.family.source
             jurisdiction = source.jurisdiction_code if source else ""
             label = dv.family.short_cite or dv.family.canonical_title or "unknown"
+            bill_title = dv.family.canonical_title or ""
+            meta = dv.family.metadata_ or {}
+            iapp_bill_number = meta.get("iapp_bill_number", "")
+            iapp_status = meta.get("iapp_status", "")
+        if dv and dv.temporal_status:
+            leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         status_label = "FAILED" if job.status == IngestionStatus.failed else "NEEDS REVIEW"
 
         lines.append(f"{i}. [{jurisdiction}] {label}")
-        lines.append(f"   Status: {status_label}")
+        if bill_title and bill_title != label:
+            lines.append(f"   Title: {bill_title}")
+        if iapp_bill_number and iapp_bill_number != label:
+            lines.append(f"   IAPP Bill #: {iapp_bill_number}")
+        if iapp_status:
+            lines.append(f"   IAPP Status: {iapp_status}")
+        elif leg_status:
+            lines.append(f"   Legislative Status: {leg_status}")
+        lines.append(f"   Ingestion: {status_label}")
         lines.append(f"   URL: {job.fetch_url or 'N/A'}")
         error_msg = (job.error_message or "").split("\n")[0][:200]
         lines.append(f"   Error: {error_msg}")

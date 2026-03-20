@@ -37,6 +37,9 @@ class StepProgress:
     completed: int
     failed: int = 0
     in_progress: int = 0
+    # "progress" (default) shows completed/total bar.
+    # "found" shows "N found" — for one-shot steps like Discovery.
+    display_mode: str = "progress"
 
     @property
     def pending(self) -> int:
@@ -88,6 +91,7 @@ class PipelineProgress:
                     "pending": s.pending,
                     "percent": s.percent,
                     "is_complete": s.is_complete,
+                    "display_mode": s.display_mode,
                 }
                 for s in self.steps
             ],
@@ -111,30 +115,27 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
 
     from src.db.models import DocumentFamily
 
-    # Step 1: Discovery — how many document families have been found
+    # Step 1: Discovery — one-shot step that finds laws.
+    # The total is only known AFTER discovery runs, so we display it
+    # as "N found" rather than "N/N".  Before discovery: 0 found.
     total_families = db.scalar(
         select(func.count()).select_from(DocumentFamily)
-    ) or 0
-    families_with_jobs = db.scalar(
-        select(func.count(DocumentFamily.id.distinct()))
-        .select_from(DocumentFamily)
-        .join(DocumentVersion)
-        .join(IngestionJob)
     ) or 0
 
     step1 = StepProgress(
         step=1,
         name="Discovery",
         total=total_families,
-        completed=families_with_jobs,
+        completed=total_families,  # discovery is done once families exist
+        display_mode="found",
     )
 
-    # Step 2: Fetch & Parse — ingestion job outcomes
+    # Step 2: Fetch & Parse — total = all IngestionJobs from discovery.
+    # "completed" here means successfully fetched+parsed.
+    # "failed" includes requires_manual_review.
+    # "pending" are jobs not yet attempted (no URL, or waiting in queue).
     ingestion_completed = db.scalar(
         select(func.count()).where(IngestionJob.status == IngestionStatus.completed)
-    ) or 0
-    ingestion_pending = db.scalar(
-        select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
     ingestion_failed = db.scalar(
         select(func.count()).where(
@@ -148,10 +149,15 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).where(
             IngestionJob.status.in_([
                 IngestionStatus.fetching,
+                IngestionStatus.fetched,
                 IngestionStatus.parsing,
+                IngestionStatus.parsed,
                 IngestionStatus.normalizing,
             ])
         )
+    ) or 0
+    ingestion_pending = db.scalar(
+        select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
     total_ingestion = ingestion_completed + ingestion_pending + ingestion_failed + ingestion_in_progress
 
@@ -164,7 +170,8 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         in_progress=ingestion_in_progress,
     )
 
-    # Step 3+4+5: Extraction — passages that have been extracted
+    # Step 3: Extraction — total = passages from completed fetches.
+    # This number grows as more documents are fetched and parsed.
     total_passages = db.scalar(
         select(func.count()).select_from(NormalizedSourceRecord)
     ) or 0

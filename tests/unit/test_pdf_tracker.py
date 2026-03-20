@@ -183,13 +183,16 @@ class TestSeedFromTracker:
         assert len(jobs) == 0
         assert len(stats["skipped_no_state"]) == 1
 
-    def test_skips_rows_without_url(self):
-        """Rows with no bill link should be skipped."""
+    def test_seeds_rows_without_url_as_failed(self):
+        """Rows with no bill link should be seeded but marked as failed."""
         mock_db = MagicMock()
+        # Mock query chain so _seed_single_law doesn't error on DB calls
+        mock_db.query.return_value.filter_by.return_value.first.return_value = None
         records = [
             {"state": "Colorado", "state_code": "CO", "law_name": "X", "law_url": "",
              "ai_scope": "AI", "effective_date": "", "key_requirements": "", "enforcement": ""},
         ]
         jobs, stats = seed_from_tracker(mock_db, records)
-        assert len(jobs) == 0
-        assert len(stats["skipped_no_url"]) == 1
+        assert len(stats["seeded_no_url"]) == 1
+        # The record should be seeded (not skipped), so db.add was called
+        assert mock_db.add.called
