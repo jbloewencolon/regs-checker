@@ -268,7 +268,11 @@ def run_pending_ingestion(
     """
     from sqlalchemy import select
 
-    query = select(IngestionJob).where(IngestionJob.status == IngestionStatus.pending)
+    query = select(IngestionJob).where(
+        IngestionJob.status == IngestionStatus.pending,
+        IngestionJob.fetch_url.isnot(None),
+        IngestionJob.fetch_url != "",
+    )
     if limit:
         query = query.limit(limit)
 
