@@ -1203,6 +1203,189 @@ async def upload_document(
         )
 
 
+@router.post("/api/run/cross-reference")
+def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Cross-reference Orrick and IAPP tracker records to find discrepancies."""
+    try:
+        from src.ingestion.cross_reference import (
+            cross_reference_trackers,
+            link_discrepancies_to_jobs,
+        )
+        from src.ingestion.pdf_tracker import parse_tracker_pdf
+
+        orrick_records = parse_tracker_pdf()
+
+        # Load IAPP records
+        iapp_records = []
+        try:
+            from src.ingestion.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+            if IAPP_PDF_PATH.exists():
+                iapp_records = parse_iapp_pdf()
+        except Exception:
+            pass
+        if not iapp_records:
+            try:
+                from src.ingestion.iapp_scraper import scrape_tracker
+                iapp_records = scrape_tracker()
+            except Exception:
+                pass
+
+        if not iapp_records:
+            return HTMLResponse(
+                '<div class="result-panel warning">'
+                'IAPP data unavailable. Place the IAPP PDF at '
+                '<code>static/IAPP_Legislation_tracker.pdf</code> to enable cross-referencing.'
+                '</div>'
+            )
+
+        result = cross_reference_trackers(orrick_records, iapp_records)
+        link_discrepancies_to_jobs(db, result.discrepancies)
+
+        if not result.discrepancies:
+            return HTMLResponse(
+                f'<div class="result-panel success">'
+                f'Cross-referenced {result.matched} bills between Orrick ({result.orrick_total}) '
+                f'and IAPP ({result.iapp_total}). No discrepancies found.'
+                f'<br><span style="font-size:12px;color:var(--text-muted);">'
+                f'{result.orrick_only} Orrick-only, {result.iapp_only} IAPP-only.</span>'
+                f'</div>'
+            )
+
+        # Render discrepancy table
+        rows_html = ""
+        for disc in result.discrepancies:
+            field_rows = ""
+            for f in disc.fields:
+                jid = disc.job_id or 0
+                field_rows += (
+                    f'<div style="margin:4px 0;font-size:12px;">'
+                    f'<strong>{html_escape(f.field_name)}</strong>: '
+                    f'<span style="color:var(--info);">Orrick:</span> '
+                    f'<code style="word-break:break-all;">{html_escape(f.orrick_value[:100])}</code> '
+                )
+                if jid and f.field_name in ("url", "title"):
+                    form_field = "fetch_url" if f.field_name == "url" else "title"
+                    field_rows += (
+                        f'<button class="btn btn-sm" style="font-size:11px;padding:1px 6px;" '
+                        f'hx-post="/dashboard/api/resolve-discrepancy/{jid}" '
+                        f'hx-vals=\'{{"field": "{form_field}", "value": "{html_escape(f.orrick_value)}"}}\' '
+                        f'hx-target="#disc-result-{jid}" hx-swap="innerHTML" '
+                        f'hx-disabled-elt="this">Use Orrick</button> '
+                    )
+
+                field_rows += (
+                    f'<br><span style="color:var(--warning);">IAPP:</span> '
+                    f'<code style="word-break:break-all;">{html_escape(f.iapp_value[:100])}</code> '
+                )
+                if jid and f.field_name in ("url", "title"):
+                    form_field = "fetch_url" if f.field_name == "url" else "title"
+                    field_rows += (
+                        f'<button class="btn btn-sm" style="font-size:11px;padding:1px 6px;" '
+                        f'hx-post="/dashboard/api/resolve-discrepancy/{jid}" '
+                        f'hx-vals=\'{{"field": "{form_field}", "value": "{html_escape(f.iapp_value)}"}}\' '
+                        f'hx-target="#disc-result-{jid}" hx-swap="innerHTML" '
+                        f'hx-disabled-elt="this">Use IAPP</button> '
+                    )
+
+                field_rows += '</div>'
+
+            jid = disc.job_id or 0
+            rows_html += f"""
+            <tr>
+              <td><strong>{html_escape(disc.state_code)}</strong></td>
+              <td style="font-size:12px;">{html_escape(disc.orrick_title[:40])}</td>
+              <td style="font-size:12px;">{len(disc.fields)} field(s)</td>
+              <td>{field_rows}<div id="disc-result-{jid}"></div></td>
+            </tr>
+            """
+
+        return HTMLResponse(
+            f'<div class="result-panel warning">'
+            f'Cross-referenced <strong>{result.matched}</strong> bills. '
+            f'Found <strong>{len(result.discrepancies)}</strong> with discrepancies.'
+            f'<br><span style="font-size:12px;color:var(--text-muted);">'
+            f'Orrick: {result.orrick_total} | IAPP: {result.iapp_total} | '
+            f'Matched: {result.matched} | Orrick-only: {result.orrick_only} | '
+            f'IAPP-only: {result.iapp_only}</span>'
+            f'</div>'
+            f'<div class="table-wrap" style="margin-top:8px;">'
+            f'<table class="review-table">'
+            f'<thead><tr>'
+            f'<th>Jur.</th><th>Bill</th><th>Diffs</th><th>Details</th>'
+            f'</tr></thead>'
+            f'<tbody>{rows_html}</tbody>'
+            f'</table></div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e)[:500])}</div>'
+        )
+
+
+@router.post("/api/resolve-discrepancy/{job_id}")
+async def resolve_discrepancy(
+    job_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Apply a chosen value from Orrick or IAPP to resolve a discrepancy.
+
+    Accepts JSON body: {"field": "fetch_url"|"title"|"short_cite", "value": "..."}
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = dict(await request.form())
+
+    field_name = data.get("field", "")
+    value = data.get("value", "")
+
+    if not field_name or not value:
+        return HTMLResponse(
+            '<span style="color:var(--danger);font-size:12px;">Missing field or value.</span>'
+        )
+
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<span style="color:var(--danger);font-size:12px;">Job #{job_id} not found.</span>'
+        )
+
+    dv = job.document_version
+    family = dv.family if dv else None
+
+    if not family:
+        return HTMLResponse(
+            '<span style="color:var(--danger);font-size:12px;">No document family found.</span>'
+        )
+
+    if field_name == "fetch_url":
+        old = job.fetch_url or ""
+        job.fetch_url = value
+        # Reset failed jobs so they can retry with the new URL
+        if job.status in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+            job.status = IngestionStatus.pending
+            job.error_message = None
+        db.commit()
+        return HTMLResponse(
+            f'<span style="color:var(--success);font-size:12px;">'
+            f'URL updated. Job reset to pending.</span>'
+        )
+    elif field_name == "title":
+        family.canonical_title = f"{family.source.jurisdiction_code} - {value}"
+        family.short_cite = value
+        db.commit()
+        return HTMLResponse(
+            f'<span style="color:var(--success);font-size:12px;">'
+            f'Title updated to: {html_escape(value[:60])}</span>'
+        )
+    else:
+        return HTMLResponse(
+            f'<span style="color:var(--warning);font-size:12px;">'
+            f'Unknown field: {html_escape(field_name)}</span>'
+        )
+
+
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     """List all failed and manual-review ingestion jobs with upload + edit forms."""
