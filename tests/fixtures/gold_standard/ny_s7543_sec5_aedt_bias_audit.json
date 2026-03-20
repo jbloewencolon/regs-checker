@@ -1,0 +1,53 @@
+{
+    "passage_id": "ny_s7543_sec5_aedt_bias_audit",
+    "source_document": "New York City Local Law 144 (Automated Employment Decision Tools)",
+    "jurisdiction": "NY",
+    "section_path": "Section 5 - Bias Audit Requirements",
+    "passage_text": "It shall be unlawful for an employer or employment agency to use an automated employment decision tool to screen a candidate or employee for an employment decision unless the following requirements are satisfied: (a) The tool has been the subject of a bias audit conducted no more than one year prior to the use of the tool. (b) A summary of the results of the most recent bias audit and the distribution date of the tool to which the bias audit applies has been made publicly available on the website of the employer or employment agency. Violations of this section are subject to a civil penalty of not more than $500 for a first violation and each additional violation occurring on the same day, and not less than $500 nor more than $1,500 for each subsequent violation.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "an employer or employment agency",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "ensure a bias audit has been conducted no more than one year prior to use, and publish audit results summary on the employer website",
+            "object": "automated employment decision tool",
+            "condition": "when using an automated employment decision tool to screen a candidate or employee for an employment decision",
+            "jurisdiction": "NY",
+            "section_reference": "Section 5",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": null,
+                "sunset_date": null,
+                "phase_in_period": null,
+                "timeline_text": "bias audit conducted no more than one year prior to the use of the tool"
+            },
+            "enforcement": {
+                "enforcing_body": null,
+                "penalty_type": "civil",
+                "penalty_description": "not more than $500 for first violation and same-day additional violations; $500-$1,500 for subsequent violations",
+                "private_right_of_action": false,
+                "enforcement_text": "Violations of this section are subject to a civil penalty of not more than $500 for a first violation and each additional violation occurring on the same day, and not less than $500 nor more than $1,500 for each subsequent violation."
+            }
+        },
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": "temporal",
+            "threshold_value": "one year",
+            "threshold_unit": "years",
+            "threshold_condition": "bias audit must be conducted no more than one year prior to the use of the tool",
+            "applies_to_obligation": "bias audit requirement for automated employment decision tools",
+            "exceptions": [],
+            "evidence_spans": [
+                {"field_name": "threshold_value", "text": "no more than one year prior to the use of the tool"}
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "bias audit",
+            "ambiguity_type": "undefined_reference",
+            "severity": "high",
+            "affected_obligations": ["Section 5 - bias audit requirement"],
+            "interpretation_notes": "The term 'bias audit' is used without specifying the methodology, metrics, protected categories to evaluate, or qualifications required of the auditor. Without standards, audits may vary widely in rigor and scope.",
+            "suggested_clarification": "Define minimum requirements for bias audits including specific fairness metrics (disparate impact ratio, equalized odds), protected categories to test, minimum sample sizes, and auditor independence requirements"
+        }
+    }
+}

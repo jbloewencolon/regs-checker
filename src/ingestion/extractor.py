@@ -501,6 +501,8 @@ def extract_single_record(
                         confidence_tier=ConfidenceTier(confidence.tier),
                         review_status=ReviewStatus.pending,
                         prompt_template_version=result.prompt_hash,
+                        prompt_hash=result.prompt_hash,
+                        template_version=result.template_version,
                         model_id=result.model_id,
                         extraction_job_id=extraction_job.id if extraction_job else None,
                     )
@@ -1043,6 +1045,8 @@ def run_recovery_extraction(
                                 confidence_tier=ConfidenceTier(confidence.tier),
                                 review_status=ReviewStatus.pending,
                                 prompt_template_version=result.prompt_hash,
+                                prompt_hash=result.prompt_hash,
+                                template_version=result.template_version,
                                 model_id=result.model_id,
                             )
                             db.add(extraction)

@@ -1,0 +1,42 @@
+{
+    "passage_id": "us_eo14110_sec11_definitions",
+    "source_document": "Executive Order 14110 (Safe, Secure, and Trustworthy Development and Use of Artificial Intelligence)",
+    "jurisdiction": "US",
+    "section_path": "Section 11 - Definitions",
+    "passage_text": "\"Artificial intelligence\" or \"AI\" means a machine-based system that can, for a given set of human-defined objectives, make predictions, recommendations, or decisions influencing real or virtual environments. Artificial intelligence systems use machine- and human-based inputs to perceive real and virtual environments; abstract such perceptions into models through analysis in an automated manner; and use model inference to formulate options for information or action. \"Dual-use foundation model\" means an AI model that is trained on broad data; generally uses self-supervision; contains at least tens of billions of parameters; is applicable across a wide range of contexts; and that exhibits, or could be easily modified to exhibit, high levels of performance at tasks that pose a serious risk to security, national economic security, national public health or safety.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Artificial intelligence",
+            "definition_text": "a machine-based system that can, for a given set of human-defined objectives, make predictions, recommendations, or decisions influencing real or virtual environments",
+            "scope": "Federal executive branch definition applicable to all EO 14110 provisions",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "term", "text": "Artificial intelligence"},
+                {"field_name": "definition_text", "text": "a machine-based system that can, for a given set of human-defined objectives, make predictions, recommendations, or decisions influencing real or virtual environments"}
+            ]
+        },
+        "threshold_exception": {
+            "threshold_type": "numeric",
+            "threshold_value": "tens of billions",
+            "threshold_unit": "parameters",
+            "threshold_condition": "AI model contains at least tens of billions of parameters and exhibits high levels of performance at tasks posing serious risk",
+            "applies_to_obligation": "dual-use foundation model classification and reporting requirements",
+            "exceptions": [],
+            "evidence_spans": [
+                {"field_name": "threshold_value", "text": "contains at least tens of billions of parameters"},
+                {"field_name": "threshold_condition", "text": "exhibits, or could be easily modified to exhibit, high levels of performance at tasks that pose a serious risk to security, national economic security, national public health or safety"}
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "could be easily modified to exhibit, high levels of performance at tasks that pose a serious risk",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 4 - dual-use foundation model reporting"],
+            "interpretation_notes": "Both 'easily modified' and 'high levels of performance' are undefined relative terms. Without quantitative thresholds for modification effort or performance benchmarks, companies cannot deterministically assess whether their models qualify as dual-use foundation models.",
+            "suggested_clarification": "Define 'easily modified' in terms of compute cost, fine-tuning data requirements, or engineering effort; and 'high levels of performance' relative to specific evaluation benchmarks or red-team success rates"
+        }
+    }
+}

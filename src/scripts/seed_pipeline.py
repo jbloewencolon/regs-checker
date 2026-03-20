@@ -13,17 +13,7 @@ Usage:
     # Fetch with a limit (useful for testing):
     python -m src.scripts.seed_pipeline --mode fetch --limit 5
 
-    # === PRIMARY EXTRACTION WORKFLOW (Claude Code — $0 extra) ===
-
-    # Export passages for Claude Code/Chat extraction:
-    python -m src.scripts.seed_pipeline --mode export-passages
-    python -m src.scripts.seed_pipeline --mode export-passages --limit 30 --batch-size 10
-
-    # Import Claude's JSON responses back into the database:
-    python -m src.scripts.seed_pipeline --mode import-extractions
-    python -m src.scripts.seed_pipeline --mode import-extractions --input export/batch_001_results.json
-
-    # === SECONDARY EXTRACTION WORKFLOW (API — costs money) ===
+    # === PRIMARY EXTRACTION WORKFLOW (API) ===
 
     # Run AI extraction on all unprocessed passages:
     python -m src.scripts.seed_pipeline --mode extract
@@ -31,12 +21,35 @@ Usage:
     # Extract with a limit (test first!):
     python -m src.scripts.seed_pipeline --mode extract --limit 20
 
+    # Use Batch API for 50% cost savings (results in 24h):
+    python -m src.scripts.seed_pipeline --mode extract --batch
+
+    # === SUPPLEMENTARY WORKFLOWS ===
+
+    # Export passages for offline/debug extraction:
+    python -m src.scripts.seed_pipeline --mode export-passages
+
+    # Import extraction results from JSON:
+    python -m src.scripts.seed_pipeline --mode import-extractions
+
     # Re-queue failed jobs back to pending and retry:
     python -m src.scripts.seed_pipeline --mode retry-failed
 
-    # Re-queue only specific error types:
-    python -m src.scripts.seed_pipeline --mode retry-failed --error-filter 403
-    python -m src.scripts.seed_pipeline --mode retry-failed --error-filter "SSL"
+    # === QUALITY & COMPLETENESS ===
+
+    # Check extraction coverage per law:
+    python -m src.scripts.seed_pipeline --mode check-completeness
+
+    # Find extractions from outdated models:
+    python -m src.scripts.seed_pipeline --mode check-stale
+
+    # === CSV EXPORT/IMPORT ===
+
+    # Export pipeline state to editable CSV:
+    python -m src.scripts.seed_pipeline --mode export-csv
+
+    # Import corrections from edited CSV:
+    python -m src.scripts.seed_pipeline --mode import-csv --input export/pipeline_data.csv
 """
 
 from __future__ import annotations
@@ -270,6 +283,36 @@ def run_evaluate() -> None:
     print(report)
 
 
+def run_completeness_check(db, check_stale: bool = False) -> None:
+    """Run extraction completeness report and print results."""
+    from src.core.completeness import format_completeness_report, run_completeness_report
+    from src.core.config import settings
+
+    model_id = None
+    if check_stale:
+        model_id = settings.extraction_model
+
+    report = run_completeness_report(db, current_model_id=model_id)
+    print(format_completeness_report(report))
+
+
+def run_export_csv(db, mode: str = "discovery") -> None:
+    """Export pipeline data to CSV."""
+    from src.scripts.pipeline_csv import export_discovery_csv, export_fetch_status_csv
+
+    if mode == "fetch-status":
+        export_fetch_status_csv(db)
+    else:
+        export_discovery_csv(db)
+
+
+def run_import_csv(db, input_path: str) -> None:
+    """Import corrections from edited CSV."""
+    from src.scripts.pipeline_csv import import_discovery_csv
+
+    import_discovery_csv(db, input_path)
+
+
 # ---------------------------------------------------------------------------
 # Known bad URL corrections — keyed by ingestion_job.id or (state_code, short_cite)
 # These are jobs where the Orrick tracker seeded the wrong URL or the original
@@ -456,21 +499,31 @@ def main():
     parser = argparse.ArgumentParser(description="Seed the regs-checker pipeline")
     parser.add_argument(
         "--mode",
-        choices=["manual", "pdf", "fetch", "export-passages", "import-extractions", "extract", "recover", "batch-results", "evaluate", "retry-failed", "fix-urls"],
+        choices=[
+            "manual", "pdf", "fetch", "export-passages", "import-extractions",
+            "extract", "recover", "batch-results", "evaluate", "retry-failed",
+            "fix-urls", "check-completeness", "check-stale",
+            "export-csv", "import-csv", "export-fetch-csv",
+        ],
         default="manual",
         help=(
             "Pipeline mode: "
             "'manual' seeds hardcoded docs, "
             "'pdf' parses Orrick PDF tracker, "
             "'fetch' processes all pending ingestion jobs, "
-            "'export-passages' exports unprocessed passages for Claude Code (PRIMARY), "
-            "'import-extractions' imports JSON results from Claude Code (PRIMARY), "
-            "'extract' runs AI extraction agents via API (SECONDARY — costs money), "
+            "'export-passages' exports unprocessed passages for external extraction, "
+            "'import-extractions' imports JSON extraction results, "
+            "'extract' runs AI extraction agents via API, "
             "'recover' re-extracts passages with partial results (missing agents), "
             "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
-            "'fix-urls' applies known URL corrections and data bug fixes"
+            "'fix-urls' applies known URL corrections and data bug fixes, "
+            "'check-completeness' reports extraction coverage gaps per law, "
+            "'check-stale' reports extractions from outdated models/prompts, "
+            "'export-csv' exports pipeline discovery data to CSV, "
+            "'export-fetch-csv' exports fetch/parse status to CSV, "
+            "'import-csv' imports corrections from edited CSV"
         ),
     )
     parser.add_argument(
@@ -608,6 +661,19 @@ def main():
             print(f"  Completed:       {summary['completed']}")
             print(f"  Still failed:    {summary['failed']}")
             print(f"  Total passages:  {summary['total_passages']}")
+        elif args.mode == "check-completeness":
+            run_completeness_check(db, check_stale=False)
+        elif args.mode == "check-stale":
+            run_completeness_check(db, check_stale=True)
+        elif args.mode == "export-csv":
+            run_export_csv(db, mode="discovery")
+        elif args.mode == "export-fetch-csv":
+            run_export_csv(db, mode="fetch-status")
+        elif args.mode == "import-csv":
+            if not args.input:
+                print("Error: --input is required for import-csv mode", file=sys.stderr)
+                sys.exit(1)
+            run_import_csv(db, input_path=args.input)
     except Exception as e:
         db.rollback()
         print(f"Error: {e}", file=sys.stderr)

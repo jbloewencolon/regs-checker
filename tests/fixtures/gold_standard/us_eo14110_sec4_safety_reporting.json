@@ -1,0 +1,37 @@
+{
+    "passage_id": "us_eo14110_sec4_safety_reporting",
+    "source_document": "Executive Order 14110 (Safe, Secure, and Trustworthy Development and Use of Artificial Intelligence)",
+    "jurisdiction": "US",
+    "section_path": "Section 4.2 - Ensuring Safe and Reliable AI",
+    "passage_text": "Within 90 days of the date of this order, and on an ongoing basis thereafter, any company developing or demonstrating an intent to develop a potential dual-use foundation model shall report to the Federal Government, on an ongoing basis: the activities related to training of the model, including the physical and cybersecurity protections taken to assure the integrity of that training process against sophisticated threats; the ownership and possession of the model weights of any dual-use foundation models, and the physical and cybersecurity measures taken to protect those model weights; and the results of any developed red-team testing related to lowering barriers to entry for the development of biological or nuclear weapons, the discovery of software vulnerabilities, or other threats to national security.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "any company developing or demonstrating an intent to develop a potential dual-use foundation model",
+            "subject_normalized": "developer",
+            "modality": "shall",
+            "action": "report to the Federal Government activities related to model training including cybersecurity protections, ownership and possession of model weights, and results of red-team testing related to biological/nuclear weapons, software vulnerabilities, or national security threats",
+            "object": "dual-use foundation model",
+            "condition": null,
+            "jurisdiction": "US",
+            "section_reference": "Section 4.2",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": null,
+                "sunset_date": null,
+                "phase_in_period": "90 days",
+                "timeline_text": "Within 90 days of the date of this order, and on an ongoing basis thereafter"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "potential dual-use foundation model",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 4.2 - safety reporting to federal government"],
+            "interpretation_notes": "The qualifier 'potential' before 'dual-use foundation model' creates uncertainty about at what stage of development the reporting obligation attaches. Combined with 'demonstrating an intent to develop,' this could capture companies very early in the R&D process before any model exists.",
+            "suggested_clarification": "Define objective criteria for when a model under development becomes a 'potential' dual-use foundation model triggering the reporting requirement, such as compute thresholds or capability benchmarks"
+        }
+    }
+}

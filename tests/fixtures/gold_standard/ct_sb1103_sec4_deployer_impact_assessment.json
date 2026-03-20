@@ -1,0 +1,47 @@
+{
+    "passage_id": "ct_sb1103_sec4_deployer_impact_assessment",
+    "source_document": "Connecticut SB 1103 (An Act Concerning Artificial Intelligence)",
+    "jurisdiction": "CT",
+    "section_path": "Section 4 - Deployer Risk Assessments",
+    "passage_text": "A deployer of a high-risk artificial intelligence system shall complete an impact assessment for any high-risk artificial intelligence system deployed by the deployer on or before the later of (A) February 1, 2026, or (B) ninety days after the date on which the high-risk artificial intelligence system is first deployed by the deployer. Such impact assessment shall include, but not be limited to: (1) A statement of the purpose of the high-risk artificial intelligence system and its intended benefits; (2) An analysis of whether the high-risk artificial intelligence system poses any known or foreseeable risk of algorithmic discrimination; (3) A description of the categories of data processed as inputs and the outputs generated; (4) An overview of the safeguards implemented to address the risks identified, including any human oversight measures.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A deployer of a high-risk artificial intelligence system",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "complete an impact assessment including statement of purpose, algorithmic discrimination risk analysis, data input/output categories, and safeguard descriptions",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "CT",
+            "section_reference": "Section 4",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": "2026-02-01",
+                "sunset_date": null,
+                "phase_in_period": "ninety days after first deployment",
+                "timeline_text": "on or before the later of (A) February 1, 2026, or (B) ninety days after the date on which the high-risk artificial intelligence system is first deployed"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": "temporal",
+            "threshold_value": "90 days",
+            "threshold_unit": "days",
+            "threshold_condition": "ninety days after the date on which the high-risk artificial intelligence system is first deployed by the deployer, or February 1, 2026, whichever is later",
+            "applies_to_obligation": "deployer impact assessment completion",
+            "exceptions": [],
+            "evidence_spans": [
+                {"field_name": "threshold_condition", "text": "on or before the later of (A) February 1, 2026, or (B) ninety days after the date on which the high-risk artificial intelligence system is first deployed"}
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "known or foreseeable risk of algorithmic discrimination",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 4 - deployer impact assessment"],
+            "interpretation_notes": "The standard for what constitutes a 'foreseeable' risk of algorithmic discrimination is subjective. Different deployers may have different levels of technical sophistication and thus different abilities to foresee discrimination risks.",
+            "suggested_clarification": "Define specific testing methodologies or statistical thresholds that establish whether a risk of algorithmic discrimination is 'foreseeable'"
+        }
+    }
+}

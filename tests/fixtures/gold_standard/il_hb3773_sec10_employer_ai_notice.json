@@ -1,0 +1,31 @@
+{
+    "passage_id": "il_hb3773_sec10_employer_ai_notice",
+    "source_document": "Illinois HB 3773 (Artificial Intelligence Video Interview Act)",
+    "jurisdiction": "IL",
+    "section_path": "Section 10 - Notice Requirements",
+    "passage_text": "An employer that uses an artificial intelligence analysis of a video interview to determine whether an applicant will be selected for an in-person interview shall do all of the following before the interview: (1) Notify the applicant that artificial intelligence may be used to analyze the applicant's video interview and consider the applicant's fitness for the position. (2) Provide the applicant with information explaining how the artificial intelligence works and what general types of characteristics it uses to evaluate applicants. (3) Obtain the applicant's consent to be evaluated by the artificial intelligence program. An employer may not use artificial intelligence to evaluate applicants who have not consented to the use of artificial intelligence analysis.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "An employer that uses an artificial intelligence analysis of a video interview",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "notify the applicant that artificial intelligence may be used, provide information explaining how the AI works and what characteristics it evaluates, and obtain the applicant's consent",
+            "object": "video interview applicant",
+            "condition": "before the interview, when using AI analysis to determine in-person interview selection",
+            "jurisdiction": "IL",
+            "section_reference": "Section 10",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "general types of characteristics",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 10 - AI transparency disclosure to applicants"],
+            "interpretation_notes": "The level of detail required for 'information explaining how the artificial intelligence works' and 'general types of characteristics' is undefined. It is unclear whether this requires technical model documentation, a plain-language summary, or something in between.",
+            "suggested_clarification": "Specify the minimum level of technical detail required in the disclosure, such as whether protected characteristics, facial analysis features, or speech patterns must be individually enumerated"
+        }
+    }
+}
