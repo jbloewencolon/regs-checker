@@ -184,6 +184,13 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         "section_path": record.section_path,
     }
 
+    # Include legislative status so agents know if bill is active, pending, etc.
+    if dv and dv.temporal_status:
+        status_val = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
+        ctx["legislative_status"] = status_val
+    if dv and dv.effective_date:
+        ctx["effective_date"] = str(dv.effective_date)
+
     # Surface reference URLs so agents can cite authoritative sources
     if df:
         if df.primary_source_url:
@@ -207,6 +214,16 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         ai_scope = df.metadata_.get("ai_scope")
         if ai_scope:
             ctx["ai_scope"] = ai_scope
+        # IAPP-sourced fields (populated by cross-reference or status checker)
+        iapp_bill = df.metadata_.get("iapp_bill_number")
+        if iapp_bill:
+            ctx["iapp_bill_number"] = iapp_bill
+        iapp_status = df.metadata_.get("iapp_status")
+        if iapp_status:
+            ctx["iapp_status"] = iapp_status
+        iapp_topic = df.metadata_.get("iapp_ai_topic")
+        if iapp_topic:
+            ctx["iapp_ai_topic"] = iapp_topic
 
     return ctx
 

@@ -162,6 +162,12 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
             jurisdiction, law_name, current_status, pdf_index, iapp_index
         )
 
+        # Persist IAPP metadata on the family regardless of status change.
+        # This ensures bill_number, raw status, and ai_topic are available
+        # for extraction even if the status hasn't changed.
+        if not dry_run:
+            _store_iapp_metadata(family, jurisdiction, law_name, iapp_index)
+
         if new_status and new_status.new_status != current_status:
             result.changed += 1
             result.changes.append(new_status)
@@ -370,6 +376,52 @@ def _resolve_status(
         source=source_label,
         detail=detail,
     )
+
+
+def _store_iapp_metadata(
+    family: DocumentFamily,
+    jurisdiction: str,
+    law_name: str,
+    iapp_index: dict,
+) -> None:
+    """Store IAPP-sourced metadata on a DocumentFamily.
+
+    Looks up the bill in the IAPP index and stores bill_number,
+    raw status, ai_topic, and last_action in family.metadata_ so
+    they're available for extraction agents.
+    """
+    norm = _normalize_name(law_name)
+    key = (jurisdiction, norm)
+    iapp_record = iapp_index.get(key)
+    if not iapp_record:
+        return
+
+    meta = dict(family.metadata_ or {})
+    updated = False
+
+    for iapp_key, meta_key in [
+        ("bill_number", "iapp_bill_number"),
+        ("status", "iapp_status"),
+        ("ai_topic", "iapp_ai_topic"),
+        ("last_action", "iapp_last_action"),
+        ("bill_url", "iapp_bill_url"),
+    ]:
+        val = iapp_record.get(iapp_key, "")
+        if val and meta.get(meta_key) != val:
+            meta[meta_key] = val
+            updated = True
+
+    if updated:
+        family.metadata_ = meta
+        if iapp_record.get("bill_url") and not family.iapp_reference_url:
+            family.iapp_reference_url = iapp_record["bill_url"]
+        logger.debug(
+            "iapp_metadata_stored",
+            jurisdiction=jurisdiction,
+            law=law_name,
+            iapp_bill=iapp_record.get("bill_number", ""),
+            iapp_status=iapp_record.get("status", ""),
+        )
 
 
 def _apply_status_change(
