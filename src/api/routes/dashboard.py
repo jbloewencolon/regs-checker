@@ -1148,11 +1148,15 @@ async def upload_document(
             f'<div class="result-panel error">Job #{job_id} not found.</div>'
         )
 
-    if job.status not in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+    if job.status not in (
+        IngestionStatus.pending,
+        IngestionStatus.failed,
+        IngestionStatus.requires_manual_review,
+    ):
         return HTMLResponse(
             f'<div class="result-panel warning">'
-            f'Job #{job_id} is not in a failed state (status: {job.status.value}). '
-            f'Only failed or manual-review jobs can receive uploads.'
+            f'Job #{job_id} cannot receive uploads (status: {job.status.value}). '
+            f'Only pending, failed, or manual-review jobs can receive uploads.'
             f'</div>'
         )
 
