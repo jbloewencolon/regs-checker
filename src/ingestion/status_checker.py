@@ -429,7 +429,13 @@ def _apply_status_change(
     version: DocumentVersion,
     change: StatusChange,
 ) -> None:
-    """Write a status change to the database."""
+    """Write a status change to the database.
+
+    Deduplicates LegalEvents by checking for an existing event with the same
+    (version_id, event_type, event_date) before creating a new one. This
+    prevents duplicate events when the status checker runs multiple times
+    on the same day with unchanged source data.
+    """
     old = change.old_status
     new = change.new_status
 
@@ -446,10 +452,30 @@ def _apply_status_change(
     version.temporal_status = TemporalStatus(new)
 
     event_type = STATUS_TO_EVENT.get(new, LegalEventType.status_check)
+    today = date.today()
+
+    # Dedup: check for existing event with same (version, type, date)
+    existing_event = db.scalars(
+        select(LegalEvent).where(
+            LegalEvent.document_version_id == version.id,
+            LegalEvent.event_type == event_type,
+            LegalEvent.event_date == today,
+        )
+    ).first()
+
+    if existing_event:
+        logger.debug(
+            "legal_event_deduplicated",
+            version_id=version.id,
+            event_type=event_type.value,
+            event_date=str(today),
+        )
+        return
+
     db.add(LegalEvent(
         document_version_id=version.id,
         event_type=event_type,
-        event_date=date.today(),
+        event_date=today,
         description=(
             f"Status changed: {old} → {new} "
             f"(detected via {change.source})"
