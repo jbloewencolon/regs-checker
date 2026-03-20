@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database (PostgreSQL) — local development
-    database_url: str = "postgresql://regs:regs@localhost:5432/regs_checker"
+    database_url: str = "postgresql://regs:regs@localhost:5433/regs_checker"
 
     # Supabase — Regs Checker pipeline DB (extraction source)
     supabase_url: str = ""
