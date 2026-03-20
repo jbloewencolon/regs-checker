@@ -18,6 +18,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Postgres is ready." -ForegroundColor Green
 
+# Verify actual authentication works (catches stale volume credentials)
+Write-Host "Verifying database credentials..." -ForegroundColor Cyan
+$authCheck = docker exec docker-postgres-1 psql -U regs -d regs_checker -c "SELECT 1;" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "WARNING: Auth failed for user 'regs'. Recreating Postgres volume..." -ForegroundColor Yellow
+    docker compose -f docker/docker-compose.yml down postgres
+    docker volume rm docker_postgres_data 2>$null
+    docker compose -f docker/docker-compose.yml up -d postgres
+    $retries = 0
+    do {
+        Start-Sleep -Seconds 1
+        $retries++
+        docker exec docker-postgres-1 pg_isready -U regs -d regs_checker 2>$null | Out-Null
+    } while ($LASTEXITCODE -ne 0 -and $retries -lt 15)
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Postgres failed to start after volume reset." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Postgres volume recreated successfully." -ForegroundColor Green
+}
+
 Write-Host "Running database migrations..." -ForegroundColor Cyan
 python -m alembic upgrade head
 
