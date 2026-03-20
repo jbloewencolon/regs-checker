@@ -12,7 +12,7 @@ from __future__ import annotations
 from html import escape as html_escape
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -461,13 +461,27 @@ def run_fetch(
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
 
-        # Build failure detail HTML
+        # Build failure detail HTML — each failed doc gets an inline upload form
         failure_html = ""
         for f in summary.get("failed_jobs", []):
+            jid = f["job_id"]
             failure_html += (
-                f'<li><strong>{html_escape(str(f["label"]))}</strong> — '
+                f'<li id="fetch-fail-{jid}" style="margin-bottom:10px;">'
+                f'<strong>{html_escape(str(f["label"]))}</strong> — '
                 f'<code style="word-break:break-all;">{html_escape(str(f["url"]))}</code><br>'
-                f'<span style="color:var(--danger);">{html_escape(str(f["error"]))}</span></li>'
+                f'<span style="color:var(--danger);">{html_escape(str(f["error"][:200]))}</span>'
+                f'<div style="margin-top:4px;">'
+                f'<form hx-post="/dashboard/api/upload-document" '
+                f'hx-target="#fetch-fail-{jid}" hx-swap="outerHTML" '
+                f'hx-encoding="multipart/form-data" '
+                f'style="display:inline-flex;gap:6px;align-items:center;">'
+                f'<input type="hidden" name="job_id" value="{jid}">'
+                f'<input type="file" name="file" accept=".pdf,.html,.htm,.txt" '
+                f'style="font-size:12px;max-width:200px;" required>'
+                f'<button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">'
+                f'<span class="btn-label">Upload</span>'
+                f'<span class="htmx-indicator"><span class="spinner"></span></span>'
+                f'</button></form></div></li>'
             )
 
         manual_html = ""
@@ -914,6 +928,202 @@ def run_compare_models(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/upload-document")
+async def upload_document(
+    file: UploadFile,
+    job_id: int = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Manually upload a document for a failed/manual-review ingestion job.
+
+    Accepts a PDF or HTML file, stores it as a raw artifact in S3,
+    then runs parse+chunk to create passages — same as the automated pipeline
+    but skipping the fetch step.
+    """
+    import hashlib
+    from datetime import datetime
+
+    from src.ingestion.connector import _upload_to_s3
+    from src.ingestion.parser import parse_and_normalize
+    from src.ingestion.pipeline import compute_parse_quality
+
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<div class="result-panel error">Job #{job_id} not found.</div>'
+        )
+
+    if job.status not in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+        return HTMLResponse(
+            f'<div class="result-panel warning">'
+            f'Job #{job_id} is not in a failed state (status: {job.status.value}). '
+            f'Only failed or manual-review jobs can receive uploads.'
+            f'</div>'
+        )
+
+    try:
+        content_bytes = await file.read()
+        if not content_bytes:
+            return HTMLResponse(
+                '<div class="result-panel error">Empty file uploaded.</div>'
+            )
+
+        # Detect content type
+        filename = file.filename or ""
+        if filename.lower().endswith(".pdf"):
+            content_type = "application/pdf"
+        elif filename.lower().endswith((".html", ".htm")):
+            content_type = "text/html"
+        else:
+            content_type = file.content_type or "application/octet-stream"
+
+        # Content-addressable storage
+        sha256 = hashlib.sha256(content_bytes).hexdigest()
+
+        # Check for duplicate
+        existing = db.query(RawArtifact).filter_by(sha256_hash=sha256).first()
+        if existing:
+            artifact = existing
+        else:
+            # Upload to S3
+            dv = job.document_version
+            source = dv.family.source if dv and dv.family else None
+            jurisdiction = source.jurisdiction_code if source else "unknown"
+            s3_key = f"raw/{jurisdiction}/{sha256}"
+            _upload_to_s3(s3_key, content_bytes, content_type)
+
+            artifact = RawArtifact(
+                document_version_id=job.document_version_id,
+                sha256_hash=sha256,
+                s3_key=s3_key,
+                content_type=content_type,
+                size_bytes=len(content_bytes),
+                is_primary=True,
+            )
+            db.add(artifact)
+            db.flush()
+
+        # Update job status to fetched
+        job.status = IngestionStatus.fetched
+        job.fetch_completed_at = datetime.utcnow()
+        job.error_message = None
+        db.commit()
+
+        # Parse and chunk
+        job.status = IngestionStatus.parsing
+        job.parse_started_at = datetime.utcnow()
+        db.commit()
+
+        records = parse_and_normalize(db, job, artifact)
+
+        job.status = IngestionStatus.completed
+        job.parse_completed_at = datetime.utcnow()
+        job.parse_quality_score = compute_parse_quality(records)
+        db.commit()
+
+        dv = job.document_version
+        label = "unknown"
+        if dv and dv.family:
+            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Uploaded and parsed <strong>{html_escape(label)}</strong>: '
+            f'{len(records)} passages extracted from {len(content_bytes):,} bytes '
+            f'({html_escape(content_type)}).'
+            f'</div>'
+        )
+
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">'
+            f'Upload failed: {html_escape(str(e)[:500])}'
+            f'</div>'
+        )
+
+
+@router.get("/api/failed-documents")
+def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
+    """List all failed and manual-review ingestion jobs with upload forms."""
+    jobs = db.scalars(
+        select(IngestionJob)
+        .where(IngestionJob.status.in_([
+            IngestionStatus.failed,
+            IngestionStatus.requires_manual_review,
+        ]))
+        .order_by(IngestionJob.updated_at.desc())
+    ).all()
+
+    if not jobs:
+        return HTMLResponse(
+            '<div class="result-panel success" style="margin-top:10px;">'
+            'No failed documents. All jobs completed successfully.'
+            '</div>'
+        )
+
+    rows_html = ""
+    for job in jobs:
+        dv = job.document_version
+        label = "unknown"
+        jurisdiction = ""
+        if dv and dv.family:
+            source = dv.family.source
+            jurisdiction = source.jurisdiction_code if source else ""
+            label = dv.family.short_cite or dv.family.canonical_title or "unknown"
+
+        status_class = "danger" if job.status == IngestionStatus.failed else "warning"
+        status_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+
+        error_short = html_escape(str(job.error_message or "")[:120])
+        url_display = html_escape(str(job.fetch_url or "")[:80])
+
+        rows_html += f"""
+        <tr id="failed-row-{job.id}">
+          <td><strong>{html_escape(jurisdiction)}</strong></td>
+          <td>{html_escape(label)}</td>
+          <td><span style="color:var(--{status_class});">{status_label}</span></td>
+          <td style="font-size:12px;">
+            <code style="word-break:break-all;">{url_display}</code>
+            <br><span style="color:var(--{status_class});font-size:11px;">{error_short}</span>
+          </td>
+          <td>
+            <form hx-post="/dashboard/api/upload-document"
+                  hx-target="#failed-row-{job.id}"
+                  hx-swap="outerHTML"
+                  hx-encoding="multipart/form-data"
+                  style="display:flex;gap:6px;align-items:center;">
+              <input type="hidden" name="job_id" value="{job.id}">
+              <input type="file" name="file" accept=".pdf,.html,.htm,.txt"
+                     style="font-size:12px;max-width:180px;"
+                     required>
+              <button type="submit" class="btn btn-sm btn-primary"
+                      hx-disabled-elt="this">
+                <span class="btn-label">Upload</span>
+                <span class="htmx-indicator"><span class="spinner"></span></span>
+              </button>
+            </form>
+          </td>
+        </tr>
+        """
+
+    return HTMLResponse(
+        f'<div style="margin-top:10px;">'
+        f'<div class="table-wrap">'
+        f'<table class="review-table">'
+        f'<thead><tr>'
+        f'<th>Jur.</th><th>Document</th><th>Status</th>'
+        f'<th>Error</th><th>Upload Document</th>'
+        f'</tr></thead>'
+        f'<tbody>{rows_html}</tbody>'
+        f'</table></div>'
+        f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
+        f'{len(jobs)} documents need manual upload. '
+        f'Download the PDF/HTML from the legislature site and upload here.'
+        f'</div></div>'
+    )
 
 
 @router.post("/api/review/{queue_id}/approve")
