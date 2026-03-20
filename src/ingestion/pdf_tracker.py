@@ -247,6 +247,154 @@ def _extract_text_from_pdf(pdf_path: Path) -> str:
         )
 
 
+def _extract_table_rows_from_pdf(pdf_path: Path) -> list[list[str]] | None:
+    """Extract table rows from the PDF using pdfplumber's table detection.
+
+    Returns a list of rows, each row a list of cell strings, or None if
+    table extraction isn't available or finds nothing.
+    """
+    try:
+        import pdfplumber
+    except ImportError:
+        return None
+
+    all_rows: list[list[str]] = []
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        if row:
+                            # Normalise None cells to empty strings
+                            all_rows.append([cell or "" for cell in row])
+    except Exception as e:
+        logger.warning("pdfplumber_table_extraction_failed", error=str(e)[:200])
+        return None
+
+    return all_rows if all_rows else None
+
+
+def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
+    """Parse structured table rows into law records.
+
+    Expected columns (may vary slightly):
+      0: State/Terr   1: AI Scope   2: Relevant Law   3: Law Link / Bill ID
+      4: Effective Date   5: Key Requirements   6: Enforcement Penalties
+
+    State cells are often empty for continuation rows (same state, different law),
+    so we carry the last seen state forward.
+    """
+    records = []
+    url_index = 0
+    current_state = ""
+
+    # Detect header row and determine column mapping
+    col_map = _detect_columns(rows)
+
+    for row in rows:
+        # Skip rows that are too short or header rows
+        if len(row) < 3:
+            continue
+        first_cell = row[0].strip() if row[0] else ""
+
+        # Skip header rows
+        if first_cell in ("State/Terr", "State/Terr."):
+            continue
+        if "AI Scope" in first_cell:
+            continue
+
+        # Detect state from first column
+        if first_cell:
+            matched_state = _match_state_name(first_cell)
+            if matched_state:
+                current_state = matched_state
+
+        if not current_state:
+            continue
+
+        state_code = STATE_CODES.get(current_state, "")
+        if not state_code:
+            continue
+
+        # Extract fields using column mapping
+        ai_scope = _get_col(row, col_map.get("scope", 1)).strip()
+        law_name = _get_col(row, col_map.get("law", 2)).strip()
+        bill_id = _get_col(row, col_map.get("link", 3)).strip()
+        effective_date = _get_col(row, col_map.get("date", 4)).strip()
+        key_requirements = _get_col(row, col_map.get("requirements", 5)).strip()
+        enforcement = _get_col(row, col_map.get("enforcement", 6)).strip()
+
+        # Skip rows with no meaningful content (spacer rows, etc.)
+        if not law_name and not bill_id and not ai_scope:
+            continue
+
+        # Match a URL from extracted hyperlinks
+        law_url = ""
+        if url_index < len(law_urls):
+            law_url = law_urls[url_index]
+            url_index += 1
+
+        records.append({
+            "state": current_state,
+            "state_code": state_code,
+            "ai_scope": ai_scope,
+            "law_name": law_name or bill_id,
+            "law_url": law_url,
+            "bill_id": bill_id,
+            "effective_date": effective_date,
+            "key_requirements": key_requirements,
+            "enforcement": enforcement,
+        })
+
+    return records
+
+
+def _detect_columns(rows: list[list[str]]) -> dict[str, int]:
+    """Detect column positions from header rows."""
+    defaults = {"scope": 1, "law": 2, "link": 3, "date": 4, "requirements": 5, "enforcement": 6}
+    for row in rows[:5]:  # Check first few rows for headers
+        for idx, cell in enumerate(row):
+            cell_lower = (cell or "").strip().lower()
+            if "scope" in cell_lower:
+                defaults["scope"] = idx
+            elif cell_lower in ("relevant law", "relevant law name"):
+                defaults["law"] = idx
+            elif "link" in cell_lower:
+                defaults["link"] = idx
+            elif "effective" in cell_lower or "date" in cell_lower:
+                defaults["date"] = idx
+            elif "requirement" in cell_lower:
+                defaults["requirements"] = idx
+            elif "enforce" in cell_lower or "penalt" in cell_lower:
+                defaults["enforcement"] = idx
+    return defaults
+
+
+def _get_col(row: list[str], idx: int) -> str:
+    """Safely get a column value from a row."""
+    if idx < len(row):
+        return row[idx] or ""
+    return ""
+
+
+def _match_state_name(text: str) -> str:
+    """Match text against known state names, handling multi-line cell content."""
+    text = text.strip()
+    # Direct match
+    if text in STATE_CODES:
+        return text
+    # First line of a multi-line cell
+    first_line = text.split("\n")[0].strip()
+    if first_line in STATE_CODES:
+        return first_line
+    # Partial match (state name at start of text)
+    for state in sorted(STATE_CODES.keys(), key=len, reverse=True):
+        if text.startswith(state):
+            return state
+    return ""
+
+
 def parse_tracker_pdf(pdf_path: Path = PDF_PATH) -> list[dict]:
     """Parse the Orrick AI Law Tracker PDF into structured records.
 
@@ -268,7 +416,17 @@ def parse_tracker_pdf(pdf_path: Path = PDF_PATH) -> list[dict]:
     ]
     logger.info("pdf_urls_extracted", total=len(all_urls), law_urls=len(law_urls))
 
-    # Extract text
+    # Strategy 1: Use pdfplumber table extraction (structured, reliable)
+    table_rows = _extract_table_rows_from_pdf(pdf_path)
+    if table_rows:
+        logger.info("pdf_table_rows_extracted", rows=len(table_rows))
+        records = _parse_table_rows(table_rows, law_urls)
+        if records:
+            logger.info("pdf_parsed", total_records=len(records), method="table_extraction")
+            return records
+        logger.warning("table_extraction_produced_no_records_falling_back_to_text")
+
+    # Strategy 2: Fall back to line-based text parsing
     text = _extract_text_from_pdf(pdf_path)
     if not text:
         raise PDFParseError("Could not extract text from PDF")
@@ -276,7 +434,7 @@ def parse_tracker_pdf(pdf_path: Path = PDF_PATH) -> list[dict]:
     lines = text.split("\n")
     records = _parse_tabular_text(lines, law_urls)
 
-    logger.info("pdf_parsed", total_records=len(records))
+    logger.info("pdf_parsed", total_records=len(records), method="text_parsing")
     return records
 
 
