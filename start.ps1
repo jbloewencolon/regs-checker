@@ -18,6 +18,33 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Postgres is ready." -ForegroundColor Green
 
+# Verify password auth from the HOST side via the mapped port (5434).
+# Container-internal checks can pass even with wrong passwords because
+# pg_hba.conf often grants trust to 127.0.0.1 inside the container.
+Write-Host "Verifying database credentials..." -ForegroundColor Cyan
+$env:PGPASSWORD = "regs"
+python -c "import psycopg2; psycopg2.connect(host='localhost', port=5434, user='regs', password='regs', dbname='regs_checker'); print('ok')" 2>$null
+$authOk = $LASTEXITCODE -eq 0
+$env:PGPASSWORD = $null
+
+if (-not $authOk) {
+    Write-Host "WARNING: Password auth failed for user 'regs'. Recreating Postgres volume..." -ForegroundColor Yellow
+    docker compose -f docker/docker-compose.yml rm -sf postgres
+    docker volume rm docker_postgres_data 2>$null
+    docker compose -f docker/docker-compose.yml up -d postgres
+    $retries = 0
+    do {
+        Start-Sleep -Seconds 2
+        $retries++
+        docker exec docker-postgres-1 pg_isready -U regs -d regs_checker 2>$null | Out-Null
+    } while ($LASTEXITCODE -ne 0 -and $retries -lt 15)
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Postgres failed to start after volume reset." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Postgres volume recreated successfully." -ForegroundColor Green
+}
+
 Write-Host "Running database migrations..." -ForegroundColor Cyan
 python -m alembic upgrade head
 

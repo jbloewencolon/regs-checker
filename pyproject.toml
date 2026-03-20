@@ -28,10 +28,12 @@ dependencies = [
     "structlog>=24.1.0",
     "beautifulsoup4>=4.12.0",
     "lxml>=5.1.0",
-    "pdfplumber>=0.10.0",
 ]
 
 [project.optional-dependencies]
+pdf = [
+    "pdfplumber>=0.10.0",
+]
 ocr = [
     "pytesseract>=0.3.10",
     "pdf2image>=1.16.0",

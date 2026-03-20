@@ -237,10 +237,37 @@ def seed_federal_nist_ai_rmf(db) -> IngestionJob:
 
 
 def seed_via_pdf(db) -> list[IngestionJob]:
-    """Parse Orrick PDF tracker and seed all discovered bills."""
-    from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
+    """Seed from ai_law_tracker.csv (primary) or Orrick PDF (fallback)."""
+    import csv
+    from src.ingestion.pdf_tracker import STATE_CODES, seed_from_tracker
 
-    records = parse_tracker_pdf()
+    csv_path = Path("static/ai_law_tracker.csv")
+    if csv_path.exists():
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        records = []
+        for row in rows:
+            state_name = row.get("State/Terr", "").strip()
+            state_code = STATE_CODES.get(state_name, "")
+            if not state_code and len(state_name) == 2:
+                state_code = state_name.upper()
+            records.append({
+                "state": state_name,
+                "state_code": state_code,
+                "ai_scope": row.get("AI Scope", ""),
+                "law_name": row.get("Relevant Law", ""),
+                "law_url": row.get("Source URL", ""),
+                "bill_id": row.get("Bill ID", ""),
+                "effective_date": row.get("Effective Date", ""),
+                "key_requirements": row.get("Key Requirements", ""),
+                "enforcement": row.get("Enforcements Penalties", ""),
+            })
+        logger.info("seeding_from_csv", count=len(records))
+    else:
+        from src.ingestion.pdf_tracker import parse_tracker_pdf
+        records = parse_tracker_pdf()
+        logger.info("seeding_from_pdf_fallback", count=len(records))
+
     jobs, _stats = seed_from_tracker(db, records)
     return jobs
 

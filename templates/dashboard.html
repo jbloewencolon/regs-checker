@@ -45,9 +45,9 @@
       </div>
       <div class="step-body">
         <div class="step-description">
-          Parses the Orrick PDF tracker (<code>static/Orrick-US-AI-Law-Tracker.pdf</code>) and
+          Seeds legislation from the Law Tracker CSV (<code>static/ai_law_tracker.csv</code>) and
           cross-references <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
-          for new AI bills and status changes.
+          for status changes. Edit the tracker below, then seed.
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -55,8 +55,8 @@
                   hx-target="#step1-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
-            <span class="btn-label">Scan PDF for New Laws</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Parsing PDF...</span>
+            <span class="btn-label">Seed from Tracker CSV</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Seeding...</span>
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/status-check"
@@ -88,6 +88,81 @@
             {% endfor %}
           </div>
           {% endif %}
+        </div>
+
+        <!-- Law Tracker tabs -->
+        <div class="tabs" id="step1-tabs" style="margin-top:12px;">
+          <button class="tab active" onclick="switchStep1Tab('tracker')">
+            Law Tracker
+          </button>
+        </div>
+
+        <div class="step1-tab-panel" id="step1-tab-tracker">
+          <div class="step-description" style="margin-bottom:8px;">
+            Ground-truth registry of all tracked AI laws
+            (<code>static/ai_law_tracker.csv</code>).
+            Edit any row inline, add new rows, or import/export the full CSV.
+          </div>
+
+          <!-- Toolbar: search + add + import/export -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">
+            <input type="text" id="tracker-search" placeholder="Filter by state, law, bill..."
+                   style="font-size:12px;padding:4px 8px;width:200px;"
+                   hx-get="/dashboard/api/tracker"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#tracker-table-body"
+                   hx-swap="innerHTML"
+                   name="q">
+
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/dashboard/api/tracker/add"
+                    hx-target="#tracker-table-body"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              + Add Row
+            </button>
+
+            <a href="/dashboard/api/tracker/export"
+               class="btn btn-sm" download>
+              Export CSV
+            </a>
+
+            <form hx-post="/dashboard/api/tracker/import"
+                  hx-target="#tracker-import-result"
+                  hx-swap="innerHTML"
+                  hx-encoding="multipart/form-data"
+                  style="display:flex;gap:4px;align-items:center;">
+              <input type="file" name="file" accept=".csv"
+                     style="font-size:11px;max-width:180px;">
+              <button type="submit" class="btn btn-sm" hx-disabled-elt="this">
+                <span class="btn-label">Import CSV</span>
+                <span class="htmx-indicator"><span class="spinner"></span></span>
+              </button>
+            </form>
+          </div>
+          <div id="tracker-import-result"></div>
+
+          <!-- Tracker table -->
+          <div class="table-wrap">
+            <table class="review-table" id="tracker-table">
+              <thead><tr>
+                <th>State</th>
+                <th>AI Scope</th>
+                <th>Relevant Law</th>
+                <th>Bill ID</th>
+                <th>Eff. Date</th>
+                <th>Status</th>
+                <th>Source URL</th>
+                <th style="text-align:center;">Actions</th>
+              </tr></thead>
+              <tbody id="tracker-table-body"
+                     hx-get="/dashboard/api/tracker"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                <tr><td colspan="8"><span class="spinner"></span> Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -450,6 +525,16 @@ function switchExtractTab(tab) {
   event.currentTarget.classList.add('active');
 }
 
+function switchStep1Tab(tab) {
+  document.querySelectorAll('.step1-tab-panel').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('#step1-tabs .tab').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('step1-tab-' + tab).style.display = 'block';
+  event.currentTarget.classList.add('active');
+}
 function switchStep2Tab(tab) {
   document.querySelectorAll('.step2-tab-panel').forEach(function(el) {
     el.style.display = 'none';
