@@ -45,7 +45,7 @@ class StepProgress:
     @property
     def percent(self) -> float:
         if self.total == 0:
-            return 100.0
+            return 0.0
         return round((self.completed / self.total) * 100, 1)
 
     @property
