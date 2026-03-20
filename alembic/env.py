@@ -1,5 +1,12 @@
 import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
+
+# Ensure project root is on sys.path so ``import src`` works regardless of
+# how alembic is invoked (CLI, IDE, Docker, etc.)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from alembic import context
 from sqlalchemy import pool, create_engine
 from src.db.models import Base
