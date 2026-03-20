@@ -461,28 +461,29 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
         if stats["existing"] > 0:
             parts.append(f'{stats["existing"]} already in database.')
 
-        skip_notes = ""
-        if stats["skipped_no_url"]:
-            skip_items = "".join(
-                f'<li>{html_escape(s)}</li>' for s in stats["skipped_no_url"][:10]
+        notes = ""
+        if stats["seeded_no_url"]:
+            no_url_items = "".join(
+                f'<li>{html_escape(s)}</li>' for s in stats["seeded_no_url"][:10]
             )
-            extra = f" (+{len(stats['skipped_no_url']) - 10} more)" if len(stats["skipped_no_url"]) > 10 else ""
-            skip_notes += (
+            extra = f" (+{len(stats['seeded_no_url']) - 10} more)" if len(stats["seeded_no_url"]) > 10 else ""
+            notes += (
                 f'<div style="margin-top:6px;"><span style="color:var(--warning);">'
-                f'{len(stats["skipped_no_url"])} records skipped (no URL in PDF):</span>{extra}'
-                f'<ul style="margin:4px 0 0 16px;font-size:12px;">{skip_items}</ul></div>'
+                f'{len(stats["seeded_no_url"])} records have no URL in PDF '
+                f'(need manual upload):</span>{extra}'
+                f'<ul style="margin:4px 0 0 16px;font-size:12px;">{no_url_items}</ul></div>'
             )
         if stats["skipped_no_state"]:
-            skip_notes += (
+            notes += (
                 f'<div style="margin-top:4px;font-size:12px;color:var(--warning);">'
                 f'{len(stats["skipped_no_state"])} records had unrecognized state names.</div>'
             )
 
-        panel_class = "success" if not stats["skipped_no_url"] else "warning"
+        panel_class = "success" if not stats["seeded_no_url"] and not stats["skipped_no_state"] else "warning"
         return HTMLResponse(
             f'<div class="result-panel {panel_class}">'
             f'{" ".join(parts)}'
-            f'{skip_notes}'
+            f'{notes}'
             f'</div>'
         )
     except Exception as e:

@@ -864,7 +864,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
         records = parse_tracker_pdf()
 
     jobs_created = []
-    skipped_no_url = []
+    seeded_no_url = []
     skipped_no_state = []
     skipped_existing = 0
 
@@ -888,9 +888,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
 
             law_url = record["law_url"]
             if not law_url:
-                skipped_no_url.append(f"{state_code} - {record['law_name']}")
-                logger.warning("skipping_no_url", state=state_code, law=record["law_name"])
-                continue
+                seeded_no_url.append(f"{state_code} - {record['law_name']}")
 
             try:
                 job = _seed_single_law(db, record)
@@ -920,7 +918,7 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
             "total_parsed": len(records),
             "new_jobs": len(jobs_created),
             "existing": skipped_existing,
-            "skipped_no_url": skipped_no_url,
+            "seeded_no_url": seeded_no_url,
             "skipped_no_state": skipped_no_state,
         }
 
@@ -930,18 +928,18 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[Inges
         total_parsed=len(records),
         jobs_created=len(jobs_created),
         skipped_existing=skipped_existing,
-        skipped_no_url=len(skipped_no_url),
+        seeded_no_url=len(seeded_no_url),
         skipped_no_state=len(skipped_no_state),
     )
-    if skipped_no_url:
-        logger.warning("records_missing_urls", count=len(skipped_no_url), records=skipped_no_url[:10])
+    if seeded_no_url:
+        logger.warning("records_missing_urls", count=len(seeded_no_url), records=seeded_no_url[:10])
 
     # Attach skip info for callers (dashboard) to display
     return jobs_created, {
         "total_parsed": len(records),
         "new_jobs": len(jobs_created),
         "existing": skipped_existing,
-        "skipped_no_url": skipped_no_url,
+        "seeded_no_url": seeded_no_url,
         "skipped_no_state": skipped_no_state,
     }
 
@@ -1069,10 +1067,23 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         ))
 
     # --- IngestionJob ---
+    # If no URL was extracted from the PDF, mark the job as needing manual
+    # upload so it appears in the Failed Documents tab immediately.
+    if law_url:
+        job_status = IngestionStatus.pending
+        error_msg = None
+    else:
+        job_status = IngestionStatus.failed
+        error_msg = (
+            "No URL found in tracker PDF for this law. "
+            "Upload the document manually or edit the fetch URL."
+        )
+
     job = IngestionJob(
         document_version_id=version.id,
-        status=IngestionStatus.pending,
-        fetch_url=law_url,
+        status=job_status,
+        fetch_url=law_url or None,
+        error_message=error_msg,
         metadata_={
             "ai_scope": ai_scope,
             "source": "pdf_tracker",
@@ -1086,7 +1097,8 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         state=state_code,
         law=law_name,
         effective_date=str(effective_date),
-        url=law_url[:80],
+        url=(law_url[:80] if law_url else "(no URL)"),
         job_id=job.id,
+        needs_manual_upload=not bool(law_url),
     )
     return job
