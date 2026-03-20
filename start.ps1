@@ -18,12 +18,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Postgres is ready." -ForegroundColor Green
 
-# Verify password auth from the HOST side via the mapped port (5433).
+# Verify password auth from the HOST side via the mapped port (5434).
 # Container-internal checks can pass even with wrong passwords because
 # pg_hba.conf often grants trust to 127.0.0.1 inside the container.
 Write-Host "Verifying database credentials..." -ForegroundColor Cyan
 $env:PGPASSWORD = "regs"
-python -c "import psycopg2; psycopg2.connect(host='localhost', port=5433, user='regs', password='regs', dbname='regs_checker'); print('ok')" 2>$null
+python -c "import psycopg2; psycopg2.connect(host='localhost', port=5434, user='regs', password='regs', dbname='regs_checker'); print('ok')" 2>$null
 $authOk = $LASTEXITCODE -eq 0
 $env:PGPASSWORD = $null
 
