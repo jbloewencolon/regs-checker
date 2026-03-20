@@ -2,16 +2,16 @@
 
 Supports two providers:
   - anthropic: Claude API (Haiku for extraction — production quality)
-  - local: Any OpenAI-compatible API server (llama.cpp, vLLM, Ollama, etc.)
+  - local: Any OpenAI-compatible API server (LM Studio, llama.cpp, vLLM, Ollama, etc.)
 
-The local provider targets Llama 3.1 8B (Q4/Q5 quantized) for discovery tasks
-(bill classification, metadata extraction). Extraction agents continue to use
-Anthropic Haiku for legal precision and evidence span quality.
+The local provider targets Llama 3.2 3B for discovery tasks (bill classification,
+metadata extraction). Extraction agents continue to use Anthropic Haiku for
+legal precision and evidence span quality.
 
 Configuration via environment variables:
   REGS_LLM_PROVIDER          — "anthropic" (default) or "local"
-  REGS_LOCAL_LLM_URL         — Base URL for local server (e.g. http://localhost:8080)
-  REGS_LOCAL_LLM_MODEL       — Model name for local server (e.g. "llama-3.1-8b")
+  REGS_LOCAL_LLM_URL         — Base URL for local server (e.g. http://localhost:1234)
+  REGS_LOCAL_LLM_MODEL       — Model name for local server (e.g. "llama-3.2-3b")
   REGS_DISCOVERY_PROVIDER    — Provider for discovery agent specifically ("local" default)
   REGS_EXTRACTION_PROVIDER   — Provider for extraction agents specifically ("anthropic" default)
 """
@@ -128,10 +128,11 @@ class AnthropicProvider(BaseLLMProvider):
 
 
 class LocalLLMProvider(BaseLLMProvider):
-    """Local LLM provider via OpenAI-compatible API (llama.cpp, vLLM, Ollama).
+    """Local LLM provider via OpenAI-compatible API (LM Studio, llama.cpp, vLLM, Ollama).
 
-    Targets Llama 3.1 8B (Q4/Q5) for discovery tasks. Communicates via
-    the OpenAI chat completions API format, which is supported by:
+    Targets Llama 3.2 3B for discovery tasks. Communicates via the OpenAI
+    chat completions API format, which is supported by:
+      - LM Studio (http://localhost:1234)
       - llama.cpp server (--host 0.0.0.0 --port 8080)
       - vLLM (python -m vllm.entrypoints.openai.api_server)
       - Ollama (ollama serve)
@@ -166,9 +167,10 @@ class LocalLLMProvider(BaseLLMProvider):
 
     @staticmethod
     def normalize_model_id(model_name: str) -> str:
-        """Normalize an Ollama model name into a clean model_id.
+        """Normalize a local model name into a clean model_id.
 
         ``deepseek-r1:32b`` → ``deepseek-r1-32b-local``
+        ``qwen2.5-32b-instruct`` → ``qwen2.5-32b-instruct-local``
         """
         return model_name.replace(":", "-").replace("/", "-") + "-local"
 

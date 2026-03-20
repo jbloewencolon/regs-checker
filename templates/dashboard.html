@@ -208,6 +208,13 @@
                   hx-swap="innerHTML">
             Terminate
           </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/fetch/reset"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="Reset all failed/completed fetch jobs back to pending?">
+            Reset
+          </button>
         </div>
         <div class="step-result" id="step2-result"></div>
 
@@ -292,8 +299,8 @@
         <!-- Tab: Local LLM -->
         <div class="extract-tab-panel" id="tab-local">
           <div class="step-description" style="margin-bottom: 8px;">
-            Runs 4 extraction agents via <strong>Ollama</strong> (Qwen 2.5 32B + DeepSeek-R1 32B).
-            Requires Ollama running at <code>{{ config.local_llm_url or 'http://localhost:11434' }}</code>.
+            Runs 4 extraction agents via <strong>LM Studio</strong> (Qwen 2.5 32B + DeepSeek-R1 32B).
+            Requires LM Studio running at <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
           </div>
           <div class="step-actions">
             <button class="btn btn-primary"
@@ -326,13 +333,15 @@
             <details>
               <summary style="cursor:pointer; font-weight:500;">Setup instructions</summary>
               <div class="copy-box" style="margin-top: 6px;">
-                <code># 1. Install Ollama: https://ollama.com<br>
-                # 2. Pull models:<br>
-                ollama pull qwen2.5:32b-instruct-q4_K_M<br>
-                ollama pull deepseek-r1:32b<br><br>
-                # 3. Set in .env:<br>
+                <code># 1. Install LM Studio: https://lmstudio.ai<br>
+                # 2. Download models in LM Studio:<br>
+                #    - Qwen 2.5 32B Instruct (Q4_K_M)<br>
+                #    - DeepSeek-R1 32B<br><br>
+                # 3. Start the local server in LM Studio<br>
+                #    (Developer tab → Start Server on port 1234)<br><br>
+                # 4. Set in .env:<br>
                 REGS_EXTRACTION_PROVIDER=local<br>
-                REGS_LOCAL_LLM_URL=http://localhost:11434</code>
+                REGS_LOCAL_LLM_URL=http://localhost:1234</code>
               </div>
             </details>
           </div>

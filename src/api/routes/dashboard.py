@@ -768,6 +768,51 @@ def cancel_fetch() -> HTMLResponse:
     )
 
 
+@router.post("/api/run/fetch/reset")
+def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset all failed/completed ingestion jobs back to pending for re-fetching."""
+    from sqlalchemy import update
+
+    try:
+        result = db.execute(
+            update(IngestionJob)
+            .where(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.completed,
+                    IngestionStatus.requires_manual_review,
+                    IngestionStatus.fetching,
+                    IngestionStatus.fetched,
+                    IngestionStatus.parsing,
+                ])
+            )
+            .values(
+                status=IngestionStatus.pending,
+                error_message=None,
+                fetch_started_at=None,
+                fetch_completed_at=None,
+                parse_started_at=None,
+                parse_completed_at=None,
+            )
+        )
+        db.commit()
+        count = result.rowcount
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No jobs to reset — all are already pending.</div>'
+            )
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Reset <strong>{count}</strong> jobs back to pending. Ready to re-fetch.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/run/extract/cancel")
 def cancel_extract() -> HTMLResponse:
     """Signal the running extraction pipeline to stop after the current passage."""

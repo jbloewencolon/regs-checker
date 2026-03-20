@@ -96,7 +96,7 @@ def clear_cancel() -> None:
 MIN_PASSAGE_LENGTH = 150
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
-# Prevents silently skipping data when Ollama/GPU is down.
+# Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
 
 # Agent registry — 4 consolidated agents per Recommendation #1
@@ -328,7 +328,7 @@ def _wrap_passages(
     """Wrap each record into a single-record MergedPassage (no merging).
 
     Passage merging was a cost-optimization for cloud API calls.  Running
-    locally on dedicated hardware (e.g. R9700 + Ollama) makes merging
+    locally on dedicated hardware (e.g. R9700 + LM Studio) makes merging
     unnecessary, and disabling it eliminates two classes of bugs:
       - Evidence span char-offsets becoming invalid after concatenation
       - N×M extraction duplication when multi-extraction agents run on
@@ -368,7 +368,7 @@ def _group_agents_by_model(
 
     Returns a list of dicts (one per model group), ordered so agents sharing
     the same model run together. Agents within a group can run concurrently;
-    groups run sequentially so Ollama only loads one model at a time.
+    groups run sequentially so LM Studio only loads one model at a time.
     """
     groups: dict[str | None, dict[str, BaseExtractionAgent]] = {}
     for name, agent in agents.items():
@@ -391,7 +391,7 @@ def extract_single_record(
 
     Returns extraction count. Agents are selected based on content signals.
 
-    To avoid VRAM thrashing when using local models via Ollama, agents are
+    To avoid VRAM thrashing when using local models via LM Studio, agents are
     grouped by their model_override and each group runs sequentially.  Agents
     within the same model group still run concurrently.
 
@@ -420,7 +420,7 @@ def extract_single_record(
         logger.debug("all_agents_skipped", record_id=record.id)
         return 0
 
-    # Group agents by model to minimise Ollama VRAM model swaps.
+    # Group agents by model to minimise LM Studio VRAM model swaps.
     # Each group runs sequentially; agents within a group run concurrently.
     model_groups = _group_agents_by_model(selected_agents)
     agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []

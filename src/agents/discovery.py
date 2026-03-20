@@ -1,7 +1,7 @@
 """Discovery agent — uses local LLM for bill classification and metadata extraction.
 
 This agent runs on a local Llama 3.1 8B model (Q4/Q5 quantized) via an
-OpenAI-compatible API server (llama.cpp, vLLM, Ollama). It handles two tasks:
+OpenAI-compatible API server (LM Studio, llama.cpp, vLLM). It handles two tasks:
 
 1. Bill Classification: Given raw text from a scraped web page or document,
    determine if it is AI-related legislation worth ingesting.

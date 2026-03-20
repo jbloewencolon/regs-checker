@@ -38,8 +38,8 @@ class Settings(BaseSettings):
     extraction_temperature: float = 0.0
     extraction_max_tokens: int = 8192
 
-    # Local LLM (OpenAI-compatible API: llama.cpp, vLLM, Ollama)
-    local_llm_url: str = ""  # e.g. http://localhost:11434
+    # Local LLM (OpenAI-compatible API: LM Studio, llama.cpp, vLLM, Ollama)
+    local_llm_url: str = "http://localhost:1234"  # LM Studio default
     local_llm_model: str = "llama-3.2-3b"  # Default model for discovery tasks
     local_extraction_model: str = "deepseek-r1:32b"  # Default model for local extraction
 
