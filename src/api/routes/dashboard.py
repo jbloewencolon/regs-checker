@@ -242,6 +242,19 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             </div>
             """
         else:
+            # Show breakdown: completed + failed + pending = total
+            pending = s.get("pending", 0)
+            failed = s.get("failed", 0)
+            in_prog = s.get("in_progress", 0)
+            detail_parts = []
+            if failed > 0:
+                detail_parts.append(f'<span style="color:var(--danger);">{failed} failed</span>')
+            if pending > 0:
+                detail_parts.append(f'<span style="color:var(--text-muted);">{pending} pending</span>')
+            if in_prog > 0:
+                detail_parts.append(f'<span style="color:var(--warning);">{in_prog} in progress</span>')
+            detail_tag = f' <span style="font-size:11px;">({", ".join(detail_parts)})</span>' if detail_parts else ""
+
             step_bars += f"""
             <div class="progress-step-row">
               <span class="progress-step-label">{s['name']}</span>
@@ -249,7 +262,7 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
                 <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
               </div>
               <span class="progress-step-pct">{s['percent']}%</span>
-              <span class="progress-step-count">{s['completed']}/{s['total']}{failed_tag}</span>
+              <span class="progress-step-count">{s['completed']}/{s['total']}{detail_tag}</span>
             </div>
             """
 

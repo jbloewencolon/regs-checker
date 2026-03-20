@@ -130,12 +130,12 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         display_mode="found",
     )
 
-    # Step 2: Fetch & Parse — total comes from discovery (IngestionJobs created)
+    # Step 2: Fetch & Parse — total = all IngestionJobs from discovery.
+    # "completed" here means successfully fetched+parsed.
+    # "failed" includes requires_manual_review.
+    # "pending" are jobs not yet attempted (no URL, or waiting in queue).
     ingestion_completed = db.scalar(
         select(func.count()).where(IngestionJob.status == IngestionStatus.completed)
-    ) or 0
-    ingestion_pending = db.scalar(
-        select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
     ingestion_failed = db.scalar(
         select(func.count()).where(
@@ -149,10 +149,15 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).where(
             IngestionJob.status.in_([
                 IngestionStatus.fetching,
+                IngestionStatus.fetched,
                 IngestionStatus.parsing,
+                IngestionStatus.parsed,
                 IngestionStatus.normalizing,
             ])
         )
+    ) or 0
+    ingestion_pending = db.scalar(
+        select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
     total_ingestion = ingestion_completed + ingestion_pending + ingestion_failed + ingestion_in_progress
 
