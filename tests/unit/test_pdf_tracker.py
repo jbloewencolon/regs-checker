@@ -179,8 +179,9 @@ class TestSeedFromTracker:
             {"state": "Atlantis", "state_code": "", "law_name": "X", "law_url": "http://x",
              "ai_scope": "AI", "effective_date": "", "key_requirements": "", "enforcement": ""},
         ]
-        jobs = seed_from_tracker(mock_db, records)
+        jobs, stats = seed_from_tracker(mock_db, records)
         assert len(jobs) == 0
+        assert len(stats["skipped_no_state"]) == 1
 
     def test_skips_rows_without_url(self):
         """Rows with no bill link should be skipped."""
@@ -189,5 +190,6 @@ class TestSeedFromTracker:
             {"state": "Colorado", "state_code": "CO", "law_name": "X", "law_url": "",
              "ai_scope": "AI", "effective_date": "", "key_requirements": "", "enforcement": ""},
         ]
-        jobs = seed_from_tracker(mock_db, records)
+        jobs, stats = seed_from_tracker(mock_db, records)
         assert len(jobs) == 0
+        assert len(stats["skipped_no_url"]) == 1

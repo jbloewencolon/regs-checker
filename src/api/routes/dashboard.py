@@ -451,11 +451,38 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     try:
         from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
         records = parse_tracker_pdf()
-        jobs = seed_from_tracker(db, records)
+        jobs, stats = seed_from_tracker(db, records)
         db.commit()
+
+        # Build informative breakdown
+        parts = [f'Parsed <strong>{stats["total_parsed"]}</strong> laws from PDF.']
+        if stats["new_jobs"] > 0:
+            parts.append(f'Seeded <strong>{stats["new_jobs"]}</strong> new for ingestion.')
+        if stats["existing"] > 0:
+            parts.append(f'{stats["existing"]} already in database.')
+
+        skip_notes = ""
+        if stats["skipped_no_url"]:
+            skip_items = "".join(
+                f'<li>{html_escape(s)}</li>' for s in stats["skipped_no_url"][:10]
+            )
+            extra = f" (+{len(stats['skipped_no_url']) - 10} more)" if len(stats["skipped_no_url"]) > 10 else ""
+            skip_notes += (
+                f'<div style="margin-top:6px;"><span style="color:var(--warning);">'
+                f'{len(stats["skipped_no_url"])} records skipped (no URL in PDF):</span>{extra}'
+                f'<ul style="margin:4px 0 0 16px;font-size:12px;">{skip_items}</ul></div>'
+            )
+        if stats["skipped_no_state"]:
+            skip_notes += (
+                f'<div style="margin-top:4px;font-size:12px;color:var(--warning);">'
+                f'{len(stats["skipped_no_state"])} records had unrecognized state names.</div>'
+            )
+
+        panel_class = "success" if not stats["skipped_no_url"] else "warning"
         return HTMLResponse(
-            f'<div class="result-panel success">'
-            f'Parsed {len(records)} laws from PDF, seeded {len(jobs)} new ones for ingestion.'
+            f'<div class="result-panel {panel_class}">'
+            f'{" ".join(parts)}'
+            f'{skip_notes}'
             f'</div>'
         )
     except Exception as e:
@@ -475,13 +502,23 @@ def run_status_check(
         from src.ingestion.status_checker import check_all_statuses
         result = check_all_statuses(db, dry_run=dry_run)
 
+        iapp_note = ""
+        if result.iapp_records == 0:
+            iapp_note = (
+                '<br><span style="font-size:12px;color:var(--warning);">'
+                'IAPP: 0 records — place the IAPP PDF at '
+                '<code>static/IAPP_Legislation_tracker.pdf</code> to enable.'
+                '</span>'
+            )
+
         if result.changed == 0:
             return HTMLResponse(
                 f'<div class="result-panel info">'
-                f'Checked {result.checked} bills against '
-                f'PDF tracker ({result.pdf_records} records) and '
-                f'IAPP ({result.iapp_records} records). '
+                f'Checked <strong>{result.checked}</strong> bills against '
+                f'PDF tracker (<strong>{result.pdf_records}</strong> matched) and '
+                f'IAPP (<strong>{result.iapp_records}</strong> matched). '
                 f'No status changes detected.'
+                f'{iapp_note}'
                 f'</div>'
             )
 

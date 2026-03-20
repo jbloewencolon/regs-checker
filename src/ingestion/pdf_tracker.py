@@ -848,18 +848,25 @@ def _read_enforcement(lines: list[str], i: int) -> tuple[str, int]:
 # ---------------------------------------------------------------------------
 
 
-def seed_from_tracker(db, records: list[dict] | None = None) -> list[IngestionJob]:
+def seed_from_tracker(db, records: list[dict] | None = None) -> tuple[list[IngestionJob], dict]:
     """Convert tracker records into database records and create ingestion jobs.
 
     For each row, creates/updates:
         Source → DocumentFamily → DocumentVersion → IngestionJob
 
     Skips rows that already exist (matched by state_code + law_name).
+
+    Returns:
+        (jobs_created, stats_dict) where stats_dict contains:
+            total_parsed, new_jobs, existing, skipped_no_url, skipped_no_state
     """
     if records is None:
         records = parse_tracker_pdf()
 
     jobs_created = []
+    skipped_no_url = []
+    skipped_no_state = []
+    skipped_existing = 0
 
     # Circuit breaker: if most DB inserts fail, something is structurally
     # wrong (schema mismatch, constraint violation, etc.)
@@ -875,18 +882,22 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> list[IngestionJo
             state_code = record["state_code"]
             state_name = record["state"]
             if not state_code:
-                logger.debug("skipping_unknown_state", state=state_name)
+                skipped_no_state.append(record.get("law_name", "unknown"))
+                logger.warning("skipping_unknown_state", state=state_name, law=record.get("law_name"))
                 continue
 
             law_url = record["law_url"]
             if not law_url:
-                logger.debug("skipping_no_url", state=state_code, law=record["law_name"])
+                skipped_no_url.append(f"{state_code} - {record['law_name']}")
+                logger.warning("skipping_no_url", state=state_code, law=record["law_name"])
                 continue
 
             try:
                 job = _seed_single_law(db, record)
                 if job:
                     jobs_created.append(job)
+                else:
+                    skipped_existing += 1
                 tracker.record_success()
             except CircuitBreakerTripped:
                 raise
@@ -905,11 +916,34 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> list[IngestionJo
         logger.error("seed_circuit_breaker", detail=str(cb))
         # Flush what we have so far
         db.flush()
-        return jobs_created
+        return jobs_created, {
+            "total_parsed": len(records),
+            "new_jobs": len(jobs_created),
+            "existing": skipped_existing,
+            "skipped_no_url": skipped_no_url,
+            "skipped_no_state": skipped_no_state,
+        }
 
     db.flush()
-    logger.info("seeding_complete", jobs_created=len(jobs_created))
-    return jobs_created
+    logger.info(
+        "seeding_complete",
+        total_parsed=len(records),
+        jobs_created=len(jobs_created),
+        skipped_existing=skipped_existing,
+        skipped_no_url=len(skipped_no_url),
+        skipped_no_state=len(skipped_no_state),
+    )
+    if skipped_no_url:
+        logger.warning("records_missing_urls", count=len(skipped_no_url), records=skipped_no_url[:10])
+
+    # Attach skip info for callers (dashboard) to display
+    return jobs_created, {
+        "total_parsed": len(records),
+        "new_jobs": len(jobs_created),
+        "existing": skipped_existing,
+        "skipped_no_url": skipped_no_url,
+        "skipped_no_state": skipped_no_state,
+    }
 
 
 def _seed_single_law(db, record: dict) -> IngestionJob | None:
