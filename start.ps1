@@ -18,11 +18,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Postgres is ready." -ForegroundColor Green
 
-# Verify password-based TCP auth works (docker exec psql uses trust/peer auth
-# on the local socket, which hides password mismatches)
+# Verify password auth from the HOST side via the mapped port (5433).
+# Container-internal checks can pass even with wrong passwords because
+# pg_hba.conf often grants trust to 127.0.0.1 inside the container.
 Write-Host "Verifying database credentials..." -ForegroundColor Cyan
 $env:PGPASSWORD = "regs"
-$authCheck = docker exec -e PGPASSWORD=regs docker-postgres-1 psql -h 127.0.0.1 -U regs -d regs_checker -c "SELECT 1;" 2>&1
+python -c "import psycopg2; psycopg2.connect(host='localhost', port=5433, user='regs', password='regs', dbname='regs_checker'); print('ok')" 2>$null
 $authOk = $LASTEXITCODE -eq 0
 $env:PGPASSWORD = $null
 
@@ -33,7 +34,7 @@ if (-not $authOk) {
     docker compose -f docker/docker-compose.yml up -d postgres
     $retries = 0
     do {
-        Start-Sleep -Seconds 1
+        Start-Sleep -Seconds 2
         $retries++
         docker exec docker-postgres-1 pg_isready -U regs -d regs_checker 2>$null | Out-Null
     } while ($LASTEXITCODE -ne 0 -and $retries -lt 15)
