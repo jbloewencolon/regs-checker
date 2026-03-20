@@ -1,0 +1,66 @@
+Section,Jurisdiction,Statute/bill,Scope,Program and documentation,Assessments,Training,Responsible individual,General notice,Labeling/notification,Explanation/incident reporting,Developer documentation,Registration,Third-party review,Opt out/appeal,Nondiscrimination
+LAWS SIGNED,California,AB 2013,G,,,,,2,,,,,,,
+LAWS SIGNED,California,SB 942,G,,,,,2,2,,,,,,
+LAWS SIGNED,California,SB 53,F,2,,,,2,,2,,,,,
+LAWS SIGNED,Colorado,SB 205,D,"1,2","1,2",,,"1,2",1,"1,2",2,,,1,"1,2"
+LAWS SIGNED,New York,AB 6453B,F,2,,,,2,,2,,,,,
+LAWS SIGNED,Utah,SB 149,G,,,,,,"1,2",,,,,,
+LAWS SIGNED,Utah,SB 226,G,,,,,,1,,,,,,
+LAWS SIGNED,Texas,HB 149,A,"1,2,3",,,,,,,,,,,"1,2"
+ACTIVE BILLS,Alabama,SB 129,G,,,,,,2,,"2,1",,,,
+ACTIVE BILLS,Alabama,HB 4098,A*,"1,2","1,2",,,,,,,"1,2","1,2",,"1,2"
+ACTIVE BILLS,Arizona,SB 1786,G,,,,,2,,,,,,,
+ACTIVE BILLS,California,AB 1018,D,,2,,1,,1,,2,,"1,2",1,
+ACTIVE BILLS,California,AB 412,G,2,,,,2,,,,,,,
+ACTIVE BILLS,California,SB 420,D,"1,2","1,2",,,1,1,,2,,,,"1,2"
+ACTIVE BILLS,Connecticut,SB 5,"F,G",2,,,2,,2,,,,,,
+ACTIVE BILLS,Florida,SB 482 / HB 1395,"G,A*","1,2",,,,,1,,,,,1,"1,2"
+ACTIVE BILLS,Hawaii,SB 59,D,1,1,,,1,1,1,,1,,1,1
+ACTIVE BILLS,Hawaii,SB 2967,D,1,1,,,1,1,1,,,,1,"1,3"
+ACTIVE BILLS,Hawaii,HB 2500,D,,,,,1,1,,2,,,"1,2",
+ACTIVE BILLS,Illinois,SB 1929,G,,,,,,2,,,,,,
+ACTIVE BILLS,Illinois,SB 1792,G,,,,,,"1,2",,,,,,
+ACTIVE BILLS,Illinois,SB 2203,D,1,1,,1,1,1,,,1,,1,1
+ACTIVE BILLS,Illinois,SB 2995,G,,,,,,1,,,,,,
+ACTIVE BILLS,Illinois,SB 3180,A*,,,,,,1,,,,,1,
+ACTIVE BILLS,Illinois,SB 3263,G,,,,,"1,2",,,,,,,
+ACTIVE BILLS,Illinois,SB 3261 / HB 4705,"F,G",2,2,,,2,,2,,,2,,
+ACTIVE BILLS,Illinois,SB 3312,F,2,,,,2,,2,,,,,
+ACTIVE BILLS,Illinois,HB 3506,F,2,2,,,2,,,,,2,,
+ACTIVE BILLS,Illinois,HB 4711,G,,,,,"1,2",,,,,,,
+ACTIVE BILLS,Illinois,HB 4799,F,2,,,,2,,2,,,,,
+ACTIVE BILLS,Illinois,HB 4988,G,,,,,,"1,2",,,,,,
+ACTIVE BILLS,Iowa,HB 406,A*,,,,,,2,,,,,,
+ACTIVE BILLS,Louisiana,HB 230,G,,,,,,"1,2",,,,,,
+ACTIVE BILLS,Louisiana,HB 94,"A,D",1,1,,,"1,2",1,2,2,,,1,"1,2"
+ACTIVE BILLS,Louisiana,HB 97,"A,D",1,1,,,"1,2",1,2,2,,,1,"1,2"
+ACTIVE BILLS,Massachusetts,S 2630,F,2,,,,2,,2,,,,,
+ACTIVE BILLS,Michigan,HB 4668,F,2,2,,,2,,,2,,2,,
+ACTIVE BILLS,Minnesota,SF 1886,A,,,,,,1,,,,,1,
+ACTIVE BILLS,Nebraska,LB 1083,"F,G",2,2,,,2,,2,,,2,,
+ACTIVE BILLS,Nebraska,LB 642,"A,D",1,1,,,,1,2,2,2,,1,"1,2"
+ACTIVE BILLS,New Hampshire,HB 1725,A,,,,,,"1,2",,,,,,"1,2"
+ACTIVE BILLS,New Jersey,S 1802,A,,"1,2",,,,,,,"1,2",,,
+ACTIVE BILLS,New Jersey,AB 768 / SB 1962,"A,F,D",1,1,,,"1,2",1,,2,,,1,"1,2"
+ACTIVE BILLS,New Jersey,AB 3265,D,,1,,,1,,1,,,1,1,"1,2"
+ACTIVE BILLS,New Jersey,AB 3356,D,2,2,,2,,2,2,,2,,,2
+ACTIVE BILLS,New Jersey,AB 3411 / SB 934,G,,,,,,"1,2",,,,,,
+ACTIVE BILLS,New York,AB 6540 / SB 6954,G,,,,,,2,,,,,,
+ACTIVE BILLS,New York,AB 6578A,G*,,,,,2,,,,,,,
+ACTIVE BILLS,New York,AB 8884 / SB 1169,D,"1,2","1,2",,,,1,,2,"1,2","1,2",1,"1,2"
+ACTIVE BILLS,New York,AB 9654,D,"1,2","1,2",,,"1,2",,,2,,"1,2",1,"1,2"
+ACTIVE BILLS,Oklahoma,HB 1916,"A,D",1,1,,,,1,1,,,1,1,
+ACTIVE BILLS,Tennessee,HB 1898,"F,G",2,2,,,2,,2,,,2,,
+ACTIVE BILLS,Utah,HB 286,"F,G",2,2,,,2,,2,,,2,,
+ACTIVE BILLS,Virginia,SB 245,A*,,,,,,1,,,,1,,1
+ACTIVE BILLS,Virginia,HB 713 / SB 365,F,,,,,2,,,,,,,
+ACTIVE BILLS,Vermont,HB 340,D,"1,2","1,2",,,1,1,,,"1,2","1,2",1,"1,2"
+ACTIVE BILLS,Vermont,HB 341,"F,D,G",2,2,,,,,,2,2,,,"1,2"
+ACTIVE BILLS,Vermont,HB 821,G,,,,,,1,,,,,,
+ACTIVE BILLS,Washington,HB 1168,G,,,,,,2,,,,,,
+ACTIVE BILLS,Washington,HB 1170,G,,,,,"1,2",,,,,,,
+ACTIVE BILLS,Washington,SB 6120 / HB 2157,"D,G","1,2","1,2",,,,"1,2",,2,,,,"1,2"
+ACTIVE BILLS,Washington,HB 2503,G,,,,,2,,,,,,,
+ACTIVE BILLS,Washington,SB 6284 / HB 2667,D,1,1,,,,1,1,,,,,1
+INACTIVE BILLS,New Mexico,HB 28,D,,,,,"1,3",1,,,,,1,
+INACTIVE BILLS,New Mexico,HB 141,G,3,,,,1,1,,,,,,
