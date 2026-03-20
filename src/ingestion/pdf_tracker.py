@@ -248,84 +248,281 @@ def _extract_text_from_pdf(pdf_path: Path) -> str:
 
 
 def _extract_table_rows_from_pdf(pdf_path: Path) -> list[list[str]] | None:
-    """Extract table rows from the PDF using pdfplumber's table detection.
+    """Extract table rows from the PDF using pdfplumber word-level positioning.
 
-    Returns a list of rows, each row a list of cell strings, or None if
-    table extraction isn't available or finds nothing.
+    pdfplumber's default extract_tables() can't detect column boundaries in
+    this PDF (no grid lines), so we use extract_words() to get word bounding
+    boxes, determine column boundaries from the header row, then reconstruct
+    the table structure ourselves.
+
+    Returns a list of rows, each row a list of 7 cell strings, or None if
+    extraction isn't available or finds nothing.
     """
     try:
         import pdfplumber
     except ImportError:
         return None
 
-    all_rows: list[list[str]] = []
     try:
         with pdfplumber.open(pdf_path) as pdf:
+            # Step 1: Find column boundaries from header row on page 1
+            col_boundaries = _find_column_boundaries(pdf.pages[0])
+            if not col_boundaries:
+                logger.warning("pdf_could_not_detect_column_boundaries")
+                return None
+
+            logger.debug("pdf_column_boundaries", boundaries=col_boundaries)
+
+            # Step 2: Extract rows from all pages using those boundaries
+            all_rows: list[list[str]] = []
             for page in pdf.pages:
-                tables = page.extract_tables()
-                for table in tables:
-                    for row in table:
-                        if row:
-                            # Normalise None cells to empty strings
-                            all_rows.append([cell or "" for cell in row])
+                rows = _extract_rows_from_page(page, col_boundaries)
+                all_rows.extend(rows)
+
+            return all_rows if all_rows else None
+
     except Exception as e:
         logger.warning("pdfplumber_table_extraction_failed", error=str(e)[:200])
         return None
 
-    return all_rows if all_rows else None
+
+# Column header keywords used to detect boundaries
+_HEADER_KEYWORDS = {
+    "State/Terr": "state",
+    "AI Scope": "scope",
+    "Relevant Law": "law",
+    "Law Link": "link",
+    "Effective Date": "date",
+    "Key Requirements": "requirements",
+    "Enforcements Penalties": "enforcement",
+}
+
+
+def _find_column_boundaries(first_page) -> list[float] | None:
+    """Detect column x-boundaries from the header row on page 1.
+
+    Returns a list of x-coordinates marking the left edge of each column,
+    plus the right edge of the page. Returns None if headers can't be found.
+    """
+    words = first_page.extract_words(keep_blank_chars=True, extra_attrs=["top", "bottom"])
+    if not words:
+        return None
+
+    # Find header words by matching known column headers
+    # Headers are typically in the top portion of the first page
+    header_words = [w for w in words if w["top"] < 100]
+    if not header_words:
+        # Try a wider range
+        header_words = [w for w in words if w["top"] < 150]
+
+    if not header_words:
+        return None
+
+    # Reconstruct header text by joining words on the same line
+    # Group header words by approximate y position
+    header_y = header_words[0]["top"]
+    header_line = sorted(
+        [w for w in header_words if abs(w["top"] - header_y) < 5],
+        key=lambda w: w["x0"],
+    )
+
+    # Find the x0 positions for known header columns
+    col_starts: list[tuple[float, str]] = []
+    header_text_parts = []
+    for w in header_line:
+        header_text_parts.append((w["x0"], w["text"]))
+
+    # Match header keywords to x positions
+    full_text = " ".join(t for _, t in header_text_parts)
+    for keyword in _HEADER_KEYWORDS:
+        # Find the word(s) that form this keyword
+        for idx, (x0, text) in enumerate(header_text_parts):
+            remaining = " ".join(t for _, t in header_text_parts[idx:idx + len(keyword.split())])
+            if remaining.startswith(keyword):
+                col_starts.append((x0, keyword))
+                break
+
+    if len(col_starts) < 4:
+        # Try to detect from word gaps: large horizontal gaps indicate column boundaries
+        sorted_words = sorted(header_words, key=lambda w: w["x0"])
+        gaps = []
+        for j in range(1, len(sorted_words)):
+            gap = sorted_words[j]["x0"] - sorted_words[j - 1]["x1"]
+            if gap > 10:  # Significant gap = column boundary
+                gaps.append(sorted_words[j]["x0"])
+
+        if gaps:
+            # Use page left edge + gap positions as boundaries
+            page_width = first_page.width
+            col_starts_from_gaps = [sorted_words[0]["x0"]] + gaps
+            return col_starts_from_gaps + [page_width]
+
+        return None
+
+    # Sort by x position and add right page edge
+    col_starts.sort(key=lambda c: c[0])
+    boundaries = [x for x, _ in col_starts] + [first_page.width]
+    return boundaries
+
+
+def _extract_rows_from_page(page, col_boundaries: list[float]) -> list[list[str]]:
+    """Extract structured rows from a page using known column boundaries.
+
+    Groups words into rows by y-position, then assigns each word to a column
+    based on its x-position.
+    """
+    words = page.extract_words(keep_blank_chars=True, extra_attrs=["top", "bottom"])
+    if not words:
+        return []
+
+    # Group words into rows by y-position (words within 3pts vertically = same row)
+    words_sorted = sorted(words, key=lambda w: (w["top"], w["x0"]))
+
+    row_groups: list[list[dict]] = []
+    current_row: list[dict] = []
+    current_top = -999.0
+
+    for w in words_sorted:
+        if abs(w["top"] - current_top) > 3:
+            if current_row:
+                row_groups.append(current_row)
+            current_row = [w]
+            current_top = w["top"]
+        else:
+            current_row.append(w)
+
+    if current_row:
+        row_groups.append(current_row)
+
+    # Convert word groups into column-based rows
+    num_cols = len(col_boundaries) - 1
+    result_rows: list[list[str]] = []
+
+    for word_group in row_groups:
+        cells = [""] * num_cols
+        for w in sorted(word_group, key=lambda w: w["x0"]):
+            # Determine which column this word belongs to
+            col_idx = _word_to_column(w["x0"], col_boundaries)
+            if col_idx < num_cols:
+                if cells[col_idx]:
+                    cells[col_idx] += " " + w["text"]
+                else:
+                    cells[col_idx] = w["text"]
+
+        # Only include rows with some content
+        if any(c.strip() for c in cells):
+            result_rows.append(cells)
+
+    # Merge continuation rows: if a row has an empty state/scope but has content
+    # in requirements/enforcement, it's a continuation of the previous entry
+    merged = _merge_continuation_rows(result_rows, num_cols)
+    return merged
+
+
+def _word_to_column(x0: float, boundaries: list[float]) -> int:
+    """Determine which column a word belongs to based on its x position."""
+    for i in range(len(boundaries) - 1):
+        if x0 < boundaries[i + 1]:
+            return i
+    return len(boundaries) - 2  # Last column
+
+
+def _merge_continuation_rows(rows: list[list[str]], num_cols: int) -> list[list[str]]:
+    """Merge multi-line entries that span several PDF rows.
+
+    A continuation row has empty State and Scope columns but content in
+    later columns — this means the previous row's requirements/enforcement
+    text wraps onto additional lines.
+    """
+    if not rows:
+        return rows
+
+    merged: list[list[str]] = []
+    for row in rows:
+        state_text = row[0].strip() if len(row) > 0 else ""
+        scope_text = row[1].strip() if len(row) > 1 else ""
+        law_text = row[2].strip() if len(row) > 2 else ""
+
+        # If this row has a state or scope, it's a new entry
+        has_state = bool(state_text) and _match_state_name(state_text)
+        has_scope = bool(scope_text)
+        has_law = bool(law_text)
+
+        if has_state or (has_scope and has_law):
+            merged.append(list(row))
+        elif merged:
+            # Continuation: append content to previous row's cells
+            for col_idx in range(num_cols):
+                cell_text = row[col_idx].strip() if col_idx < len(row) else ""
+                if cell_text:
+                    if merged[-1][col_idx]:
+                        merged[-1][col_idx] += " " + cell_text
+                    else:
+                        merged[-1][col_idx] = cell_text
+
+    return merged
+
+
+def _match_state_name(text: str) -> str:
+    """Match text against known state names, handling multi-line cell content."""
+    text = text.strip()
+    if not text:
+        return ""
+    # Direct match
+    if text in STATE_CODES:
+        return text
+    # First line of a multi-line cell
+    first_line = text.split("\n")[0].strip()
+    if first_line in STATE_CODES:
+        return first_line
+    # Partial match (state name at start of text)
+    for state in sorted(STATE_CODES.keys(), key=len, reverse=True):
+        if text.startswith(state):
+            return state
+    return ""
 
 
 def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
-    """Parse structured table rows into law records.
+    """Parse structured table rows (7 columns) into law records.
 
-    Expected columns (may vary slightly):
-      0: State/Terr   1: AI Scope   2: Relevant Law   3: Law Link / Bill ID
-      4: Effective Date   5: Key Requirements   6: Enforcement Penalties
-
-    State cells are often empty for continuation rows (same state, different law),
-    so we carry the last seen state forward.
+    Columns: 0=State, 1=AI Scope, 2=Relevant Law, 3=Law Link/Bill ID,
+             4=Effective Date, 5=Key Requirements, 6=Enforcement
     """
     records = []
     url_index = 0
     current_state = ""
 
-    # Detect header row and determine column mapping
-    col_map = _detect_columns(rows)
-
     for row in rows:
-        # Skip rows that are too short or header rows
         if len(row) < 3:
             continue
-        first_cell = row[0].strip() if row[0] else ""
+
+        state_cell = row[0].strip() if row[0] else ""
+        scope_cell = row[1].strip() if len(row) > 1 else ""
 
         # Skip header rows
-        if first_cell in ("State/Terr", "State/Terr."):
-            continue
-        if "AI Scope" in first_cell:
+        if state_cell == "State/Terr" or "AI Scope" in state_cell:
             continue
 
-        # Detect state from first column
-        if first_cell:
-            matched_state = _match_state_name(first_cell)
-            if matched_state:
-                current_state = matched_state
+        # Detect state
+        if state_cell:
+            matched = _match_state_name(state_cell)
+            if matched:
+                current_state = matched
 
         if not current_state:
             continue
-
         state_code = STATE_CODES.get(current_state, "")
         if not state_code:
             continue
 
-        # Extract fields using column mapping
-        ai_scope = _get_col(row, col_map.get("scope", 1)).strip()
-        law_name = _get_col(row, col_map.get("law", 2)).strip()
-        bill_id = _get_col(row, col_map.get("link", 3)).strip()
-        effective_date = _get_col(row, col_map.get("date", 4)).strip()
-        key_requirements = _get_col(row, col_map.get("requirements", 5)).strip()
-        enforcement = _get_col(row, col_map.get("enforcement", 6)).strip()
+        ai_scope = scope_cell
+        law_name = (row[2].strip() if len(row) > 2 else "")
+        bill_id = (row[3].strip() if len(row) > 3 else "")
+        effective_date = (row[4].strip() if len(row) > 4 else "")
+        key_requirements = (row[5].strip() if len(row) > 5 else "")
+        enforcement = (row[6].strip() if len(row) > 6 else "")
 
-        # Skip rows with no meaningful content (spacer rows, etc.)
+        # Skip rows with no meaningful content
         if not law_name and not bill_id and not ai_scope:
             continue
 
@@ -350,51 +547,6 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
     return records
 
 
-def _detect_columns(rows: list[list[str]]) -> dict[str, int]:
-    """Detect column positions from header rows."""
-    defaults = {"scope": 1, "law": 2, "link": 3, "date": 4, "requirements": 5, "enforcement": 6}
-    for row in rows[:5]:  # Check first few rows for headers
-        for idx, cell in enumerate(row):
-            cell_lower = (cell or "").strip().lower()
-            if "scope" in cell_lower:
-                defaults["scope"] = idx
-            elif cell_lower in ("relevant law", "relevant law name"):
-                defaults["law"] = idx
-            elif "link" in cell_lower:
-                defaults["link"] = idx
-            elif "effective" in cell_lower or "date" in cell_lower:
-                defaults["date"] = idx
-            elif "requirement" in cell_lower:
-                defaults["requirements"] = idx
-            elif "enforce" in cell_lower or "penalt" in cell_lower:
-                defaults["enforcement"] = idx
-    return defaults
-
-
-def _get_col(row: list[str], idx: int) -> str:
-    """Safely get a column value from a row."""
-    if idx < len(row):
-        return row[idx] or ""
-    return ""
-
-
-def _match_state_name(text: str) -> str:
-    """Match text against known state names, handling multi-line cell content."""
-    text = text.strip()
-    # Direct match
-    if text in STATE_CODES:
-        return text
-    # First line of a multi-line cell
-    first_line = text.split("\n")[0].strip()
-    if first_line in STATE_CODES:
-        return first_line
-    # Partial match (state name at start of text)
-    for state in sorted(STATE_CODES.keys(), key=len, reverse=True):
-        if text.startswith(state):
-            return state
-    return ""
-
-
 def parse_tracker_pdf(pdf_path: Path = PDF_PATH) -> list[dict]:
     """Parse the Orrick AI Law Tracker PDF into structured records.
 
@@ -416,7 +568,7 @@ def parse_tracker_pdf(pdf_path: Path = PDF_PATH) -> list[dict]:
     ]
     logger.info("pdf_urls_extracted", total=len(all_urls), law_urls=len(law_urls))
 
-    # Strategy 1: Use pdfplumber table extraction (structured, reliable)
+    # Strategy 1: Use pdfplumber word-level extraction with column detection
     table_rows = _extract_table_rows_from_pdf(pdf_path)
     if table_rows:
         logger.info("pdf_table_rows_extracted", rows=len(table_rows))

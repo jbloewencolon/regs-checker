@@ -1,37 +1,49 @@
-"""Diagnostic: dump PDF table structure to understand extraction issues.
+"""Diagnostic: test the word-level column extraction pipeline.
 
 Usage: python scripts/debug_pdf_tables.py
 """
-import pdfplumber
 from pathlib import Path
+from src.ingestion.pdf_tracker import (
+    _extract_table_rows_from_pdf,
+    _extract_urls_from_pdf,
+    _parse_table_rows,
+)
 
 pdf_path = Path("static/Orrick-US-AI-Law-Tracker.pdf")
 
-with pdfplumber.open(pdf_path) as pdf:
-    print(f"Total pages: {len(pdf.pages)}\n")
+print("=== Extracting table rows (word-level) ===")
+rows = _extract_table_rows_from_pdf(pdf_path)
 
-    row_num = 0
-    for pi, page in enumerate(pdf.pages):
-        tables = page.extract_tables()
-        print(f"=== Page {pi + 1}: {len(tables)} table(s) ===")
+if not rows:
+    print("ERROR: No rows extracted!")
+    exit(1)
 
-        for ti, table in enumerate(tables):
-            print(f"  Table {ti}: {len(table)} rows, {len(table[0]) if table else 0} cols")
-            for ri, row in enumerate(table):
-                row_num += 1
-                # Truncate each cell for display
-                cells = []
-                for c in row:
-                    val = (c or "").replace("\n", "\\n")
-                    if len(val) > 50:
-                        val = val[:50] + "..."
-                    cells.append(val)
-                print(f"    [{row_num:3d}] {cells}")
+print(f"Total rows: {len(rows)}\n")
+print("First 20 rows:")
+for i, row in enumerate(rows[:20]):
+    cells = []
+    for c in row:
+        val = (c or "").replace("\n", "|")
+        if len(val) > 40:
+            val = val[:40] + "..."
+        cells.append(val)
+    print(f"  [{i+1:3d}] {cells}")
 
-        if not tables:
-            # Show raw text for pages without detected tables
-            text = page.extract_text() or ""
-            lines = text.split("\n")[:5]
-            print(f"  (no tables) First lines: {lines}")
+print(f"\n=== Extracting URLs ===")
+all_urls = _extract_urls_from_pdf(pdf_path)
+law_urls = [u for u in all_urls if "orrick.com" not in u and "mimecast" not in u]
+print(f"Total URLs: {len(all_urls)}, Law URLs: {len(law_urls)}")
 
-    print(f"\nTotal rows across all tables: {row_num}")
+print(f"\n=== Parsing into records ===")
+records = _parse_table_rows(rows, law_urls)
+print(f"Total records: {len(records)}\n")
+
+if records:
+    print("First 10 records:")
+    for i, r in enumerate(records[:10]):
+        print(f"  [{i+1}] {r['state_code']} | {r['ai_scope'][:30]:30s} | {r['law_name'][:40]:40s} | {r['effective_date']}")
+    print(f"\nLast 3 records:")
+    for r in records[-3:]:
+        print(f"       {r['state_code']} | {r['ai_scope'][:30]:30s} | {r['law_name'][:40]:40s} | {r['effective_date']}")
+else:
+    print("ERROR: No records produced!")
