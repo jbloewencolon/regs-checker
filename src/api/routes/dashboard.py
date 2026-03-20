@@ -33,9 +33,25 @@ from src.db.models import (
     Source,
 )
 
+import threading
+
 router = APIRouter()
 
 EXPORT_DIR = Path("export")
+
+# In-process lock to prevent concurrent pipeline operations from rapid clicks.
+# Only one pipeline operation (pdf discovery, status check, extraction, sync)
+# can run at a time. The lock is non-blocking: if busy, we return immediately.
+_pipeline_lock = threading.Lock()
+
+
+def _acquire_pipeline_lock() -> bool:
+    """Try to acquire the pipeline lock (non-blocking).
+
+    Returns True if acquired, False if another operation is running.
+    Caller MUST release with _pipeline_lock.release() when done.
+    """
+    return _pipeline_lock.acquire(blocking=False)
 
 
 # ---------------------------------------------------------------------------
@@ -496,6 +512,10 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
 @router.post("/api/run/pdf-discovery")
 def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     """Parse Orrick PDF tracker and seed new legislation."""
+    if not _acquire_pipeline_lock():
+        return HTMLResponse(
+            '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
+        )
     try:
         from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
         records = parse_tracker_pdf()
@@ -539,6 +559,8 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+    finally:
+        _pipeline_lock.release()
 
 
 @router.post("/api/run/status-check")
@@ -547,6 +569,10 @@ def run_status_check(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Check bill statuses against Orrick and IAPP trackers."""
+    if not _acquire_pipeline_lock():
+        return HTMLResponse(
+            '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
+        )
     try:
         from src.ingestion.status_checker import check_all_statuses
         result = check_all_statuses(db, dry_run=dry_run)
@@ -595,6 +621,8 @@ def run_status_check(
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+    finally:
+        _pipeline_lock.release()
 
 
 @router.post("/api/run/fetch")

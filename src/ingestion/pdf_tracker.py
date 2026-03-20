@@ -487,6 +487,96 @@ def _match_state_name(text: str) -> str:
     return ""
 
 
+def _match_url_to_law(
+    url: str,
+    state_code: str,
+    law_name: str,
+    bill_id: str,
+) -> float:
+    """Score how well a URL matches a specific law record.
+
+    Returns a score 0.0–1.0 where higher means better match.
+    Used to improve on pure positional URL matching.
+    """
+    url_lower = url.lower()
+    score = 0.0
+
+    # State domain patterns (e.g., leg.colorado.gov → CO)
+    state_domains = {
+        "CO": "colorado", "CA": "california", "NY": "ny", "TX": "texas",
+        "IL": "ilga", "CT": "cga.ct", "FL": "flsenate", "GA": "legis.ga",
+        "MA": "malegislature", "NJ": "njleg", "OH": "legislature.ohio",
+        "PA": "legis.state.pa", "VA": "lis.virginia", "WA": "lawfilesext.leg.wa",
+        "MD": "mgaleg.maryland", "NC": "ncleg", "NH": "gencourt",
+        "NV": "leg.state.nv", "RI": "rilegislature", "WI": "docs.legis.wisconsin",
+    }
+    expected_domain = state_domains.get(state_code, state_code.lower())
+    if expected_domain in url_lower:
+        score += 0.5
+
+    # Bill number patterns in URL (e.g., "sb205", "hb149")
+    for candidate in (bill_id, law_name):
+        if not candidate:
+            continue
+        # Normalize: "SB 205" → "sb205", "HB 149" → "hb149"
+        normalized = re.sub(r"[\s\-.]", "", candidate.lower())
+        if normalized and len(normalized) >= 3 and normalized in url_lower:
+            score += 0.5
+            break
+
+    return min(score, 1.0)
+
+
+def _assign_urls_to_records(
+    records: list[dict],
+    law_urls: list[str],
+) -> None:
+    """Assign URLs to law records using content-based matching with positional fallback.
+
+    First tries to match each URL to a record by state domain and bill number
+    patterns. Falls back to positional (sequential) assignment for any
+    unmatched URLs, which preserves backward compatibility with the original
+    approach.
+    """
+    if not law_urls:
+        return
+
+    # Phase 1: Content-based matching — score each URL against each record
+    used_urls: set[int] = set()
+    used_records: set[int] = set()
+
+    # Build score matrix for high-confidence matches only
+    for rec_idx, rec in enumerate(records):
+        best_score = 0.0
+        best_url_idx = -1
+        for url_idx, url in enumerate(law_urls):
+            if url_idx in used_urls:
+                continue
+            score = _match_url_to_law(
+                url, rec["state_code"], rec.get("law_name", ""), rec.get("bill_id", "")
+            )
+            if score > best_score:
+                best_score = score
+                best_url_idx = url_idx
+
+        # Only use content-based match if score is high (both state + bill matched)
+        if best_score >= 0.8 and best_url_idx >= 0:
+            records[rec_idx]["law_url"] = law_urls[best_url_idx]
+            used_urls.add(best_url_idx)
+            used_records.add(rec_idx)
+
+    # Phase 2: Positional fallback for unmatched records
+    remaining_urls = [u for i, u in enumerate(law_urls) if i not in used_urls]
+    url_iter = iter(remaining_urls)
+    for rec_idx, rec in enumerate(records):
+        if rec_idx in used_records:
+            continue
+        try:
+            rec["law_url"] = next(url_iter)
+        except StopIteration:
+            break  # No more URLs
+
+
 def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
     """Parse structured table rows (7 columns) into law records.
 
@@ -494,7 +584,6 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
              4=Effective Date, 5=Key Requirements, 6=Enforcement
     """
     records = []
-    url_index = 0
     current_state = ""
 
     for row in rows:
@@ -531,23 +620,20 @@ def _parse_table_rows(rows: list[list[str]], law_urls: list[str]) -> list[dict]:
         if not law_name and not bill_id and not ai_scope:
             continue
 
-        # Match a URL from extracted hyperlinks
-        law_url = ""
-        if url_index < len(law_urls):
-            law_url = law_urls[url_index]
-            url_index += 1
-
         records.append({
             "state": current_state,
             "state_code": state_code,
             "ai_scope": ai_scope,
             "law_name": law_name or bill_id,
-            "law_url": law_url,
+            "law_url": "",  # Assigned below by _assign_urls_to_records
             "bill_id": bill_id,
             "effective_date": effective_date,
             "key_requirements": key_requirements,
             "enforcement": enforcement,
         })
+
+    # Match URLs to records using content-based matching with positional fallback
+    _assign_urls_to_records(records, law_urls)
 
     return records
 
@@ -611,7 +697,6 @@ def _parse_tabular_text(lines: list[str], law_urls: list[str]) -> list[dict]:
     and parse each row by identifying the structural pattern.
     """
     records = []
-    url_index = 0  # Track which URL we're on
 
     # Build state name set for detection
     state_names = set(STATE_CODES.keys())
@@ -684,18 +769,12 @@ def _parse_tabular_text(lines: list[str], law_urls: list[str]) -> list[dict]:
             # Next: enforcement penalties
             enforcement, i = _read_enforcement(lines, i)
 
-            # Match a URL from the extracted hyperlinks
-            law_url = ""
-            if url_index < len(law_urls):
-                law_url = law_urls[url_index]
-                url_index += 1
-
             records.append({
                 "state": current_state,
                 "state_code": state_code,
                 "ai_scope": ai_scope,
                 "law_name": law_name or bill_id,
-                "law_url": law_url,
+                "law_url": "",  # Assigned below by _assign_urls_to_records
                 "bill_id": bill_id,
                 "effective_date": effective_date,
                 "key_requirements": key_requirements,
@@ -704,6 +783,9 @@ def _parse_tabular_text(lines: list[str], law_urls: list[str]) -> list[dict]:
             continue
 
         i += 1
+
+    # Match URLs to records using content-based matching with positional fallback
+    _assign_urls_to_records(records, law_urls)
 
     return records
 
@@ -981,9 +1063,31 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         db.flush()
 
     # --- DocumentFamily (one per unique law name within a state) ---
+    # Check current source first
     family = db.query(DocumentFamily).filter_by(
         source_id=source.id, short_cite=law_name
     ).first()
+    # Cross-source dedup: also check families under other sources for the
+    # same jurisdiction. Prevents duplicates when the same law was seeded
+    # via --mode manual (connector_id="colorado_ga") and then via PDF tracker.
+    if not family:
+        family = (
+            db.query(DocumentFamily)
+            .join(Source)
+            .filter(
+                Source.jurisdiction_code == state_code,
+                DocumentFamily.short_cite == law_name,
+            )
+            .first()
+        )
+        if family:
+            logger.info(
+                "cross_source_dedup",
+                state=state_code,
+                law=law_name,
+                existing_source_id=family.source_id,
+                new_source_id=source.id,
+            )
     if not family:
         family = DocumentFamily(
             source_id=source.id,
