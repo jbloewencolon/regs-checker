@@ -9,6 +9,7 @@ Serves an HTMX-powered dashboard with:
 
 from __future__ import annotations
 
+from html import escape as html_escape
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -316,7 +317,7 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     except Exception as e:
         db.rollback()
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -362,7 +363,7 @@ def run_status_check(
     except Exception as e:
         db.rollback()
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -380,23 +381,23 @@ def run_fetch(
         failure_html = ""
         for f in summary.get("failed_jobs", []):
             failure_html += (
-                f'<li><strong>{f["label"]}</strong> — '
-                f'<code style="word-break:break-all;">{f["url"]}</code><br>'
-                f'<span style="color:var(--danger);">{f["error"]}</span></li>'
+                f'<li><strong>{html_escape(str(f["label"]))}</strong> — '
+                f'<code style="word-break:break-all;">{html_escape(str(f["url"]))}</code><br>'
+                f'<span style="color:var(--danger);">{html_escape(str(f["error"]))}</span></li>'
             )
 
         manual_html = ""
         for m in summary.get("manual_review_jobs", []):
             suggested = m.get("ai_suggested_url")
             suggested_line = (
-                f'<br>AI-suggested: <code style="word-break:break-all;">{suggested}</code>'
+                f'<br>AI-suggested: <code style="word-break:break-all;">{html_escape(str(suggested))}</code>'
                 if suggested else ""
             )
             manual_html += (
-                f'<li><strong>{m["label"]}</strong> — '
-                f'<code style="word-break:break-all;">{m["url"]}</code>'
+                f'<li><strong>{html_escape(str(m["label"]))}</strong> — '
+                f'<code style="word-break:break-all;">{html_escape(str(m["url"]))}</code>'
                 f'{suggested_line}<br>'
-                f'<span style="color:var(--warning);">{m["error"]}</span></li>'
+                f'<span style="color:var(--warning);">{html_escape(str(m["error"]))}</span></li>'
             )
 
         details = ""
@@ -424,7 +425,7 @@ def run_fetch(
     except Exception as e:
         db.rollback()
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -450,7 +451,7 @@ def run_export_passages(
         )
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -478,7 +479,7 @@ def run_import_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     except Exception as e:
         db.rollback()
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -502,7 +503,7 @@ def run_api_extract(
     except Exception as e:
         db.rollback()
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -552,7 +553,7 @@ def run_sync(
         )
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -600,7 +601,7 @@ def run_sync_preflight() -> HTMLResponse:
                 })
             elif report.has_gaps:
                 gap_list = ", ".join(
-                    f"{f.jurisdiction_code}/{f.short_cite or f.family_id}"
+                    f"{html_escape(str(f.jurisdiction_code))}/{html_escape(str(f.short_cite or f.family_id))}"
                     for f in report.unbridged[:5]
                 )
                 extra = f" (+{report.unbridged_families - 5} more)" if report.unbridged_families > 5 else ""
@@ -674,7 +675,7 @@ def run_sync_preflight() -> HTMLResponse:
             icon = icon_ok if c["ok"] else icon_fail
             rows_html += (
                 f'<div style="margin:4px 0;">'
-                f'{icon} <strong>{c["name"]}</strong>: {c["detail"]}'
+                f'{icon} <strong>{html_escape(c["name"])}</strong>: {html_escape(c["detail"])}'
                 f'</div>'
             )
 
@@ -688,7 +689,7 @@ def run_sync_preflight() -> HTMLResponse:
 
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Preflight error: {e}</div>'
+            f'<div class="result-panel error">Preflight error: {html_escape(str(e))}</div>'
         )
 
 
@@ -733,7 +734,7 @@ def run_bridge_check() -> HTMLResponse:
             target_session.close()
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -754,7 +755,7 @@ def run_evaluate(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(html)
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
@@ -797,7 +798,7 @@ def run_compare_models(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(html)
     except Exception as e:
         return HTMLResponse(
-            f'<div class="result-panel error">Error: {e}</div>'
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
 
 
