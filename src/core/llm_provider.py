@@ -164,9 +164,17 @@ class LocalLLMProvider(BaseLLMProvider):
             model=self._model,
         )
 
+    @staticmethod
+    def normalize_model_id(model_name: str) -> str:
+        """Normalize an Ollama model name into a clean model_id.
+
+        ``deepseek-r1:32b`` → ``deepseek-r1-32b-local``
+        """
+        return model_name.replace(":", "-").replace("/", "-") + "-local"
+
     @property
     def model_id(self) -> str:
-        return f"local:{self._model}"
+        return self.normalize_model_id(self._model)
 
     def call(
         self,
@@ -216,11 +224,12 @@ class LocalLLMProvider(BaseLLMProvider):
                 f"(finish_reason={finish_reason}, model={effective_model})"
             )
 
-        effective_model_id = f"local:{effective_model}"
+        effective_model_id = self.normalize_model_id(effective_model)
 
         logger.debug(
             "local_llm_response",
             model=effective_model,
+            model_id=effective_model_id,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             finish_reason=finish_reason,
@@ -274,5 +283,23 @@ def get_discovery_provider() -> BaseLLMProvider:
 
 
 def get_extraction_provider() -> BaseLLMProvider:
-    """Get the provider configured for extraction tasks (default: anthropic)."""
-    return get_provider(settings.extraction_provider)
+    """Get the provider configured for extraction tasks (default: anthropic).
+
+    When extraction_provider is "local", uses ``local_extraction_model``
+    (default: deepseek-r1:32b) as the base model.  Per-agent
+    ``model_override`` attributes still take precedence at call time.
+    """
+    provider_type = settings.extraction_provider
+    if provider_type == "local":
+        cache_key = "local_extraction"
+        if cache_key not in _provider_cache:
+            _provider_cache[cache_key] = LocalLLMProvider(
+                model=settings.local_extraction_model,
+            )
+            logger.info(
+                "llm_provider_created",
+                provider=cache_key,
+                model=_provider_cache[cache_key].model_id,
+            )
+        return _provider_cache[cache_key]
+    return get_provider(provider_type)
