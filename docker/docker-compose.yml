@@ -7,8 +7,6 @@
 #                        or leave default for local-only development.
 #   DAGSTER_DATABASE_URL — Dagster internal storage (runs, events, schedules).
 #                          Always points at the local Docker postgres.
-version: "3.8"
-
 services:
   # ---------------------------------------------------------------------------
   # PostgreSQL — Dagster internal storage + local dev fallback
