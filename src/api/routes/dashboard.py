@@ -219,6 +219,7 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     step_bars = ""
     for s in p["steps"]:
         bar_color = "var(--success)" if s["is_complete"] else "var(--primary)"
+        failed_tag = f' <span style="color:var(--danger);font-size:11px;">({s["failed"]} failed)</span>' if s.get("failed", 0) > 0 else ""
         step_bars += f"""
         <div class="progress-step-row">
           <span class="progress-step-label">{s['name']}</span>
@@ -226,7 +227,7 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
           </div>
           <span class="progress-step-pct">{s['percent']}%</span>
-          <span class="progress-step-count">{s['completed']}/{s['total']}</span>
+          <span class="progress-step-count">{s['completed']}/{s['total']}{failed_tag}</span>
         </div>
         """
 
@@ -308,35 +309,44 @@ def get_confidence_chart(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.get("/api/documents")
 def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
-    """List fetched documents with their artifacts for browsing."""
+    """List fetched documents with inline metadata editing."""
+    # Query with IngestionJob to get job_id for edit forms
     rows = (
         db.execute(
             select(
+                IngestionJob.id.label("job_id"),
                 DocumentFamily.canonical_title,
+                DocumentFamily.short_cite,
+                DocumentFamily.subject_area,
                 Source.jurisdiction_code,
-                DocumentVersion.version_label,
                 DocumentVersion.temporal_status,
+                IngestionJob.fetch_url,
+                IngestionJob.status.label("job_status"),
                 RawArtifact.content_type,
                 RawArtifact.size_bytes,
-                RawArtifact.created_at,
                 func.count(NormalizedSourceRecord.id).label("passages"),
             )
-            .select_from(DocumentFamily)
+            .select_from(IngestionJob)
+            .join(DocumentVersion, IngestionJob.document_version_id == DocumentVersion.id)
+            .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
             .join(Source, DocumentFamily.source_id == Source.id)
-            .join(DocumentVersion, DocumentFamily.id == DocumentVersion.family_id)
             .outerjoin(RawArtifact, DocumentVersion.id == RawArtifact.document_version_id)
             .outerjoin(NormalizedSourceRecord, DocumentVersion.id == NormalizedSourceRecord.document_version_id)
+            .where(IngestionJob.status == IngestionStatus.completed)
             .group_by(
+                IngestionJob.id,
                 DocumentFamily.canonical_title,
+                DocumentFamily.short_cite,
+                DocumentFamily.subject_area,
                 Source.jurisdiction_code,
-                DocumentVersion.version_label,
                 DocumentVersion.temporal_status,
+                IngestionJob.fetch_url,
+                IngestionJob.status,
                 RawArtifact.content_type,
                 RawArtifact.size_bytes,
-                RawArtifact.created_at,
             )
-            .order_by(RawArtifact.created_at.desc().nulls_last())
-            .limit(100)
+            .order_by(Source.jurisdiction_code, DocumentFamily.short_cite)
+            .limit(200)
         )
         .all()
     )
@@ -344,44 +354,94 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     if not rows:
         return HTMLResponse(
             '<div class="result-panel info" style="margin-top:10px;">'
-            'No documents fetched yet. Run "Fetch All Pending" first.'
+            'No completed documents yet. Run "Fetch All Pending" first.'
             '</div>'
         )
 
     table_rows = ""
     for r in rows:
-        title = html_escape(str(r.canonical_title or "—")[:60])
-        jur = html_escape(str(r.jurisdiction_code or "—"))
+        jid = r.job_id
+        jur = html_escape(str(r.jurisdiction_code or ""))
+        cite = html_escape(str(r.short_cite or ""))
+        title = html_escape(str(r.canonical_title or "")[:80])
+        subject = html_escape(str(r.subject_area or ""))
+        url = html_escape(str(r.fetch_url or "")[:60])
         ctype = html_escape(str(r.content_type or "—"))
         size_kb = f"{r.size_bytes / 1024:.0f} KB" if r.size_bytes else "—"
         passages = r.passages or 0
         status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")
-        table_rows += (
-            f"<tr>"
-            f"<td><strong>{jur}</strong></td>"
-            f"<td>{title}</td>"
-            f"<td>{html_escape(status_val)}</td>"
-            f"<td>{ctype}</td>"
-            f"<td style='text-align:right;'>{size_kb}</td>"
-            f"<td style='text-align:right;'>{passages}</td>"
-            f"</tr>"
-        )
+
+        # Display row with edit toggle
+        table_rows += f"""
+        <tr id="doc-row-{jid}">
+          <td><strong>{jur}</strong></td>
+          <td>{cite}</td>
+          <td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>
+          <td>{html_escape(status_val)}</td>
+          <td style="text-align:right;">{size_kb}</td>
+          <td style="text-align:right;">{passages}</td>
+          <td>
+            <button class="btn btn-sm"
+                    onclick="toggleDocEdit({jid})">Edit</button>
+          </td>
+        </tr>
+        <tr id="doc-edit-{jid}" style="display:none;background:var(--bg-secondary);">
+          <td colspan="7" style="padding:8px;">
+            <form hx-post="/dashboard/api/edit-document/{jid}"
+                  hx-target="#doc-edit-result-{jid}"
+                  hx-swap="innerHTML"
+                  style="display:flex;flex-wrap:wrap;gap:6px;align-items:end;font-size:12px;">
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Jurisdiction
+                <input type="text" name="jurisdiction" value="{jur}"
+                       style="width:50px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Short Cite
+                <input type="text" name="short_cite" value="{cite}"
+                       style="width:180px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Title
+                <input type="text" name="title" value="{title}"
+                       style="width:250px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Subject Area
+                <input type="text" name="subject_area" value="{subject}"
+                       style="width:120px;font-size:12px;padding:2px 4px;">
+              </label>
+              <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">
+                <span class="btn-label">Save</span>
+                <span class="htmx-indicator"><span class="spinner"></span></span>
+              </button>
+            </form>
+            <div id="doc-edit-result-{jid}" style="margin-top:4px;"></div>
+          </td>
+        </tr>
+        """
 
     return HTMLResponse(
         f'<div style="margin-top:10px;">'
         f'<div class="table-wrap">'
         f'<table class="review-table">'
         f'<thead><tr>'
-        f'<th>Jur.</th><th>Title</th><th>Status</th>'
-        f'<th>Type</th><th style="text-align:right;">Size</th>'
+        f'<th>Jur.</th><th>Cite</th><th>Title</th><th>Status</th>'
+        f'<th style="text-align:right;">Size</th>'
         f'<th style="text-align:right;">Passages</th>'
+        f'<th>Actions</th>'
         f'</tr></thead>'
         f'<tbody>{table_rows}</tbody>'
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
-        f'Showing up to 100 documents. Raw artifacts stored in MinIO '
-        f'(<code>raw-artifacts</code> bucket).'
+        f'Showing {len(rows)} completed documents. Click Edit to modify metadata.'
         f'</div></div>'
+        f'<script>'
+        f'function toggleDocEdit(id) {{'
+        f'  var el = document.getElementById("doc-edit-" + id);'
+        f'  el.style.display = el.style.display === "none" ? "" : "none";'
+        f'}}'
+        f'</script>'
     )
 
 
@@ -461,63 +521,27 @@ def run_fetch(
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
 
-        # Build failure detail HTML — each failed doc gets an inline upload form
-        failure_html = ""
-        for f in summary.get("failed_jobs", []):
-            jid = f["job_id"]
-            failure_html += (
-                f'<li id="fetch-fail-{jid}" style="margin-bottom:10px;">'
-                f'<strong>{html_escape(str(f["label"]))}</strong> — '
-                f'<code style="word-break:break-all;">{html_escape(str(f["url"]))}</code><br>'
-                f'<span style="color:var(--danger);">{html_escape(str(f["error"][:200]))}</span>'
-                f'<div style="margin-top:4px;">'
-                f'<form hx-post="/dashboard/api/upload-document" '
-                f'hx-target="#fetch-fail-{jid}" hx-swap="outerHTML" '
-                f'hx-encoding="multipart/form-data" '
-                f'style="display:inline-flex;gap:6px;align-items:center;">'
-                f'<input type="hidden" name="job_id" value="{jid}">'
-                f'<input type="file" name="file" accept=".pdf,.html,.htm,.txt" '
-                f'style="font-size:12px;max-width:200px;" required>'
-                f'<button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">'
-                f'<span class="btn-label">Upload</span>'
-                f'<span class="htmx-indicator"><span class="spinner"></span></span>'
-                f'</button></form></div></li>'
+        total = summary["completed"] + summary["failed"] + summary["skipped"]
+        panel_class = "success" if summary["failed"] == 0 and summary["skipped"] == 0 else "warning"
+
+        failed_note = ""
+        if summary["failed"] > 0 or summary["skipped"] > 0:
+            failed_note = (
+                f'<div style="margin-top:6px;font-size:13px;">'
+                f'<span style="color:var(--danger);">{summary["failed"]} failed</span>'
+            )
+            if summary["skipped"] > 0:
+                failed_note += f', <span style="color:var(--warning);">{summary["skipped"]} need review</span>'
+            failed_note += (
+                f' — switch to the <strong>Failed Documents</strong> tab to upload or edit.'
+                f'</div>'
             )
 
-        manual_html = ""
-        for m in summary.get("manual_review_jobs", []):
-            suggested = m.get("ai_suggested_url")
-            suggested_line = (
-                f'<br>AI-suggested: <code style="word-break:break-all;">{html_escape(str(suggested))}</code>'
-                if suggested else ""
-            )
-            manual_html += (
-                f'<li><strong>{html_escape(str(m["label"]))}</strong> — '
-                f'<code style="word-break:break-all;">{html_escape(str(m["url"]))}</code>'
-                f'{suggested_line}<br>'
-                f'<span style="color:var(--warning);">{html_escape(str(m["error"]))}</span></li>'
-            )
-
-        details = ""
-        if failure_html:
-            details += (
-                f'<div style="margin-top:8px;"><strong>Failed downloads '
-                f'(need manual doc insertion):</strong>'
-                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{failure_html}</ul></div>'
-            )
-        if manual_html:
-            details += (
-                f'<div style="margin-top:8px;"><strong>Needs manual review:</strong>'
-                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{manual_html}</ul></div>'
-            )
-
-        panel_class = "success" if summary["failed"] == 0 else "warning"
         return HTMLResponse(
             f'<div class="result-panel {panel_class}">'
-            f'Completed: {summary["completed"]} documents, '
-            f'{summary["total_passages"]} passages extracted. '
-            f'{summary["failed"]} failed, {summary["skipped"]} need review.'
-            f'{details}'
+            f'<strong>{summary["completed"]}/{total}</strong> documents fetched, '
+            f'<strong>{summary["total_passages"]}</strong> passages extracted.'
+            f'{failed_note}'
             f'</div>'
         )
     except Exception as e:
@@ -930,6 +954,102 @@ def run_compare_models(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/edit-document/{job_id}")
+async def edit_document_metadata(
+    job_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Edit metadata for a document family associated with an ingestion job.
+
+    Accepts form fields: jurisdiction, title, short_cite, subject_area, fetch_url.
+    Updates Source.jurisdiction_code, DocumentFamily fields, and IngestionJob.fetch_url.
+    """
+    form = await request.form()
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<div class="result-panel error">Job #{job_id} not found.</div>'
+        )
+
+    dv = job.document_version
+    family = dv.family if dv else None
+    source = family.source if family else None
+
+    if not family or not source:
+        return HTMLResponse(
+            f'<div class="result-panel error">No document family for job #{job_id}.</div>'
+        )
+
+    changes = []
+
+    # Jurisdiction
+    new_jur = form.get("jurisdiction", "").strip()
+    if new_jur and new_jur != source.jurisdiction_code:
+        # Check if a Source already exists for the new jurisdiction
+        existing_source = db.scalars(
+            select(Source).where(
+                Source.jurisdiction_code == new_jur,
+                Source.connector_id == source.connector_id,
+            )
+        ).first()
+        if existing_source:
+            family.source_id = existing_source.id
+            changes.append(f"jurisdiction: {source.jurisdiction_code} → {new_jur}")
+        else:
+            source.jurisdiction_code = new_jur
+            changes.append(f"jurisdiction → {new_jur}")
+
+    # Title
+    new_title = form.get("title", "").strip()
+    if new_title and new_title != family.canonical_title:
+        changes.append(f"title updated")
+        family.canonical_title = new_title
+
+    # Short cite
+    new_cite = form.get("short_cite", "").strip()
+    if new_cite and new_cite != family.short_cite:
+        changes.append(f"short_cite: {family.short_cite} → {new_cite}")
+        family.short_cite = new_cite
+
+    # Subject area
+    new_subject = form.get("subject_area", "").strip()
+    if new_subject and new_subject != family.subject_area:
+        changes.append(f"subject_area updated")
+        family.subject_area = new_subject
+
+    # Fetch URL
+    new_url = form.get("fetch_url", "").strip()
+    if new_url and new_url != job.fetch_url:
+        changes.append(f"fetch_url updated")
+        job.fetch_url = new_url
+        # If the job was failed, reset to pending so it can be retried
+        if job.status in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
+            job.status = IngestionStatus.pending
+            job.error_message = None
+            changes.append("status reset to pending for retry")
+
+    if not changes:
+        return HTMLResponse(
+            '<div class="result-panel info" style="font-size:13px;">No changes made.</div>'
+        )
+
+    try:
+        db.commit()
+        label = f"{family.source.jurisdiction_code} - {family.short_cite}"
+        return HTMLResponse(
+            f'<div class="result-panel success" style="font-size:13px;">'
+            f'Updated <strong>{html_escape(label)}</strong>: '
+            f'{html_escape(", ".join(changes))}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Save failed: {html_escape(str(e)[:300])}</div>'
+        )
+
+
 @router.post("/api/upload-document")
 async def upload_document(
     file: UploadFile,
@@ -1047,7 +1167,7 @@ async def upload_document(
 
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
-    """List all failed and manual-review ingestion jobs with upload forms."""
+    """List all failed and manual-review ingestion jobs with upload + edit forms."""
     jobs = db.scalars(
         select(IngestionJob)
         .where(IngestionJob.status.in_([
@@ -1069,60 +1189,178 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         dv = job.document_version
         label = "unknown"
         jurisdiction = ""
+        short_cite = ""
+        title = ""
+        subject = ""
         if dv and dv.family:
             source = dv.family.source
             jurisdiction = source.jurisdiction_code if source else ""
-            label = dv.family.short_cite or dv.family.canonical_title or "unknown"
+            short_cite = dv.family.short_cite or ""
+            title = dv.family.canonical_title or ""
+            subject = dv.family.subject_area or ""
+            label = short_cite or title or "unknown"
 
         status_class = "danger" if job.status == IngestionStatus.failed else "warning"
         status_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
 
-        error_short = html_escape(str(job.error_message or "")[:120])
-        url_display = html_escape(str(job.fetch_url or "")[:80])
+        error_short = html_escape(str(job.error_message or "")[:150])
+        url_display = html_escape(str(job.fetch_url or ""))
+        jid = job.id
 
         rows_html += f"""
-        <tr id="failed-row-{job.id}">
+        <tr id="failed-row-{jid}">
           <td><strong>{html_escape(jurisdiction)}</strong></td>
           <td>{html_escape(label)}</td>
           <td><span style="color:var(--{status_class});">{status_label}</span></td>
-          <td style="font-size:12px;">
-            <code style="word-break:break-all;">{url_display}</code>
-            <br><span style="color:var(--{status_class});font-size:11px;">{error_short}</span>
+          <td style="font-size:11px;max-width:250px;">
+            <code style="word-break:break-all;">{url_display[:80]}</code>
+            <br><span style="color:var(--{status_class});">{error_short}</span>
           </td>
-          <td>
+          <td style="white-space:nowrap;">
             <form hx-post="/dashboard/api/upload-document"
-                  hx-target="#failed-row-{job.id}"
-                  hx-swap="outerHTML"
+                  hx-target="#failed-result-{jid}"
+                  hx-swap="innerHTML"
                   hx-encoding="multipart/form-data"
-                  style="display:flex;gap:6px;align-items:center;">
-              <input type="hidden" name="job_id" value="{job.id}">
+                  style="display:inline-flex;gap:4px;align-items:center;">
+              <input type="hidden" name="job_id" value="{jid}">
               <input type="file" name="file" accept=".pdf,.html,.htm,.txt"
-                     style="font-size:12px;max-width:180px;"
-                     required>
-              <button type="submit" class="btn btn-sm btn-primary"
-                      hx-disabled-elt="this">
+                     style="font-size:11px;max-width:150px;" required>
+              <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">
                 <span class="btn-label">Upload</span>
+                <span class="htmx-indicator"><span class="spinner"></span></span>
+              </button>
+            </form>
+            <button class="btn btn-sm" onclick="toggleFailedEdit({jid})"
+                    style="margin-left:4px;">Edit</button>
+          </td>
+        </tr>
+        <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
+          <td colspan="5" style="padding:8px;">
+            <form hx-post="/dashboard/api/edit-document/{jid}"
+                  hx-target="#failed-result-{jid}"
+                  hx-swap="innerHTML"
+                  style="display:flex;flex-wrap:wrap;gap:6px;align-items:end;font-size:12px;">
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Jurisdiction
+                <input type="text" name="jurisdiction" value="{html_escape(jurisdiction)}"
+                       style="width:50px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Short Cite
+                <input type="text" name="short_cite" value="{html_escape(short_cite)}"
+                       style="width:180px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Title
+                <input type="text" name="title" value="{html_escape(title)}"
+                       style="width:200px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Fetch URL
+                <input type="text" name="fetch_url" value="{url_display}"
+                       style="width:250px;font-size:12px;padding:2px 4px;">
+              </label>
+              <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">
+                <span class="btn-label">Save</span>
                 <span class="htmx-indicator"><span class="spinner"></span></span>
               </button>
             </form>
           </td>
         </tr>
+        <tr id="failed-result-row-{jid}" style="display:none;">
+          <td colspan="5"><div id="failed-result-{jid}"></div></td>
+        </tr>
         """
 
     return HTMLResponse(
         f'<div style="margin-top:10px;">'
+        f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+        f'<span style="font-size:13px;color:var(--text-muted);">'
+        f'{len(jobs)} documents need attention</span>'
+        f'<button class="btn btn-sm"'
+        f' hx-get="/dashboard/api/export-failed-txt"'
+        f' hx-swap="none"'
+        f' hx-disabled-elt="this"'
+        f' onclick="window.open(\'/dashboard/api/export-failed-txt\', \'_blank\')">'
+        f'<span class="btn-label">Print Failed List</span>'
+        f'</button>'
+        f'</div>'
         f'<div class="table-wrap">'
         f'<table class="review-table">'
         f'<thead><tr>'
         f'<th>Jur.</th><th>Document</th><th>Status</th>'
-        f'<th>Error</th><th>Upload Document</th>'
+        f'<th>Error / URL</th><th>Actions</th>'
         f'</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
-        f'{len(jobs)} documents need manual upload. '
-        f'Download the PDF/HTML from the legislature site and upload here.'
+        f'Upload the PDF/HTML manually, or click Edit to fix metadata/URL and retry.'
         f'</div></div>'
+        f'<script>'
+        f'function toggleFailedEdit(id) {{'
+        f'  var el = document.getElementById("failed-edit-" + id);'
+        f'  var res = document.getElementById("failed-result-row-" + id);'
+        f'  el.style.display = el.style.display === "none" ? "" : "none";'
+        f'  res.style.display = el.style.display;'
+        f'}}'
+        f'</script>'
+    )
+
+
+@router.get("/api/export-failed-txt")
+def export_failed_txt(db: Session = Depends(get_db)):
+    """Export all failed documents as a plain .txt file for searching/printing."""
+    from fastapi.responses import PlainTextResponse
+
+    jobs = db.scalars(
+        select(IngestionJob)
+        .where(IngestionJob.status.in_([
+            IngestionStatus.failed,
+            IngestionStatus.requires_manual_review,
+        ]))
+        .order_by(IngestionJob.updated_at.desc())
+    ).all()
+
+    lines = [
+        "FAILED DOCUMENT DOWNLOADS",
+        "=" * 60,
+        f"Generated: {__import__('datetime').datetime.utcnow().isoformat()}Z",
+        f"Total: {len(jobs)} documents",
+        "",
+    ]
+
+    for i, job in enumerate(jobs, 1):
+        dv = job.document_version
+        jurisdiction = ""
+        label = "unknown"
+        if dv and dv.family:
+            source = dv.family.source
+            jurisdiction = source.jurisdiction_code if source else ""
+            label = dv.family.short_cite or dv.family.canonical_title or "unknown"
+
+        status_label = "FAILED" if job.status == IngestionStatus.failed else "NEEDS REVIEW"
+
+        lines.append(f"{i}. [{jurisdiction}] {label}")
+        lines.append(f"   Status: {status_label}")
+        lines.append(f"   URL: {job.fetch_url or 'N/A'}")
+        error_msg = (job.error_message or "").split("\n")[0][:200]
+        lines.append(f"   Error: {error_msg}")
+        if hasattr(job, "ai_suggested_url") and job.ai_suggested_url:
+            lines.append(f"   Suggested URL: {job.ai_suggested_url}")
+        lines.append("")
+
+    lines.append("=" * 60)
+    lines.append("Search tips:")
+    lines.append("  - For 403 errors: try downloading the PDF in a browser")
+    lines.append("  - For SSL errors: the site may need a different URL or mirror")
+    lines.append("  - For 404 errors: search for the bill by name on the state legislature site")
+
+    content = "\n".join(lines)
+    return PlainTextResponse(
+        content,
+        headers={
+            "Content-Disposition": "attachment; filename=failed_documents.txt",
+        },
     )
 
 
