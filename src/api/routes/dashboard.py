@@ -768,6 +768,21 @@ def cancel_fetch() -> HTMLResponse:
     )
 
 
+@router.post("/api/run/extract/cancel")
+def cancel_extract() -> HTMLResponse:
+    """Signal the running extraction pipeline to stop after the current passage."""
+    from src.ingestion.extractor import is_cancelled, request_cancel
+
+    if is_cancelled():
+        return HTMLResponse(
+            '<div class="result-panel info">Cancellation already requested.</div>'
+        )
+    request_cancel()
+    return HTMLResponse(
+        '<div class="result-panel warning">Termination requested — extraction will stop after the current passage completes.</div>'
+    )
+
+
 @router.post("/api/run/export-passages")
 def run_export_passages(
     limit: int | None = None,
@@ -862,11 +877,21 @@ def run_api_extract(
 
         tokens = summary.get("token_usage", {})
         label = f"via {provider}" if provider else ""
+        panel_class = "success"
+        cancelled_note = ""
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Extraction was terminated by user. Remaining passages still unprocessed.'
+                '</div>'
+            )
+            panel_class = "warning"
         return HTMLResponse(
-            f'<div class="result-panel success">'
+            f'<div class="result-panel {panel_class}">'
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
+            f'{cancelled_note}'
             f'</div>'
         )
     except Exception as e:

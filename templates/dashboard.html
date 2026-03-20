@@ -422,6 +422,15 @@
           {% endif %}
         </div>
 
+        <div style="margin-top: 8px;">
+          <button class="btn btn-danger"
+                  hx-post="/dashboard/api/run/extract/cancel"
+                  hx-target="#extract-result"
+                  hx-swap="innerHTML">
+            Terminate
+          </button>
+        </div>
+
         <div class="step-result" id="extract-result"></div>
       </div>
     </div>

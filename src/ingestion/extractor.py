@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -67,6 +68,25 @@ from src.db.models import (
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
 logger = structlog.get_logger()
+
+# Global cancellation event — set to signal running extraction to stop.
+_cancel_event = threading.Event()
+
+
+def request_cancel() -> None:
+    """Signal the running extraction pipeline to stop after the current passage."""
+    _cancel_event.set()
+
+
+def is_cancelled() -> bool:
+    """Check whether cancellation has been requested."""
+    return _cancel_event.is_set()
+
+
+def clear_cancel() -> None:
+    """Reset the cancellation flag (called at extraction start)."""
+    _cancel_event.clear()
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -561,6 +581,9 @@ def run_extraction(
     if batch_mode:
         return _run_batch_extraction(db, limit=limit, on_progress=on_progress)
 
+    # Clear any stale cancellation from a previous run
+    clear_cancel()
+
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
@@ -668,6 +691,16 @@ def run_extraction(
         job_failures = 0
 
         for i, passage in enumerate(merged_passages):
+            # Check for cancellation between passages
+            if is_cancelled():
+                _log(f"\nExtraction terminated by user after {summary['records_processed']} passages.")
+                extraction_job.status = "cancelled"
+                extraction_job.completed_at = datetime.utcnow()
+                db.commit()
+                summary["total_extractions"] += job_extractions
+                summary["cancelled"] = True
+                return summary
+
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
