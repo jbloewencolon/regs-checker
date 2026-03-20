@@ -1091,6 +1091,22 @@ async def edit_document_metadata(
         changes.append(f"subject_area updated")
         family.subject_area = new_subject
 
+    # IAPP bill number and status (stored in family metadata)
+    meta = dict(family.metadata_ or {})
+    meta_changed = False
+    new_iapp_bill = form.get("iapp_bill_number", "").strip()
+    if new_iapp_bill and new_iapp_bill != meta.get("iapp_bill_number", ""):
+        meta["iapp_bill_number"] = new_iapp_bill
+        meta_changed = True
+        changes.append(f"IAPP bill number → {new_iapp_bill}")
+    new_iapp_status = form.get("iapp_status", "").strip()
+    if new_iapp_status and new_iapp_status != meta.get("iapp_status", ""):
+        meta["iapp_status"] = new_iapp_status
+        meta_changed = True
+        changes.append(f"IAPP status → {new_iapp_status}")
+    if meta_changed:
+        family.metadata_ = meta
+
     # Fetch URL
     new_url = form.get("fetch_url", "").strip()
     if new_url and new_url != job.fetch_url:
@@ -1452,6 +1468,10 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         short_cite = ""
         title = ""
         subject = ""
+        bill_title = ""
+        iapp_bill_number = ""
+        iapp_status = ""
+        leg_status = ""
         if dv and dv.family:
             source = dv.family.source
             jurisdiction = source.jurisdiction_code if source else ""
@@ -1459,19 +1479,39 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             title = dv.family.canonical_title or ""
             subject = dv.family.subject_area or ""
             label = short_cite or title or "unknown"
+            meta = dv.family.metadata_ or {}
+            iapp_bill_number = meta.get("iapp_bill_number", "")
+            iapp_status = meta.get("iapp_status", "")
+            bill_title = title or iapp_bill_number or ""
+        if dv and dv.temporal_status:
+            leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         status_class = "danger" if job.status == IngestionStatus.failed else "warning"
         status_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+
+        # Show IAPP legislative status alongside ingestion status
+        iapp_badge = ""
+        if iapp_status:
+            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_status)}</span>'
+        elif leg_status:
+            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">{html_escape(leg_status)}</span>'
 
         error_short = html_escape(str(job.error_message or "")[:150])
         url_display = html_escape(str(job.fetch_url or ""))
         jid = job.id
 
+        # Bill title line: show IAPP bill number if different from label
+        bill_info = ""
+        if iapp_bill_number and iapp_bill_number != label:
+            bill_info = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_bill_number)}</span>'
+
         rows_html += f"""
         <tr id="failed-row-{jid}">
           <td><strong>{html_escape(jurisdiction)}</strong></td>
-          <td>{html_escape(label)}</td>
-          <td><span style="color:var(--{status_class});">{status_label}</span></td>
+          <td>{html_escape(label)}{bill_info}
+              <div style="font-size:10px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                   title="{html_escape(bill_title)}">{html_escape(bill_title)}</div></td>
+          <td><span style="color:var(--{status_class});">{status_label}</span>{iapp_badge}</td>
           <td style="font-size:11px;max-width:250px;">
             <code style="word-break:break-all;">{url_display[:80]}</code>
             <br><span style="color:var(--{status_class});">{error_short}</span>
@@ -1511,9 +1551,19 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                        style="width:180px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
-                Title
+                Bill Title
                 <input type="text" name="title" value="{html_escape(title)}"
                        style="width:200px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Bill Number (IAPP)
+                <input type="text" name="iapp_bill_number" value="{html_escape(iapp_bill_number)}"
+                       style="width:120px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                IAPP Status
+                <input type="text" name="iapp_status" value="{html_escape(iapp_status)}"
+                       style="width:140px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Fetch URL
@@ -1593,15 +1643,33 @@ def export_failed_txt(db: Session = Depends(get_db)):
         dv = job.document_version
         jurisdiction = ""
         label = "unknown"
+        bill_title = ""
+        iapp_bill_number = ""
+        iapp_status = ""
+        leg_status = ""
         if dv and dv.family:
             source = dv.family.source
             jurisdiction = source.jurisdiction_code if source else ""
             label = dv.family.short_cite or dv.family.canonical_title or "unknown"
+            bill_title = dv.family.canonical_title or ""
+            meta = dv.family.metadata_ or {}
+            iapp_bill_number = meta.get("iapp_bill_number", "")
+            iapp_status = meta.get("iapp_status", "")
+        if dv and dv.temporal_status:
+            leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         status_label = "FAILED" if job.status == IngestionStatus.failed else "NEEDS REVIEW"
 
         lines.append(f"{i}. [{jurisdiction}] {label}")
-        lines.append(f"   Status: {status_label}")
+        if bill_title and bill_title != label:
+            lines.append(f"   Title: {bill_title}")
+        if iapp_bill_number and iapp_bill_number != label:
+            lines.append(f"   IAPP Bill #: {iapp_bill_number}")
+        if iapp_status:
+            lines.append(f"   IAPP Status: {iapp_status}")
+        elif leg_status:
+            lines.append(f"   Legislative Status: {leg_status}")
+        lines.append(f"   Ingestion: {status_label}")
         lines.append(f"   URL: {job.fetch_url or 'N/A'}")
         error_msg = (job.error_message or "").split("\n")[0][:200]
         lines.append(f"   Error: {error_msg}")
