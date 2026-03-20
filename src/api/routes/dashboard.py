@@ -353,6 +353,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                 DocumentFamily.canonical_title,
                 DocumentFamily.short_cite,
                 DocumentFamily.subject_area,
+                DocumentFamily.metadata_.label("family_metadata"),
                 Source.jurisdiction_code,
                 DocumentVersion.temporal_status,
                 IngestionJob.fetch_url,
@@ -373,6 +374,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                 DocumentFamily.canonical_title,
                 DocumentFamily.short_cite,
                 DocumentFamily.subject_area,
+                DocumentFamily.metadata_,
                 Source.jurisdiction_code,
                 DocumentVersion.temporal_status,
                 IngestionJob.fetch_url,
@@ -408,6 +410,24 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         passages = r.passages or 0
         status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")
 
+        # Extract bill_id and IAPP fields from family metadata
+        meta = r.family_metadata or {}
+        bill_id = meta.get("bill_id", "")
+        iapp_bill_number = meta.get("iapp_bill_number", "")
+        iapp_status = meta.get("iapp_status", "")
+
+        # Bill ID: show Orrick bill_id, IAPP bill_number, or both if they differ
+        bill_id_display = html_escape(bill_id or iapp_bill_number or "—")
+        bill_id_extra = ""
+        if bill_id and iapp_bill_number and bill_id != iapp_bill_number:
+            bill_id_extra = (
+                f'<br><span style="font-size:10px;color:var(--text-muted);">'
+                f'IAPP: {html_escape(iapp_bill_number)}</span>'
+            )
+
+        # Bill Status: prefer raw IAPP status, fall back to normalized TemporalStatus
+        bill_status_display = html_escape(iapp_status or status_val)
+
         # URL display: clickable link, truncated
         url_cell = "—"
         if raw_url:
@@ -422,9 +442,10 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         <tr id="doc-row-{jid}">
           <td><strong>{jur}</strong></td>
           <td>{cite}</td>
-          <td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>
-          <td>{html_escape(status_val)}</td>
-          <td style="max-width:180px;">{url_cell}</td>
+          <td title="{title}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>
+          <td>{bill_id_display}{bill_id_extra}</td>
+          <td>{bill_status_display}</td>
+          <td style="max-width:160px;">{url_cell}</td>
           <td style="text-align:right;">{size_kb}</td>
           <td style="text-align:right;">{passages}</td>
           <td>
@@ -433,7 +454,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="doc-edit-{jid}" style="display:none;background:var(--bg-secondary);">
-          <td colspan="8" style="padding:8px;">
+          <td colspan="9" style="padding:8px;">
             <form hx-post="/dashboard/api/edit-document/{jid}"
                   hx-target="#doc-edit-result-{jid}"
                   hx-swap="innerHTML"
@@ -446,12 +467,27 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Short Cite
                 <input type="text" name="short_cite" value="{cite}"
-                       style="width:180px;font-size:12px;padding:2px 4px;">
+                       style="width:150px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Title
                 <input type="text" name="title" value="{title}"
-                       style="width:250px;font-size:12px;padding:2px 4px;">
+                       style="width:200px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Bill ID (Orrick)
+                <input type="text" name="bill_id" value="{html_escape(bill_id)}"
+                       style="width:100px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Bill # (IAPP)
+                <input type="text" name="iapp_bill_number" value="{html_escape(iapp_bill_number)}"
+                       style="width:100px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                IAPP Status
+                <input type="text" name="iapp_status" value="{html_escape(iapp_status)}"
+                       style="width:140px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Subject Area
@@ -473,7 +509,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<div class="table-wrap">'
         f'<table class="review-table">'
         f'<thead><tr>'
-        f'<th>Jur.</th><th>Cite</th><th>Title</th><th>Status</th>'
+        f'<th>Jur.</th><th>Cite</th><th>Title</th><th>Bill ID</th><th>Bill Status</th>'
         f'<th>Source URL</th>'
         f'<th style="text-align:right;">Size</th>'
         f'<th style="text-align:right;">Passages</th>'
