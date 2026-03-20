@@ -5,7 +5,12 @@ from pathlib import Path
 
 # Ensure project root is on sys.path so ``import src`` works regardless of
 # how alembic is invoked (CLI, IDE, Docker, etc.)
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_project_root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_project_root))
+
+# Load .env so REGS_DATABASE_URL is available via os.environ
+from dotenv import load_dotenv
+load_dotenv(_project_root / ".env")
 
 from alembic import context
 from sqlalchemy import pool, create_engine
