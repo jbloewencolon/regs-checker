@@ -1,0 +1,35 @@
+{
+    "passage_id": "ca_sb1047_sec2_covered_model_definition",
+    "source_document": "California SB 1047 (Safe and Secure Innovation for Frontier AI Models Act)",
+    "jurisdiction": "CA",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "\"Covered model\" means an artificial intelligence model that is trained using a quantity of computing power greater than 10^26 integer or floating-point operations, or that is created by fine-tuning a covered model using a quantity of computing power greater than three times 10^25 integer or floating-point operations. The cost of the quantity of computing power used to train the model, as determined based on commercially available prices at the time of training, is greater than one hundred million dollars ($100,000,000).",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Covered model",
+            "definition_text": "an artificial intelligence model that is trained using a quantity of computing power greater than 10^26 integer or floating-point operations, or that is created by fine-tuning a covered model using a quantity of computing power greater than three times 10^25 integer or floating-point operations",
+            "scope": "Models meeting compute threshold or fine-tuning threshold with cost exceeding $100M",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "term", "text": "Covered model"},
+                {"field_name": "definition_text", "text": "an artificial intelligence model that is trained using a quantity of computing power greater than 10^26 integer or floating-point operations"}
+            ]
+        },
+        "threshold_exception": {
+            "threshold_type": "numeric",
+            "threshold_value": "10^26",
+            "threshold_unit": "integer or floating-point operations",
+            "threshold_condition": "computing power used to train the model is greater than 10^26 operations, or fine-tuning exceeds 3×10^25 operations, and cost exceeds $100,000,000",
+            "applies_to_obligation": "Covered model classification",
+            "exceptions": [],
+            "evidence_spans": [
+                {"field_name": "threshold_value", "text": "greater than 10^26 integer or floating-point operations"},
+                {"field_name": "threshold_condition", "text": "cost of the quantity of computing power used to train the model, as determined based on commercially available prices at the time of training, is greater than one hundred million dollars ($100,000,000)"}
+            ]
+        },
+        "ambiguity": null
+    }
+}

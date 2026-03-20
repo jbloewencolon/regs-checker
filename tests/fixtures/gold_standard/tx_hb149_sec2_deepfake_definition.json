@@ -1,0 +1,24 @@
+{
+    "passage_id": "tx_hb149_sec2_deepfake_definition",
+    "source_document": "Texas HB 149 (Relating to the creation and distribution of certain manipulated media)",
+    "jurisdiction": "TX",
+    "section_path": "Section 2 - Definitions",
+    "passage_text": "\"Deep fake video\" means a video, created with the intent to deceive, that appears to depict a real person performing an action that did not occur in reality and that was created using machine learning or artificial intelligence, including a generative adversarial network. \"Distribute\" means to publish, transfer, or otherwise make available to the public, including making available through a social media platform or through any other mass communication medium.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Deep fake video",
+            "definition_text": "a video, created with the intent to deceive, that appears to depict a real person performing an action that did not occur in reality and that was created using machine learning or artificial intelligence, including a generative adversarial network",
+            "scope": "Videos created with AI/ML that falsely depict real persons",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "term", "text": "Deep fake video"},
+                {"field_name": "definition_text", "text": "a video, created with the intent to deceive, that appears to depict a real person performing an action that did not occur in reality and that was created using machine learning or artificial intelligence, including a generative adversarial network"}
+            ]
+        },
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

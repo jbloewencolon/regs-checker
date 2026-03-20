@@ -326,6 +326,8 @@ class Extraction(Base):
     confidence_tier = Column(Enum(ConfidenceTier), nullable=False)
     review_status = Column(Enum(ReviewStatus), nullable=False, default=ReviewStatus.pending)
     prompt_template_version = Column(String(40))  # git SHA of prompt used
+    prompt_hash = Column(String(24))  # SHA-256 prefix of rendered prompt
+    template_version = Column(String(50))  # version from YAML template
     model_id = Column(String(100))
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
     metadata_ = Column("metadata", JSONB, default=dict)

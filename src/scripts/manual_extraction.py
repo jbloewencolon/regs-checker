@@ -1,21 +1,25 @@
-"""Export/import for Claude Code manual extraction workflow.
+"""Export/import for extraction results.
 
-This module provides the PRIMARY extraction workflow: export unprocessed
-passages as formatted text for pasting into Claude Code/Chat, then import
-the JSON responses back into the extractions table.
+This module provides a SUPPLEMENTARY extraction workflow for edge cases where
+the programmatic API pipeline (--mode extract) cannot be used — e.g., when
+debugging specific passages or performing manual review corrections.
 
-The API-based extraction pipeline (--mode extract) is the SECONDARY option
-for when you want unattended batch processing.
+The API-based extraction pipeline (--mode extract) is the PRIMARY workflow.
+For production use, prefer:
+  - --mode extract (synchronous Anthropic/local LLM API calls)
+  - --mode extract --batch (Anthropic Batch API — 50% discount, 24h turnaround)
+
+This export/import workflow is retained for:
+  - Debugging: exporting specific passages for manual inspection
+  - Correction: importing manually-corrected extraction JSON
+  - Offline: environments without LLM API access
 
 Export workflow:
   1. python -m src.scripts.seed_pipeline --mode export-passages
-     → Writes passages to export/batch_001.txt (ready to paste into Claude)
-  2. You paste the text into Claude Code/Chat and get JSON back
+     → Writes passages to export/batch_001.txt with schema reference
+  2. Process passages through any LLM (API, local, or interactive)
   3. python -m src.scripts.seed_pipeline --mode import-extractions --input export/batch_001_results.json
      → Validates and writes extractions to the database
-
-The export includes the system prompt and schema so Claude knows exactly
-what format to return.
 """
 
 from __future__ import annotations

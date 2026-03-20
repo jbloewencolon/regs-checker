@@ -1,0 +1,50 @@
+{
+    "passage_id": "ct_sb1103_sec8_exemptions",
+    "source_document": "Connecticut SB 1103 (An Act Concerning Artificial Intelligence)",
+    "jurisdiction": "CT",
+    "section_path": "Section 8 - Exemptions",
+    "passage_text": "The provisions of sections 3 through 7 of this act shall not apply to: (a) Any artificial intelligence system that is designed to detect security incidents, resist deceptive techniques that attempt to compromise the security of an information system, or identify activities that indicate a potential security threat, provided the system is used solely for cybersecurity purposes; (b) Any narrow artificial intelligence system that is designed and used solely for a single task that does not involve the profiling of natural persons or making decisions that produce legal effects concerning natural persons; (c) Any federal government agency or entity acting under the authority of a federal government agency.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": "categorical",
+            "threshold_value": "cybersecurity AI, narrow single-task AI, federal government entities",
+            "threshold_unit": null,
+            "threshold_condition": "AI systems must be used solely for specified exempt purposes",
+            "applies_to_obligation": "Sections 3 through 7 deployer and developer obligations",
+            "exceptions": [
+                {
+                    "exception_type": "exemption",
+                    "description": "AI systems designed to detect security incidents, resist deceptive techniques, or identify security threats",
+                    "conditions": "used solely for cybersecurity purposes",
+                    "scope": "Cybersecurity-specific AI"
+                },
+                {
+                    "exception_type": "exemption",
+                    "description": "Narrow AI systems designed for a single task",
+                    "conditions": "does not involve profiling natural persons or making decisions with legal effects on natural persons",
+                    "scope": "Single-task narrow AI"
+                },
+                {
+                    "exception_type": "exemption",
+                    "description": "Federal government agencies or entities acting under federal authority",
+                    "conditions": null,
+                    "scope": "Federal government"
+                }
+            ],
+            "evidence_spans": [
+                {"field_name": "exceptions", "text": "designed to detect security incidents, resist deceptive techniques that attempt to compromise the security of an information system, or identify activities that indicate a potential security threat, provided the system is used solely for cybersecurity purposes"},
+                {"field_name": "exceptions", "text": "narrow artificial intelligence system that is designed and used solely for a single task that does not involve the profiling of natural persons"}
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "narrow artificial intelligence system",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Sections 3-7 - scope of AI regulations"],
+            "interpretation_notes": "The distinction between 'narrow AI' and general-purpose AI is not precisely defined. Modern large language models can be fine-tuned for a single task but retain broader capabilities, creating uncertainty about whether they qualify for this exemption.",
+            "suggested_clarification": "Define objective technical criteria for classifying an AI system as 'narrow,' such as whether the model architecture, training data, or deployment configuration determines scope"
+        }
+    }
+}

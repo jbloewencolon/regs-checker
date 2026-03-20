@@ -1,0 +1,31 @@
+{
+    "passage_id": "ny_s7543_sec3_aedt_definition",
+    "source_document": "New York City Local Law 144 (Automated Employment Decision Tools)",
+    "jurisdiction": "NY",
+    "section_path": "Section 3 - Definitions",
+    "passage_text": "\"Automated employment decision tool\" means any computational process, derived from machine learning, statistical modeling, data analytics, or artificial intelligence, that issues simplified output, including a score, classification, or recommendation, that is used to substantially assist or replace discretionary decision making for making employment decisions that impact natural persons. The term \"employment decision\" means to screen candidates for employment, or employees for promotion within the city of New York.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Automated employment decision tool",
+            "definition_text": "any computational process, derived from machine learning, statistical modeling, data analytics, or artificial intelligence, that issues simplified output, including a score, classification, or recommendation, that is used to substantially assist or replace discretionary decision making for making employment decisions that impact natural persons",
+            "scope": "Computational processes used for employment screening or promotion decisions in New York City",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "term", "text": "Automated employment decision tool"},
+                {"field_name": "definition_text", "text": "any computational process, derived from machine learning, statistical modeling, data analytics, or artificial intelligence, that issues simplified output, including a score, classification, or recommendation, that is used to substantially assist or replace discretionary decision making for making employment decisions that impact natural persons"}
+            ]
+        },
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "substantially assist or replace discretionary decision making",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["AEDT bias audit and disclosure requirements"],
+            "interpretation_notes": "The threshold at which AI output 'substantially assists' human decision-making versus merely informing it is undefined. An employer could argue their tool merely provides information that a human considers, thereby avoiding classification as an AEDT.",
+            "suggested_clarification": "Define quantitative thresholds or behavioral tests for when a tool 'substantially assists' decision-making, such as the rate at which human decision-makers override tool recommendations"
+        }
+    }
+}

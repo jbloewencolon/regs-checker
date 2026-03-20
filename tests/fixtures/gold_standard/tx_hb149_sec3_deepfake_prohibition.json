@@ -1,0 +1,37 @@
+{
+    "passage_id": "tx_hb149_sec3_deepfake_prohibition",
+    "source_document": "Texas HB 149 (Relating to the creation and distribution of certain manipulated media)",
+    "jurisdiction": "TX",
+    "section_path": "Section 3 - Offense",
+    "passage_text": "A person commits an offense if the person, with intent to injure a candidate or influence the result of an election, creates or distributes a deep fake video that appears to depict a real person performing an action that did not occur, and the person knows or has constructive knowledge that the video is a deep fake. An offense under this section is a Class A misdemeanor.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A person",
+            "subject_normalized": "operator",
+            "modality": "prohibited",
+            "action": "creates or distributes a deep fake video that appears to depict a real person performing an action that did not occur",
+            "object": "deep fake video",
+            "condition": "with intent to injure a candidate or influence the result of an election, and the person knows or has constructive knowledge that the video is a deep fake",
+            "jurisdiction": "TX",
+            "section_reference": "Section 3",
+            "timeline": null,
+            "enforcement": {
+                "enforcing_body": null,
+                "penalty_type": "criminal",
+                "penalty_description": "Class A misdemeanor",
+                "private_right_of_action": false,
+                "enforcement_text": "An offense under this section is a Class A misdemeanor."
+            }
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "constructive knowledge",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 3 - deepfake creation/distribution prohibition"],
+            "interpretation_notes": "The standard of 'constructive knowledge' for deepfakes is novel and untested. It is unclear what level of technical awareness or due diligence would satisfy or fail this knowledge requirement for AI-generated media.",
+            "suggested_clarification": "Define what constitutes constructive knowledge in the context of AI-generated media, including whether metadata inspection or provenance checking is required"
+        }
+    }
+}

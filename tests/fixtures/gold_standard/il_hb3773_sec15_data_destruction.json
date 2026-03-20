@@ -1,0 +1,40 @@
+{
+    "passage_id": "il_hb3773_sec15_data_destruction",
+    "source_document": "Illinois HB 3773 (Artificial Intelligence Video Interview Act)",
+    "jurisdiction": "IL",
+    "section_path": "Section 15 - Data Destruction",
+    "passage_text": "Upon request by the applicant, the employer shall delete the applicant's video interview and instruct any third parties that received copies of the applicant's video interview to also delete the applicant's video interview within 30 days of the applicant's request. The employer shall not share the applicant's video with anyone other than the persons necessary to evaluate the applicant's application.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "the employer",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "delete the applicant's video interview and instruct third parties to delete copies within 30 days of request, and not share the video beyond persons necessary to evaluate the application",
+            "object": "applicant's video interview",
+            "condition": "upon request by the applicant",
+            "jurisdiction": "IL",
+            "section_reference": "Section 15",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": null,
+                "sunset_date": null,
+                "phase_in_period": null,
+                "timeline_text": "within 30 days of the applicant's request"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": "temporal",
+            "threshold_value": "30",
+            "threshold_unit": "days",
+            "threshold_condition": "deletion must occur within 30 days of the applicant's request",
+            "applies_to_obligation": "data destruction upon applicant request",
+            "exceptions": [],
+            "evidence_spans": [
+                {"field_name": "threshold_value", "text": "within 30 days of the applicant's request"}
+            ]
+        },
+        "ambiguity": null
+    }
+}

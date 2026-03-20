@@ -1,0 +1,31 @@
+{
+    "passage_id": "ca_sb1047_sec3_frontier_obligation",
+    "source_document": "California SB 1047 (Safe and Secure Innovation for Frontier AI Models Act)",
+    "jurisdiction": "CA",
+    "section_path": "Section 3 - Developer Requirements",
+    "passage_text": "A developer of a covered model shall, before the covered model is made available for use, implement and maintain reasonable administrative, technical, and physical cybersecurity protections, commensurate with the risks associated with the covered model, to prevent unauthorized access to, misuse of, or unsafe modification of, the covered model, the covered model's weights, or a derivative model of the covered model. A developer shall have the ability to promptly enact a full shutdown of all copies and derivative models of a covered model that the developer has control over.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A developer of a covered model",
+            "subject_normalized": "developer",
+            "modality": "shall",
+            "action": "implement and maintain reasonable administrative, technical, and physical cybersecurity protections, commensurate with the risks associated with the covered model, to prevent unauthorized access to, misuse of, or unsafe modification of, the covered model",
+            "object": "covered model, covered model's weights, or a derivative model",
+            "condition": "before the covered model is made available for use",
+            "jurisdiction": "CA",
+            "section_reference": "Section 3",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "reasonable administrative, technical, and physical cybersecurity protections",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 3 - developer cybersecurity obligations"],
+            "interpretation_notes": "The term 'reasonable' lacks specific technical standards or benchmarks for AI model cybersecurity. The phrase 'commensurate with the risks' introduces a proportionality test without defining how risk levels map to specific security measures.",
+            "suggested_clarification": "Define specific cybersecurity standards or reference established frameworks (e.g., NIST CSF) that constitute 'reasonable' protections for frontier AI models"
+        }
+    }
+}
