@@ -19,7 +19,7 @@ law_id,bill_number,title,source_url,law_status
 20,AB 2905,Call Disclosures Law AB 2905,https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2905,active
 21,AB 1008,Consumer Privacy Act AB 1008,https://cppa.ca.gov/regulations/pdf/ccpa_updates_cyber_risk_admt_appr_text.pdf,active
 22,AB 2839,Deceptive Media in Election AB 2839,https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240AB2839,active
-23,CPPA ADMT Regs,Decision- California Consumer Privacy Act 11 CCR § 7001 et seq.,orrick.com/ai,stub
+23,CPPA ADMT Regs,Decision- California Consumer Privacy Act 11 CCR § 7001 et seq.,https://cppa.ca.gov/regulations/,active
 24,AB 2885,Definition Bill AB 2885,https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202320240AB2885,active
 25,AB 2930,Employment and System,orrick.com/ai,stub
 26,,Employment Regulations Civil Rights Council,https://calcivilrights.ca.gov/wp-content/uploads/sites/32/2025/03/Attachment-B-Final-Unmodified-Text-of-Proposed-Employment-Regulations-Regarding-Automated-Decision-Systems.pdf,active
@@ -56,10 +56,10 @@ law_id,bill_number,title,source_url,law_status
 64,HB 233,Delaware Artificial Intelligence HB 233,orrick.com/ai,stub
 65,SB 262,Florida Digital Bill of Rights (SB 262),https://laws.flrules.org/2023/201,active
 66,HB 919,Florida Act Relating to AI Use in HB 919,https://custom.statenet.com/public/resources.cgi?mode=show_text&id=ID:bill:FL2024000H919&verid=FL2024000H919_20240426_0_CH&,active
-67,SB 1680,of Florida CSAM Laws SB 1680,orrick.com/ai,stub
+67,SB 1680,of Florida CSAM Laws SB 1680,https://www.flsenate.gov/Session/Bill/2024/1680,active
 68,HB 369,HB 369,https://www.myfloridahouse.gov/Sections/Bills/billsdetail.aspx?BillId=80943,active
 69,SB 466,of Georgia CSAM Law SB 466,orrick.com/ai,stub
-70,,Prohibition on Nude or Sexually Ga. Code § 16-11-90,orrick.com/ai,stub
+70,,Prohibition on Nude or Sexually Ga. Code § 16-11-90,https://law.justia.com/codes/georgia/2022/title-16/chapter-11/article-3/section-16-11-90/,active
 71,SB 309,Amendment to Intimate Image Law SB 309,https://data.capitol.hawaii.gov/sessions/session2021/Bills/SB309_SD1_.HTM,active
 72,SB 2687,Deceptive Media in Election SB 2687,https://data.capitol.hawaii.gov/sessions/session2024/bills/SB2687_CD1_.pdf,active
 73,SB 59,SB 59,https://www.capitol.hawaii.gov/session/measure_indiv.aspx?billtype=SB&billnumber=59&year=2025,active
@@ -84,7 +84,7 @@ law_id,bill_number,title,source_url,law_status
 94,,AI Electioneering Communications KRS 117.001,orrick.com/ai,stub
 95,HB 207,Amendment to Intimate Images HB 207,https://apps.legislature.ky.gov/recorddocuments/bill/24RS/hb207/bill.pdf,active
 96,,Decision- Kentucky Consumer Data Ky. Rev. Stat. §,https://apps.legislature.ky.gov/law/statutes/chapter.aspx?id=39092,active
-97,,Government Use of AI Law KRS 42.720 - 42.742,orrick.com/ai,stub
+97,,Government Use of AI Law KRS 42.720 - 42.742,https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=51296,active
 100,,Louisiana AI Intimate Image Law 14 La. Rev. Stat. Ann. §,https://www.legis.la.gov/Legis/ViewDocument.aspx?d=1379408,active
 101,,Louisiana Deepfake Law 14 La. Rev. Stat. Ann. §,https://www.legis.la.gov/Legis/ViewDocument.aspx?d=1333325,active
 102,,AI Communications with Consumers 10 MRSA c. 239,https://legislature.maine.gov/bills/getPDF.asp?paper=HP1154&item=3&snum=132,active
@@ -101,12 +101,12 @@ law_id,bill_number,title,source_url,law_status
 113,,"Minnesota Consumer Data Privacy Act (HF 4757, Minn. Stat. § 325O)",https://infobytes.orrick.com/wp-content/uploads/download-1-1.pdf,active
 114,SF 4097,Media & Prohibiting Social Media SF 4097,orrick.com/ai,stub
 115,HF 1370,Non-Consensual Dissemination of HF 1370,orrick.com/ai,stub
-116,HF2432,to the Minnesota HF2432,orrick.com/ai,stub
+116,HF2432,to the Minnesota HF2432,https://www.revisor.mn.gov/bills/bill.php?b=House&f=HF2432&ssn=0&y=2023,active
 117,SF 1886,SF 1886,https://www.revisor.mn.gov/bills/bill.php?b=Senate&f=SF1886&ssn=0&y=2025,active
 118,SB 2577,AI Political Deepfake Law SB 2577,https://billstatus.ls.state.ms.us/2024/pdf/history/SB/SB2577.xml,active
 119,,and Related Offenses R.S.Mo § 573.010,https://revisor.mo.gov/main/OneSection.aspx?section=573.010&bid=51065,active
 120,SB25,AI Deepfakes in Elections SB25,https://docs.legmt.gov/download-ticket?ticketId=79409647-ee8e-4eda-aceb-c7e125083fda,active
-121,,Decision- Montana Consumer Data Privacy Montana Code Ann. §,orrick.com/ai,active
+121,,Decision- Montana Consumer Data Privacy Montana Code Ann. §,https://leg.mt.gov/bills/mca/title_0300/chapter_0140/part_0280/section_0010/0300-0140-0280-0010.html,active
 122,,"Montana Explicit Synthetic Media MCA Title 45, Chapter",https://infobytes.orrick.com/wp-content/uploads/Montana-2025-SB413-Enrolled.pdf,active
 123,HB178,Montana Government AI Use Law HB178,https://docs.legmt.gov/download-ticket?ticketId=907ba0c7-2666-4edc-938e-7f66bf3de5cb,active
 124,,Privacy in Communications Law MCA Section 45-8-213,https://infobytes.orrick.com/wp-content/uploads/Montana-2025-HB514-Enrolled.pdf,active
@@ -116,24 +116,24 @@ law_id,bill_number,title,source_url,law_status
 128,LB 1074,Nebraska Data Privacy Act (LB 1074),https://nebraskalegislature.gov/FloorDocs/108/PDF/Slip/LB1074.pdf,active
 129,LB 383,"Nebraska CSAM Prevention Act (LB 383, Neb. Rev. Stat. § 28-1463.01)",https://nebraskalegislature.gov/FloorDocs/109/PDF/Slip/LB383.pdf,active
 130,LB 642,LB 642,https://nebraskalegislature.gov/bills/view_bill.php?DocumentID=58992,active
-131,,AI for School Counseling Chapter 391 of NRS,orrick.com/ai,stub
-132,,AI General AI Chatbots and Mental Nev. Rev. Stat.,orrick.com/ai,active
-133,,for Mental and Behavioral Health Nev. Rev. Stat.,orrick.com/ai,stub
-134,,Nevada AI Political Advertising Law NRS Chapter 294A.347-,orrick.com/ai,stub
+131,,AI for School Counseling Chapter 391 of NRS,https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10116/Text,active
+132,,AI General AI Chatbots and Mental Nev. Rev. Stat.,https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10188/Text,active
+133,,for Mental and Behavioral Health Nev. Rev. Stat.,https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10188/Text,active
+134,,Nevada AI Political Advertising Law NRS Chapter 294A.347-,https://www.leg.state.nv.us/NRS/NRS-294A.html#NRS294ASec347,active
 135,AB 3265,AB 3265,https://www.nysenate.gov/legislation/bills/2025/A3265,active
 136,AB 3356,AB 3356,https://www.nysenate.gov/legislation/bills/2025/A3356,active
 137,AB 3411/SB 934,AB 3411/SB 934,https://www.nysenate.gov/legislation/bills/2025/A3411,active
 138,AB 768/SB 1962,AB 768/SB 1962,https://www.nysenate.gov/legislation/bills/2025/A768,active
 139,SB199,SB199,https://www.leg.state.nv.us/App/NELIS/REL/83rd2025/Bill/12246/Overview,active
 140,,AI Responsive Generative New Hampshire,https://legiscan.com/NH/text/HB1596/id/2864639,active
-141,,Decision- New Hampshire Privacy Act N.H. Rev. Stat. § 507-,orrick.com/ai,active
-142,HB 1432,Hampshire Deepfake Act HB 1432,orrick.com/ai,stub
+141,,Decision- New Hampshire Privacy Act N.H. Rev. Stat. § 507-,https://www.gencourt.state.nh.us/bill_status/billText.aspx?sy=2024&id=1130&txtFormat=pdf,active
+142,HB 1432,Hampshire Deepfake Act HB 1432,https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=3021&q=billText,active
 143,HB 1596,New Hampshire AI Political HB 1596,https://gc.nh.gov/bill_status/pdf.aspx?id=17004&q=billVersion,active
-144,HB 1688,New Hampshire State Agency,orrick.com/ai,active
-145,A3540,criminal penalties for A3540,orrick.com/ai,active
-146,,Decision- New Jersey Data Privacy Act N.J. Rev. Stat. § 56:8-,orrick.com/ai,active
+144,HB 1688,New Hampshire State Agency,https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=3256&q=billText,active
+145,A3540,criminal penalties for A3540,https://pub.njleg.gov/Bills/2024/A4000/3540_R3.PDF,active
+146,,Decision- New Jersey Data Privacy Act N.J. Rev. Stat. § 56:8-,https://pub.njleg.gov/Bills/2022/PL23/266_.PDF,active
 147,,Rules Pertaining to Disparate N.J.A.C. 13:16,https://www.njoag.gov/wp-content/uploads/2025/12/N.J.A.C.-13-16-Disparate-Impact-Discrimination.pdf,active
-148,,New Mexico Campaign Reporting N.M. Stat. Ann. § 1-19-,orrick.com/ai,active
+148,,New Mexico Campaign Reporting N.M. Stat. Ann. § 1-19-,https://www.nmlegis.gov/Sessions/24%20Regular/final/SB0239.pdf,active
 149,HB 401,HB 401,https://www.nmlegis.gov/Legislation/Legislation?chamber=H&legtype=B&legno=401&year=25,active
 150,,AI Artificial Intelligence Companion New York General,orrick.com/ai,stub
 151,SB1042A,Amendment to the New York SB1042A,orrick.com/ai,stub
@@ -143,7 +143,7 @@ law_id,bill_number,title,source_url,law_status
 155,,Intelligence Deceptive N.Y. Civ. Rights Law §,orrick.com/ai,stub
 156,,NYC AI Employment Law (Local Law 144),https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=4344524&GUID=B051915D-A9AC-451E-81F8-6596032FA3F9&Options=ID%7cText%7c&Search=,active
 157,,or General- The Responsible AI Safety and New York General,orrick.com/ai,active
-158,S8420A,Performer Disclosures S8420A,orrick.com/ai,active
+158,S8420A,Performer Disclosures S8420A,https://www.nysenate.gov/legislation/bills/2025/S8420/amendment/A,active
 159,,New York Algorithmic Pricing Law,https://www.cga.ct.gov/current/pub/chap_244c.htm,active
 160,S 7543B,The LOADinG Act: Legislative S 7543B,orrick.com/ai,stub
 161,S8391,to Deceased S8391,orrick.com/ai,active
@@ -200,7 +200,7 @@ law_id,bill_number,title,source_url,law_status
 220,SB 131,Utah Information Technology Act SB 131,https://le.utah.gov/xcode/Title13/Chapter72/C13-72_2024050120240501.pdf,active
 221,SB 226,SB 226,https://le.utah.gov/~2025/bills/static/SB0226.html,active
 222,,Vermont Act 161 — Amendment to Non-Consensual Intimate Image Law,https://legislature.vermont.gov/Documents/2024/Docs/ACTS/ACT161/ACT161 As Enacted.pdf,active
-223,H 410,An Act Relating to the Use and H 410,orrick.com/ai,stub
+223,H 410,An Act Relating to the Use and H 410,https://legislature.vermont.gov/bill/status/2024/H.410,active
 224,HB 2121,HB 2121,(IAPP tracker PDF),stub
 225,HB 2250,HB 2250,(IAPP tracker PDF),stub
 226,HB 341,HB 341,https://legislature.vermont.gov/bill/status/2026/H.341,active
@@ -219,9 +219,9 @@ law_id,bill_number,title,source_url,law_status
 239,,Crimes Against Chastity and Morality — W. Va. Code § 61-8-28a (SB 198),http://www.wvlegislature.gov/Bill_Text_HTML/2025_SESSIONS/RS/bills/sb198 sub1 enr.pdf,active
 240,,2023 Wisconsin Act 123 Wis. Stat. § 11.1303,https://docs.legis.wisconsin.gov/statutes/statutes/11/xiii/1303,active
 241,,Estate Advertising Enhanced by Wis. Stat. §,https://docs.legis.wisconsin.gov/2025/related/acts/69,active
-242,SB 314,to the CSAM Statute SB 314,orrick.com/ai,stub
-243,,Exploitation of Children Wy. Code § 6-4-306,orrick.com/ai,stub
-244,,to Intimate Image Law Wy. Code § 6-4-306,orrick.com/ai,stub
+242,SB 314,to the CSAM Statute SB 314,https://docs.legis.wisconsin.gov/2023/related/acts/224,active
+243,,Exploitation of Children Wy. Code § 6-4-306,https://wyoleg.gov/statutes/compress/title06.pdf,active
+244,,to Intimate Image Law Wy. Code § 6-4-306,https://wyoleg.gov/statutes/compress/title06.pdf,active
 732,AB 489,Health Advice From Artificial Intelligence AB 489,https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202520260AB489,active
 733,AB 723,Real Estate Digitally Altered Images Disclosures AB 723,https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202520260AB723,active
 734,SB 1964,Regulation and Use of AI by Governmental Entities SB 1964,https://capitol.texas.gov/tlodocs/89R/billtext/pdf/SB01964F.pdf,active
