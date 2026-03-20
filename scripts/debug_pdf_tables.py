@@ -1,49 +1,27 @@
-"""Diagnostic: test the word-level column extraction pipeline.
+"""Diagnostic: dump word positions from page 1 of the PDF.
 
-Usage: python scripts/debug_pdf_tables.py
+Usage: PYTHONPATH=. python scripts/debug_pdf_tables.py
 """
+import pdfplumber
 from pathlib import Path
-from src.ingestion.pdf_tracker import (
-    _extract_table_rows_from_pdf,
-    _extract_urls_from_pdf,
-    _parse_table_rows,
-)
 
 pdf_path = Path("static/Orrick-US-AI-Law-Tracker.pdf")
 
-print("=== Extracting table rows (word-level) ===")
-rows = _extract_table_rows_from_pdf(pdf_path)
+with pdfplumber.open(pdf_path) as pdf:
+    p = pdf.pages[0]
+    print("Page size: {} x {}".format(p.width, p.height))
+    words = p.extract_words(keep_blank_chars=True, extra_attrs=["top", "bottom"])
+    print("Total words on page 1: {}".format(len(words)))
+    print()
 
-if not rows:
-    print("ERROR: No rows extracted!")
-    exit(1)
+    sorted_words = sorted(words, key=lambda w: (w["top"], w["x0"]))
 
-print(f"Total rows: {len(rows)}\n")
-print("First 20 rows:")
-for i, row in enumerate(rows[:20]):
-    cells = []
-    for c in row:
-        val = (c or "").replace("\n", "|")
-        if len(val) > 40:
-            val = val[:40] + "..."
-        cells.append(val)
-    print(f"  [{i+1:3d}] {cells}")
+    print("First 50 words (sorted by top, then x0):")
+    for w in sorted_words[:50]:
+        print("  top={:7.1f}  x0={:7.1f}  x1={:7.1f}  text={!r}".format(
+            w["top"], w["x0"], w["x1"], w["text"]
+        ))
 
-print(f"\n=== Extracting URLs ===")
-all_urls = _extract_urls_from_pdf(pdf_path)
-law_urls = [u for u in all_urls if "orrick.com" not in u and "mimecast" not in u]
-print(f"Total URLs: {len(all_urls)}, Law URLs: {len(law_urls)}")
-
-print(f"\n=== Parsing into records ===")
-records = _parse_table_rows(rows, law_urls)
-print(f"Total records: {len(records)}\n")
-
-if records:
-    print("First 10 records:")
-    for i, r in enumerate(records[:10]):
-        print(f"  [{i+1}] {r['state_code']} | {r['ai_scope'][:30]:30s} | {r['law_name'][:40]:40s} | {r['effective_date']}")
-    print(f"\nLast 3 records:")
-    for r in records[-3:]:
-        print(f"       {r['state_code']} | {r['ai_scope'][:30]:30s} | {r['law_name'][:40]:40s} | {r['effective_date']}")
-else:
-    print("ERROR: No records produced!")
+    # Show unique top values to understand row structure
+    tops = sorted(set(round(w["top"], 1) for w in words))
+    print("\nUnique top positions (first 20): {}".format(tops[:20]))
