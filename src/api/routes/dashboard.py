@@ -20,14 +20,17 @@ from sqlalchemy.orm import Session
 from src.db.engine import get_db
 from src.db.models import (
     ConfidenceTier,
+    DocumentFamily,
     DocumentVersion,
     Extraction,
     ExtractionType,
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
+    RawArtifact,
     ReviewQueueItem,
     ReviewStatus,
+    Source,
 )
 
 router = APIRouter()
@@ -56,6 +59,7 @@ def _render(request: Request, template: str, context: dict = None) -> HTMLRespon
 def dashboard_page(request: Request, db: Session = Depends(get_db)):
     """Main pipeline dashboard page."""
     from src.api.progress import compute_pipeline_progress
+    from src.core.config import settings
 
     stats = _get_pipeline_stats(db)
     export_files = _get_export_files()
@@ -65,6 +69,7 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
         "stats": stats,
         "export_files": export_files,
         "progress": progress.to_dict(),
+        "config": settings,
     })
 
 
@@ -301,6 +306,85 @@ def get_confidence_chart(db: Session = Depends(get_db)) -> HTMLResponse:
     return HTMLResponse(f'<div class="chart-bars">{bars}</div>')
 
 
+@router.get("/api/documents")
+def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
+    """List fetched documents with their artifacts for browsing."""
+    rows = (
+        db.execute(
+            select(
+                DocumentFamily.canonical_title,
+                Source.jurisdiction_code,
+                DocumentVersion.version_label,
+                DocumentVersion.temporal_status,
+                RawArtifact.content_type,
+                RawArtifact.size_bytes,
+                RawArtifact.created_at,
+                func.count(NormalizedSourceRecord.id).label("passages"),
+            )
+            .select_from(DocumentFamily)
+            .join(Source, DocumentFamily.source_id == Source.id)
+            .join(DocumentVersion, DocumentFamily.id == DocumentVersion.family_id)
+            .outerjoin(RawArtifact, DocumentVersion.id == RawArtifact.document_version_id)
+            .outerjoin(NormalizedSourceRecord, DocumentVersion.id == NormalizedSourceRecord.document_version_id)
+            .group_by(
+                DocumentFamily.canonical_title,
+                Source.jurisdiction_code,
+                DocumentVersion.version_label,
+                DocumentVersion.temporal_status,
+                RawArtifact.content_type,
+                RawArtifact.size_bytes,
+                RawArtifact.created_at,
+            )
+            .order_by(RawArtifact.created_at.desc().nulls_last())
+            .limit(100)
+        )
+        .all()
+    )
+
+    if not rows:
+        return HTMLResponse(
+            '<div class="result-panel info" style="margin-top:10px;">'
+            'No documents fetched yet. Run "Fetch All Pending" first.'
+            '</div>'
+        )
+
+    table_rows = ""
+    for r in rows:
+        title = html_escape(str(r.canonical_title or "—")[:60])
+        jur = html_escape(str(r.jurisdiction_code or "—"))
+        ctype = html_escape(str(r.content_type or "—"))
+        size_kb = f"{r.size_bytes / 1024:.0f} KB" if r.size_bytes else "—"
+        passages = r.passages or 0
+        status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")
+        table_rows += (
+            f"<tr>"
+            f"<td><strong>{jur}</strong></td>"
+            f"<td>{title}</td>"
+            f"<td>{html_escape(status_val)}</td>"
+            f"<td>{ctype}</td>"
+            f"<td style='text-align:right;'>{size_kb}</td>"
+            f"<td style='text-align:right;'>{passages}</td>"
+            f"</tr>"
+        )
+
+    return HTMLResponse(
+        f'<div style="margin-top:10px;">'
+        f'<div class="table-wrap">'
+        f'<table class="review-table">'
+        f'<thead><tr>'
+        f'<th>Jur.</th><th>Title</th><th>Status</th>'
+        f'<th>Type</th><th style="text-align:right;">Size</th>'
+        f'<th style="text-align:right;">Passages</th>'
+        f'</tr></thead>'
+        f'<tbody>{table_rows}</tbody>'
+        f'</table></div>'
+        f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
+        f'Showing up to 100 documents. Raw artifacts stored in MinIO '
+        f'(<code>raw-artifacts</code> bucket).'
+        f'</div></div>'
+    )
+
+
 @router.post("/api/run/pdf-discovery")
 def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     """Parse Orrick PDF tracker and seed new legislation."""
@@ -485,18 +569,48 @@ def run_import_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.post("/api/run/extract")
 def run_api_extract(
-    limit: int = 10,
+    limit: int | None = None,
+    provider: str | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Run API-based extraction (paid)."""
+    """Run extraction via local LLM or Anthropic API.
+
+    Args:
+        limit: Max passages to extract (None = all).
+        provider: Force "local" or "anthropic". Defaults to REGS_EXTRACTION_PROVIDER.
+    """
+    import os
+
     try:
-        from src.ingestion.extractor import run_extraction
-        summary = run_extraction(db, limit=limit)
+        # Temporarily override the extraction provider if explicitly requested
+        old_provider = os.environ.get("REGS_EXTRACTION_PROVIDER")
+        if provider:
+            os.environ["REGS_EXTRACTION_PROVIDER"] = provider
+            # Clear cached provider so the new setting takes effect
+            from src.core.llm_provider import _provider_cache
+            _provider_cache.pop("extraction", None)
+            _provider_cache.pop("local_extraction", None)
+
+        try:
+            from src.ingestion.extractor import run_extraction
+            summary = run_extraction(db, limit=limit)
+        finally:
+            # Restore original provider setting
+            if provider:
+                if old_provider is not None:
+                    os.environ["REGS_EXTRACTION_PROVIDER"] = old_provider
+                else:
+                    os.environ.pop("REGS_EXTRACTION_PROVIDER", None)
+                from src.core.llm_provider import _provider_cache
+                _provider_cache.pop("extraction", None)
+                _provider_cache.pop("local_extraction", None)
+
         tokens = summary.get("token_usage", {})
+        label = f"via {provider}" if provider else ""
         return HTMLResponse(
             f'<div class="result-panel success">'
             f'Extracted {summary["total_extractions"]} items from '
-            f'{summary["records_processed"]} passages. '
+            f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
             f'</div>'
         )

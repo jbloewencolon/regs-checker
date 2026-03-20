@@ -122,119 +122,199 @@
             <span class="btn-label">Fetch 5 (Test)</span>
             <span class="htmx-indicator"><span class="spinner"></span></span>
           </button>
+          <button class="btn btn-sm"
+                  hx-get="/dashboard/api/documents"
+                  hx-target="#step2-docs"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Browse Documents</span>
+            <span class="htmx-indicator"><span class="spinner"></span></span>
+          </button>
         </div>
         <div class="step-result" id="step2-result">
           {% if stats.total_passages > 0 %}
           <span class="count">{{ stats.total_passages }}</span> passages in database
           {% endif %}
         </div>
+        <div id="step2-docs"></div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
-    <!-- STEP 3: Export Passages -->
+    <!-- STEP 3: Extract (unified — local LLM, cloud API, or manual) -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">3</div>
-        <div class="step-title">Prepare Passages for Extraction</div>
+        <div class="step-title">Extract</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-body">
         <div class="step-description">
-          Bundles unprocessed passages into batch files in <code>export/</code>.
-        </div>
-        <div class="step-actions">
-          <button class="btn btn-primary"
-                  hx-post="/dashboard/api/run/export-passages"
-                  hx-target="#step3-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Export Passages</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Exporting...</span>
-          </button>
-          <button class="btn"
-                  hx-post="/dashboard/api/run/export-passages?limit=15"
-                  hx-target="#step3-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Export 15 (Test)</span>
-            <span class="htmx-indicator"><span class="spinner"></span></span>
-          </button>
-        </div>
-        <div class="step-result" id="step3-result">
+          Run extraction agents on unprocessed passages. Choose a method below.
           {% if stats.unprocessed_passages > 0 %}
-          <span class="count">{{ stats.unprocessed_passages }}</span> passages waiting for extraction
+          <strong>{{ stats.unprocessed_passages }}</strong> passages waiting.
           {% endif %}
         </div>
+
+        <!-- Extraction method tabs -->
+        <div class="tabs" id="extract-tabs">
+          <button class="tab active" onclick="switchExtractTab('local')">
+            Local LLM
+            <span class="tab-count">Free</span>
+          </button>
+          <button class="tab" onclick="switchExtractTab('api')">
+            Cloud API
+            <span class="paid-tag" style="margin-left:0;">$ Paid</span>
+          </button>
+          <button class="tab" onclick="switchExtractTab('manual')">
+            Manual Export
+          </button>
+        </div>
+
+        <!-- Tab: Local LLM -->
+        <div class="extract-tab-panel" id="tab-local">
+          <div class="step-description" style="margin-bottom: 8px;">
+            Runs 4 extraction agents via <strong>Ollama</strong> (Qwen 2.5 32B + DeepSeek-R1 32B).
+            Requires Ollama running at <code>{{ config.local_llm_url or 'http://localhost:11434' }}</code>.
+          </div>
+          <div class="step-actions">
+            <button class="btn btn-primary"
+                    hx-post="/dashboard/api/run/extract?provider=local&limit=5"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Extract 5 (Test)</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
+            </button>
+            <button class="btn btn-primary"
+                    hx-post="/dashboard/api/run/extract?provider=local&limit=50"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Extract 50</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
+            </button>
+            <button class="btn"
+                    hx-post="/dashboard/api/run/extract?provider=local"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    hx-confirm="Run extraction on ALL unprocessed passages? This may take a while.">
+              <span class="btn-label">Extract All</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
+            </button>
+          </div>
+          <div class="step-description" style="margin-top: 10px;">
+            <details>
+              <summary style="cursor:pointer; font-weight:500;">Setup instructions</summary>
+              <div class="copy-box" style="margin-top: 6px;">
+                <code># 1. Install Ollama: https://ollama.com<br>
+                # 2. Pull models:<br>
+                ollama pull qwen2.5:32b-instruct-q4_K_M<br>
+                ollama pull deepseek-r1:32b<br><br>
+                # 3. Set in .env:<br>
+                REGS_EXTRACTION_PROVIDER=local<br>
+                REGS_LOCAL_LLM_URL=http://localhost:11434</code>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Tab: Cloud API -->
+        <div class="extract-tab-panel" id="tab-api" style="display:none;">
+          <div class="step-description" style="margin-bottom: 8px;">
+            Sends passages to the <strong>Anthropic API</strong> (Claude Haiku). ~$0.02-0.05 per bill.
+          </div>
+          <div class="step-actions">
+            <button class="btn"
+                    hx-post="/dashboard/api/run/extract?provider=anthropic&limit=10"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    hx-confirm="This will make paid API calls. Extract 10 passages?">
+              <span class="btn-label">Extract 10 (API)</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
+            <button class="btn"
+                    hx-post="/dashboard/api/run/extract?provider=anthropic&limit=50"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    hx-confirm="This will make paid API calls. Extract 50 passages?">
+              <span class="btn-label">Extract 50 (API)</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
+            <button class="btn"
+                    hx-post="/dashboard/api/run/extract?provider=anthropic"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    hx-confirm="This will make paid API calls for ALL remaining passages. Continue?">
+              <span class="btn-label">Extract All (API)</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab: Manual Export -->
+        <div class="extract-tab-panel" id="tab-manual" style="display:none;">
+          <div class="step-description" style="margin-bottom: 8px;">
+            Export passages as batch files, paste into Claude Code/Chat, then import JSON results.
+          </div>
+          <div class="step-actions">
+            <button class="btn"
+                    hx-post="/dashboard/api/run/export-passages"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Export Passages</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Exporting...</span>
+            </button>
+            <button class="btn"
+                    hx-post="/dashboard/api/run/export-passages?limit=15"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Export 15 (Test)</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
+            <button class="btn btn-primary"
+                    hx-post="/dashboard/api/run/import-extractions"
+                    hx-target="#extract-result"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Import Results</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Importing...</span>
+            </button>
+          </div>
+          {% if export_files %}
+          <div class="batch-grid" style="margin-top: 10px;">
+            {% for file in export_files %}
+            <span class="batch-chip {% if file.has_result %}batch-done{% endif %}">
+              {{ file.name }}
+              {% if file.has_result %}<span class="batch-check">done</span>{% endif %}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if stats.pending_results > 0 %}
+          <div class="step-result">
+            <span class="count">{{ stats.pending_results }}</span> result files ready to import
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="step-result" id="extract-result"></div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
-    <!-- STEP 4: Claude Code Extraction (MANUAL) -->
+    <!-- STEP 4: Review (MANUAL) -->
     <div class="step step-manual">
       <div class="step-header">
         <div class="step-number manual">4</div>
-        <div class="step-title">Extract with Claude</div>
-        <span class="step-badge manual">Your Action</span>
-      </div>
-      <div class="step-body">
-        <div class="step-description">
-          Paste each batch file into Claude Code/Chat. Save JSON responses as
-          <code>export/batch_NNN_results.json</code>.
-        </div>
-
-        {% if export_files %}
-        <div class="batch-grid">
-          {% for file in export_files %}
-          <span class="batch-chip {% if file.has_result %}batch-done{% endif %}">
-            {{ file.name }}
-            {% if file.has_result %}<span class="batch-check">done</span>{% endif %}
-          </span>
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="step-connector"></div>
-
-    <!-- STEP 5: Import Results -->
-    <div class="step">
-      <div class="step-header">
-        <div class="step-number auto">5</div>
-        <div class="step-title">Import Extraction Results</div>
-        <span class="step-badge auto">Automated</span>
-      </div>
-      <div class="step-body">
-        <div class="step-description">
-          Validates JSON, verifies evidence spans, computes confidence scores.
-        </div>
-        <div class="step-actions">
-          <button class="btn btn-primary"
-                  hx-post="/dashboard/api/run/import-extractions"
-                  hx-target="#step5-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Import All Results</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Importing...</span>
-          </button>
-        </div>
-        <div class="step-result" id="step5-result">
-          {% if stats.pending_results > 0 %}
-          <span class="count">{{ stats.pending_results }}</span> result files ready to import
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <div class="step-connector"></div>
-
-    <!-- STEP 6: Review (MANUAL) -->
-    <div class="step step-manual">
-      <div class="step-header">
-        <div class="step-number manual">6</div>
         <div class="step-title">Review Extractions</div>
         <span class="step-badge manual">Your Action</span>
       </div>
@@ -264,10 +344,10 @@
 
     <div class="step-connector"></div>
 
-    <!-- STEP 7: Sync to Policy Navigator -->
+    <!-- STEP 5: Sync to Policy Navigator -->
     <div class="step">
       <div class="step-header">
-        <div class="step-number auto">7</div>
+        <div class="step-number auto">5</div>
         <div class="step-title">Sync to Policy Navigator</div>
         <span class="step-badge auto">Automated</span>
       </div>
@@ -323,34 +403,18 @@
   </div>
 </section>
 
-<!-- ================================================================== -->
-<!-- API Extraction (collapsed)                                         -->
-<!-- ================================================================== -->
-<section class="section section-muted">
-  <details>
-    <summary class="section-toggle">
-      <h3>Alternative: API Extraction <span class="paid-tag">$ Paid</span></h3>
-    </summary>
-    <div class="step" style="margin-top: 16px;">
-      <div class="step-body">
-        <div class="step-description">
-          Sends passages directly to the Anthropic API. ~$0.02-0.05 per bill.
-        </div>
-        <div class="step-actions">
-          <button class="btn"
-                  hx-post="/dashboard/api/run/extract?limit=10"
-                  hx-target="#api-extract-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this"
-                  hx-confirm="This will make paid API calls. Extract 10 passages?">
-            <span class="btn-label">Extract 10 (API)</span>
-            <span class="htmx-indicator"><span class="spinner"></span></span>
-          </button>
-        </div>
-        <div class="step-result" id="api-extract-result"></div>
-      </div>
-    </div>
-  </details>
-</section>
+<!-- Tab switching for extraction methods -->
+<script>
+function switchExtractTab(tab) {
+  document.querySelectorAll('.extract-tab-panel').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('#extract-tabs .tab').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('tab-' + tab).style.display = 'block';
+  event.currentTarget.classList.add('active');
+}
+</script>
 
 {% endblock %}
