@@ -256,7 +256,7 @@ def export_passages(
         lines.append("Save the JSON response as:")
         lines.append(f"  export/batch_{batch_num:03d}_results.json")
 
-        filename.write_text("\n".join(lines))
+        filename.write_text("\n".join(lines), encoding="utf-8")
 
         # Also write a manifest for the import script
         manifest = {
@@ -266,7 +266,7 @@ def export_passages(
             "passage_count": len(batch),
         }
         manifest_file = EXPORT_DIR / f"batch_{batch_num:03d}_manifest.json"
-        manifest_file.write_text(json.dumps(manifest, indent=2))
+        manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
         files.append(str(filename))
         batch_count += 1
@@ -325,7 +325,7 @@ def import_extractions(
         print(f"\nProcessing {result_file}...")
 
         try:
-            raw = json.loads(result_file.read_text())
+            raw = json.loads(result_file.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             print(f"  ERROR: Invalid JSON in {result_file}: {e}")
             total_errors += 1
