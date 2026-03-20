@@ -20,6 +20,7 @@ from datetime import datetime
 
 import structlog
 
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.config import settings
 from src.db.models import (
     IngestionJob,
@@ -291,7 +292,17 @@ def run_pending_ingestion(
     if on_progress:
         on_progress(f"Found {len(pending_jobs)} pending ingestion jobs")
 
-    for i, job in enumerate(pending_jobs, 1):
+    # Circuit breaker: abort if too many consecutive fetches fail
+    # (network down, S3 unreachable, etc.)
+    tracker = FailureTracker(
+        context="fetch & parse (document downloads)",
+        max_consecutive=5,
+        max_failure_rate=0.8,
+        min_items_for_rate=10,
+    )
+
+    try:
+      for i, job in enumerate(pending_jobs, 1):
         if on_progress:
             dv = job.document_version
             label = "unknown"
@@ -309,6 +320,7 @@ def run_pending_ingestion(
         if job.status == IngestionStatus.completed:
             summary["completed"] += 1
             summary["total_passages"] += passage_count
+            tracker.record_success()
         elif job.status == IngestionStatus.failed:
             summary["failed"] += 1
             failure_info = {
@@ -318,6 +330,9 @@ def run_pending_ingestion(
                 "error": job.error_message,
             }
             summary["failed_jobs"].append(failure_info)
+            tracker.record_failure(
+                f"Job #{job.id} ({label}): {job.error_message[:100]}"
+            )
             if on_progress:
                 on_progress(
                     f"  FAILED: {job.error_message}\n"
@@ -334,6 +349,8 @@ def run_pending_ingestion(
                 "error": job.error_message,
             }
             summary["manual_review_jobs"].append(review_info)
+            # Manual review isn't a failure — don't count against circuit breaker
+            tracker.record_success()
             if on_progress:
                 suggested = getattr(job, "ai_suggested_url", None)
                 on_progress(
@@ -342,5 +359,11 @@ def run_pending_ingestion(
                     + (f"\n    AI-suggested URL: {suggested}" if suggested else "")
                     + "\n    → Insert the document manually or approve the suggested URL"
                 )
+
+    except CircuitBreakerTripped as cb:
+        summary["circuit_breaker_tripped"] = True
+        summary["circuit_breaker_detail"] = str(cb)
+        if on_progress:
+            on_progress(f"\n{cb}")
 
     return summary

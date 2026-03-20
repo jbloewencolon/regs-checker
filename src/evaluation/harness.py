@@ -35,6 +35,7 @@ import structlog
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
@@ -134,7 +135,12 @@ class EvaluationHarness:
         return cases
 
     def run(self) -> EvaluationResult:
-        """Run full evaluation across all agents and test cases."""
+        """Run full evaluation across all agents and test cases.
+
+        Raises CircuitBreakerTripped if an agent fails on 3+ consecutive
+        cases — this indicates the LLM backend is down rather than
+        individual extraction issues.
+        """
         cases = self.load_test_cases()
         result = EvaluationResult(total_cases=len(cases))
 
@@ -142,23 +148,47 @@ class EvaluationHarness:
             agent = agent_class()
             agent_score = AgentScore(agent_name=agent_name)
 
-            for case in cases:
-                passage = case["passage_text"]
-                expected = case.get("expected_extractions", {}).get(agent_name)
-                context = {
-                    "document_title": case.get("source_document"),
-                    "section_path": case.get("section_path"),
-                }
+            tracker = FailureTracker(
+                context=f"evaluation ({agent_name})",
+                max_consecutive=3,
+                max_failure_rate=0.9,
+                min_items_for_rate=5,
+            )
 
-                try:
-                    actual = agent.extract(passage, context)
-                    self._score_case(agent_score, expected, actual)
-                except Exception as e:
-                    result.errors.append(
-                        f"{agent_name}/{case.get('passage_id', '?')}: {e}"
-                    )
+            try:
+                for case in cases:
+                    passage = case["passage_text"]
+                    expected = case.get("expected_extractions", {}).get(agent_name)
+                    context = {
+                        "document_title": case.get("source_document"),
+                        "section_path": case.get("section_path"),
+                    }
 
-                agent_score.total_cases += 1
+                    try:
+                        actual = agent.extract(passage, context)
+                        self._score_case(agent_score, expected, actual)
+                        tracker.record_success()
+                    except CircuitBreakerTripped:
+                        raise
+                    except Exception as e:
+                        result.errors.append(
+                            f"{agent_name}/{case.get('passage_id', '?')}: {e}"
+                        )
+                        tracker.record_failure(
+                            f"{agent_name}/{case.get('passage_id', '?')}: {e}"
+                        )
+
+                    agent_score.total_cases += 1
+
+            except CircuitBreakerTripped as cb:
+                result.errors.append(f"CIRCUIT BREAKER: {cb}")
+                logger.error(
+                    "evaluation_circuit_breaker",
+                    agent=agent_name,
+                    detail=str(cb),
+                )
+                # Still record partial scores for this agent
+                pass
 
             result.agent_scores[agent_name] = agent_score
 

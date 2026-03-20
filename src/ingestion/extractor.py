@@ -47,6 +47,7 @@ from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.confidence import compute_confidence
 from src.core.orrick_validation import validate_extraction_against_orrick
 from src.core.jurisdiction_check import (
@@ -115,15 +116,6 @@ _DEFINITION_ACTOR_PATTERN = re.compile(
     r"|refers\s+to|the\s+term)\b",
     re.IGNORECASE,
 )
-
-
-class CircuitBreakerTripped(RuntimeError):
-    """Raised when too many consecutive agent calls fail.
-
-    Signals that the AI backend (Ollama, Anthropic API, etc.) is likely
-    down or misconfigured. The pipeline should abort so the operator can
-    check GPU/model status rather than silently skipping all remaining data.
-    """
 
 
 @dataclass
@@ -350,7 +342,7 @@ def extract_single_record(
     parse_quality: float | None = None,
     token_usage: TokenUsageSummary | None = None,
     existing_hashes: set[str] | None = None,
-    consecutive_failures: list[int] | None = None,
+    tracker: FailureTracker | None = None,
 ) -> int:
     """Run selected agents against a passage.
 
@@ -363,10 +355,9 @@ def extract_single_record(
     Deduplication is based on a content hash of (agent_name, passage_text).
 
     Args:
-        consecutive_failures: Single-element list used as a mutable counter
-            for consecutive agent failures across calls.  When the count
-            reaches CIRCUIT_BREAKER_THRESHOLD, a CircuitBreakerTripped
-            exception is raised so the caller can abort the run.
+        tracker: Shared FailureTracker that monitors consecutive and total
+            failure rates across the full extraction run.  Raises
+            CircuitBreakerTripped when thresholds are exceeded.
     """
     record = passage.primary_record
     ctx = _build_context(db, record)
@@ -426,20 +417,15 @@ def extract_single_record(
                 error=str(result),
                 section_path=record.section_path,
             )
-            # Circuit breaker: track consecutive failures
-            if consecutive_failures is not None:
-                consecutive_failures[0] += 1
-                if consecutive_failures[0] >= CIRCUIT_BREAKER_THRESHOLD:
-                    raise CircuitBreakerTripped(
-                        f"Aborting extraction: {consecutive_failures[0]} consecutive "
-                        f"agent failures. Last error from '{name}': {result}. "
-                        f"Check your Ollama/GPU status."
-                    )
+            if tracker is not None:
+                tracker.record_failure(
+                    f"agent={name} record={record.id}: {result}"
+                )
             continue
 
         # Successful call — reset consecutive failure counter
-        if consecutive_failures is not None:
-            consecutive_failures[0] = 0
+        if tracker is not None:
+            tracker.record_success()
 
         # Track token usage
         if token_usage is not None:
@@ -611,9 +597,13 @@ def run_extraction(
 
     _log(f"Spanning {len(dv_records)} document versions")
 
-    # Circuit breaker: mutable counter shared across all passages.
-    # A single-element list so extract_single_record can mutate it.
-    consecutive_failures: list[int] = [0]
+    # Circuit breaker: shared tracker across all passages / agent calls
+    tracker = FailureTracker(
+        context="extraction pipeline (agent calls)",
+        max_consecutive=CIRCUIT_BREAKER_THRESHOLD,
+        max_failure_rate=0.8,
+        min_items_for_rate=20,
+    )
 
     for dv_id, dv_group in dv_records.items():
         merged_passages = _wrap_passages(dv_group)
@@ -656,7 +646,7 @@ def run_extraction(
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
-                    token_usage, existing_hashes, consecutive_failures,
+                    token_usage, existing_hashes, tracker,
                 )
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
@@ -667,19 +657,15 @@ def run_extraction(
                     db.commit()
                     _log(f"  {i + 1}/{len(merged_passages)} passages processed...")
 
-            except CircuitBreakerTripped:
+            except CircuitBreakerTripped as cb:
                 # Commit what we have so far, then abort the entire run
                 extraction_job.status = "failed"
                 extraction_job.completed_at = datetime.utcnow()
                 db.commit()
                 summary["total_extractions"] += job_extractions
                 summary["circuit_breaker_tripped"] = True
-                _log(
-                    f"\n*** CIRCUIT BREAKER TRIPPED ***\n"
-                    f"  {consecutive_failures[0]} consecutive agent failures.\n"
-                    f"  Pipeline aborted. Check Ollama/GPU status before retrying.\n"
-                    f"  Partial results committed: {job_extractions} extractions."
-                )
+                summary["circuit_breaker_detail"] = str(cb)
+                _log(f"\n{cb}")
                 return summary
 
             except Exception as e:
@@ -966,99 +952,119 @@ def run_recovery_extraction(
     errors = 0
     existing_hashes: set[str] = set()
 
-    for i, (record_id, missing_agents) in enumerate(gaps):
-        record = db.get(NormalizedSourceRecord, record_id)
-        if not record:
-            continue
+    tracker = FailureTracker(
+        context="recovery extraction (agent calls)",
+        max_consecutive=CIRCUIT_BREAKER_THRESHOLD,
+        max_failure_rate=0.8,
+        min_items_for_rate=10,
+    )
 
-        ctx = _build_context(db, record)
-        passage = MergedPassage(text=record.text_content, source_records=[record])
-
-        # Only run the missing agents
-        selected = {name: agents[name] for name in missing_agents if name in agents}
-
-        # Get parse quality
-        ingestion_job = db.scalars(
-            select(IngestionJob).where(
-                IngestionJob.document_version_id == record.document_version_id
-            )
-        ).first()
-        parse_quality = ingestion_job.parse_quality_score if ingestion_job else None
-
-        for agent_name, agent in selected.items():
-            content_hash = _content_hash(agent_name, record.text_content)
-            if content_hash in existing_hashes:
+    try:
+        for i, (record_id, missing_agents) in enumerate(gaps):
+            record = db.get(NormalizedSourceRecord, record_id)
+            if not record:
                 continue
 
-            try:
-                result = agent.extract(record.text_content, ctx)
+            ctx = _build_context(db, record)
+            passage = MergedPassage(text=record.text_content, source_records=[record])
 
-                if token_usage is not None:
-                    token_usage.add(result.input_tokens, result.output_tokens)
+            # Only run the missing agents
+            selected = {name: agents[name] for name in missing_agents if name in agents}
 
-                if result.abstention is not None:
+            # Get parse quality
+            ingestion_job = db.scalars(
+                select(IngestionJob).where(
+                    IngestionJob.document_version_id == record.document_version_id
+                )
+            ).first()
+            parse_quality = ingestion_job.parse_quality_score if ingestion_job else None
+
+            for agent_name, agent in selected.items():
+                content_hash = _content_hash(agent_name, record.text_content)
+                if content_hash in existing_hashes:
                     continue
 
-                existing_hashes.add(content_hash)
-                primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-                schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+                try:
+                    result = agent.extract(record.text_content, ctx)
+                    tracker.record_success()
 
-                for item in result.extractions:
-                    try:
-                        evidence = item.get("evidence_spans", [])
-                        orrick_sim = validate_extraction_against_orrick(item, ctx)
-                        confidence = compute_confidence(
-                            schema_valid=True,
-                            evidence_spans=evidence,
-                            extraction_payload=item,
-                            schema_class=schema_class,
-                            parse_quality_score=parse_quality,
-                            orrick_similarity=orrick_sim,
-                        )
+                    if token_usage is not None:
+                        token_usage.add(result.input_tokens, result.output_tokens)
 
-                        extraction = Extraction(
-                            source_record_id=record.id,
-                            extraction_type=primary_type,
-                            payload=item,
-                            evidence_spans=evidence,
-                            confidence_score=confidence.total_score,
-                            confidence_tier=ConfidenceTier(confidence.tier),
-                            review_status=ReviewStatus.pending,
-                            prompt_template_version=result.prompt_hash,
-                            model_id=result.model_id,
-                        )
-                        db.add(extraction)
-                        db.flush()
+                    if result.abstention is not None:
+                        continue
 
-                        db.add(ReviewQueueItem(
-                            extraction_id=extraction.id,
-                            priority=_confidence_to_priority(confidence.tier),
-                            status=ReviewStatus.pending,
-                        ))
-                        total_extractions += 1
+                    existing_hashes.add(content_hash)
+                    primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+                    schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
 
-                    except Exception as e:
-                        logger.error(
-                            "recovery_extraction_failed",
-                            agent=agent_name,
-                            record_id=record.id,
-                            error=str(e),
-                        )
-                        errors += 1
+                    for item in result.extractions:
+                        try:
+                            evidence = item.get("evidence_spans", [])
+                            orrick_sim = validate_extraction_against_orrick(item, ctx)
+                            confidence = compute_confidence(
+                                schema_valid=True,
+                                evidence_spans=evidence,
+                                extraction_payload=item,
+                                schema_class=schema_class,
+                                parse_quality_score=parse_quality,
+                                orrick_similarity=orrick_sim,
+                            )
 
-            except Exception as e:
-                logger.error(
-                    "recovery_agent_error",
-                    agent=agent_name,
-                    record_id=record.id,
-                    error=str(e),
-                )
-                errors += 1
+                            extraction = Extraction(
+                                source_record_id=record.id,
+                                extraction_type=primary_type,
+                                payload=item,
+                                evidence_spans=evidence,
+                                confidence_score=confidence.total_score,
+                                confidence_tier=ConfidenceTier(confidence.tier),
+                                review_status=ReviewStatus.pending,
+                                prompt_template_version=result.prompt_hash,
+                                model_id=result.model_id,
+                            )
+                            db.add(extraction)
+                            db.flush()
 
-        # Commit every 10 passages
-        if (i + 1) % 10 == 0:
-            db.commit()
-            _log(f"  {i + 1}/{len(gaps)} passages processed...")
+                            db.add(ReviewQueueItem(
+                                extraction_id=extraction.id,
+                                priority=_confidence_to_priority(confidence.tier),
+                                status=ReviewStatus.pending,
+                            ))
+                            total_extractions += 1
+
+                        except Exception as e:
+                            logger.error(
+                                "recovery_extraction_failed",
+                                agent=agent_name,
+                                record_id=record.id,
+                                error=str(e),
+                            )
+                            errors += 1
+
+                except CircuitBreakerTripped:
+                    raise  # Let it propagate
+                except Exception as e:
+                    tracker.record_failure(
+                        f"agent={agent_name} record={record.id}: {e}"
+                    )
+                    errors += 1
+
+            # Commit every 10 passages
+            if (i + 1) % 10 == 0:
+                db.commit()
+                _log(f"  {i + 1}/{len(gaps)} passages processed...")
+
+    except CircuitBreakerTripped as cb:
+        db.commit()
+        _log(f"\n{cb}")
+        return {
+            "total_checked": len(records_with_extractions),
+            "gaps_found": len(gaps),
+            "extractions_created": total_extractions,
+            "errors": errors,
+            "circuit_breaker_tripped": True,
+            "circuit_breaker_detail": str(cb),
+        }
 
     db.commit()
 
@@ -1155,26 +1161,30 @@ def retrieve_batch_results(
     results_processed = 0
     errors = 0
 
-    for entry in results_iter:
+    tracker = FailureTracker(
+        context="batch result processing",
+        max_consecutive=10,       # Higher threshold — batch errors are per-result, not per-call
+        max_failure_rate=0.8,
+        min_items_for_rate=20,
+    )
+
+    try:
+      for entry in results_iter:
         results_processed += 1
         custom_id = entry.custom_id
 
-        # Parse custom_id: "recordId1-recordId2--agentName"
-        # The "--" delimiter is unambiguous: record IDs use single "-"
-        # and agent names never contain "--".
-        # Fall back to legacy "_"-based parsing for old batches.
+        # --- Parse custom_id ---
         if "--" in custom_id:
             record_ids_str, _, agent_name = custom_id.partition("--")
         else:
-            # Legacy format: "recordId1-recordId2_agentName"
             last_underscore = custom_id.rfind("_")
             if last_underscore == -1:
                 logger.error("batch_invalid_custom_id", custom_id=custom_id)
                 errors += 1
+                tracker.record_failure(f"invalid custom_id: {custom_id}")
                 continue
             record_ids_str = custom_id[:last_underscore]
             agent_name = custom_id[last_underscore + 1:]
-            # Handle compound agent names (e.g., "threshold_exception")
             if agent_name not in AGENT_EXTRACTION_TYPES:
                 prefix = record_ids_str
                 suffix = agent_name
@@ -1192,6 +1202,7 @@ def retrieve_batch_results(
                 parsed_agent=agent_name,
             )
             errors += 1
+            tracker.record_failure(f"unknown agent '{agent_name}' in {custom_id}")
             continue
 
         # Parse record IDs
@@ -1200,16 +1211,19 @@ def retrieve_batch_results(
         except ValueError:
             logger.error("batch_invalid_record_ids", custom_id=custom_id)
             errors += 1
+            tracker.record_failure(f"unparseable record IDs in {custom_id}")
             continue
 
         # Check result type
         if entry.result.type == "errored":
+            error_msg = str(entry.result.error)
             logger.error(
                 "batch_result_error",
                 custom_id=custom_id,
-                error=str(entry.result.error),
+                error=error_msg,
             )
             errors += 1
+            tracker.record_failure(f"API error for {custom_id}: {error_msg[:100]}")
             continue
 
         if entry.result.type != "succeeded":
@@ -1219,6 +1233,7 @@ def retrieve_batch_results(
                 result_type=entry.result.type,
             )
             errors += 1
+            tracker.record_failure(f"result type '{entry.result.type}' for {custom_id}")
             continue
 
         # Extract text from response
@@ -1232,6 +1247,7 @@ def retrieve_batch_results(
         if not raw_text.strip():
             logger.warning("batch_empty_response", custom_id=custom_id)
             errors += 1
+            tracker.record_failure(f"empty response for {custom_id}")
             continue
 
         # Parse JSON (with code fence stripping)
@@ -1246,11 +1262,13 @@ def retrieve_batch_results(
                 raw_preview=raw_text[:200],
             )
             errors += 1
+            tracker.record_failure(f"JSON parse error for {custom_id}: {e}")
             continue
 
         # Check for abstention
         if parsed.get("detected") is False:
             logger.debug("batch_abstention", custom_id=custom_id)
+            tracker.record_success()
             continue
 
         # Get agent and schema
@@ -1258,6 +1276,7 @@ def retrieve_batch_results(
         if not agent:
             logger.error("batch_agent_not_found", agent_name=agent_name)
             errors += 1
+            tracker.record_failure(f"agent '{agent_name}' not in registry")
             continue
 
         schema = agent.get_output_schema()
@@ -1279,6 +1298,7 @@ def retrieve_batch_results(
         if not source_records:
             logger.error("batch_records_not_found", record_ids=record_ids)
             errors += 1
+            tracker.record_failure(f"records {record_ids} not found in DB")
             continue
 
         # Get parse quality for confidence scoring
@@ -1296,6 +1316,7 @@ def retrieve_batch_results(
         # Build context for Orrick similarity validation
         batch_ctx = _build_context(db, first_record)
 
+        entry_failed = False
         for item in items:
             try:
                 validated = schema.model_validate(item)
@@ -1346,11 +1367,30 @@ def retrieve_batch_results(
                     error=str(e),
                 )
                 errors += 1
+                entry_failed = True
+
+        if entry_failed:
+            tracker.record_failure(f"validation error for {custom_id}")
+        else:
+            tracker.record_success()
 
         # Commit periodically
         if results_processed % 50 == 0:
             db.commit()
             _log(f"  {results_processed} results processed...")
+
+    except CircuitBreakerTripped as cb:
+        db.commit()
+        _log(f"\n{cb}")
+        return {
+            "batch_id": batch_id,
+            "status": "aborted",
+            "results_processed": results_processed,
+            "extractions_created": total_extractions,
+            "errors": errors,
+            "circuit_breaker_tripped": True,
+            "circuit_breaker_detail": str(cb),
+        }
 
     db.commit()
 

@@ -113,14 +113,24 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
 
     # Step 1: Build indexes from both sources
     pdf_index = _build_pdf_index(db)
-    iapp_index = _scrape_iapp_index()
+    iapp_result = _scrape_iapp_index()
+    iapp_index = iapp_result.index
 
     result.pdf_records = len(pdf_index)
     result.iapp_records = len(iapp_index)
+
+    if not iapp_result.success:
+        logger.warning(
+            "status_check_iapp_unavailable",
+            error=iapp_result.error,
+            note="Proceeding with PDF tracker data only",
+        )
+
     logger.info(
         "status_check_sources_loaded",
         pdf_tracker=len(pdf_index),
         iapp=len(iapp_index),
+        iapp_available=iapp_result.success,
     )
 
     # Step 2: Load all document versions with their family and source info
@@ -222,18 +232,31 @@ def _build_pdf_index(db: Session) -> dict[tuple[str, str], dict]:
     return index
 
 
-def _scrape_iapp_index() -> dict[tuple[str, str], dict]:
+class IAPPScrapeResult:
+    """Wraps IAPP scrape output to distinguish 'failed' from 'empty'."""
+
+    __slots__ = ("index", "success", "error")
+
+    def __init__(self, index: dict, *, success: bool = True, error: str = ""):
+        self.index = index
+        self.success = success
+        self.error = error
+
+
+def _scrape_iapp_index() -> IAPPScrapeResult:
     """Build a lookup index from IAPP tracker data.
 
-    Returns dict keyed by (state_code, normalized_bill_identifier) → record.
-    Multiple keys per record (bill number + title) for fuzzy matching.
+    Returns an IAPPScrapeResult so callers can distinguish:
+      - success=True,  index={...}  → scraped OK, got data
+      - success=True,  index={}     → scraped OK, zero bills matched
+      - success=False, index={}     → scrape failed (network, parse, etc.)
     """
     try:
         from src.ingestion.iapp_scraper import scrape_tracker
         records = scrape_tracker()
     except Exception as e:
         logger.warning("iapp_scrape_failed", error=str(e))
-        return {}
+        return IAPPScrapeResult({}, success=False, error=str(e))
 
     index = {}
     for r in records:
@@ -251,7 +274,7 @@ def _scrape_iapp_index() -> dict[tuple[str, str], dict]:
         if title:
             index[(code, title)] = r
 
-    return index
+    return IAPPScrapeResult(index, success=True)
 
 
 def _normalize_name(name: str) -> str:

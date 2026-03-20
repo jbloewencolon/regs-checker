@@ -16,9 +16,9 @@ import pytest
 
 from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.prompt_loader import load_prompt_template, render_prompt, get_template_version
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.ingestion.extractor import (
     CIRCUIT_BREAKER_THRESHOLD,
-    CircuitBreakerTripped,
     MergedPassage,
     TokenUsageSummary,
     _content_hash,
