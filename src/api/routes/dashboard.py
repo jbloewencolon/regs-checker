@@ -220,16 +220,38 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     for s in p["steps"]:
         bar_color = "var(--success)" if s["is_complete"] else "var(--primary)"
         failed_tag = f' <span style="color:var(--danger);font-size:11px;">({s["failed"]} failed)</span>' if s.get("failed", 0) > 0 else ""
-        step_bars += f"""
-        <div class="progress-step-row">
-          <span class="progress-step-label">{s['name']}</span>
-          <div class="progress-step-bar">
-            <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
-          </div>
-          <span class="progress-step-pct">{s['percent']}%</span>
-          <span class="progress-step-count">{s['completed']}/{s['total']}{failed_tag}</span>
-        </div>
-        """
+
+        if s.get("display_mode") == "found":
+            # One-shot step (Discovery): show "N found" instead of "N/N"
+            if s["total"] > 0:
+                count_label = f'{s["total"]} found'
+                pct = "100.0"
+                fill_pct = 100
+            else:
+                count_label = "Not run"
+                pct = "—"
+                fill_pct = 0
+            step_bars += f"""
+            <div class="progress-step-row">
+              <span class="progress-step-label">{s['name']}</span>
+              <div class="progress-step-bar">
+                <div class="progress-step-fill" style="width: {fill_pct}%; background: {bar_color};"></div>
+              </div>
+              <span class="progress-step-pct">{pct}{'%' if s['total'] > 0 else ''}</span>
+              <span class="progress-step-count">{count_label}</span>
+            </div>
+            """
+        else:
+            step_bars += f"""
+            <div class="progress-step-row">
+              <span class="progress-step-label">{s['name']}</span>
+              <div class="progress-step-bar">
+                <div class="progress-step-fill" style="width: {s['percent']}%; background: {bar_color};"></div>
+              </div>
+              <span class="progress-step-pct">{s['percent']}%</span>
+              <span class="progress-step-count">{s['completed']}/{s['total']}{failed_tag}</span>
+            </div>
+            """
 
     # ETA
     eta_text = "Calculating..."
