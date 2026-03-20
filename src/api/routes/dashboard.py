@@ -13,7 +13,7 @@ from html import escape as html_escape
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -547,7 +547,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.post("/api/run/pdf-discovery")
 def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Parse Orrick PDF tracker and seed new legislation."""
+    """Parse Orrick PDF tracker, overlay ai_law_tracker.csv, and seed new legislation."""
     if not _acquire_pipeline_lock():
         return HTMLResponse(
             '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
@@ -555,11 +555,39 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     try:
         from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
         records = parse_tracker_pdf()
+
+        # Overlay Source URLs from the law tracker CSV (ground truth)
+        tracker_rows = _read_tracker()
+        tracker_url_overrides = 0
+        if tracker_rows:
+            # Build lookup: (state_code, bill_id_norm) -> Source URL
+            from src.ingestion.pdf_tracker import STATE_CODES  # state name -> code
+            tracker_lookup: dict[tuple[str, str], str] = {}
+            for tr in tracker_rows:
+                t_state = tr.get("State/Terr", "").strip()
+                t_bill = tr.get("Bill ID", "").strip()
+                t_url = tr.get("Source URL", "").strip()
+                # Resolve state name to code
+                t_code = STATE_CODES.get(t_state, t_state.upper() if len(t_state) == 2 else "")
+                if t_code and t_bill and t_url:
+                    tracker_lookup[(t_code, t_bill.replace(" ", "").upper())] = t_url
+
+            for rec in records:
+                bill = (rec.get("bill_id") or "").replace(" ", "").upper()
+                sc = rec.get("state_code", "")
+                if sc and bill and (sc, bill) in tracker_lookup:
+                    override_url = tracker_lookup[(sc, bill)]
+                    if override_url != (rec.get("law_url") or ""):
+                        rec["law_url"] = override_url
+                        tracker_url_overrides += 1
+
         jobs, stats = seed_from_tracker(db, records)
         db.commit()
 
         # Build informative breakdown
         parts = [f'Parsed <strong>{stats["total_parsed"]}</strong> laws from PDF.']
+        if tracker_url_overrides:
+            parts.append(f'{tracker_url_overrides} URLs overridden from Law Tracker.')
         if stats["new_jobs"] > 0:
             parts.append(f'Seeded <strong>{stats["new_jobs"]}</strong> new for ingestion.')
         if stats["existing"] > 0:
@@ -1920,256 +1948,307 @@ def _get_export_files() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Manual Corrections (corrections.csv)
+# Law Tracker (static/ai_law_tracker.csv) — ground truth for discovery
 # ---------------------------------------------------------------------------
 
-CORRECTIONS_CSV = Path("corrections.csv")
+TRACKER_CSV = Path("static/ai_law_tracker.csv")
+TRACKER_FIELDS = [
+    "State/Terr", "AI Scope", "Relevant Law", "Bill ID",
+    "Effective Date", "Key Requirements", "Enforcements Penalties",
+    "Status", "Source URL",
+]
 
 
-def _load_corrections() -> list[dict]:
-    """Read corrections.csv and return rows as dicts."""
+def _read_tracker() -> list[dict]:
+    """Read the law tracker CSV and return rows as dicts."""
     import csv
 
-    if not CORRECTIONS_CSV.exists():
+    if not TRACKER_CSV.exists():
         return []
-    with open(CORRECTIONS_CSV, newline="", encoding="utf-8") as f:
+    with open(TRACKER_CSV, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
-def _match_correction(db: Session, row: dict) -> dict:
-    """Match a correction row to a DB record.
+def _write_tracker(rows: list[dict]) -> None:
+    """Write rows back to the law tracker CSV."""
+    import csv
 
-    Returns a dict with 'job', 'family', 'source', 'changes' keys.
-    """
-    state = row.get("state", "").strip().upper()
-    title = row.get("title", "").strip()
-    bill_id = row.get("bill_id", "").strip()
-    url = row.get("url", "").strip()
-    status = row.get("status", "").strip().lower()
+    with open(TRACKER_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=TRACKER_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
 
-    if not state:
-        return {"error": "missing state"}
 
-    # Find matching families by jurisdiction + (bill_id or title substring)
-    query = (
-        db.query(DocumentFamily)
-        .join(Source)
-        .filter(Source.jurisdiction_code == state)
+def _tracker_row_html(i: int, row: dict, editing: bool = False) -> str:
+    """Render a single tracker row as HTML (display or edit mode)."""
+    state = html_escape(row.get("State/Terr", ""))
+    scope = html_escape(row.get("AI Scope", ""))
+    law = html_escape(row.get("Relevant Law", ""))
+    bill = html_escape(row.get("Bill ID", ""))
+    date = html_escape(row.get("Effective Date", ""))
+    key_reqs = row.get("Key Requirements", "")
+    enforce = row.get("Enforcements Penalties", "")
+    status = html_escape(row.get("Status", "Active"))
+    url = row.get("Source URL", "")
+    url_esc = html_escape(url)
+    url_short = html_escape(url[:45]) + ("..." if len(url) > 45 else "")
+
+    if editing:
+        return (
+            f'<tr id="tracker-row-{i}" class="tracker-editing"'
+            f'  style="background:var(--bg-secondary);">'
+            f'<td colspan="9" style="padding:8px;">'
+            f'<form hx-post="/dashboard/api/tracker/{i}/edit"'
+            f'      hx-target="#tracker-table-body"'
+            f'      hx-swap="innerHTML"'
+            f'      style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));'
+            f'      gap:6px;font-size:12px;">'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    State/Terr'
+            f'    <input type="text" name="State/Terr" value="{state}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    AI Scope'
+            f'    <input type="text" name="AI Scope" value="{scope}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    Relevant Law'
+            f'    <input type="text" name="Relevant Law" value="{law}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    Bill ID'
+            f'    <input type="text" name="Bill ID" value="{bill}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    Effective Date'
+            f'    <input type="text" name="Effective Date" value="{date}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
+            f'    Status'
+            f'    <select name="Status" style="font-size:12px;padding:3px 5px;">'
+            f'      <option value="Active"{"selected" if status == "Active" else ""}>Active</option>'
+            f'      <option value="Enacted"{"selected" if status == "Enacted" else ""}>Enacted</option>'
+            f'      <option value="Pending"{"selected" if status == "Pending" else ""}>Pending</option>'
+            f'      <option value="Failed"{"selected" if status == "Failed" else ""}>Failed</option>'
+            f'      <option value="Repealed"{"selected" if status == "Repealed" else ""}>Repealed</option>'
+            f'    </select>'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:span 2;">'
+            f'    Source URL'
+            f'    <input type="url" name="Source URL" value="{url_esc}"'
+            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">'
+            f'    Key Requirements'
+            f'    <textarea name="Key Requirements" rows="2"'
+            f'              style="width:100%;font-size:12px;padding:3px 5px;"'
+            f'    >{html_escape(key_reqs)}</textarea>'
+            f'  </label>'
+            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">'
+            f'    Enforcements/Penalties'
+            f'    <textarea name="Enforcements Penalties" rows="1"'
+            f'              style="width:100%;font-size:12px;padding:3px 5px;"'
+            f'    >{html_escape(enforce)}</textarea>'
+            f'  </label>'
+            f'  <div style="display:flex;gap:6px;align-items:end;">'
+            f'    <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">'
+            f'      <span class="btn-label">Save</span>'
+            f'      <span class="htmx-indicator"><span class="spinner"></span></span>'
+            f'    </button>'
+            f'    <button type="button" class="btn btn-sm"'
+            f'            hx-get="/dashboard/api/tracker"'
+            f'            hx-target="#tracker-table-body"'
+            f'            hx-swap="innerHTML"'
+            f'            hx-params="none">Cancel</button>'
+            f'  </div>'
+            f'</form>'
+            f'</td></tr>'
+        )
+
+    # URL display
+    url_cell = "&mdash;"
+    if url:
+        url_cell = (
+            f'<a href="{url_esc}" target="_blank" rel="noopener"'
+            f'   style="font-size:11px;word-break:break-all;"'
+            f'   title="{url_esc}">{url_short}</a>'
+        )
+
+    # Status badge color
+    status_color = {
+        "Active": "var(--success)", "Enacted": "var(--info)",
+        "Pending": "var(--warning)", "Failed": "var(--danger)",
+        "Repealed": "var(--text-muted)",
+    }.get(status, "var(--text)")
+
+    return (
+        f'<tr id="tracker-row-{i}">'
+        f'<td><strong>{state}</strong></td>'
+        f'<td style="font-size:12px;">{scope}</td>'
+        f'<td style="font-size:12px;max-width:200px;overflow:hidden;'
+        f'    text-overflow:ellipsis;white-space:nowrap;"'
+        f'    title="{law}">{law}</td>'
+        f'<td style="font-size:12px;">{bill}</td>'
+        f'<td style="font-size:12px;">{date}</td>'
+        f'<td><span style="color:{status_color};font-size:12px;">{status}</span></td>'
+        f'<td style="max-width:160px;">{url_cell}</td>'
+        f'<td style="text-align:center;">'
+        f'  <button class="btn btn-sm"'
+        f'          hx-get="/dashboard/api/tracker/{i}/edit"'
+        f'          hx-target="#tracker-table-body"'
+        f'          hx-swap="innerHTML">Edit</button>'
+        f'  <button class="btn btn-sm"'
+        f'          hx-delete="/dashboard/api/tracker/{i}"'
+        f'          hx-target="#tracker-table-body"'
+        f'          hx-swap="innerHTML"'
+        f'          hx-confirm="Delete this row?">Del</button>'
+        f'</td>'
+        f'</tr>'
     )
 
-    family = None
-    # Try exact short_cite match first (most reliable)
-    if title:
-        family = query.filter(DocumentFamily.short_cite == title).first()
-    # Then try bill_id in metadata
-    if not family and bill_id:
-        candidates = query.all()
-        for c in candidates:
-            meta = c.metadata_ or {}
-            cite = c.short_cite or ""
-            # Match bill_id in metadata, short_cite, or canonical_title
-            if (
-                meta.get("bill_id", "") == bill_id
-                or bill_id.replace(" ", "") in cite.replace(" ", "")
-                or bill_id.replace(" ", "") in (c.canonical_title or "").replace(" ", "")
-            ):
-                family = c
-                break
-    # Fallback: title substring
-    if not family and title:
-        candidates = query.all()
-        title_lower = title.lower()
-        for c in candidates:
-            if title_lower in (c.canonical_title or "").lower() or title_lower in (c.short_cite or "").lower():
-                family = c
-                break
 
-    if not family:
-        return {"error": f"no match for {state} / {bill_id or title}"}
-
-    # Find the latest ingestion job for this family
-    dv = (
-        db.query(DocumentVersion)
-        .filter(DocumentVersion.family_id == family.id)
-        .order_by(DocumentVersion.id.desc())
-        .first()
-    )
-    job = (
-        db.query(IngestionJob)
-        .filter(IngestionJob.document_version_id == dv.id)
-        .order_by(IngestionJob.id.desc())
-        .first()
-    ) if dv else None
-
-    changes = []
-    if url and job and url != (job.fetch_url or ""):
-        changes.append(("url", job.fetch_url or "", url))
-    if url and url != (family.primary_source_url or ""):
-        changes.append(("primary_source_url", family.primary_source_url or "", url))
-    if title and title != family.short_cite:
-        changes.append(("title", family.short_cite or "", title))
-    if bill_id:
-        meta = family.metadata_ or {}
-        if bill_id != meta.get("bill_id", ""):
-            changes.append(("bill_id", meta.get("bill_id", ""), bill_id))
-
-    return {
-        "family": family,
-        "job": job,
-        "dv": dv,
-        "changes": changes,
-        "state": state,
-    }
-
-
-@router.get("/api/corrections")
-def get_corrections(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Preview corrections from corrections.csv and show match status."""
-    rows = _load_corrections()
+def _tracker_table_body(rows: list[dict], edit_idx: int = -1) -> str:
+    """Render all tracker rows as a <tbody> innerHTML."""
     if not rows:
+        return (
+            '<tr><td colspan="8" style="text-align:center;padding:20px;">'
+            'No records. Add a row or import a CSV.</td></tr>'
+        )
+    return "".join(
+        _tracker_row_html(i, r, editing=(i == edit_idx))
+        for i, r in enumerate(rows)
+    )
+
+
+@router.get("/api/tracker")
+def tracker_list(
+    q: str = Query("", alias="q"),
+) -> HTMLResponse:
+    """Render the tracker table body (all rows)."""
+    rows = _read_tracker()
+    if q:
+        q_lower = q.lower()
+        rows_filtered = [
+            r for r in rows
+            if q_lower in (r.get("State/Terr", "") + r.get("Relevant Law", "")
+                           + r.get("Bill ID", "") + r.get("AI Scope", "")).lower()
+        ]
+    else:
+        rows_filtered = rows
+    return HTMLResponse(_tracker_table_body(rows_filtered))
+
+
+@router.get("/api/tracker/{idx}/edit")
+def tracker_edit_form(idx: int) -> HTMLResponse:
+    """Return the table body with one row in edit mode."""
+    rows = _read_tracker()
+    if idx < 0 or idx >= len(rows):
+        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
+    return HTMLResponse(_tracker_table_body(rows, edit_idx=idx))
+
+
+@router.post("/api/tracker/{idx}/edit")
+async def tracker_save_row(idx: int, request: Request) -> HTMLResponse:
+    """Save edits to a tracker row and return the refreshed table body."""
+    rows = _read_tracker()
+    if idx < 0 or idx >= len(rows):
+        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
+
+    form = await request.form()
+    for field in TRACKER_FIELDS:
+        val = form.get(field)
+        if val is not None:
+            rows[idx][field] = val.strip()
+
+    _write_tracker(rows)
+    return HTMLResponse(_tracker_table_body(rows))
+
+
+@router.delete("/api/tracker/{idx}")
+def tracker_delete_row(idx: int) -> HTMLResponse:
+    """Delete a tracker row and return the refreshed table body."""
+    rows = _read_tracker()
+    if idx < 0 or idx >= len(rows):
+        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
+    rows.pop(idx)
+    _write_tracker(rows)
+    return HTMLResponse(_tracker_table_body(rows))
+
+
+@router.post("/api/tracker/add")
+async def tracker_add_row(request: Request) -> HTMLResponse:
+    """Add a new row to the tracker and return the refreshed table body."""
+    rows = _read_tracker()
+    form = await request.form()
+    new_row = {}
+    for field in TRACKER_FIELDS:
+        new_row[field] = (form.get(field) or "").strip()
+    if not new_row.get("State/Terr"):
+        new_row["State/Terr"] = "XX"
+    if not new_row.get("Status"):
+        new_row["Status"] = "Active"
+    rows.append(new_row)
+    _write_tracker(rows)
+    return HTMLResponse(_tracker_table_body(rows))
+
+
+@router.get("/api/tracker/export")
+def tracker_export() -> StreamingResponse:
+    """Download the tracker CSV."""
+    import io
+    import csv
+
+    rows = _read_tracker()
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=TRACKER_FIELDS)
+    writer.writeheader()
+    writer.writerows(rows)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=ai_law_tracker.csv"},
+    )
+
+
+@router.post("/api/tracker/import")
+async def tracker_import(file: UploadFile) -> HTMLResponse:
+    """Import a CSV to replace the tracker. Validates columns first."""
+    import csv
+    import io
+
+    content = (await file.read()).decode("utf-8", errors="replace")
+    reader = csv.DictReader(io.StringIO(content))
+
+    # Validate header
+    if not reader.fieldnames:
         return HTMLResponse(
-            '<div class="result-panel info">'
-            'No corrections found. Add rows to <code>corrections.csv</code> '
-            "(columns: <code>state, title, bill_id, status, url</code>) and reload."
-            "</div>"
+            '<div class="result-panel error">Empty or invalid CSV file.</div>'
         )
 
-    table_rows = ""
-    matched = 0
-    unmatched = 0
-    for i, row in enumerate(rows):
-        result = _match_correction(db, row)
-        state = row.get("state", "").strip().upper()
-        title = html_escape(row.get("title", "")[:50])
-        bill_id = html_escape(row.get("bill_id", ""))
-        url = row.get("url", "")
-        url_short = html_escape(url[:50]) + ("..." if len(url) > 50 else "")
-
-        if "error" in result:
-            unmatched += 1
-            badge = (
-                f'<span style="color:var(--danger);font-size:12px;">'
-                f'{html_escape(result["error"])}</span>'
-            )
-        elif not result["changes"]:
-            matched += 1
-            badge = '<span style="color:var(--text-muted);font-size:12px;">no changes needed</span>'
-        else:
-            matched += 1
-            change_list = ", ".join(c[0] for c in result["changes"])
-            badge = (
-                f'<span style="color:var(--warning);font-size:12px;">'
-                f'will update: {html_escape(change_list)}</span>'
-            )
-
-        table_rows += (
-            f"<tr>"
-            f"<td><strong>{html_escape(state)}</strong></td>"
-            f"<td style='font-size:12px;'>{title}</td>"
-            f"<td style='font-size:12px;'>{bill_id}</td>"
-            f"<td style='font-size:12px;'><code>{url_short}</code></td>"
-            f"<td>{badge}</td>"
-            f"</tr>"
+    missing = set(TRACKER_FIELDS) - set(reader.fieldnames)
+    if missing:
+        return HTMLResponse(
+            f'<div class="result-panel error">'
+            f'Missing columns: {html_escape(", ".join(sorted(missing)))}. '
+            f'Expected: {html_escape(", ".join(TRACKER_FIELDS))}'
+            f'</div>'
         )
 
-    actionable = sum(
-        1 for row in rows
-        if "error" not in _match_correction(db, row)
-        and _match_correction(db, row).get("changes")
-    )
+    rows = []
+    for r in reader:
+        clean = {f: (r.get(f) or "").strip() for f in TRACKER_FIELDS}
+        if clean.get("State/Terr"):
+            rows.append(clean)
 
-    summary = (
-        f'<div class="result-panel info" style="margin-bottom:8px;">'
-        f"<strong>{len(rows)}</strong> rows in corrections.csv &mdash; "
-        f"<strong>{matched}</strong> matched, "
-        f"<strong>{unmatched}</strong> unmatched, "
-        f"<strong>{actionable}</strong> with pending changes."
-        f"</div>"
-    )
-
-    apply_btn = ""
-    if actionable > 0:
-        apply_btn = (
-            '<button class="btn btn-primary" style="margin-bottom:8px;" '
-            'hx-post="/dashboard/api/apply-corrections" '
-            'hx-target="#corrections-result" '
-            'hx-swap="innerHTML" '
-            'hx-disabled-elt="this">'
-            '<span class="btn-label">Apply Corrections</span>'
-            '<span class="htmx-indicator"><span class="spinner"></span> Applying...</span>'
-            "</button>"
-        )
-
+    _write_tracker(rows)
     return HTMLResponse(
-        f"{summary}"
-        f"{apply_btn}"
-        f'<div id="corrections-result"></div>'
-        f'<div class="table-wrap">'
-        f'<table class="review-table">'
-        f"<thead><tr>"
-        f"<th>State</th><th>Title</th><th>Bill ID</th><th>URL</th><th>Status</th>"
-        f"</tr></thead>"
-        f"<tbody>{table_rows}</tbody>"
-        f"</table></div>"
-    )
-
-
-@router.post("/api/apply-corrections")
-def apply_corrections(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Apply all actionable corrections from corrections.csv to the database."""
-    rows = _load_corrections()
-    applied = 0
-    errors = []
-
-    for row in rows:
-        result = _match_correction(db, row)
-        if "error" in result or not result.get("changes"):
-            continue
-
-        family = result["family"]
-        job = result["job"]
-        url = row.get("url", "").strip()
-        title = row.get("title", "").strip()
-        bill_id = row.get("bill_id", "").strip()
-
-        try:
-            for change_type, _old, new_val in result["changes"]:
-                if change_type == "url" and job:
-                    job.fetch_url = new_val
-                    # Reset failed/manual_review jobs to pending for retry
-                    if job.status in (
-                        IngestionStatus.failed,
-                        IngestionStatus.requires_manual_review,
-                    ):
-                        job.status = IngestionStatus.pending
-                        job.error_message = None
-                elif change_type == "primary_source_url":
-                    family.primary_source_url = new_val
-                elif change_type == "title":
-                    family.short_cite = new_val
-                    family.canonical_title = (
-                        f"{family.source.jurisdiction_code} - {new_val}"
-                    )
-                elif change_type == "bill_id":
-                    meta = dict(family.metadata_ or {})
-                    meta["bill_id"] = new_val
-                    family.metadata_ = meta
-
-            applied += 1
-        except Exception as e:
-            errors.append(f"{result['state']}: {e}")
-
-    if applied:
-        db.commit()
-
-    parts = [f"Applied <strong>{applied}</strong> correction(s)."]
-    if errors:
-        parts.append(
-            f'<span style="color:var(--danger);">{len(errors)} error(s): '
-            f"{html_escape('; '.join(errors[:5]))}</span>"
-        )
-
-    panel_class = "success" if not errors else "warning"
-    return HTMLResponse(
-        f'<div class="result-panel {panel_class}">{" ".join(parts)}</div>'
+        f'<div class="result-panel success" style="margin-bottom:8px;">'
+        f'Imported <strong>{len(rows)}</strong> records.</div>'
+        + _tracker_table_body(rows)
     )
