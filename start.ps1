@@ -18,12 +18,17 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Postgres is ready." -ForegroundColor Green
 
-# Verify actual authentication works (catches stale volume credentials)
+# Verify password-based TCP auth works (docker exec psql uses trust/peer auth
+# on the local socket, which hides password mismatches)
 Write-Host "Verifying database credentials..." -ForegroundColor Cyan
-$authCheck = docker exec docker-postgres-1 psql -U regs -d regs_checker -c "SELECT 1;" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "WARNING: Auth failed for user 'regs'. Recreating Postgres volume..." -ForegroundColor Yellow
-    docker compose -f docker/docker-compose.yml down postgres
+$env:PGPASSWORD = "regs"
+$authCheck = docker exec -e PGPASSWORD=regs docker-postgres-1 psql -h 127.0.0.1 -U regs -d regs_checker -c "SELECT 1;" 2>&1
+$authOk = $LASTEXITCODE -eq 0
+$env:PGPASSWORD = $null
+
+if (-not $authOk) {
+    Write-Host "WARNING: Password auth failed for user 'regs'. Recreating Postgres volume..." -ForegroundColor Yellow
+    docker compose -f docker/docker-compose.yml rm -sf postgres
     docker volume rm docker_postgres_data 2>$null
     docker compose -f docker/docker-compose.yml up -d postgres
     $retries = 0
