@@ -110,7 +110,7 @@ class TestLocalLLMProvider:
         mock_settings.local_llm_url = "http://localhost:8080"
         mock_settings.local_llm_model = "llama-3.1-8b"
         provider = LocalLLMProvider()
-        assert provider.model_id == "local:llama-3.1-8b"
+        assert provider.model_id == "llama-3.1-8b-local"
 
     @patch("src.core.llm_provider.settings")
     def test_raises_without_url(self, mock_settings):
@@ -146,7 +146,7 @@ class TestLocalLLMProvider:
         assert result.text == '{"classified": true}'
         assert result.usage.input_tokens == 50
         assert result.usage.output_tokens == 20
-        assert result.model_id == "local:llama-3.1-8b"
+        assert result.model_id == "llama-3.1-8b-local"
 
     @patch("src.core.llm_provider.settings")
     def test_call_raises_on_empty_response(self, mock_settings):

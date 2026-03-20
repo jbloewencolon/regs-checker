@@ -375,11 +375,50 @@ def run_fetch(
     try:
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
+
+        # Build failure detail HTML
+        failure_html = ""
+        for f in summary.get("failed_jobs", []):
+            failure_html += (
+                f'<li><strong>{f["label"]}</strong> — '
+                f'<code style="word-break:break-all;">{f["url"]}</code><br>'
+                f'<span style="color:var(--danger);">{f["error"]}</span></li>'
+            )
+
+        manual_html = ""
+        for m in summary.get("manual_review_jobs", []):
+            suggested = m.get("ai_suggested_url")
+            suggested_line = (
+                f'<br>AI-suggested: <code style="word-break:break-all;">{suggested}</code>'
+                if suggested else ""
+            )
+            manual_html += (
+                f'<li><strong>{m["label"]}</strong> — '
+                f'<code style="word-break:break-all;">{m["url"]}</code>'
+                f'{suggested_line}<br>'
+                f'<span style="color:var(--warning);">{m["error"]}</span></li>'
+            )
+
+        details = ""
+        if failure_html:
+            details += (
+                f'<div style="margin-top:8px;"><strong>Failed downloads '
+                f'(need manual doc insertion):</strong>'
+                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{failure_html}</ul></div>'
+            )
+        if manual_html:
+            details += (
+                f'<div style="margin-top:8px;"><strong>Needs manual review:</strong>'
+                f'<ul style="margin:4px 0 0 16px;font-size:13px;">{manual_html}</ul></div>'
+            )
+
+        panel_class = "success" if summary["failed"] == 0 else "warning"
         return HTMLResponse(
-            f'<div class="result-panel success">'
+            f'<div class="result-panel {panel_class}">'
             f'Completed: {summary["completed"]} documents, '
             f'{summary["total_passages"]} passages extracted. '
-            f'{summary["failed"]} failed.'
+            f'{summary["failed"]} failed, {summary["skipped"]} need review.'
+            f'{details}'
             f'</div>'
         )
     except Exception as e:
@@ -468,8 +507,11 @@ def run_api_extract(
 
 
 @router.post("/api/run/sync")
-def run_sync(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Sync extractions to Policy Navigator."""
+def run_sync(
+    dry_run: bool = False,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Sync extractions to Policy Navigator (supports dry-run preview)."""
     import os
     source_url = os.environ.get("REGS_SUPABASE_URL")
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
@@ -483,7 +525,24 @@ def run_sync(db: Session = Depends(get_db)) -> HTMLResponse:
 
     try:
         from src.scripts.sync_extractions import sync_extractions
-        summary = sync_extractions(source_url=source_url, target_url=target_url, dry_run=False)
+        summary = sync_extractions(
+            source_url=source_url, target_url=target_url, dry_run=dry_run,
+        )
+
+        if dry_run:
+            matched = summary.get("source_pending", 0) - summary.get("skipped_no_bridge", 0)
+            skipped = summary.get("skipped_no_bridge", 0)
+            return HTMLResponse(
+                f'<div class="result-panel warning">'
+                f'<strong>Dry Run Preview</strong><br>'
+                f'Matched (would sync): <strong>{matched}</strong><br>'
+                f'Skipped (no bridge):  <strong>{skipped}</strong><br>'
+                f'Bridge entries: {summary.get("bridge_entries", 0)}<br>'
+                f'Cursor: id &gt; {summary.get("cursor_start", 0)} '
+                f'({summary.get("source_pending", 0)} pending)'
+                f'</div>'
+            )
+
         return HTMLResponse(
             f'<div class="result-panel success">'
             f'Synced {summary["synced"]} rows to Policy Navigator. '
@@ -494,6 +553,142 @@ def run_sync(db: Session = Depends(get_db)) -> HTMLResponse:
     except Exception as e:
         return HTMLResponse(
             f'<div class="result-panel error">Error: {e}</div>'
+        )
+
+
+@router.post("/api/run/sync-preflight")
+def run_sync_preflight() -> HTMLResponse:
+    """Pre-sync verification: bridge validity + schema match.
+
+    Confirms:
+      1. law_document_bridge is populated and covers local family_ids.
+      2. synced_extractions table exists with the expected columns.
+    """
+    import os
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    source_url = os.environ.get("REGS_SUPABASE_URL")
+    target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
+
+    if not source_url or not target_url:
+        return HTMLResponse(
+            '<div class="result-panel warning">'
+            'Preflight skipped: REGS_SUPABASE_URL and/or '
+            'REGS_POLICY_NAVIGATOR_URL not configured.'
+            '</div>'
+        )
+
+    try:
+        source_engine = create_engine(source_url)
+        target_engine = create_engine(target_url)
+        source_session = sessionmaker(bind=source_engine)()
+        target_session = sessionmaker(bind=target_engine)()
+
+        checks: list[dict] = []
+
+        try:
+            # ---- Check 1: Bridge validity ----
+            from src.core.bridge_monitor import detect_unbridged_families
+            report = detect_unbridged_families(source_session, target_session)
+
+            if report.total_families == 0:
+                checks.append({
+                    "name": "Bridge Validity",
+                    "ok": True,
+                    "detail": "No document families with extractions yet.",
+                })
+            elif report.has_gaps:
+                gap_list = ", ".join(
+                    f"{f.jurisdiction_code}/{f.short_cite or f.family_id}"
+                    for f in report.unbridged[:5]
+                )
+                extra = f" (+{report.unbridged_families - 5} more)" if report.unbridged_families > 5 else ""
+                checks.append({
+                    "name": "Bridge Validity",
+                    "ok": False,
+                    "detail": (
+                        f"{report.unbridged_families}/{report.total_families} families "
+                        f"missing bridge rows: {gap_list}{extra}"
+                    ),
+                })
+            else:
+                checks.append({
+                    "name": "Bridge Validity",
+                    "ok": True,
+                    "detail": (
+                        f"All {report.bridged_families} families have bridge mappings."
+                    ),
+                })
+
+            # ---- Check 2: Schema match ----
+            expected_cols = {
+                "system_a_extraction_id", "law_id", "extraction_type",
+                "payload", "evidence_spans", "confidence_score",
+                "confidence_tier", "review_status", "model_id",
+                "section_path", "passage_text", "source_created_at",
+                "synced_at",
+            }
+            col_rows = target_session.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'synced_extractions'"
+            )).fetchall()
+            actual_cols = {row[0] for row in col_rows}
+
+            if not actual_cols:
+                checks.append({
+                    "name": "Schema Match",
+                    "ok": False,
+                    "detail": "synced_extractions table does not exist in target DB.",
+                })
+            else:
+                missing = expected_cols - actual_cols
+                if missing:
+                    checks.append({
+                        "name": "Schema Match",
+                        "ok": False,
+                        "detail": f"Missing columns in synced_extractions: {', '.join(sorted(missing))}",
+                    })
+                else:
+                    checks.append({
+                        "name": "Schema Match",
+                        "ok": True,
+                        "detail": (
+                            f"synced_extractions has all {len(expected_cols)} required columns "
+                            f"(payload, evidence_spans ready)."
+                        ),
+                    })
+
+        finally:
+            source_session.close()
+            target_session.close()
+
+        # ---- Render results ----
+        all_ok = all(c["ok"] for c in checks)
+        panel_class = "success" if all_ok else "warning"
+        icon_ok = '<span style="color:var(--success);">&#10003;</span>'
+        icon_fail = '<span style="color:var(--danger);">&#10007;</span>'
+
+        rows_html = ""
+        for c in checks:
+            icon = icon_ok if c["ok"] else icon_fail
+            rows_html += (
+                f'<div style="margin:4px 0;">'
+                f'{icon} <strong>{c["name"]}</strong>: {c["detail"]}'
+                f'</div>'
+            )
+
+        status_msg = "All pre-flight checks passed. Safe to sync." if all_ok else "Some checks failed. Review before syncing."
+        return HTMLResponse(
+            f'<div class="result-panel {panel_class}">'
+            f'<strong>Sync Pre-flight</strong> — {status_msg}'
+            f'{rows_html}'
+            f'</div>'
+        )
+
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Preflight error: {e}</div>'
         )
 
 

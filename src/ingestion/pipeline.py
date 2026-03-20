@@ -20,6 +20,7 @@ from datetime import datetime
 
 import structlog
 
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.config import settings
 from src.db.models import (
     IngestionJob,
@@ -279,6 +280,8 @@ def run_pending_ingestion(
         "failed": 0,
         "skipped": 0,
         "total_passages": 0,
+        "failed_jobs": [],       # List of {job_id, label, url, error} for UI
+        "manual_review_jobs": [],  # Jobs needing manual doc insertion
     }
 
     if not pending_jobs:
@@ -289,7 +292,17 @@ def run_pending_ingestion(
     if on_progress:
         on_progress(f"Found {len(pending_jobs)} pending ingestion jobs")
 
-    for i, job in enumerate(pending_jobs, 1):
+    # Circuit breaker: abort if too many consecutive fetches fail
+    # (network down, S3 unreachable, etc.)
+    tracker = FailureTracker(
+        context="fetch & parse (document downloads)",
+        max_consecutive=5,
+        max_failure_rate=0.8,
+        min_items_for_rate=10,
+    )
+
+    try:
+      for i, job in enumerate(pending_jobs, 1):
         if on_progress:
             dv = job.document_version
             label = "unknown"
@@ -299,12 +312,58 @@ def run_pending_ingestion(
 
         passage_count = process_single_job(db, job, on_progress=on_progress)
 
+        dv = job.document_version
+        label = "unknown"
+        if dv and dv.family:
+            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+
         if job.status == IngestionStatus.completed:
             summary["completed"] += 1
             summary["total_passages"] += passage_count
+            tracker.record_success()
         elif job.status == IngestionStatus.failed:
             summary["failed"] += 1
+            failure_info = {
+                "job_id": job.id,
+                "label": label,
+                "url": job.fetch_url,
+                "error": job.error_message,
+            }
+            summary["failed_jobs"].append(failure_info)
+            tracker.record_failure(
+                f"Job #{job.id} ({label}): {job.error_message[:100]}"
+            )
             if on_progress:
-                on_progress(f"  FAILED: {job.error_message}")
+                on_progress(
+                    f"  FAILED: {job.error_message}\n"
+                    f"    URL: {job.fetch_url}\n"
+                    f"    → To fix: manually insert the document or update the URL"
+                )
+        elif job.status == IngestionStatus.requires_manual_review:
+            summary["skipped"] += 1
+            review_info = {
+                "job_id": job.id,
+                "label": label,
+                "url": job.fetch_url,
+                "ai_suggested_url": getattr(job, "ai_suggested_url", None),
+                "error": job.error_message,
+            }
+            summary["manual_review_jobs"].append(review_info)
+            # Manual review isn't a failure — don't count against circuit breaker
+            tracker.record_success()
+            if on_progress:
+                suggested = getattr(job, "ai_suggested_url", None)
+                on_progress(
+                    f"  NEEDS MANUAL REVIEW: {job.error_message}\n"
+                    f"    Original URL: {job.fetch_url}"
+                    + (f"\n    AI-suggested URL: {suggested}" if suggested else "")
+                    + "\n    → Insert the document manually or approve the suggested URL"
+                )
+
+    except CircuitBreakerTripped as cb:
+        summary["circuit_breaker_tripped"] = True
+        summary["circuit_breaker_detail"] = str(cb)
+        if on_progress:
+            on_progress(f"\n{cb}")
 
     return summary

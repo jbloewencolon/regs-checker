@@ -25,6 +25,7 @@ import structlog
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
@@ -250,7 +251,22 @@ def run_comparison(
     # --- Process each passage ---
     agent_names = ["obligation", "definition_actor", "threshold_exception", "ambiguity"]
 
-    for i, case in enumerate(cases):
+    # Per-provider failure trackers
+    anthropic_tracker = FailureTracker(
+        context="model comparison (anthropic)",
+        max_consecutive=3,
+        max_failure_rate=0.9,
+        min_items_for_rate=8,
+    ) if has_anthropic else None
+    local_tracker = FailureTracker(
+        context="model comparison (local)",
+        max_consecutive=3,
+        max_failure_rate=0.9,
+        min_items_for_rate=8,
+    ) if has_local else None
+
+    try:
+      for i, case in enumerate(cases):
         passage = case["passage_text"]
         context = {
             "document_title": case.get("source_document"),
@@ -266,14 +282,30 @@ def run_comparison(
             # Run Anthropic
             if has_anthropic and anthropic_agents:
                 agent = anthropic_agents[agent_name]
-                _run_agent_safe(agent, passage, context, anthropic_metrics)
+                res = _run_agent_safe(agent, passage, context, anthropic_metrics)
+                if res is None and anthropic_tracker:
+                    anthropic_tracker.record_failure(
+                        f"anthropic/{agent_name}/{passage_id}"
+                    )
+                elif anthropic_tracker:
+                    anthropic_tracker.record_success()
 
             # Run Local
             if has_local and local_agents:
                 agent = local_agents[agent_name]
-                _run_agent_safe(agent, passage, context, local_metrics)
+                res = _run_agent_safe(agent, passage, context, local_metrics)
+                if res is None and local_tracker:
+                    local_tracker.record_failure(
+                        f"local/{agent_name}/{passage_id}"
+                    )
+                elif local_tracker:
+                    local_tracker.record_success()
 
         result.passages_evaluated += 1
+
+    except CircuitBreakerTripped as cb:
+        result.errors.append(f"CIRCUIT BREAKER: {cb}")
+        print(f"\n{cb}")
 
     return result
 

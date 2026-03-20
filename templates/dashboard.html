@@ -274,8 +274,25 @@
       <div class="step-body">
         <div class="step-description">
           Pushes approved extractions to the product database.
+          Run Pre-flight first, then Dry Run to preview, then Sync.
         </div>
         <div class="step-actions">
+          <button class="btn"
+                  hx-post="/dashboard/api/run/sync-preflight"
+                  hx-target="#step7-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Pre-flight Check</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Checking...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/sync?dry_run=true"
+                  hx-target="#step7-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Dry Run (Preview)</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Previewing...</span>
+          </button>
           <button class="btn btn-success"
                   hx-post="/dashboard/api/run/sync"
                   hx-target="#step7-result"
@@ -285,7 +302,7 @@
             <span class="btn-label">Sync to Policy Navigator</span>
             <span class="htmx-indicator"><span class="spinner"></span> Syncing...</span>
           </button>
-          <button class="btn"
+          <button class="btn btn-sm"
                   hx-post="/dashboard/api/run/bridge-check"
                   hx-target="#step7-result"
                   hx-swap="innerHTML"

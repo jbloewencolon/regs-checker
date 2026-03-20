@@ -27,6 +27,7 @@ from xml.etree import ElementTree
 
 import structlog
 
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.db.models import (
     DocumentFamily,
     DocumentVersion,
@@ -497,29 +498,51 @@ def seed_from_tracker(db, records: list[dict] | None = None) -> list[IngestionJo
 
     jobs_created = []
 
-    for record in records:
-        state_code = record["state_code"]
-        state_name = record["state"]
-        if not state_code:
-            logger.debug("skipping_unknown_state", state=state_name)
-            continue
+    # Circuit breaker: if most DB inserts fail, something is structurally
+    # wrong (schema mismatch, constraint violation, etc.)
+    tracker = FailureTracker(
+        context="seed_from_tracker (DB inserts)",
+        max_consecutive=5,
+        max_failure_rate=0.8,
+        min_items_for_rate=10,
+    )
 
-        law_url = record["law_url"]
-        if not law_url:
-            logger.debug("skipping_no_url", state=state_code, law=record["law_name"])
-            continue
+    try:
+        for record in records:
+            state_code = record["state_code"]
+            state_name = record["state"]
+            if not state_code:
+                logger.debug("skipping_unknown_state", state=state_name)
+                continue
 
-        try:
-            job = _seed_single_law(db, record)
-            if job:
-                jobs_created.append(job)
-        except Exception as e:
-            logger.warning(
-                "seed_row_failed",
-                state=state_code,
-                law=record["law_name"],
-                error=str(e),
-            )
+            law_url = record["law_url"]
+            if not law_url:
+                logger.debug("skipping_no_url", state=state_code, law=record["law_name"])
+                continue
+
+            try:
+                job = _seed_single_law(db, record)
+                if job:
+                    jobs_created.append(job)
+                tracker.record_success()
+            except CircuitBreakerTripped:
+                raise
+            except Exception as e:
+                logger.warning(
+                    "seed_row_failed",
+                    state=state_code,
+                    law=record["law_name"],
+                    error=str(e),
+                )
+                tracker.record_failure(
+                    f"{state_code}/{record['law_name']}: {e}"
+                )
+
+    except CircuitBreakerTripped as cb:
+        logger.error("seed_circuit_breaker", detail=str(cb))
+        # Flush what we have so far
+        db.flush()
+        return jobs_created
 
     db.flush()
     logger.info("seeding_complete", jobs_created=len(jobs_created))
