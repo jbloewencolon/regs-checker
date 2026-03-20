@@ -45,9 +45,9 @@
       </div>
       <div class="step-body">
         <div class="step-description">
-          Parses the Orrick PDF tracker (<code>static/Orrick-US-AI-Law-Tracker.pdf</code>) and
+          Seeds legislation from the Law Tracker CSV (<code>static/ai_law_tracker.csv</code>) and
           cross-references <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
-          for new AI bills and status changes.
+          for status changes. Edit the tracker below, then seed.
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -55,8 +55,8 @@
                   hx-target="#step1-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
-            <span class="btn-label">Scan PDF for New Laws</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Parsing PDF...</span>
+            <span class="btn-label">Seed from Tracker CSV</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Seeding...</span>
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/status-check"

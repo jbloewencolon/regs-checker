@@ -545,49 +545,60 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     )
 
 
+def _tracker_csv_to_records() -> list[dict]:
+    """Convert ai_law_tracker.csv rows into the record format seed_from_tracker expects.
+
+    Returns list of dicts with keys:
+        state, state_code, ai_scope, law_name, law_url, bill_id,
+        effective_date, key_requirements, enforcement
+    """
+    from src.ingestion.pdf_tracker import STATE_CODES
+
+    tracker_rows = _read_tracker()
+    records = []
+    for row in tracker_rows:
+        state_name = row.get("State/Terr", "").strip()
+        state_code = STATE_CODES.get(state_name, "")
+        # Also handle if someone puts the 2-letter code directly
+        if not state_code and len(state_name) == 2:
+            state_code = state_name.upper()
+
+        records.append({
+            "state": state_name,
+            "state_code": state_code,
+            "ai_scope": row.get("AI Scope", ""),
+            "law_name": row.get("Relevant Law", ""),
+            "law_url": row.get("Source URL", ""),
+            "bill_id": row.get("Bill ID", ""),
+            "effective_date": row.get("Effective Date", ""),
+            "key_requirements": row.get("Key Requirements", ""),
+            "enforcement": row.get("Enforcements Penalties", ""),
+        })
+    return records
+
+
 @router.post("/api/run/pdf-discovery")
-def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Parse Orrick PDF tracker, overlay ai_law_tracker.csv, and seed new legislation."""
+def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Seed legislation from the ai_law_tracker.csv (primary discovery source)."""
     if not _acquire_pipeline_lock():
         return HTMLResponse(
             '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
         )
     try:
-        from src.ingestion.pdf_tracker import parse_tracker_pdf, seed_from_tracker
-        records = parse_tracker_pdf()
+        from src.ingestion.pdf_tracker import seed_from_tracker
 
-        # Overlay Source URLs from the law tracker CSV (ground truth)
-        tracker_rows = _read_tracker()
-        tracker_url_overrides = 0
-        if tracker_rows:
-            # Build lookup: (state_code, bill_id_norm) -> Source URL
-            from src.ingestion.pdf_tracker import STATE_CODES  # state name -> code
-            tracker_lookup: dict[tuple[str, str], str] = {}
-            for tr in tracker_rows:
-                t_state = tr.get("State/Terr", "").strip()
-                t_bill = tr.get("Bill ID", "").strip()
-                t_url = tr.get("Source URL", "").strip()
-                # Resolve state name to code
-                t_code = STATE_CODES.get(t_state, t_state.upper() if len(t_state) == 2 else "")
-                if t_code and t_bill and t_url:
-                    tracker_lookup[(t_code, t_bill.replace(" ", "").upper())] = t_url
-
-            for rec in records:
-                bill = (rec.get("bill_id") or "").replace(" ", "").upper()
-                sc = rec.get("state_code", "")
-                if sc and bill and (sc, bill) in tracker_lookup:
-                    override_url = tracker_lookup[(sc, bill)]
-                    if override_url != (rec.get("law_url") or ""):
-                        rec["law_url"] = override_url
-                        tracker_url_overrides += 1
+        records = _tracker_csv_to_records()
+        if not records:
+            return HTMLResponse(
+                '<div class="result-panel warning">'
+                'No records in <code>static/ai_law_tracker.csv</code>. '
+                'Add rows via the Law Tracker tab first.</div>'
+            )
 
         jobs, stats = seed_from_tracker(db, records)
         db.commit()
 
-        # Build informative breakdown
-        parts = [f'Parsed <strong>{stats["total_parsed"]}</strong> laws from PDF.']
-        if tracker_url_overrides:
-            parts.append(f'{tracker_url_overrides} URLs overridden from Law Tracker.')
+        parts = [f'Loaded <strong>{stats["total_parsed"]}</strong> laws from tracker CSV.']
         if stats["new_jobs"] > 0:
             parts.append(f'Seeded <strong>{stats["new_jobs"]}</strong> new for ingestion.')
         if stats["existing"] > 0:
@@ -601,8 +612,8 @@ def run_pdf_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
             extra = f" (+{len(stats['seeded_no_url']) - 10} more)" if len(stats["seeded_no_url"]) > 10 else ""
             notes += (
                 f'<div style="margin-top:6px;"><span style="color:var(--warning);">'
-                f'{len(stats["seeded_no_url"])} records have no URL in PDF '
-                f'(need manual upload):</span>{extra}'
+                f'{len(stats["seeded_no_url"])} records have no Source URL '
+                f'(add URLs in the Law Tracker tab):</span>{extra}'
                 f'<ul style="margin:4px 0 0 16px;font-size:12px;">{no_url_items}</ul></div>'
             )
         if stats["skipped_no_state"]:
@@ -1376,9 +1387,7 @@ def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
             cross_reference_trackers,
             link_discrepancies_to_jobs,
         )
-        from src.ingestion.pdf_tracker import parse_tracker_pdf
-
-        orrick_records = parse_tracker_pdf()
+        orrick_records = _tracker_csv_to_records()
 
         # Load IAPP records
         iapp_records = []
