@@ -66,6 +66,41 @@ def _normalize(name: str) -> str:
     return name
 
 
+# Bill abbreviation synonyms used by legislatures and trackers
+_BILL_ABBREVS: list[tuple[str, str]] = [
+    ("senate bill", "sb"),
+    ("house bill", "hb"),
+    ("assembly bill", "ab"),
+    ("senate joint resolution", "sjr"),
+    ("house joint resolution", "hjr"),
+    ("assembly joint resolution", "ajr"),
+    ("senate concurrent resolution", "scr"),
+    ("house concurrent resolution", "hcr"),
+    ("senate resolution", "sr"),
+    ("house resolution", "hr"),
+    ("assembly resolution", "ar"),
+    ("house file", "hf"),
+    ("senate file", "sf"),
+    ("legislative bill", "lb"),
+    ("general assembly", "ga"),
+]
+
+
+def _normalize_bill_id(name: str) -> str:
+    """Normalize a bill identifier, expanding abbreviations for matching.
+
+    Converts both "SB 100" and "Senate Bill 100" to the same canonical
+    form "sb 100" so they match during cross-referencing.
+    """
+    n = _normalize(name)
+    # Expand long forms to short abbreviations for canonical comparison
+    for long, short in _BILL_ABBREVS:
+        if n.startswith(long + " "):
+            n = short + " " + n[len(long) + 1:]
+            break
+    return n
+
+
 def _dates_match(d1: str, d2: str) -> bool:
     """Compare two date strings loosely (ignoring formatting differences)."""
     if not d1 and not d2:
@@ -100,37 +135,101 @@ def cross_reference_trackers(
         iapp_available=len(iapp_records) > 0,
     )
 
-    # Build IAPP index: (state_code, normalized_key) → record
-    # Index by both bill_number and bill_title
-    iapp_index: dict[tuple[str, str], dict] = {}
+    # Build IAPP indexes: multiple lookup strategies
+    # 1. By normalized bill number (exact)
+    # 2. By canonical bill ID (abbreviation-expanded)
+    # 3. By normalized title
+    iapp_by_bill: dict[tuple[str, str], dict] = {}  # (code, norm_bill_num)
+    iapp_by_bill_canon: dict[tuple[str, str], dict] = {}  # (code, canonical_bill_id)
+    iapp_by_title: dict[tuple[str, str], dict] = {}  # (code, norm_title)
+    iapp_all: list[tuple[str, dict]] = []  # (code, record) for fallback
+
     for r in iapp_records:
         code = r.get("state_code", "")
         if not code:
             continue
+        iapp_all.append((code, r))
         bill_num = _normalize(r.get("bill_number", ""))
         if bill_num:
-            iapp_index[(code, bill_num)] = r
+            iapp_by_bill[(code, bill_num)] = r
+            canon = _normalize_bill_id(r.get("bill_number", ""))
+            if canon != bill_num:
+                iapp_by_bill_canon[(code, canon)] = r
+            else:
+                iapp_by_bill_canon[(code, bill_num)] = r
         title = _normalize(r.get("bill_title", ""))
-        if title and (code, title) not in iapp_index:
-            iapp_index[(code, title)] = r
+        if title:
+            iapp_by_title[(code, title)] = r
 
-    matched_iapp_keys: set[tuple[str, str]] = set()
+    matched_iapp_indices: set[int] = set()
 
     for orrick in orrick_records:
         code = orrick.get("state_code", "")
         if not code:
             continue
 
-        # Try matching by bill_id first, then law_name
+        # Try matching with multiple strategies (most specific first)
         match_key = None
         iapp_record = None
+
+        # Strategy 1: Exact normalized bill_id match
         for orrick_field in ["bill_id", "law_name"]:
             norm = _normalize(orrick.get(orrick_field, ""))
-            if norm and (code, norm) in iapp_index:
+            if norm and (code, norm) in iapp_by_bill:
                 match_key = norm
-                iapp_record = iapp_index[(code, norm)]
-                matched_iapp_keys.add((code, norm))
+                iapp_record = iapp_by_bill[(code, norm)]
                 break
+
+        # Strategy 2: Canonical bill ID match (abbreviation-expanded)
+        if not iapp_record:
+            for orrick_field in ["bill_id", "law_name"]:
+                canon = _normalize_bill_id(orrick.get(orrick_field, ""))
+                if canon and (code, canon) in iapp_by_bill_canon:
+                    match_key = canon
+                    iapp_record = iapp_by_bill_canon[(code, canon)]
+                    break
+
+        # Strategy 3: Exact title match
+        if not iapp_record:
+            norm_name = _normalize(orrick.get("law_name", ""))
+            if norm_name and (code, norm_name) in iapp_by_title:
+                match_key = norm_name
+                iapp_record = iapp_by_title[(code, norm_name)]
+
+        # Strategy 4: Token-overlap on title (for bills with slightly different names)
+        if not iapp_record:
+            orrick_name = _normalize(orrick.get("law_name", ""))
+            if orrick_name and len(orrick_name) > 5:
+                orrick_tokens = set(orrick_name.split())
+                best_score = 0.0
+                best_match = None
+                for idx, (icode, ir) in enumerate(iapp_all):
+                    if icode != code or idx in matched_iapp_indices:
+                        continue
+                    iapp_title = _normalize(ir.get("bill_title", ""))
+                    if not iapp_title:
+                        continue
+                    iapp_tokens = set(iapp_title.split())
+                    overlap = orrick_tokens & iapp_tokens
+                    # Remove common stopwords from overlap scoring
+                    overlap -= {"the", "of", "and", "act", "a", "an", "in", "on", "for", "to"}
+                    if not overlap:
+                        continue
+                    score = len(overlap) / max(len(orrick_tokens), len(iapp_tokens))
+                    if score > best_score and score >= 0.5:
+                        best_score = score
+                        best_match = (idx, ir, iapp_title)
+                if best_match:
+                    idx, iapp_record, _ = best_match
+                    match_key = _normalize(orrick.get("law_name", ""))
+                    matched_iapp_indices.add(idx)
+
+        if iapp_record:
+            # Track matched record for iapp-only counting
+            for idx, (icode, ir) in enumerate(iapp_all):
+                if ir is iapp_record:
+                    matched_iapp_indices.add(idx)
+                    break
 
         if not iapp_record:
             result.orrick_only += 1
@@ -165,6 +264,14 @@ def cross_reference_trackers(
         if orrick_scope and iapp_topic and _normalize(orrick_scope) != _normalize(iapp_topic):
             fields.append(FieldDiscrepancy("ai_topic", orrick_scope, iapp_topic))
 
+        # Legislative status (Orrick is typically enacted/active only; IAPP has full lifecycle)
+        orrick_status = orrick.get("normalized_status", "")
+        iapp_status = iapp_record.get("normalized_status", "")
+        if orrick_status and iapp_status and orrick_status != iapp_status:
+            # Use raw IAPP status for display if available
+            iapp_raw = iapp_record.get("status", iapp_status)
+            fields.append(FieldDiscrepancy("status", orrick_status, iapp_raw))
+
         if fields:
             result.discrepancies.append(BillDiscrepancy(
                 state_code=code,
@@ -179,8 +286,8 @@ def cross_reference_trackers(
             ))
 
     # Count IAPP-only records
-    for key in iapp_index:
-        if key not in matched_iapp_keys:
+    for idx in range(len(iapp_all)):
+        if idx not in matched_iapp_indices:
             result.iapp_only += 1
 
     logger.info(

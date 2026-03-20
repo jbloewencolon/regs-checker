@@ -400,11 +400,22 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         cite = html_escape(str(r.short_cite or ""))
         title = html_escape(str(r.canonical_title or "")[:80])
         subject = html_escape(str(r.subject_area or ""))
-        url = html_escape(str(r.fetch_url or "")[:60])
+        raw_url = str(r.fetch_url or "")
+        url = html_escape(raw_url)
+        url_short = html_escape(raw_url[:50])
         ctype = html_escape(str(r.content_type or "—"))
         size_kb = f"{r.size_bytes / 1024:.0f} KB" if r.size_bytes else "—"
         passages = r.passages or 0
         status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")
+
+        # URL display: clickable link, truncated
+        url_cell = "—"
+        if raw_url:
+            url_cell = (
+                f'<a href="{url}" target="_blank" rel="noopener" '
+                f'style="font-size:11px;word-break:break-all;" '
+                f'title="{url}">{url_short}{"…" if len(raw_url) > 50 else ""}</a>'
+            )
 
         # Display row with edit toggle
         table_rows += f"""
@@ -413,6 +424,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           <td>{cite}</td>
           <td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>
           <td>{html_escape(status_val)}</td>
+          <td style="max-width:180px;">{url_cell}</td>
           <td style="text-align:right;">{size_kb}</td>
           <td style="text-align:right;">{passages}</td>
           <td>
@@ -421,7 +433,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="doc-edit-{jid}" style="display:none;background:var(--bg-secondary);">
-          <td colspan="7" style="padding:8px;">
+          <td colspan="8" style="padding:8px;">
             <form hx-post="/dashboard/api/edit-document/{jid}"
                   hx-target="#doc-edit-result-{jid}"
                   hx-swap="innerHTML"
@@ -462,6 +474,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<table class="review-table">'
         f'<thead><tr>'
         f'<th>Jur.</th><th>Cite</th><th>Title</th><th>Status</th>'
+        f'<th>Source URL</th>'
         f'<th style="text-align:right;">Size</th>'
         f'<th style="text-align:right;">Passages</th>'
         f'<th>Actions</th>'
@@ -1091,9 +1104,14 @@ async def edit_document_metadata(
         changes.append(f"subject_area updated")
         family.subject_area = new_subject
 
-    # IAPP bill number and status (stored in family metadata)
+    # Bill ID, IAPP bill number, and IAPP status (stored in family metadata)
     meta = dict(family.metadata_ or {})
     meta_changed = False
+    new_bill_id = form.get("bill_id", "").strip()
+    if new_bill_id and new_bill_id != meta.get("bill_id", ""):
+        meta["bill_id"] = new_bill_id
+        meta_changed = True
+        changes.append(f"bill_id → {new_bill_id}")
     new_iapp_bill = form.get("iapp_bill_number", "").strip()
     if new_iapp_bill and new_iapp_bill != meta.get("iapp_bill_number", ""):
         meta["iapp_bill_number"] = new_iapp_bill
@@ -1468,7 +1486,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         short_cite = ""
         title = ""
         subject = ""
-        bill_title = ""
+        bill_id = ""
         iapp_bill_number = ""
         iapp_status = ""
         leg_status = ""
@@ -1480,41 +1498,44 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             subject = dv.family.subject_area or ""
             label = short_cite or title or "unknown"
             meta = dv.family.metadata_ or {}
+            bill_id = meta.get("bill_id", "")
             iapp_bill_number = meta.get("iapp_bill_number", "")
             iapp_status = meta.get("iapp_status", "")
-            bill_title = title or iapp_bill_number or ""
         if dv and dv.temporal_status:
             leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
-        status_class = "danger" if job.status == IngestionStatus.failed else "warning"
-        status_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+        # Ingestion status badge (small, secondary — not the main Status column)
+        ing_class = "danger" if job.status == IngestionStatus.failed else "warning"
+        ing_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
 
-        # Show IAPP legislative status alongside ingestion status
-        iapp_badge = ""
-        if iapp_status:
-            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_status)}</span>'
-        elif leg_status:
-            iapp_badge = f'<br><span style="font-size:10px;color:var(--text-muted);">{html_escape(leg_status)}</span>'
+        # Bill Status: prefer raw IAPP status, fall back to normalized TemporalStatus
+        bill_status_display = iapp_status or leg_status or "—"
+
+        # Bill ID: show Orrick bill_id, IAPP bill_number, or both if they differ
+        bill_id_display = bill_id or iapp_bill_number or "—"
+        bill_id_extra = ""
+        if bill_id and iapp_bill_number and bill_id != iapp_bill_number:
+            bill_id_extra = (
+                f'<br><span style="font-size:10px;color:var(--text-muted);">'
+                f'IAPP: {html_escape(iapp_bill_number)}</span>'
+            )
 
         error_short = html_escape(str(job.error_message or "")[:150])
         url_display = html_escape(str(job.fetch_url or ""))
         jid = job.id
 
-        # Bill title line: show IAPP bill number if different from label
-        bill_info = ""
-        if iapp_bill_number and iapp_bill_number != label:
-            bill_info = f'<br><span style="font-size:10px;color:var(--text-muted);">IAPP: {html_escape(iapp_bill_number)}</span>'
-
         rows_html += f"""
         <tr id="failed-row-{jid}">
           <td><strong>{html_escape(jurisdiction)}</strong></td>
-          <td>{html_escape(label)}{bill_info}
-              <div style="font-size:10px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                   title="{html_escape(bill_title)}">{html_escape(bill_title)}</div></td>
-          <td><span style="color:var(--{status_class});">{status_label}</span>{iapp_badge}</td>
+          <td>{html_escape(label)}
+              <div style="font-size:10px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                   title="{html_escape(title)}">{html_escape(title)}</div></td>
+          <td>{html_escape(bill_id_display)}{bill_id_extra}</td>
+          <td>{html_escape(bill_status_display)}</td>
           <td style="font-size:11px;max-width:250px;">
-            <code style="word-break:break-all;">{url_display[:80]}</code>
-            <br><span style="color:var(--{status_class});">{error_short}</span>
+            <span style="color:var(--{ing_class});font-weight:600;font-size:11px;">{ing_label}</span>
+            <br><code style="word-break:break-all;">{url_display[:80]}</code>
+            <br><span style="color:var(--{ing_class});font-size:11px;">{error_short}</span>
           </td>
           <td style="white-space:nowrap;">
             <form hx-post="/dashboard/api/upload-document"
@@ -1535,7 +1556,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
-          <td colspan="5" style="padding:8px;">
+          <td colspan="6" style="padding:8px;">
             <form hx-post="/dashboard/api/edit-document/{jid}"
                   hx-target="#failed-result-{jid}"
                   hx-swap="innerHTML"
@@ -1548,17 +1569,22 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Short Cite
                 <input type="text" name="short_cite" value="{html_escape(short_cite)}"
-                       style="width:180px;font-size:12px;padding:2px 4px;">
+                       style="width:150px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Bill Title
                 <input type="text" name="title" value="{html_escape(title)}"
-                       style="width:200px;font-size:12px;padding:2px 4px;">
+                       style="width:180px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
-                Bill Number (IAPP)
+                Bill ID (Orrick)
+                <input type="text" name="bill_id" value="{html_escape(bill_id)}"
+                       style="width:100px;font-size:12px;padding:2px 4px;">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:2px;">
+                Bill # (IAPP)
                 <input type="text" name="iapp_bill_number" value="{html_escape(iapp_bill_number)}"
-                       style="width:120px;font-size:12px;padding:2px 4px;">
+                       style="width:100px;font-size:12px;padding:2px 4px;">
               </label>
               <label style="display:flex;flex-direction:column;gap:2px;">
                 IAPP Status
@@ -1568,7 +1594,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
               <label style="display:flex;flex-direction:column;gap:2px;">
                 Fetch URL
                 <input type="text" name="fetch_url" value="{url_display}"
-                       style="width:250px;font-size:12px;padding:2px 4px;">
+                       style="width:220px;font-size:12px;padding:2px 4px;">
               </label>
               <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">
                 <span class="btn-label">Save</span>
@@ -1578,7 +1604,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="failed-result-row-{jid}" style="display:none;">
-          <td colspan="5"><div id="failed-result-{jid}"></div></td>
+          <td colspan="6"><div id="failed-result-{jid}"></div></td>
         </tr>
         """
 
@@ -1598,7 +1624,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<div class="table-wrap">'
         f'<table class="review-table">'
         f'<thead><tr>'
-        f'<th>Jur.</th><th>Document</th><th>Status</th>'
+        f'<th>Jur.</th><th>Document</th><th>Bill ID</th><th>Bill Status</th>'
         f'<th>Error / URL</th><th>Actions</th>'
         f'</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
@@ -1644,6 +1670,7 @@ def export_failed_txt(db: Session = Depends(get_db)):
         jurisdiction = ""
         label = "unknown"
         bill_title = ""
+        bill_id = ""
         iapp_bill_number = ""
         iapp_status = ""
         leg_status = ""
@@ -1653,6 +1680,7 @@ def export_failed_txt(db: Session = Depends(get_db)):
             label = dv.family.short_cite or dv.family.canonical_title or "unknown"
             bill_title = dv.family.canonical_title or ""
             meta = dv.family.metadata_ or {}
+            bill_id = meta.get("bill_id", "")
             iapp_bill_number = meta.get("iapp_bill_number", "")
             iapp_status = meta.get("iapp_status", "")
         if dv and dv.temporal_status:
@@ -1663,12 +1691,13 @@ def export_failed_txt(db: Session = Depends(get_db)):
         lines.append(f"{i}. [{jurisdiction}] {label}")
         if bill_title and bill_title != label:
             lines.append(f"   Title: {bill_title}")
-        if iapp_bill_number and iapp_bill_number != label:
+        if bill_id:
+            lines.append(f"   Bill ID: {bill_id}")
+        if iapp_bill_number and iapp_bill_number != bill_id:
             lines.append(f"   IAPP Bill #: {iapp_bill_number}")
-        if iapp_status:
-            lines.append(f"   IAPP Status: {iapp_status}")
-        elif leg_status:
-            lines.append(f"   Legislative Status: {leg_status}")
+        bill_status = iapp_status or leg_status
+        if bill_status:
+            lines.append(f"   Bill Status: {bill_status}")
         lines.append(f"   Ingestion: {status_label}")
         lines.append(f"   URL: {job.fetch_url or 'N/A'}")
         error_msg = (job.error_message or "").split("\n")[0][:200]
