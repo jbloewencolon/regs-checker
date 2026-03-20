@@ -716,6 +716,15 @@ def run_fetch(
         total = summary["completed"] + summary["failed"] + summary["skipped"]
         panel_class = "success" if summary["failed"] == 0 and summary["skipped"] == 0 else "warning"
 
+        cancelled_note = ""
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Pipeline was terminated by user. Remaining jobs still pending.'
+                '</div>'
+            )
+            panel_class = "warning"
+
         failed_note = ""
         if summary["failed"] > 0 or summary["skipped"] > 0:
             failed_note = (
@@ -734,6 +743,7 @@ def run_fetch(
             f'<strong>{summary["completed"]}/{total}</strong> documents fetched, '
             f'<strong>{summary["total_passages"]}</strong> passages extracted.'
             f'{failed_note}'
+            f'{cancelled_note}'
             f'</div>'
         )
     except Exception as e:
@@ -741,6 +751,21 @@ def run_fetch(
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/run/fetch/cancel")
+def cancel_fetch() -> HTMLResponse:
+    """Signal the running fetch pipeline to stop after the current job."""
+    from src.ingestion.pipeline import is_cancelled, request_cancel
+
+    if is_cancelled():
+        return HTMLResponse(
+            '<div class="result-panel info">Cancellation already requested.</div>'
+        )
+    request_cancel()
+    return HTMLResponse(
+        '<div class="result-panel warning">Termination requested — pipeline will stop after the current job completes.</div>'
+    )
 
 
 @router.post("/api/run/export-passages")
