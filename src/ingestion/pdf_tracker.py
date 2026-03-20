@@ -301,6 +301,9 @@ _HEADER_KEYWORDS = {
 def _find_column_boundaries(first_page) -> list[float] | None:
     """Detect column x-boundaries from the header row on page 1.
 
+    Finds the row containing "State/Terr" and uses word x-positions from
+    that row to define column boundaries.
+
     Returns a list of x-coordinates marking the left edge of each column,
     plus the right edge of the page. Returns None if headers can't be found.
     """
@@ -308,61 +311,39 @@ def _find_column_boundaries(first_page) -> list[float] | None:
     if not words:
         return None
 
-    # Find header words by matching known column headers
-    # Headers are typically in the top portion of the first page
-    header_words = [w for w in words if w["top"] < 100]
-    if not header_words:
-        # Try a wider range
-        header_words = [w for w in words if w["top"] < 150]
+    # Find the "State/Terr" word to locate the header row
+    state_header = None
+    for w in words:
+        if w["text"].startswith("State/Terr"):
+            state_header = w
+            break
 
-    if not header_words:
+    if not state_header:
         return None
 
-    # Reconstruct header text by joining words on the same line
-    # Group header words by approximate y position
-    header_y = header_words[0]["top"]
+    # Get all words on the same row (within 3pt vertically)
+    header_y = state_header["top"]
     header_line = sorted(
-        [w for w in header_words if abs(w["top"] - header_y) < 5],
+        [w for w in words if abs(w["top"] - header_y) < 3],
         key=lambda w: w["x0"],
     )
 
-    # Find the x0 positions for known header columns
-    col_starts: list[tuple[float, str]] = []
-    header_text_parts = []
-    for w in header_line:
-        header_text_parts.append((w["x0"], w["text"]))
-
-    # Match header keywords to x positions
-    full_text = " ".join(t for _, t in header_text_parts)
-    for keyword in _HEADER_KEYWORDS:
-        # Find the word(s) that form this keyword
-        for idx, (x0, text) in enumerate(header_text_parts):
-            remaining = " ".join(t for _, t in header_text_parts[idx:idx + len(keyword.split())])
-            if remaining.startswith(keyword):
-                col_starts.append((x0, keyword))
-                break
+    # Each header word/phrase maps directly to a column start
+    # From the PDF: "State/Terr", "AI Scope", "Relevant Law", "Law Link",
+    #               "Effective Date", "Key Requirements", "Enforcements Penalties"
+    col_starts = [w["x0"] for w in header_line]
 
     if len(col_starts) < 4:
-        # Try to detect from word gaps: large horizontal gaps indicate column boundaries
-        sorted_words = sorted(header_words, key=lambda w: w["x0"])
-        gaps = []
-        for j in range(1, len(sorted_words)):
-            gap = sorted_words[j]["x0"] - sorted_words[j - 1]["x1"]
-            if gap > 10:  # Significant gap = column boundary
-                gaps.append(sorted_words[j]["x0"])
-
-        if gaps:
-            # Use page left edge + gap positions as boundaries
-            page_width = first_page.width
-            col_starts_from_gaps = [sorted_words[0]["x0"]] + gaps
-            return col_starts_from_gaps + [page_width]
-
         return None
 
-    # Sort by x position and add right page edge
-    col_starts.sort(key=lambda c: c[0])
-    boundaries = [x for x, _ in col_starts] + [first_page.width]
-    return boundaries
+    logger.debug(
+        "pdf_header_columns_found",
+        count=len(col_starts),
+        labels=[w["text"] for w in header_line],
+        x_positions=col_starts,
+    )
+
+    return col_starts + [first_page.width]
 
 
 def _extract_rows_from_page(page, col_boundaries: list[float]) -> list[list[str]]:
