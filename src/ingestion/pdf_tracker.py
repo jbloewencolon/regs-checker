@@ -950,6 +950,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
     state_name = record["state"]
     law_name = record["law_name"]
     law_url = record["law_url"]
+    bill_id = record.get("bill_id", "")
     ai_scope = record["ai_scope"]
     effective_date = _parse_effective_date(record["effective_date"])
 
@@ -989,8 +990,10 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
             canonical_title=f"{state_name} - {law_name}",
             short_cite=law_name,
             subject_area=_normalize_scope(ai_scope),
+            primary_source_url=law_url or None,
             metadata_={
                 "ai_scope": ai_scope,
+                "bill_id": bill_id,
                 "key_requirements": record["key_requirements"],
                 "enforcement": record["enforcement"],
                 "pdf_last_parsed": datetime.utcnow().isoformat(),
@@ -1002,6 +1005,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         # Refresh metadata if changed
         new_meta = {
             "ai_scope": ai_scope,
+            "bill_id": bill_id,
             "key_requirements": record["key_requirements"],
             "enforcement": record["enforcement"],
             "pdf_last_parsed": datetime.utcnow().isoformat(),
@@ -1011,15 +1015,19 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
             old_meta.get("key_requirements") != new_meta["key_requirements"]
             or old_meta.get("enforcement") != new_meta["enforcement"]
             or old_meta.get("ai_scope") != new_meta["ai_scope"]
+            or old_meta.get("bill_id") != new_meta["bill_id"]
         ):
             family.metadata_ = {**old_meta, **new_meta}
             family.subject_area = _normalize_scope(ai_scope)
+            # Update primary_source_url if we have one now and didn't before
+            if law_url and not family.primary_source_url:
+                family.primary_source_url = law_url
             logger.info(
                 "metadata_refreshed",
                 state=state_code,
                 law=law_name,
                 changed_fields=[
-                    k for k in ("key_requirements", "enforcement", "ai_scope")
+                    k for k in ("key_requirements", "enforcement", "ai_scope", "bill_id")
                     if old_meta.get(k) != new_meta[k]
                 ],
             )
@@ -1050,6 +1058,7 @@ def _seed_single_law(db, record: dict) -> IngestionJob | None:
         effective_date=effective_date,
         metadata_={
             "law_url": law_url,
+            "bill_id": bill_id,
             "ai_scope": ai_scope,
         },
     )

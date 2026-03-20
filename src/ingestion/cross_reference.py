@@ -36,6 +36,8 @@ class BillDiscrepancy:
     iapp_title: str
     orrick_url: str
     iapp_url: str
+    orrick_bill_id: str = ""  # "Law Link" column from Orrick
+    iapp_bill_number: str = ""  # "Statute/bill" column from IAPP
     fields: list[FieldDiscrepancy] = field(default_factory=list)
 
     # DB references (filled in when we can link to an IngestionJob)
@@ -171,6 +173,8 @@ def cross_reference_trackers(
                 iapp_title=iapp_title,
                 orrick_url=orrick_url,
                 iapp_url=iapp_url,
+                orrick_bill_id=orrick.get("bill_id", ""),
+                iapp_bill_number=iapp_record.get("bill_number", ""),
                 fields=fields,
             ))
 
@@ -231,6 +235,23 @@ def link_discrepancies_to_jobs(
 
         if family:
             disc.family_id = family.id
+
+            # Store IAPP cross-reference data on the family
+            meta = dict(family.metadata_ or {})
+            updated = False
+            if disc.iapp_bill_number and not meta.get("iapp_bill_number"):
+                meta["iapp_bill_number"] = disc.iapp_bill_number
+                updated = True
+            if disc.iapp_url and not family.iapp_reference_url:
+                family.iapp_reference_url = disc.iapp_url
+                updated = True
+            if disc.orrick_bill_id and not meta.get("bill_id"):
+                meta["bill_id"] = disc.orrick_bill_id
+                updated = True
+            if updated:
+                family.metadata_ = meta
+                db.flush()
+
             # Find the associated IngestionJob
             job = db.scalars(
                 select(IngestionJob)

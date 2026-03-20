@@ -195,12 +195,18 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
 
     # Inject Orrick tracker metadata as context when available
     if df and df.metadata_:
+        bill_id = df.metadata_.get("bill_id")
+        if bill_id:
+            ctx["bill_id"] = bill_id
         key_reqs = df.metadata_.get("key_requirements")
         if key_reqs:
             ctx["key_requirements"] = key_reqs
         enforcement = df.metadata_.get("enforcement")
         if enforcement:
             ctx["enforcement_summary"] = enforcement
+        ai_scope = df.metadata_.get("ai_scope")
+        if ai_scope:
+            ctx["ai_scope"] = ai_scope
 
     return ctx
 
