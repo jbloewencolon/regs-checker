@@ -150,26 +150,74 @@ def _normalize_scope(ai_scope: str) -> str:
 
 
 def _extract_urls_from_pdf(pdf_path: Path) -> list[str]:
-    """Extract all hyperlinks from the PDF using pdftohtml XML output."""
+    """Extract all hyperlinks from the PDF using pdftohtml XML output.
+
+    Falls back to pdfplumber annotation extraction when pdftohtml is not
+    installed (common on Windows).
+    """
+    # Try pdftohtml first (fast, Linux/macOS)
     try:
         result = subprocess.run(
             ["pdftohtml", "-xml", "-stdout", str(pdf_path)],
             capture_output=True, text=True, timeout=60,
         )
-        if result.returncode != 0:
+        if result.returncode == 0:
+            urls = re.findall(r'href="(http[^"]+)"', result.stdout)
+            urls = [html_mod.unescape(u) for u in urls]
+            if urls:
+                return urls
+        else:
             logger.warning("pdftohtml_failed", stderr=result.stderr[:200])
-            return []
-
-        urls = re.findall(r'href="(http[^"]+)"', result.stdout)
-        # Decode HTML entities
-        urls = [html_mod.unescape(u) for u in urls]
-        return urls
     except FileNotFoundError:
-        logger.warning("pdftohtml_not_installed")
-        return []
+        logger.info("pdftohtml_not_installed_trying_pdfplumber")
     except subprocess.TimeoutExpired:
         logger.warning("pdftohtml_timeout")
-        return []
+
+    # Fallback: extract hyperlink annotations via pdfplumber
+    try:
+        import pdfplumber
+
+        urls: list[str] = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                if not hasattr(page, "hyperlinks"):
+                    # Older pdfplumber: dig into annotations
+                    annots = page.page.get("/Annots")
+                    if annots:
+                        annots = annots.resolve() if hasattr(annots, "resolve") else annots
+                        for annot in annots:
+                            a = annot.resolve() if hasattr(annot, "resolve") else annot
+                            action = a.get("/A")
+                            if action:
+                                action = action.resolve() if hasattr(action, "resolve") else action
+                                uri = action.get("/URI")
+                                if uri and str(uri).startswith("http"):
+                                    urls.append(str(uri))
+                else:
+                    for link in page.hyperlinks:
+                        uri = link.get("uri", "")
+                        if uri.startswith("http"):
+                            urls.append(uri)
+        if urls:
+            logger.info("pdf_urls_extracted_via_pdfplumber", count=len(urls))
+            return urls
+    except ImportError:
+        logger.warning("pdfplumber_not_installed")
+    except Exception as e:
+        logger.warning("pdfplumber_url_extraction_failed", error=str(e)[:200])
+
+    # Last resort: extract URLs from raw text using regex
+    try:
+        text = _extract_text_from_pdf(pdf_path)
+        urls = re.findall(r'https?://[^\s\)\"\'<>]+', text)
+        if urls:
+            logger.info("pdf_urls_extracted_via_text_regex", count=len(urls))
+            return urls
+    except Exception as e:
+        logger.warning("text_url_extraction_failed", error=str(e)[:200])
+
+    logger.warning("pdf_url_extraction_all_methods_failed")
+    return []
 
 
 def _extract_text_from_pdf(pdf_path: Path) -> str:
