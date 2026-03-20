@@ -67,9 +67,11 @@ def _is_noise_word(text: str) -> bool:
 
 
 def _clean_cell(text: str) -> str:
-    """Remove page footer fragments from merged cell text."""
+    """Remove page footer fragments and normalize whitespace in cell text."""
     text = re.sub(r"\s*Page \d+ of \d+\s*", " ", text)
     text = re.sub(r"\s*Last updated [A-Za-z]+ \d{1,2},? \d{4}\s*", " ", text)
+    # Collapse all runs of whitespace (PDF line-break artifacts) into single spaces
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
@@ -341,6 +343,7 @@ def parse_iapp_pdf(pdf_path: Path = IAPP_PDF_PATH) -> list[dict]:
 
     # Parse rows into records
     records = []
+    seen: set[tuple[str, str]] = set()  # (state_code, bill_identifier) dedup
     url_index = 0
     current_state = ""
 
@@ -390,11 +393,18 @@ def parse_iapp_pdf(pdf_path: Path = IAPP_PDF_PATH) -> list[dict]:
             bill_url = bill_urls[url_index]
             url_index += 1
 
+        final_title = bill_title or bill_number
+        dedup_key = (state_code, (bill_number or final_title).lower())
+        if dedup_key in seen:
+            logger.debug("skipping_duplicate_record", state=state_code, bill=bill_number or final_title)
+            continue
+        seen.add(dedup_key)
+
         records.append({
             "state": current_state,
             "state_code": state_code,
             "bill_number": bill_number,
-            "bill_title": bill_title or bill_number,
+            "bill_title": final_title,
             "status": status,
             "normalized_status": _normalize_status(status),
             "ai_topic": ai_topic,
