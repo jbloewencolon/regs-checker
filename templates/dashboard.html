@@ -139,6 +139,9 @@
           <button class="tab" onclick="switchStep2Tab('crossref')">
             Cross-Reference
           </button>
+          <button class="tab" onclick="switchStep2Tab('corrections')">
+            Corrections
+          </button>
         </div>
 
         <div class="step2-tab-panel" id="step2-tab-browse"
@@ -170,6 +173,24 @@
             </button>
           </div>
           <div id="crossref-result" style="margin-top:8px;"></div>
+        </div>
+        <div class="step2-tab-panel" id="step2-tab-corrections" style="display:none;">
+          <div class="step-description" style="margin-bottom:8px;">
+            Edit <code>corrections.csv</code> in the project root to fix titles, URLs, bill IDs,
+            and statuses. Columns: <code>state, title, bill_id, status, url</code>.
+            Click below to preview matches and apply.
+          </div>
+          <div class="step-actions">
+            <button class="btn btn-primary"
+                    hx-get="/dashboard/api/corrections"
+                    hx-target="#corrections-preview"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this">
+              <span class="btn-label">Load &amp; Preview</span>
+              <span class="htmx-indicator"><span class="spinner"></span> Loading...</span>
+            </button>
+          </div>
+          <div id="corrections-preview" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>

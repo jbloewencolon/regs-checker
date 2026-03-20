@@ -1917,3 +1917,259 @@ def _get_export_files() -> list[dict]:
             "has_result": result_file.exists() or done_file.exists(),
         })
     return files
+
+
+# ---------------------------------------------------------------------------
+# Manual Corrections (corrections.csv)
+# ---------------------------------------------------------------------------
+
+CORRECTIONS_CSV = Path("corrections.csv")
+
+
+def _load_corrections() -> list[dict]:
+    """Read corrections.csv and return rows as dicts."""
+    import csv
+
+    if not CORRECTIONS_CSV.exists():
+        return []
+    with open(CORRECTIONS_CSV, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _match_correction(db: Session, row: dict) -> dict:
+    """Match a correction row to a DB record.
+
+    Returns a dict with 'job', 'family', 'source', 'changes' keys.
+    """
+    state = row.get("state", "").strip().upper()
+    title = row.get("title", "").strip()
+    bill_id = row.get("bill_id", "").strip()
+    url = row.get("url", "").strip()
+    status = row.get("status", "").strip().lower()
+
+    if not state:
+        return {"error": "missing state"}
+
+    # Find matching families by jurisdiction + (bill_id or title substring)
+    query = (
+        db.query(DocumentFamily)
+        .join(Source)
+        .filter(Source.jurisdiction_code == state)
+    )
+
+    family = None
+    # Try exact short_cite match first (most reliable)
+    if title:
+        family = query.filter(DocumentFamily.short_cite == title).first()
+    # Then try bill_id in metadata
+    if not family and bill_id:
+        candidates = query.all()
+        for c in candidates:
+            meta = c.metadata_ or {}
+            cite = c.short_cite or ""
+            # Match bill_id in metadata, short_cite, or canonical_title
+            if (
+                meta.get("bill_id", "") == bill_id
+                or bill_id.replace(" ", "") in cite.replace(" ", "")
+                or bill_id.replace(" ", "") in (c.canonical_title or "").replace(" ", "")
+            ):
+                family = c
+                break
+    # Fallback: title substring
+    if not family and title:
+        candidates = query.all()
+        title_lower = title.lower()
+        for c in candidates:
+            if title_lower in (c.canonical_title or "").lower() or title_lower in (c.short_cite or "").lower():
+                family = c
+                break
+
+    if not family:
+        return {"error": f"no match for {state} / {bill_id or title}"}
+
+    # Find the latest ingestion job for this family
+    dv = (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.family_id == family.id)
+        .order_by(DocumentVersion.id.desc())
+        .first()
+    )
+    job = (
+        db.query(IngestionJob)
+        .filter(IngestionJob.document_version_id == dv.id)
+        .order_by(IngestionJob.id.desc())
+        .first()
+    ) if dv else None
+
+    changes = []
+    if url and job and url != (job.fetch_url or ""):
+        changes.append(("url", job.fetch_url or "", url))
+    if url and url != (family.primary_source_url or ""):
+        changes.append(("primary_source_url", family.primary_source_url or "", url))
+    if title and title != family.short_cite:
+        changes.append(("title", family.short_cite or "", title))
+    if bill_id:
+        meta = family.metadata_ or {}
+        if bill_id != meta.get("bill_id", ""):
+            changes.append(("bill_id", meta.get("bill_id", ""), bill_id))
+
+    return {
+        "family": family,
+        "job": job,
+        "dv": dv,
+        "changes": changes,
+        "state": state,
+    }
+
+
+@router.get("/api/corrections")
+def get_corrections(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Preview corrections from corrections.csv and show match status."""
+    rows = _load_corrections()
+    if not rows:
+        return HTMLResponse(
+            '<div class="result-panel info">'
+            'No corrections found. Add rows to <code>corrections.csv</code> '
+            "(columns: <code>state, title, bill_id, status, url</code>) and reload."
+            "</div>"
+        )
+
+    table_rows = ""
+    matched = 0
+    unmatched = 0
+    for i, row in enumerate(rows):
+        result = _match_correction(db, row)
+        state = row.get("state", "").strip().upper()
+        title = html_escape(row.get("title", "")[:50])
+        bill_id = html_escape(row.get("bill_id", ""))
+        url = row.get("url", "")
+        url_short = html_escape(url[:50]) + ("..." if len(url) > 50 else "")
+
+        if "error" in result:
+            unmatched += 1
+            badge = (
+                f'<span style="color:var(--danger);font-size:12px;">'
+                f'{html_escape(result["error"])}</span>'
+            )
+        elif not result["changes"]:
+            matched += 1
+            badge = '<span style="color:var(--text-muted);font-size:12px;">no changes needed</span>'
+        else:
+            matched += 1
+            change_list = ", ".join(c[0] for c in result["changes"])
+            badge = (
+                f'<span style="color:var(--warning);font-size:12px;">'
+                f'will update: {html_escape(change_list)}</span>'
+            )
+
+        table_rows += (
+            f"<tr>"
+            f"<td><strong>{html_escape(state)}</strong></td>"
+            f"<td style='font-size:12px;'>{title}</td>"
+            f"<td style='font-size:12px;'>{bill_id}</td>"
+            f"<td style='font-size:12px;'><code>{url_short}</code></td>"
+            f"<td>{badge}</td>"
+            f"</tr>"
+        )
+
+    actionable = sum(
+        1 for row in rows
+        if "error" not in _match_correction(db, row)
+        and _match_correction(db, row).get("changes")
+    )
+
+    summary = (
+        f'<div class="result-panel info" style="margin-bottom:8px;">'
+        f"<strong>{len(rows)}</strong> rows in corrections.csv &mdash; "
+        f"<strong>{matched}</strong> matched, "
+        f"<strong>{unmatched}</strong> unmatched, "
+        f"<strong>{actionable}</strong> with pending changes."
+        f"</div>"
+    )
+
+    apply_btn = ""
+    if actionable > 0:
+        apply_btn = (
+            '<button class="btn btn-primary" style="margin-bottom:8px;" '
+            'hx-post="/dashboard/api/apply-corrections" '
+            'hx-target="#corrections-result" '
+            'hx-swap="innerHTML" '
+            'hx-disabled-elt="this">'
+            '<span class="btn-label">Apply Corrections</span>'
+            '<span class="htmx-indicator"><span class="spinner"></span> Applying...</span>'
+            "</button>"
+        )
+
+    return HTMLResponse(
+        f"{summary}"
+        f"{apply_btn}"
+        f'<div id="corrections-result"></div>'
+        f'<div class="table-wrap">'
+        f'<table class="review-table">'
+        f"<thead><tr>"
+        f"<th>State</th><th>Title</th><th>Bill ID</th><th>URL</th><th>Status</th>"
+        f"</tr></thead>"
+        f"<tbody>{table_rows}</tbody>"
+        f"</table></div>"
+    )
+
+
+@router.post("/api/apply-corrections")
+def apply_corrections(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Apply all actionable corrections from corrections.csv to the database."""
+    rows = _load_corrections()
+    applied = 0
+    errors = []
+
+    for row in rows:
+        result = _match_correction(db, row)
+        if "error" in result or not result.get("changes"):
+            continue
+
+        family = result["family"]
+        job = result["job"]
+        url = row.get("url", "").strip()
+        title = row.get("title", "").strip()
+        bill_id = row.get("bill_id", "").strip()
+
+        try:
+            for change_type, _old, new_val in result["changes"]:
+                if change_type == "url" and job:
+                    job.fetch_url = new_val
+                    # Reset failed/manual_review jobs to pending for retry
+                    if job.status in (
+                        IngestionStatus.failed,
+                        IngestionStatus.requires_manual_review,
+                    ):
+                        job.status = IngestionStatus.pending
+                        job.error_message = None
+                elif change_type == "primary_source_url":
+                    family.primary_source_url = new_val
+                elif change_type == "title":
+                    family.short_cite = new_val
+                    family.canonical_title = (
+                        f"{family.source.jurisdiction_code} - {new_val}"
+                    )
+                elif change_type == "bill_id":
+                    meta = dict(family.metadata_ or {})
+                    meta["bill_id"] = new_val
+                    family.metadata_ = meta
+
+            applied += 1
+        except Exception as e:
+            errors.append(f"{result['state']}: {e}")
+
+    if applied:
+        db.commit()
+
+    parts = [f"Applied <strong>{applied}</strong> correction(s)."]
+    if errors:
+        parts.append(
+            f'<span style="color:var(--danger);">{len(errors)} error(s): '
+            f"{html_escape('; '.join(errors[:5]))}</span>"
+        )
+
+    panel_class = "success" if not errors else "warning"
+    return HTMLResponse(
+        f'<div class="result-panel {panel_class}">{" ".join(parts)}</div>'
+    )
