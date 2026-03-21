@@ -1068,6 +1068,43 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
   color: var(--primary);
 }
 
+/* Step Accordion */
+.step-accordion {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.step-accordion-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  background: var(--bg-secondary, #f8f9fa);
+  user-select: none;
+  list-style: none;
+}
+
+.step-accordion-header::-webkit-details-marker {
+  display: none;
+}
+
+.step-accordion-header::before {
+  content: "▸ ";
+  display: inline;
+  transition: transform 0.15s;
+}
+
+.step-accordion[open] > .step-accordion-header::before {
+  content: "▾ ";
+}
+
+.step-accordion-body {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
 /* Pagination */
 .pagination {
   display: flex;

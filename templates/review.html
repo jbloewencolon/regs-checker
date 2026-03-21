@@ -52,16 +52,30 @@
           <td style="max-width: 280px;">
             <div class="summary-text">
               {% if item.extraction_type == 'obligation' %}
-                <strong>{{ item.payload.get('subject', '?') }}</strong>
-                {{ item.payload.get('modality', '') }}
-                {{ item.payload.get('action', '')[:80] }}
+                <strong>{{ item.payload.get('subject') or '?' }}</strong>
+                {{ item.payload.get('modality') or '' }}
+                {{ (item.payload.get('action') or '')[:80] }}
               {% elif item.extraction_type == 'definition' %}
-                <strong>{{ item.payload.get('term', '?') }}</strong>:
-                {{ item.payload.get('definition_text', '')[:80] }}
+                <strong>{{ item.payload.get('term') or '?' }}</strong>:
+                {{ (item.payload.get('definition_text') or '')[:80] }}
               {% elif item.extraction_type == 'threshold' %}
-                {{ item.payload.get('threshold_condition', item.payload.get('threshold_type', '?'))[:80] }}
+                {{ (item.payload.get('threshold_condition') or item.payload.get('threshold_type') or '?')[:80] }}
               {% elif item.extraction_type == 'ambiguity' %}
-                {{ item.payload.get('ambiguous_text', '?')[:80] }}
+                {{ (item.payload.get('ambiguous_text') or '?')[:80] }}
+              {% elif item.extraction_type == 'rights_protection' %}
+                <strong>{{ item.payload.get('right_type') or '?' }}</strong>:
+                {{ (item.payload.get('right_description') or item.payload.get('right_holder') or '')[:80] }}
+              {% elif item.extraction_type == 'compliance_mechanism' %}
+                <strong>{{ item.payload.get('mechanism_type') or '?' }}</strong>:
+                {{ (item.payload.get('description') or item.payload.get('responsible_party') or '')[:80] }}
+              {% elif item.extraction_type == 'enforcement' %}
+                {{ (item.payload.get('enforcement', {}).get('enforcing_body') or item.payload.get('enforcing_body') or '?')[:80] }}
+              {% elif item.extraction_type == 'exception' %}
+                {{ (item.payload.get('exception_type') or item.payload.get('description') or '?')[:80] }}
+              {% elif item.extraction_type == 'timeline' %}
+                {{ (item.payload.get('timeline', {}).get('effective_date') or item.payload.get('effective_date') or '?')[:80] }}
+              {% elif item.extraction_type == 'actor_mapping' %}
+                {{ (item.payload.get('actors', [{}])[0].get('name', '') if item.payload.get('actors') else '?')[:80] }}
               {% else %}
                 {{ item.payload | string | truncate(80) }}
               {% endif %}

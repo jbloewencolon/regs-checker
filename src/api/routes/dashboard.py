@@ -2168,14 +2168,22 @@ def _get_pipeline_stats(db: Session) -> dict:
         status_summary[status_val] = row[1]
 
     # Dependency graph stats
-    dependency_edges = db.scalar(
-        select(func.count()).select_from(ObligationDependency)
-    ) or 0
+    try:
+        dependency_edges = db.scalar(
+            select(func.count()).select_from(ObligationDependency)
+        ) or 0
+    except Exception:
+        dependency_edges = 0
+        db.rollback()
 
     # Applicability condition stats
-    condition_nodes = db.scalar(
-        select(func.count()).select_from(ApplicabilityCondition)
-    ) or 0
+    try:
+        condition_nodes = db.scalar(
+            select(func.count()).select_from(ApplicabilityCondition)
+        ) or 0
+    except Exception:
+        condition_nodes = 0
+        db.rollback()
 
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
