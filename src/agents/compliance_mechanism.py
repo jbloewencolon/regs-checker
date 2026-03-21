@@ -6,7 +6,7 @@ procedural obligations with specific structure (who audits, how often, what's
 assessed, where results go) that the general Obligation Agent flattens into
 generic action strings.
 
-Uses GPT (gpt-oss-20b) because parsing structured procedural detail from
+Uses GPT (openai/gpt-oss-20b) because parsing structured procedural detail from
 dense legal text requires strong instruction following and precision. GPT's
 131k context window also handles full-section assessments where audit scope
 spans multiple paragraphs.
@@ -20,7 +20,7 @@ from src.schemas.extraction import ComplianceMechanismPayload
 
 class ComplianceMechanismAgent(BaseExtractionAgent):
     agent_name = "compliance_mechanism"
-    model_override = "gpt-oss-20b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in compliance mechanisms in AI legislation.

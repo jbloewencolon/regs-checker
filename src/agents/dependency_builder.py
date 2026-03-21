@@ -1,7 +1,7 @@
 """Dependency Graph Builder — post-extraction agent that identifies relationships.
 
 Runs per-document after all extraction agents have completed.  Loads ALL
-extractions for a document version, sends them to GPT (gpt-oss-20b with
+extractions for a document version, sends them to GPT (openai/gpt-oss-20b with
 131k context) to identify inter-extraction relationships, and writes edges
 to the ``obligation_dependencies`` table.
 
@@ -40,7 +40,7 @@ from src.db.models import (
 logger = structlog.get_logger()
 
 # GPT model with 131k context — can handle hundreds of extractions per document
-MODEL_OVERRIDE = "gpt-oss-20b"
+MODEL_OVERRIDE = "openai/gpt-oss-20b"
 
 # Maximum extractions to include in a single prompt to stay within context limits.
 # Each extraction summary is ~200-400 tokens, so 300 extractions ≈ 90k tokens.
