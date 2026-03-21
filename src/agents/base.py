@@ -221,15 +221,29 @@ class BaseExtractionAgent(ABC):
             response = self._provider.call(**call_kwargs)
         except Exception as exc:
             if self.model_override is not None:
+                fallback_model = self._provider.model_id
                 logger.warning(
                     "extraction_model_fallback",
                     agent=self.agent_name,
                     failed_model=self.model_override,
-                    error=str(exc)[:200],
+                    fallback_model=fallback_model,
+                    error=str(exc)[:300],
                 )
                 call_kwargs["model_override"] = None
                 call_kwargs["reasoning_effort"] = None
-                response = self._provider.call(**call_kwargs)
+                try:
+                    response = self._provider.call(**call_kwargs)
+                except Exception as fallback_exc:
+                    logger.error(
+                        "extraction_fallback_also_failed",
+                        agent=self.agent_name,
+                        failed_model=self.model_override,
+                        fallback_model=fallback_model,
+                        original_error=str(exc)[:200],
+                        fallback_error=str(fallback_exc)[:200],
+                    )
+                    # Raise the original error — more informative
+                    raise exc from fallback_exc
             else:
                 raise
 

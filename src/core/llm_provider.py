@@ -214,7 +214,15 @@ class LocalLLMProvider(BaseLLMProvider):
             json=payload,
             timeout=120.0,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            # Include response body in error for diagnostics (LM Studio
+            # often returns useful model-not-loaded messages in the body)
+            body = response.text[:500] if response.text else ""
+            raise httpx.HTTPStatusError(
+                f"HTTP {response.status_code} for model {effective_model}: {body}",
+                request=response.request,
+                response=response,
+            )
         data = response.json()
 
         # Parse OpenAI-compatible response

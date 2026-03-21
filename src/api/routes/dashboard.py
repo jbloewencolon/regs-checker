@@ -164,7 +164,7 @@ def review_page(
             "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,
-            "source_text": nsr.passage_text if nsr else None,
+            "source_text": nsr.text_content if nsr else None,
         })
 
     total = counts.get(status, 0)
