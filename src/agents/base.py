@@ -192,6 +192,9 @@ class BaseExtractionAgent(ABC):
 
         Returns (text, usage, model_id) where usage is an LLMUsage dataclass
         and model_id is the actual model that served the request.
+
+        If a model_override is set and the call fails (e.g. 400 from LM Studio),
+        retries once with the provider's default model for resilience.
         """
         system_prompt = self._resolve_system_prompt()
         system_prompt += (
@@ -205,7 +208,7 @@ class BaseExtractionAgent(ABC):
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
-        response = self._provider.call(
+        call_kwargs = dict(
             system_prompt=system_prompt,
             user_prompt=prompt,
             max_tokens=settings.extraction_max_tokens,
@@ -213,6 +216,22 @@ class BaseExtractionAgent(ABC):
             model_override=self.model_override,
             reasoning_effort=self.reasoning_effort,
         )
+
+        try:
+            response = self._provider.call(**call_kwargs)
+        except Exception as exc:
+            if self.model_override is not None:
+                logger.warning(
+                    "extraction_model_fallback",
+                    agent=self.agent_name,
+                    failed_model=self.model_override,
+                    error=str(exc)[:200],
+                )
+                call_kwargs["model_override"] = None
+                call_kwargs["reasoning_effort"] = None
+                response = self._provider.call(**call_kwargs)
+            else:
+                raise
 
         logger.debug(
             "llm_raw_response",

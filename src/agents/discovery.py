@@ -179,7 +179,7 @@ class DiscoveryAgent:
             temperature=0.0,
         )
 
-    def classify_bill(self, text: str, max_chars: int = 32000) -> ClassificationResult:
+    def classify_bill(self, text: str, max_chars: int = 100000) -> ClassificationResult:
         """Classify whether text contains AI-related legislation.
 
         Args:
@@ -208,7 +208,7 @@ class DiscoveryAgent:
             model_id=response.model_id,
         )
 
-    def extract_metadata(self, text: str, max_chars: int = 32000) -> MetadataResult:
+    def extract_metadata(self, text: str, max_chars: int = 100000) -> MetadataResult:
         """Extract structured metadata from bill text.
 
         Args:
