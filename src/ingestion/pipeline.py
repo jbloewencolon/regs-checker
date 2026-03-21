@@ -78,7 +78,7 @@ def _verify_content_or_fallback(
     # Read a sample of the raw text for classification
     try:
         from src.ingestion.parser import extract_text_sample
-        text_sample = extract_text_sample(raw_artifact, max_chars=4000)
+        text_sample = extract_text_sample(raw_artifact, max_chars=32000)
     except Exception:
         # If we can't extract text yet, skip classification and let parse handle it
         return True

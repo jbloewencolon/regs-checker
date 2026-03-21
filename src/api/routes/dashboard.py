@@ -813,6 +813,36 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/retry-job/{job_id}")
+def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset a single failed/manual-review job back to pending for re-fetching."""
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<span style="color:var(--danger);font-size:12px;">Job #{job_id} not found.</span>'
+        )
+    if job.status not in (
+        IngestionStatus.failed,
+        IngestionStatus.requires_manual_review,
+        IngestionStatus.completed,
+    ):
+        return HTMLResponse(
+            f'<span style="color:var(--warning);font-size:12px;">'
+            f'Job #{job_id} is {job.status.value} — cannot re-fetch.</span>'
+        )
+    job.status = IngestionStatus.pending
+    job.error_message = None
+    job.fetch_started_at = None
+    job.fetch_completed_at = None
+    job.parse_started_at = None
+    job.parse_completed_at = None
+    db.commit()
+    return HTMLResponse(
+        f'<span style="color:var(--success);font-size:12px;">'
+        f'Job #{job_id} reset to pending. Run Fetch to re-process.</span>'
+    )
+
+
 @router.post("/api/run/extract/cancel")
 def cancel_extract() -> HTMLResponse:
     """Signal the running extraction pipeline to stop after the current passage."""
@@ -1752,6 +1782,15 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             </form>
             <button class="btn btn-sm" onclick="toggleFailedEdit({jid})"
                     style="margin-left:4px;">Edit</button>
+            <button class="btn btn-sm"
+                    hx-post="/dashboard/api/retry-job/{jid}"
+                    hx-target="#failed-result-{jid}"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    style="margin-left:4px;">
+              <span class="btn-label">Re-fetch</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
