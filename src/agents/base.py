@@ -43,6 +43,7 @@ class ExtractionResult:
     prompt_hash: str
     model_id: str
     template_version: str | None
+    truncated: bool = False  # True when finish_reason=length (output cut off)
 
 
 class BaseExtractionAgent(ABC):
@@ -100,7 +101,7 @@ class BaseExtractionAgent(ABC):
 
         while attempt <= self.max_retries:
             try:
-                raw_output, usage, response_model_id = self._call_llm(prompt, attempt)
+                raw_output, usage, response_model_id, stop_reason = self._call_llm(prompt, attempt)
                 logger.debug(
                     "extraction_pre_parse",
                     agent=self.agent_name,
@@ -110,6 +111,8 @@ class BaseExtractionAgent(ABC):
                 cleaned = self._strip_code_fences(raw_output)
                 cleaned = self._strip_think_blocks(cleaned)
                 parsed = json.loads(cleaned)
+
+                was_truncated = stop_reason == "length"
 
                 # Check for abstention
                 if parsed.get("detected") is False:
@@ -121,6 +124,7 @@ class BaseExtractionAgent(ABC):
                         prompt_hash=prompt_hash,
                         model_id=response_model_id,
                         template_version=template_version,
+                        truncated=was_truncated,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -143,6 +147,15 @@ class BaseExtractionAgent(ABC):
                     result["_template_version"] = template_version
                     validated_extractions.append(result)
 
+                if was_truncated:
+                    logger.warning(
+                        "extraction_truncated",
+                        agent=self.agent_name,
+                        model_id=response_model_id,
+                        output_tokens=usage.output_tokens,
+                        extractions_count=len(validated_extractions),
+                    )
+
                 return ExtractionResult(
                     extractions=validated_extractions,
                     abstention=None,
@@ -151,6 +164,7 @@ class BaseExtractionAgent(ABC):
                     prompt_hash=prompt_hash,
                     model_id=response_model_id,
                     template_version=template_version,
+                    truncated=was_truncated,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
@@ -262,7 +276,7 @@ class BaseExtractionAgent(ABC):
             raw_text_preview=response.text[:500] if response.text else "<empty>",
         )
 
-        return response.text, response.usage, response.model_id
+        return response.text, response.usage, response.model_id, response.stop_reason
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str

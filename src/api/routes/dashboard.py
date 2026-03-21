@@ -114,6 +114,7 @@ def review_page(
     request: Request,
     status: str = "pending",
     page: int = Query(default=1, ge=1),
+    truncated_only: bool = Query(default=False),
     db: Session = Depends(get_db),
 ):
     """Review queue page with filtering and pagination."""
@@ -128,11 +129,33 @@ def review_page(
             )
         ) or 0
 
+    # Count truncated items (pending only)
+    truncated_count = db.scalar(
+        select(func.count()).select_from(
+            select(ReviewQueueItem)
+            .join(Extraction)
+            .where(
+                ReviewQueueItem.status == "pending",
+                Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
+            )
+            .subquery()
+        )
+    ) or 0
+
     # Get items for current status
     query = (
         select(ReviewQueueItem)
         .join(Extraction)
         .where(ReviewQueueItem.status == status)
+    )
+
+    if truncated_only:
+        query = query.where(
+            Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
+        )
+
+    query = (
+        query
         .order_by(ReviewQueueItem.priority.desc(), ReviewQueueItem.created_at)
         .offset((page - 1) * per_page)
         .limit(per_page)
@@ -153,6 +176,8 @@ def review_page(
         if e and e.metadata_:
             breakdown = e.metadata_.get("confidence_breakdown")
 
+        truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
+
         items.append({
             "queue_id": qi.id,
             "extraction_id": e.id if e else None,
@@ -167,6 +192,7 @@ def review_page(
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,
             "source_text": nsr.text_content if nsr else None,
+            "truncated": truncated,
         })
 
     total = counts.get(status, 0)
@@ -178,6 +204,8 @@ def review_page(
         "filter_status": status,
         "current_page": page,
         "total_pages": total_pages,
+        "truncated_only": truncated_only,
+        "truncated_count": truncated_count,
     })
 
 

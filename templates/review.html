@@ -10,7 +10,7 @@
   </div>
 
   <div class="tabs">
-    <button class="tab {% if filter_status == 'pending' %}active{% endif %}"
+    <button class="tab {% if filter_status == 'pending' and not truncated_only %}active{% endif %}"
             hx-get="/dashboard/review?status=pending" hx-target="main" hx-push-url="true">
       Pending <span class="tab-count">{{ counts.get('pending', 0) }}</span>
     </button>
@@ -22,6 +22,13 @@
             hx-get="/dashboard/review?status=rejected" hx-target="main" hx-push-url="true">
       Rejected <span class="tab-count">{{ counts.get('rejected', 0) }}</span>
     </button>
+    {% if truncated_count > 0 %}
+    <button class="tab {% if truncated_only %}active{% endif %}"
+            hx-get="/dashboard/review?status=pending&truncated_only=true" hx-target="main" hx-push-url="true"
+            style="margin-left: auto; border-color: #fca5a5; color: #dc2626;">
+      Truncated <span class="tab-count" style="background: #fef2f2; color: #dc2626;">{{ truncated_count }}</span>
+    </button>
+    {% endif %}
   </div>
 
   {% if items %}
@@ -48,6 +55,9 @@
           </td>
           <td>
             <span class="type-tag">{{ item.extraction_type }}</span>
+            {% if item.truncated %}
+            <span class="truncated-badge" title="Model output was cut off (finish_reason=length). This extraction may be incomplete.">TRUNCATED</span>
+            {% endif %}
           </td>
           <td style="max-width: 280px;">
             <div class="summary-text">

@@ -639,6 +639,10 @@ def extract_single_record(
                         orrick_similarity=orrick_sim,
                     )
 
+                    extraction_meta: dict = {}
+                    if result.truncated:
+                        extraction_meta["truncated"] = True
+
                     extraction = Extraction(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,
@@ -652,6 +656,7 @@ def extract_single_record(
                         template_version=result.template_version,
                         model_id=result.model_id,
                         extraction_job_id=extraction_job.id if extraction_job else None,
+                        metadata_=extraction_meta if extraction_meta else {},
                     )
                     db.add(extraction)
                     db.flush()

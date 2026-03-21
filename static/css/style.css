@@ -687,6 +687,19 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
   white-space: nowrap;
 }
 
+.truncated-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  white-space: nowrap;
+  margin-left: 4px;
+  cursor: help;
+}
+
 /* Summary */
 .summary-text {
   font-size: 13px;
