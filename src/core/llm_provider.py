@@ -173,8 +173,8 @@ class LocalLLMProvider(BaseLLMProvider):
     def normalize_model_id(model_name: str) -> str:
         """Normalize a local model name into a clean model_id.
 
-        ``DeepSeek-R1-0528`` → ``deepseek-r1-0528-local``
-        ``Qwen3.5`` → ``qwen3.5-local``
+        ``deepseek/deepseek-r1-0528-qwen3-8b`` → ``deepseek-deepseek-r1-0528-qwen3-8b-local``
+        ``qwen/qwen3.5-9b`` → ``qwen-qwen3.5-9b-local``
         """
         return model_name.replace(":", "-").replace("/", "-") + "-local"
 

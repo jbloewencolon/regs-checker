@@ -40,8 +40,8 @@ class Settings(BaseSettings):
 
     # Local LLM (OpenAI-compatible API: LM Studio, llama.cpp, vLLM, Ollama)
     local_llm_url: str = "http://localhost:1234"  # LM Studio default
-    local_llm_model: str = "Qwen3.5"  # Default model for discovery tasks
-    local_extraction_model: str = "DeepSeek-R1-0528"  # Default model for local extraction
+    local_llm_model: str = "qwen/qwen3.5-9b"  # Default model for discovery tasks
+    local_extraction_model: str = "deepseek/deepseek-r1-0528-qwen3-8b"  # Default model for local extraction
 
     # Web search (for fallback URL verification)
     search_provider: str = ""  # "tavily", "serper", or "google_cse"

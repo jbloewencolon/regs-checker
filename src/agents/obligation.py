@@ -13,7 +13,7 @@ from src.schemas.extraction import ObligationPayload
 
 class ObligationAgent(BaseExtractionAgent):
     agent_name = "obligation"
-    model_override = "Qwen3.5"
+    model_override = "qwen/qwen3.5-9b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in regulatory obligations.

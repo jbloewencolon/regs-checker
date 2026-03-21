@@ -14,8 +14,7 @@ from src.schemas.extraction import ThresholdExceptionPayload
 
 class ThresholdExceptionAgent(BaseExtractionAgent):
     agent_name = "threshold_exception"
-    model_override = "openai/gpt-oss-20b"
-    reasoning_effort = "medium"
+    model_override = "qwen/qwen3.5-9b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in thresholds and exceptions.
