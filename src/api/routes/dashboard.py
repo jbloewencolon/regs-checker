@@ -770,7 +770,11 @@ def cancel_fetch() -> HTMLResponse:
 
 @router.post("/api/run/fetch/reset")
 def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Reset all failed/completed ingestion jobs back to pending for re-fetching."""
+    """Reset non-approved ingestion jobs back to pending for re-fetching.
+
+    Only resets failed, manual-review, and stale intermediate-state jobs.
+    Completed (approved) jobs are never touched.
+    """
     from sqlalchemy import update
 
     try:
@@ -779,7 +783,6 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
             .where(
                 IngestionJob.status.in_([
                     IngestionStatus.failed,
-                    IngestionStatus.completed,
                     IngestionStatus.requires_manual_review,
                     IngestionStatus.fetching,
                     IngestionStatus.fetched,
@@ -799,11 +802,12 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         count = result.rowcount
         if count == 0:
             return HTMLResponse(
-                '<div class="result-panel info">No jobs to reset — all are already pending.</div>'
+                '<div class="result-panel info">No jobs to reset — all are either pending or completed.</div>'
             )
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Reset <strong>{count}</strong> jobs back to pending. Ready to re-fetch.'
+            f'Reset <strong>{count}</strong> non-approved jobs back to pending. '
+            f'Completed jobs were not affected. Ready to re-fetch.'
             f'</div>'
         )
     except Exception as e:

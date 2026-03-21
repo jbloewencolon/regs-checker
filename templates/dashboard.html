@@ -204,7 +204,7 @@
           </button>
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/fetch/cancel"
-                  hx-target="#step2-result"
+                  hx-target="#fetch-cancel-status"
                   hx-swap="innerHTML">
             Terminate
           </button>
@@ -212,10 +212,11 @@
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset all failed/completed fetch jobs back to pending?">
+                  hx-confirm="Reset all failed and review-pending jobs back to pending? Completed jobs will not be affected.">
             Reset
           </button>
         </div>
+        <div id="fetch-cancel-status"></div>
         <div class="step-result" id="step2-result"></div>
 
         <!-- Document tabs -->
@@ -434,12 +435,13 @@
         <div style="margin-top: 8px;">
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/extract/cancel"
-                  hx-target="#extract-result"
+                  hx-target="#extract-cancel-status"
                   hx-swap="innerHTML">
             Terminate
           </button>
         </div>
 
+        <div id="extract-cancel-status"></div>
         <div class="step-result" id="extract-result"></div>
       </div>
     </div>
