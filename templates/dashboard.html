@@ -448,6 +448,36 @@
 
     <div class="step-connector"></div>
 
+    <!-- STEP 3.5: Build Dependency Graph -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">3.5</div>
+        <div class="step-title">Build Dependency Graph</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Identifies relationships between extractions within each document:
+          definition references, exceptions, enforcement links, cross-references.
+          Uses <strong>GPT (gpt-oss-20b, 131k context)</strong> to analyze all extractions per document.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/dependency-graph"
+                  hx-target="#depgraph-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Build dependency graphs for all pending documents? This sends all extractions per document to GPT.">
+            <span class="btn-label">Build All Pending</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Analyzing relationships...</span>
+          </button>
+        </div>
+        <div class="step-result" id="depgraph-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
     <!-- STEP 4: Review (MANUAL) -->
     <div class="step step-manual">
       <div class="step-header">

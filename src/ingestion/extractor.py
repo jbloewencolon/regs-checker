@@ -59,11 +59,13 @@ from src.core.jurisdiction_check import (
 )
 from src.db.models import (
     ConfidenceTier,
+    DocumentVersion,
     Extraction,
     ExtractionJob,
     ExtractionType,
     IngestionJob,
     NormalizedSourceRecord,
+    ObligationDependency,
     ReviewQueueItem,
     ReviewStatus,
 )
@@ -894,6 +896,131 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     return summary
+
+
+# ---------------------------------------------------------------------------
+# Dependency Graph Building (Phase 2 — post-extraction)
+# ---------------------------------------------------------------------------
+
+
+def run_dependency_graph(
+    db,
+    document_version_id: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Build dependency graphs for documents that have extractions.
+
+    This is a post-extraction step that identifies relationships between
+    extractions within each document and writes edges to the
+    ``obligation_dependencies`` table.
+
+    Uses GPT (gpt-oss-20b) with 131k context to process entire documents
+    at once, identifying cross-references between obligations, definitions,
+    thresholds, exceptions, enforcement mechanisms, rights, and compliance
+    mechanisms.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Process a single document version (None = all
+            document versions that have extractions but no dependency edges).
+        on_progress: Optional callback(message: str) for status updates.
+
+    Returns:
+        Summary dict with counts.
+    """
+    from src.agents.dependency_builder import build_dependency_graph
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    if document_version_id:
+        # Process a single document
+        result = build_dependency_graph(db, document_version_id, on_progress)
+        return {
+            "documents_processed": 1,
+            "total_edges": result["edges_created"],
+            "results": [result],
+        }
+
+    # Find all document versions that have extractions but no dependency edges
+    dv_ids_with_extractions = (
+        db.execute(
+            select(NormalizedSourceRecord.document_version_id)
+            .join(Extraction)
+            .group_by(NormalizedSourceRecord.document_version_id)
+        ).scalars().all()
+    )
+
+    if not dv_ids_with_extractions:
+        _log("No documents with extractions found.")
+        return {"documents_processed": 0, "total_edges": 0, "results": []}
+
+    # Filter to those without existing dependency edges
+    dv_ids_with_deps = set(
+        db.execute(
+            select(NormalizedSourceRecord.document_version_id)
+            .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+            .join(
+                ObligationDependency,
+                ObligationDependency.parent_extraction_id == Extraction.id,
+            )
+            .group_by(NormalizedSourceRecord.document_version_id)
+        ).scalars().all()
+    )
+
+    pending_ids = [
+        dv_id for dv_id in dv_ids_with_extractions
+        if dv_id not in dv_ids_with_deps
+    ]
+
+    if not pending_ids:
+        _log("All documents already have dependency graphs.")
+        return {"documents_processed": 0, "total_edges": 0, "results": []}
+
+    _log(f"Building dependency graphs for {len(pending_ids)} documents...")
+
+    results = []
+    total_edges = 0
+
+    for i, dv_id in enumerate(pending_ids):
+        if is_cancelled():
+            _log(f"Dependency graph building terminated after {i} documents.")
+            return {
+                "documents_processed": i,
+                "total_edges": total_edges,
+                "results": results,
+                "cancelled": True,
+            }
+
+        try:
+            result = build_dependency_graph(db, dv_id, on_progress)
+            results.append(result)
+            total_edges += result["edges_created"]
+        except Exception as e:
+            logger.error(
+                "dependency_graph_failed",
+                document_version_id=dv_id,
+                error=str(e),
+            )
+            results.append({
+                "document_version_id": dv_id,
+                "edges_created": 0,
+                "errors": 1,
+                "error_message": str(e),
+            })
+
+    _log(
+        f"\nDependency graph building complete: "
+        f"{total_edges} edges across {len(pending_ids)} documents"
+    )
+
+    return {
+        "documents_processed": len(pending_ids),
+        "total_edges": total_edges,
+        "results": results,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -27,6 +27,7 @@ from src.db.models import (
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
+    ObligationDependency,
     RawArtifact,
     ReviewQueueItem,
     ReviewStatus,
@@ -970,6 +971,59 @@ def run_api_extract(
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
+            f'{cancelled_note}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/dependency-graph")
+def run_dependency_graph(
+    document_version_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Build dependency graphs linking extractions within documents.
+
+    Uses GPT (gpt-oss-20b, 131k context) to identify relationships between
+    obligations, definitions, thresholds, exceptions, enforcement mechanisms,
+    rights, and compliance mechanisms.
+
+    Args:
+        document_version_id: Process a single document (None = all pending).
+    """
+    try:
+        from src.ingestion.extractor import run_dependency_graph as _run_dep_graph
+        summary = _run_dep_graph(db, document_version_id=document_version_id)
+
+        docs = summary["documents_processed"]
+        edges = summary["total_edges"]
+        cancelled_note = ""
+        panel_class = "success"
+
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Dependency graph building was terminated by user.'
+                '</div>'
+            )
+            panel_class = "warning"
+
+        if docs == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">'
+                'No documents pending dependency graph construction. '
+                'All documents with extractions already have dependency edges.'
+                '</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel {panel_class}">'
+            f'Built dependency graphs for {docs} document(s): '
+            f'{edges} relationship edges created.'
             f'{cancelled_note}'
             f'</div>'
         )
@@ -2064,6 +2118,11 @@ def _get_pipeline_stats(db: Session) -> dict:
         status_val = row[0].value if hasattr(row[0], "value") else str(row[0])
         status_summary[status_val] = row[1]
 
+    # Dependency graph stats
+    dependency_edges = db.scalar(
+        select(func.count()).select_from(ObligationDependency)
+    ) or 0
+
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
 
@@ -2080,6 +2139,7 @@ def _get_pipeline_stats(db: Session) -> dict:
         "pending_review": pending_review,
         "review_by_tier": review_by_tier,
         "pending_results": pending_results,
+        "dependency_edges": dependency_edges,
         "status_summary": status_summary,
     }
 
