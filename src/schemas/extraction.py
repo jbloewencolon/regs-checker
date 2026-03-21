@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, field_validator
 class EvidenceSpan(BaseModel):
     """A verbatim text span from the source passage supporting a field."""
 
-    field_name: str = Field(description="Name of the extraction field this evidence supports")
+    field_name: str | None = Field(default=None, description="Name of the extraction field this evidence supports")
     text: str = Field(description="Verbatim text from the source passage")
     char_start: int | None = Field(default=None, description="Start character offset in passage")
     char_end: int | None = Field(default=None, description="End character offset in passage")

@@ -200,6 +200,15 @@ class LocalLLMProvider(BaseLLMProvider):
 
         effective_model = model_override or self._model
 
+        # Reasoning models (DeepSeek-R1, Qwen3 in thinking mode) use output
+        # tokens for <think> blocks before producing JSON.  Double the budget
+        # so the actual answer isn't truncated after the thinking phase.
+        is_reasoning = any(
+            tag in effective_model.lower()
+            for tag in ("deepseek-r1", "qwen3")
+        )
+        adjusted_max = max_tokens * 2 if is_reasoning else max_tokens
+
         # Cap max_tokens to fit within context window.
         # LM Studio needs: prompt_tokens + max_tokens <= n_ctx.
         # Use a rough estimate (4 chars ≈ 1 token) with a safety margin.
@@ -216,7 +225,7 @@ class LocalLLMProvider(BaseLLMProvider):
                 available=available,
             )
             available = 512  # Minimum viable output
-        effective_max_tokens = min(max_tokens, available)
+        effective_max_tokens = min(adjusted_max, available)
 
         payload: dict[str, Any] = {
             "model": effective_model,
@@ -269,7 +278,9 @@ class LocalLLMProvider(BaseLLMProvider):
         # may emit — they consume output tokens and can cause finish_reason=length
         # before the actual JSON answer is complete.
         import re
+        # Match both closed <think>...</think> and unclosed <think>... (truncated)
         stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+        stripped = re.sub(r"<think>.*$", "", stripped, flags=re.DOTALL).strip()
         if finish_reason == "length" and not stripped:
             raise ValueError(
                 f"Empty response from local LLM "
