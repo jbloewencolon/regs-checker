@@ -13,7 +13,7 @@ from src.schemas.extraction import DefinitionActorPayload
 
 class DefinitionActorAgent(BaseExtractionAgent):
     agent_name = "definition_actor"
-    model_override = "qwen/qwen3.5-9b"
+    model_override = "gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in definitions, actor roles, and framework references.

@@ -201,6 +201,127 @@ class AmbiguityPayload(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Rights & Protections Agent output (individual rights granted by AI laws)
+# ---------------------------------------------------------------------------
+
+
+class RemedyInfo(BaseModel):
+    """A remedy or recourse available to the rights holder."""
+
+    remedy_type: str = Field(
+        description="Type: complaint, appeal, damages, injunction, deletion, correction"
+    )
+    description: str
+    available_to: str | None = Field(
+        default=None, description="Who can invoke this remedy"
+    )
+    time_limit: str | None = Field(
+        default=None, description="Deadline to exercise the remedy"
+    )
+
+
+class RightsProtectionPayload(BaseModel):
+    """Extraction payload for the Rights & Protections Agent.
+
+    Captures individual rights and protections granted by AI legislation —
+    the flip side of obligations. While obligations define what entities
+    must do, rights define what individuals are entitled to.
+    """
+
+    right_holder: str = Field(
+        description="Who holds the right (e.g., consumer, employee, applicant, data subject)"
+    )
+    right_holder_normalized: str | None = Field(
+        default=None, description="Normalized category (consumer, employee, public)"
+    )
+    right_type: str = Field(
+        description="Type: notice, explanation, opt_out, appeal, deletion, "
+        "human_review, non_discrimination, portability, access"
+    )
+    right_description: str = Field(
+        description="Full description of the right in legal language"
+    )
+    trigger_condition: str | None = Field(
+        default=None, description="When the right is activated (e.g., adverse decision, AI interaction)"
+    )
+    duty_bearer: str | None = Field(
+        default=None, description="Who must fulfill this right (developer, deployer, employer)"
+    )
+    remedies: list[RemedyInfo] = Field(
+        default_factory=list, description="Available remedies if right is violated"
+    )
+    section_reference: str | None = None
+    jurisdiction: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Compliance Mechanisms Agent output (procedural requirements)
+# ---------------------------------------------------------------------------
+
+
+class AuditRequirement(BaseModel):
+    """A specific audit or assessment requirement."""
+
+    audit_type: str = Field(
+        description="Type: bias_audit, impact_assessment, risk_assessment, "
+        "algorithmic_audit, third_party_audit, self_certification"
+    )
+    frequency: str | None = Field(
+        default=None, description="How often (annual, before deployment, ongoing)"
+    )
+    assessor: str | None = Field(
+        default=None, description="Who performs it (internal, third-party, regulator)"
+    )
+    scope: str | None = Field(
+        default=None, description="What is assessed"
+    )
+    reporting_to: str | None = Field(
+        default=None, description="Who receives the results"
+    )
+    public_disclosure: bool | None = Field(
+        default=None, description="Whether results must be made public"
+    )
+
+
+class ComplianceMechanismPayload(BaseModel):
+    """Extraction payload for the Compliance Mechanisms Agent.
+
+    Captures procedural compliance requirements: impact assessments, audits,
+    registration, certification, record-keeping, and reporting mandates.
+    These are structured procedural obligations with specific parameters
+    (who audits, how often, what's assessed, where results go).
+    """
+
+    mechanism_type: str = Field(
+        description="Type: impact_assessment, bias_audit, registration, "
+        "certification, record_keeping, reporting, disclosure, notification"
+    )
+    description: str = Field(
+        description="Full description of the compliance requirement"
+    )
+    responsible_party: str = Field(
+        description="Who must perform this compliance activity"
+    )
+    responsible_party_normalized: str | None = Field(
+        default=None, description="Normalized: developer, deployer, operator, vendor"
+    )
+    audits: list[AuditRequirement] = Field(
+        default_factory=list, description="Specific audit/assessment requirements"
+    )
+    record_retention_period: str | None = Field(
+        default=None, description="How long records must be kept"
+    )
+    reporting_frequency: str | None = Field(
+        default=None, description="How often reports must be filed"
+    )
+    reporting_recipient: str | None = Field(
+        default=None, description="Who receives compliance reports"
+    )
+    section_reference: str | None = None
+    jurisdiction: str | None = None
+
+
+# ---------------------------------------------------------------------------
 # Registry mapping extraction types to payload schemas
 # ---------------------------------------------------------------------------
 
@@ -212,4 +333,6 @@ EXTRACTION_TYPE_SCHEMAS: dict[str, type[BaseModel]] = {
     "threshold": ThresholdExceptionPayload,
     "exception": ThresholdExceptionPayload,
     "ambiguity": AmbiguityPayload,
+    "rights_protection": RightsProtectionPayload,
+    "compliance_mechanism": ComplianceMechanismPayload,
 }

@@ -116,13 +116,20 @@ def compute_orrick_similarity(
         "exception_type", "description",
         "ambiguous_text", "interpretation_notes",
         "suggested_clarification",
+        # Rights & Protections fields
+        "right_holder", "right_type", "right_description",
+        "trigger_condition", "duty_bearer",
+        # Compliance Mechanisms fields
+        "mechanism_type", "responsible_party",
+        "record_retention_period", "reporting_frequency",
+        "reporting_recipient",
     ):
         val = extraction_payload.get(field)
         if val and isinstance(val, str):
             extraction_text_parts.append(val)
 
     # Include nested enforcement/timeline fields
-    for nested_key in ("enforcement", "timeline", "exceptions"):
+    for nested_key in ("enforcement", "timeline", "exceptions", "remedies", "audits"):
         nested = extraction_payload.get(nested_key)
         if isinstance(nested, dict):
             for v in nested.values():

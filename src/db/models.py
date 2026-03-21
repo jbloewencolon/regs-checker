@@ -76,6 +76,8 @@ class ExtractionType(str, enum.Enum):
     timeline = "timeline"
     framework_ref = "framework_ref"
     ambiguity = "ambiguity"
+    rights_protection = "rights_protection"
+    compliance_mechanism = "compliance_mechanism"
 
 
 class ConfidenceTier(str, enum.Enum):

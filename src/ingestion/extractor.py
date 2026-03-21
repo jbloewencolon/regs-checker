@@ -45,8 +45,10 @@ from sqlalchemy import select
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
+from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
+from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.confidence import compute_confidence
@@ -112,6 +114,8 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     ],
     "threshold_exception": [ExtractionType.threshold, ExtractionType.exception],
     "ambiguity": [ExtractionType.ambiguity],
+    "rights_protection": [ExtractionType.rights_protection],
+    "compliance_mechanism": [ExtractionType.compliance_mechanism],
 }
 
 # ---------------------------------------------------------------------------
@@ -134,6 +138,24 @@ _THRESHOLD_EXCEPTION_PATTERN = re.compile(
 _DEFINITION_ACTOR_PATTERN = re.compile(
     r'\b(means|defined\s+as|shall\s+mean|includes|"[A-Z][^"]{2,}"'
     r"|refers\s+to|the\s+term)\b",
+    re.IGNORECASE,
+)
+
+_RIGHTS_PROTECTION_PATTERN = re.compile(
+    r"\b(right\s+to|entitled|opt.?out|appeal|contest|human\s+review"
+    r"|notif(y|ied|ication)|informed|disclos(e|ure)|consent"
+    r"|complain|remedy|recourse|delete|erasure|withdraw"
+    r"|request\s+(that|a\b|an\b|the\b|review|explanation))\b",
+    re.IGNORECASE,
+)
+
+_COMPLIANCE_MECHANISM_PATTERN = re.compile(
+    r"\b(impact\s+assessment|bias\s+audit|algorithmic\s+audit"
+    r"|risk\s+assessment|audit|register|certif(y|ication|ied)"
+    r"|record.?keeping|maintain\s+(records|logs|documentation)"
+    r"|report(ing)?\s+(to|requirement|annually|quarterly)"
+    r"|annual(ly)?\s+report|filing|retain|retention"
+    r"|third.?party\s+(audit|review|assessment)|self.?certif)\b",
     re.IGNORECASE,
 )
 
@@ -180,6 +202,8 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "definition_actor": DefinitionActorAgent(),
             "threshold_exception": ThresholdExceptionAgent(),
             "ambiguity": AmbiguityAgent(),
+            "rights_protection": RightsProtectionAgent(),
+            "compliance_mechanism": ComplianceMechanismAgent(),
         }
     return AGENTS
 
@@ -318,6 +342,14 @@ def _select_agents_for_passage(
     # Definition/actor: needs definitional language
     if "definition_actor" in all_agents and _DEFINITION_ACTOR_PATTERN.search(text):
         selected["definition_actor"] = all_agents["definition_actor"]
+
+    # Rights/protections: needs rights-granting language
+    if "rights_protection" in all_agents and _RIGHTS_PROTECTION_PATTERN.search(text):
+        selected["rights_protection"] = all_agents["rights_protection"]
+
+    # Compliance mechanisms: needs procedural/audit language
+    if "compliance_mechanism" in all_agents and _COMPLIANCE_MECHANISM_PATTERN.search(text):
+        selected["compliance_mechanism"] = all_agents["compliance_mechanism"]
 
     return selected
 
