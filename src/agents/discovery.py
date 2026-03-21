@@ -17,6 +17,7 @@ sufficient quality for classification and basic metadata at zero API cost.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -121,7 +122,7 @@ class DiscoveryAgent:
         response = self._provider.call(
             system_prompt=CLASSIFICATION_SYSTEM_PROMPT,
             user_prompt=f"Classify the following text:\n\n{truncated}",
-            max_tokens=512,
+            max_tokens=2048,
             temperature=0.0,
         )
 
@@ -152,7 +153,7 @@ class DiscoveryAgent:
         response = self._provider.call(
             system_prompt=METADATA_SYSTEM_PROMPT,
             user_prompt=f"Extract metadata from this legislation:\n\n{truncated}",
-            max_tokens=1024,
+            max_tokens=4096,
             temperature=0.0,
         )
 
@@ -173,8 +174,10 @@ class DiscoveryAgent:
 
     @staticmethod
     def _parse_json(text: str) -> dict[str, Any]:
-        """Parse JSON from LLM response, handling code fences."""
+        """Parse JSON from LLM response, handling code fences and think blocks."""
         text = text.strip()
+        # Strip <think>...</think> blocks from reasoning models (Qwen, DeepSeek)
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
         if text.startswith("```"):
             text = "\n".join(text.split("\n")[1:])
             text = text.rsplit("```", 1)[0].strip()
