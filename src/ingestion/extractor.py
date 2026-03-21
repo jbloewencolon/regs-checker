@@ -1024,6 +1024,38 @@ def run_dependency_graph(
 
 
 # ---------------------------------------------------------------------------
+# Applicability Condition Parsing (Phase 3 — post-extraction)
+# ---------------------------------------------------------------------------
+
+
+def run_condition_parsing(
+    db,
+    document_version_id: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Parse condition fields from extractions into structured expression trees.
+
+    This is a post-extraction step that converts free-text condition strings
+    (e.g. "if the system is high-risk and the deployer is in California")
+    into AND/OR/NOT/LEAF boolean expression trees stored in the
+    ``applicability_conditions`` table.
+
+    Rule-based parser — no LLM call required.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Process a single document (None = all pending).
+        on_progress: Optional callback for status messages.
+
+    Returns:
+        Summary dict with counts.
+    """
+    from src.core.condition_parser import run_condition_parsing as _run_parsing
+
+    return _run_parsing(db, document_version_id, on_progress)
+
+
+# ---------------------------------------------------------------------------
 # Batch API support
 # ---------------------------------------------------------------------------
 

@@ -478,6 +478,34 @@
 
     <div class="step-connector"></div>
 
+    <!-- STEP 3.75: Parse Applicability Conditions -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">3.75</div>
+        <div class="step-title">Parse Applicability Conditions</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Parses condition fields from obligations, thresholds, exceptions, and rights
+          into structured AND/OR/NOT/LEAF expression trees. Rule-based — no LLM needed.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/condition-parse"
+                  hx-target="#condparse-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Parse All Pending</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Parsing conditions...</span>
+          </button>
+        </div>
+        <div class="step-result" id="condparse-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
     <!-- STEP 4: Review (MANUAL) -->
     <div class="step step-manual">
       <div class="step-header">

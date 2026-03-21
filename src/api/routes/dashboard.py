@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from src.db.engine import get_db
 from src.db.models import (
+    ApplicabilityCondition,
     ConfidenceTier,
     DocumentFamily,
     DocumentVersion,
@@ -1025,6 +1026,54 @@ def run_dependency_graph(
             f'Built dependency graphs for {docs} document(s): '
             f'{edges} relationship edges created.'
             f'{cancelled_note}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/condition-parse")
+def run_condition_parse(
+    document_version_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Parse condition fields into structured boolean expression trees.
+
+    Rule-based parser — no LLM call needed. Converts free-text conditions
+    from obligation, threshold, exception, and rights extractions into
+    AND/OR/NOT/LEAF expression trees in the applicability_conditions table.
+
+    Args:
+        document_version_id: Process a single document (None = all pending).
+    """
+    try:
+        from src.ingestion.extractor import run_condition_parsing
+        summary = run_condition_parsing(db, document_version_id=document_version_id)
+
+        processed = summary["extractions_processed"]
+        nodes = summary["nodes_created"]
+        with_conds = summary["extractions_with_conditions"]
+        errors = summary.get("errors", 0)
+
+        if processed == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">'
+                'No extractions pending condition parsing. '
+                'All condition fields have already been parsed.'
+                '</div>'
+            )
+
+        error_note = ""
+        if errors:
+            error_note = f' ({errors} errors)'
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Parsed conditions from {with_conds}/{processed} extractions: '
+            f'{nodes} tree nodes created.{error_note}'
             f'</div>'
         )
     except Exception as e:
@@ -2123,6 +2172,11 @@ def _get_pipeline_stats(db: Session) -> dict:
         select(func.count()).select_from(ObligationDependency)
     ) or 0
 
+    # Applicability condition stats
+    condition_nodes = db.scalar(
+        select(func.count()).select_from(ApplicabilityCondition)
+    ) or 0
+
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
 
@@ -2140,6 +2194,7 @@ def _get_pipeline_stats(db: Session) -> dict:
         "review_by_tier": review_by_tier,
         "pending_results": pending_results,
         "dependency_edges": dependency_edges,
+        "condition_nodes": condition_nodes,
         "status_summary": status_summary,
     }
 
