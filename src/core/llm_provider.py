@@ -169,8 +169,8 @@ class LocalLLMProvider(BaseLLMProvider):
     def normalize_model_id(model_name: str) -> str:
         """Normalize a local model name into a clean model_id.
 
-        ``deepseek-r1:32b`` → ``deepseek-r1-32b-local``
-        ``qwen2.5-32b-instruct`` → ``qwen2.5-32b-instruct-local``
+        ``DeepSeek-R1-0528`` → ``deepseek-r1-0528-local``
+        ``Qwen3.5`` → ``qwen3.5-local``
         """
         return model_name.replace(":", "-").replace("/", "-") + "-local"
 
@@ -288,7 +288,7 @@ def get_extraction_provider() -> BaseLLMProvider:
     """Get the provider configured for extraction tasks (default: anthropic).
 
     When extraction_provider is "local", uses ``local_extraction_model``
-    (default: deepseek-r1:32b) as the base model.  Per-agent
+    (default: DeepSeek-R1-0528) as the base model.  Per-agent
     ``model_override`` attributes still take precedence at call time.
     """
     provider_type = settings.extraction_provider
