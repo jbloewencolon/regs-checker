@@ -9,8 +9,12 @@ from __future__ import annotations
 import hashlib
 import re
 
+import warnings
+
 import structlog
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 from src.db.models import IngestionJob, NormalizedSourceRecord, RawArtifact
 
@@ -59,12 +63,22 @@ def parse_and_normalize(
     return records
 
 
+def _make_soup(content: bytes) -> BeautifulSoup:
+    """Create a BeautifulSoup instance, using the XML parser when appropriate."""
+    if content.lstrip()[:100].startswith(b"<?xml"):
+        try:
+            return BeautifulSoup(content, "lxml-xml")
+        except Exception:
+            pass
+    return BeautifulSoup(content, "lxml")
+
+
 def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
     """Parse HTML legislative text into passages.
 
     Returns list of (section_path, text, char_start, char_end).
     """
-    soup = BeautifulSoup(content, "lxml")
+    soup = _make_soup(content)
 
     # Remove script and style elements
     for element in soup(["script", "style", "nav", "footer", "header"]):
@@ -228,7 +242,7 @@ def extract_text_sample(artifact, max_chars: int = 4000) -> str:
     content = _fetch_content_from_s3(artifact.s3_key)
 
     if artifact.content_type in ("text/html", "application/xhtml+xml"):
-        soup = BeautifulSoup(content, "lxml")
+        soup = _make_soup(content)
         for element in soup(["script", "style", "nav", "footer", "header"]):
             element.decompose()
         body = soup.find("body") or soup
