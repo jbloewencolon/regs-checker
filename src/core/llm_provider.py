@@ -234,6 +234,25 @@ class LocalLLMProvider(BaseLLMProvider):
                 f"(finish_reason={finish_reason}, model={effective_model})"
             )
 
+        # Strip <think> blocks that reasoning models (DeepSeek-R1, Qwen3)
+        # may emit — they consume output tokens and can cause finish_reason=length
+        # before the actual JSON answer is complete.
+        import re
+        stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+        if finish_reason == "length" and not stripped:
+            raise ValueError(
+                f"Empty response from local LLM "
+                f"(finish_reason={finish_reason}, model={effective_model})"
+            )
+        if stripped != text.strip():
+            logger.debug(
+                "local_llm_stripped_think_block",
+                model=effective_model,
+                original_len=len(text),
+                stripped_len=len(stripped),
+            )
+            text = stripped
+
         effective_model_id = self.normalize_model_id(effective_model)
 
         logger.debug(
