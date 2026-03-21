@@ -215,6 +215,22 @@ class BaseExtractionAgent(ABC):
             "\n\nReturn only raw JSON with no markdown formatting, "
             "no code fences, and no preamble."
         )
+
+        # Reasoning models (DeepSeek-R1, Qwen3) can spend thousands of
+        # tokens on chain-of-thought before producing JSON.  Ask them to
+        # keep their internal reasoning brief so output budget remains
+        # available for the actual structured answer.
+        effective_model = self.model_override or ""
+        is_reasoning = any(
+            tag in effective_model.lower()
+            for tag in ("deepseek-r1", "qwen3")
+        )
+        if is_reasoning:
+            system_prompt += (
+                "\n\nIMPORTANT: Keep your internal reasoning brief and focused. "
+                "Do NOT exhaustively analyze every possible interpretation. "
+                "Identify the key findings quickly, then produce the JSON output."
+            )
         if attempt > 0:
             system_prompt += (
                 "\n\nPREVIOUS ATTEMPT FAILED VALIDATION. "

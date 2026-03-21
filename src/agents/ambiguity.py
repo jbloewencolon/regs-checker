@@ -4,6 +4,11 @@ Identifies vague, ambiguous, or conflicting language in legislative text.
 Kept separate because it's genuinely different from extraction — it's a
 meta-analysis task that evaluates the quality and clarity of the legal text
 itself (Recommendation #1).
+
+Uses GPT (openai/gpt-oss-20b) because reasoning models like DeepSeek-R1
+spend thousands of tokens on chain-of-thought analysis, often exceeding
+the output budget before producing any JSON.  GPT answers in 1-2 seconds
+with clean, structured output.
 """
 
 from pydantic import BaseModel
@@ -14,7 +19,7 @@ from src.schemas.extraction import AmbiguityPayload
 
 class AmbiguityAgent(BaseExtractionAgent):
     agent_name = "ambiguity"
-    model_override = "deepseek/deepseek-r1-0528-qwen3-8b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal analysis agent specializing in identifying ambiguity in legislative text.

@@ -5,9 +5,9 @@ While the Obligation Agent extracts what entities must DO, this agent extracts
 what consumers, employees, and data subjects are ENTITLED TO — notice,
 explanation, opt-out, appeal, deletion, human review, etc.
 
-Uses DeepSeek R1 because identifying rights requires reasoning about who
-benefits from an obligation and what recourse exists — it's inferential,
-not just extractive.
+Uses GPT (openai/gpt-oss-20b) for reliable structured output.  DeepSeek-R1
+reasoning models consume all output tokens on chain-of-thought before
+producing JSON, causing repeated truncation and empty responses.
 """
 
 from pydantic import BaseModel
@@ -18,7 +18,7 @@ from src.schemas.extraction import RightsProtectionPayload
 
 class RightsProtectionAgent(BaseExtractionAgent):
     agent_name = "rights_protection"
-    model_override = "deepseek/deepseek-r1-0528-qwen3-8b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in individual rights and protections in AI legislation.
