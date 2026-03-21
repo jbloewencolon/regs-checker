@@ -51,6 +51,7 @@ class BaseExtractionAgent(ABC):
     agent_name: str = "base"
     max_retries: int = 1
     model_override: str | None = None
+    reasoning_effort: str | None = None
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
@@ -210,6 +211,7 @@ class BaseExtractionAgent(ABC):
             max_tokens=settings.extraction_max_tokens,
             temperature=settings.extraction_temperature,
             model_override=self.model_override,
+            reasoning_effort=self.reasoning_effort,
         )
 
         logger.debug(

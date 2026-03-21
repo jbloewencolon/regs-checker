@@ -58,12 +58,15 @@ class BaseLLMProvider(ABC):
         max_tokens: int = 8192,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
         """Make a single LLM call. Returns provider-agnostic response.
 
         Args:
             model_override: If provided, use this model instead of the default.
                             Supported by LocalLLMProvider; ignored by AnthropicProvider.
+            reasoning_effort: "low", "medium", or "high". Supported by models
+                              like openai/gpt-oss-20b; ignored by others.
         """
 
     @property
@@ -92,9 +95,10 @@ class AnthropicProvider(BaseLLMProvider):
         max_tokens: int = 8192,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
-        # model_override is accepted for interface compatibility but ignored;
-        # Anthropic models are selected via settings.extraction_model.
+        # model_override and reasoning_effort are accepted for interface
+        # compatibility but ignored; Anthropic uses settings.extraction_model.
         response = self._client.messages.create(
             model=self._model,
             max_tokens=max_tokens,
@@ -185,12 +189,13 @@ class LocalLLMProvider(BaseLLMProvider):
         max_tokens: int = 4096,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
         import httpx
 
         effective_model = model_override or self._model
 
-        payload = {
+        payload: dict[str, Any] = {
             "model": effective_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -200,6 +205,9 @@ class LocalLLMProvider(BaseLLMProvider):
             "temperature": temperature,
             "stream": False,
         }
+
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
 
         response = httpx.post(
             f"{self._base_url}/v1/chat/completions",
