@@ -337,12 +337,17 @@
                 <code># 1. Install LM Studio: https://lmstudio.ai<br>
                 # 2. Download models in LM Studio:<br>
                 #    - qwen/qwen3.5-9b<br>
-                #    - deepseek/deepseek-r1-0528-qwen3-8b<br><br>
-                # 3. Start the local server in LM Studio<br>
+                #    - deepseek/deepseek-r1-0528-qwen3-8b<br>
+                #    - gpt-oss-20b<br><br>
+                # 3. IMPORTANT: Set context length in LM Studio<br>
+                #    Model Settings → Context Length → 32768<br>
+                #    (4096 is too small for extraction prompts)<br><br>
+                # 4. Start the local server in LM Studio<br>
                 #    (Developer tab → Start Server on port 1234)<br><br>
-                # 4. Set in .env:<br>
+                # 5. Set in .env:<br>
                 REGS_EXTRACTION_PROVIDER=local<br>
-                REGS_LOCAL_LLM_URL=http://localhost:1234</code>
+                REGS_LOCAL_LLM_URL=http://localhost:1234<br>
+                REGS_LOCAL_CONTEXT_LENGTH=32768</code>
               </div>
             </details>
           </div>

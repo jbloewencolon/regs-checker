@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     local_llm_url: str = "http://localhost:1234"  # LM Studio default
     local_llm_model: str = "qwen/qwen3.5-9b"  # Default model for discovery tasks
     local_extraction_model: str = "deepseek/deepseek-r1-0528-qwen3-8b"  # Default model for local extraction
+    local_context_length: int = 32768  # Context window size configured in LM Studio
+    local_extraction_max_tokens: int = 4096  # Max output tokens for local extraction (lower than cloud)
 
     # Web search (for fallback URL verification)
     search_provider: str = ""  # "tavily", "serper", or "google_cse"

@@ -208,10 +208,15 @@ class BaseExtractionAgent(ABC):
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
+        # Use lower max_tokens for local models to fit within context window
+        max_tokens = settings.extraction_max_tokens
+        if settings.extraction_provider == "local":
+            max_tokens = min(max_tokens, settings.local_extraction_max_tokens)
+
         call_kwargs = dict(
             system_prompt=system_prompt,
             user_prompt=prompt,
-            max_tokens=settings.extraction_max_tokens,
+            max_tokens=max_tokens,
             temperature=settings.extraction_temperature,
             model_override=self.model_override,
             reasoning_effort=self.reasoning_effort,

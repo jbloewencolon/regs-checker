@@ -182,6 +182,11 @@ class LocalLLMProvider(BaseLLMProvider):
     def model_id(self) -> str:
         return self.normalize_model_id(self._model)
 
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        """Rough token count estimate (~4 chars per token for English text)."""
+        return len(text) // 4
+
     def call(
         self,
         system_prompt: str,
@@ -195,13 +200,31 @@ class LocalLLMProvider(BaseLLMProvider):
 
         effective_model = model_override or self._model
 
+        # Cap max_tokens to fit within context window.
+        # LM Studio needs: prompt_tokens + max_tokens <= n_ctx.
+        # Use a rough estimate (4 chars ≈ 1 token) with a safety margin.
+        context_limit = settings.local_context_length
+        estimated_prompt_tokens = self._estimate_tokens(system_prompt + user_prompt)
+        # Reserve 10% margin for tokenizer differences
+        available = int(context_limit * 0.9) - estimated_prompt_tokens
+        if available < 512:
+            logger.warning(
+                "local_llm_prompt_near_context_limit",
+                model=effective_model,
+                estimated_prompt_tokens=estimated_prompt_tokens,
+                context_limit=context_limit,
+                available=available,
+            )
+            available = 512  # Minimum viable output
+        effective_max_tokens = min(max_tokens, available)
+
         payload: dict[str, Any] = {
             "model": effective_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            "max_tokens": max_tokens,
+            "max_tokens": effective_max_tokens,
             "temperature": temperature,
             "stream": False,
         }
