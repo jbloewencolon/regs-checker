@@ -294,27 +294,50 @@ class BaseExtractionAgent(ABC):
 
         return response.text, response.usage, response.model_id, response.stop_reason
 
+    @staticmethod
+    def _normalize_whitespace(text: str) -> str:
+        """Collapse all whitespace (spaces, newlines, tabs) to single spaces."""
+        return " ".join(text.split())
+
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
     ) -> list[dict]:
         """Verify evidence spans via string matching (Rec #3).
 
-        Confirms each evidence span text appears verbatim in the passage.
-        This replaces the self-check LLM call and is more reliable for
-        detecting hallucinated quotes.
+        Confirms each evidence span text appears in the passage.
+        Uses whitespace-normalized matching because source passages
+        often contain newlines and varied spacing that LLMs normalize
+        when quoting.  Falls back to case-insensitive matching for
+        minor casing differences.
         """
+        norm_passage = self._normalize_whitespace(passage)
+        lower_passage = norm_passage.lower()
         verified = []
         for span_data in spans:
             span = EvidenceSpan(**span_data)
-            if span.text in passage:
-                # Update char offsets to actual positions
-                start = passage.index(span.text)
+            norm_span = self._normalize_whitespace(span.text)
+
+            # Try exact match on whitespace-normalized text
+            if norm_span in norm_passage:
+                start = norm_passage.index(norm_span)
                 verified.append(
                     {
                         "field_name": span.field_name,
                         "text": span.text,
                         "char_start": start,
-                        "char_end": start + len(span.text),
+                        "char_end": start + len(norm_span),
+                        "verified": True,
+                    }
+                )
+            # Try case-insensitive match
+            elif norm_span.lower() in lower_passage:
+                start = lower_passage.index(norm_span.lower())
+                verified.append(
+                    {
+                        "field_name": span.field_name,
+                        "text": span.text,
+                        "char_start": start,
+                        "char_end": start + len(norm_span),
                         "verified": True,
                     }
                 )
