@@ -128,6 +128,57 @@ class DiscoveryAgent:
             return self.large_context_model
         return None
 
+    def _call_with_fallback(
+        self,
+        system_prompt: str,
+        user_prompt_template: str,
+        text: str,
+        max_chars: int,
+        max_tokens: int = 4096,
+    ) -> LLMResponse:
+        """Call LLM with automatic fallback from large-context model to default.
+
+        If the large-context model is selected but fails (e.g. 400 from LM Studio),
+        retries with the default model, truncating text to fit its context window.
+        """
+        truncated = text[:max_chars] if len(text) > max_chars else text
+        model_override = self._model_for_text(truncated)
+        user_prompt = user_prompt_template.format(text=truncated)
+
+        if model_override is not None:
+            try:
+                return self._provider.call(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=max_tokens,
+                    temperature=0.0,
+                    model_override=model_override,
+                )
+            except Exception as exc:
+                # Truncate to default model's context and retry without override
+                default_max = self.large_context_threshold
+                fallback_text = text[:default_max] if len(text) > default_max else text
+                user_prompt = user_prompt_template.format(text=fallback_text)
+                logger.warning(
+                    "large_context_model_fallback",
+                    error=str(exc)[:200],
+                    original_len=len(truncated),
+                    fallback_len=len(fallback_text),
+                )
+                return self._provider.call(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=max_tokens,
+                    temperature=0.0,
+                )
+
+        return self._provider.call(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=max_tokens,
+            temperature=0.0,
+        )
+
     def classify_bill(self, text: str, max_chars: int = 32000) -> ClassificationResult:
         """Classify whether text contains AI-related legislation.
 
@@ -138,15 +189,11 @@ class DiscoveryAgent:
         Returns:
             ClassificationResult with is_ai_legislation flag and confidence.
         """
-        truncated = text[:max_chars] if len(text) > max_chars else text
-        model_override = self._model_for_text(truncated)
-
-        response = self._provider.call(
+        response = self._call_with_fallback(
             system_prompt=CLASSIFICATION_SYSTEM_PROMPT,
-            user_prompt=f"Classify the following text:\n\n{truncated}",
-            max_tokens=4096,
-            temperature=0.0,
-            model_override=model_override,
+            user_prompt_template="Classify the following text:\n\n{text}",
+            text=text,
+            max_chars=max_chars,
         )
 
         parsed = self._parse_json(response.text)
@@ -171,15 +218,11 @@ class DiscoveryAgent:
         Returns:
             MetadataResult with extracted bill metadata.
         """
-        truncated = text[:max_chars] if len(text) > max_chars else text
-        model_override = self._model_for_text(truncated)
-
-        response = self._provider.call(
+        response = self._call_with_fallback(
             system_prompt=METADATA_SYSTEM_PROMPT,
-            user_prompt=f"Extract metadata from this legislation:\n\n{truncated}",
-            max_tokens=4096,
-            temperature=0.0,
-            model_override=model_override,
+            user_prompt_template="Extract metadata from this legislation:\n\n{text}",
+            text=text,
+            max_chars=max_chars,
         )
 
         parsed = self._parse_json(response.text)
