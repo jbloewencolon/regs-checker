@@ -118,6 +118,98 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     "compliance_mechanism": [ExtractionType.compliance_mechanism],
 }
 
+
+def _discriminate_extraction_type(
+    agent_name: str, payload: dict[str, Any]
+) -> ExtractionType:
+    """Determine the specific extraction sub-type from the payload content.
+
+    Consolidated agents produce multiple sub-types but the pipeline
+    previously always tagged with the primary type (index [0]).  This
+    function inspects the payload to choose the most specific type when
+    the extraction is primarily about a sub-type.
+
+    Rules:
+      - obligation agent:
+          * ``enforcement`` if enforcing_body or penalty populated but
+            subject/action are absent or generic
+          * ``timeline`` if effective_date or compliance_deadline
+            populated but subject/action are absent or generic
+          * ``obligation`` (default)
+      - definition_actor agent:
+          * ``actor_mapping`` if actors are the primary content and
+            term/definition_text are absent
+          * ``framework_ref`` if framework_refs are the primary content
+            and term/definition_text are absent
+          * ``definition`` (default)
+      - threshold_exception agent:
+          * ``exception`` if no threshold data but has exceptions
+          * ``threshold`` (default)
+      - single-type agents: return their only type
+    """
+    types = AGENT_EXTRACTION_TYPES.get(agent_name)
+    if not types or len(types) == 1:
+        return types[0] if types else ExtractionType.obligation
+
+    primary = types[0]
+
+    # --- Obligation agent: obligation vs enforcement vs timeline ---
+    if agent_name == "obligation":
+        has_subject = bool(payload.get("subject", "").strip())
+        has_action = bool(payload.get("action", "").strip())
+        has_core_obligation = has_subject and has_action
+
+        enf = payload.get("enforcement") or {}
+        has_enforcement = bool(
+            enf.get("enforcing_body") or enf.get("penalty_type") or enf.get("penalty_description")
+        )
+
+        tl = payload.get("timeline") or {}
+        has_timeline = bool(
+            tl.get("effective_date") or tl.get("compliance_deadline")
+            or tl.get("sunset_date") or tl.get("phase_in_period")
+        )
+
+        if not has_core_obligation:
+            if has_enforcement:
+                return ExtractionType.enforcement
+            if has_timeline:
+                return ExtractionType.timeline
+
+        return ExtractionType.obligation
+
+    # --- Definition & Actor agent: definition vs actor_mapping vs framework_ref ---
+    if agent_name == "definition_actor":
+        has_term = bool(payload.get("term", "").strip())
+        has_def_text = bool(payload.get("definition_text", "").strip())
+        has_core_definition = has_term and has_def_text
+
+        actors = payload.get("actors") or []
+        framework_refs = payload.get("framework_refs") or []
+
+        if not has_core_definition:
+            if actors:
+                return ExtractionType.actor_mapping
+            if framework_refs:
+                return ExtractionType.framework_ref
+
+        return ExtractionType.definition
+
+    # --- Threshold & Exception agent: threshold vs exception ---
+    if agent_name == "threshold_exception":
+        has_threshold = bool(
+            payload.get("threshold_type") or payload.get("threshold_value")
+            or payload.get("threshold_condition")
+        )
+        exceptions = payload.get("exceptions") or []
+
+        if not has_threshold and exceptions:
+            return ExtractionType.exception
+
+        return ExtractionType.threshold
+
+    return primary
+
 # ---------------------------------------------------------------------------
 # Keyword patterns for selective agent routing
 # ---------------------------------------------------------------------------
@@ -526,13 +618,14 @@ def extract_single_record(
             existing_hashes.add(content_hash)
 
         # Process each extraction from the multi-extraction result
-        primary_type = AGENT_EXTRACTION_TYPES[name][0]
-        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+        default_type = AGENT_EXTRACTION_TYPES[name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
         # Write extractions against all source records in the merged passage
         for source_record in passage.source_records:
             for item in result.extractions:
                 try:
+                    resolved_type = _discriminate_extraction_type(name, item)
                     evidence = item.get("evidence_spans", [])
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
@@ -546,7 +639,7 @@ def extract_single_record(
 
                     extraction = Extraction(
                         source_record_id=source_record.id,
-                        extraction_type=primary_type,
+                        extraction_type=resolved_type,
                         payload=item,
                         evidence_spans=evidence,
                         confidence_score=confidence.total_score,
@@ -1085,11 +1178,12 @@ def run_recovery_extraction(
                         continue
 
                     existing_hashes.add(content_hash)
-                    primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-                    schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+                    default_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+                    schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
                     for item in result.extractions:
                         try:
+                            resolved_type = _discriminate_extraction_type(agent_name, item)
                             evidence = item.get("evidence_spans", [])
                             orrick_sim = validate_extraction_against_orrick(item, ctx)
                             confidence = compute_confidence(
@@ -1103,7 +1197,7 @@ def run_recovery_extraction(
 
                             extraction = Extraction(
                                 source_record_id=record.id,
-                                extraction_type=primary_type,
+                                extraction_type=resolved_type,
                                 payload=item,
                                 evidence_spans=evidence,
                                 confidence_score=confidence.total_score,
@@ -1372,8 +1466,8 @@ def retrieve_batch_results(
             continue
 
         schema = agent.get_output_schema()
-        primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+        default_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
         # Handle multi-extraction
         items = parsed.get("extractions", [parsed])
@@ -1431,10 +1525,11 @@ def retrieve_batch_results(
                 )
 
                 # Write extraction for each source record
+                resolved_type = _discriminate_extraction_type(agent_name, result_dict)
                 for source_record in source_records:
                     extraction = Extraction(
                         source_record_id=source_record.id,
-                        extraction_type=primary_type,
+                        extraction_type=resolved_type,
                         payload=result_dict,
                         evidence_spans=verified_spans,
                         confidence_score=confidence.total_score,
