@@ -2671,3 +2671,91 @@ def get_completeness_manifest(
     """
 
     return HTMLResponse(table_html)
+
+
+# ---------------------------------------------------------------------------
+# Verification Pipeline — post-extraction accuracy checks
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/verify", response_class=HTMLResponse)
+def run_verification(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Run post-extraction verification agents on completed extractions.
+
+    Three layers: cross-validation, gap detection, and citation verification.
+    Returns results as HTML for the dashboard.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import run_verification_pass
+
+    if not _acquire_pipeline_lock():
+        return HTMLResponse(
+            '<div class="result-panel warning">Another pipeline operation is running.</div>'
+        )
+
+    try:
+        results = run_verification_pass(db, document_version_id)
+    finally:
+        _pipeline_lock.release()
+
+    if not results:
+        return HTMLResponse(
+            '<div class="result-panel info">No documents with extractions to verify.</div>'
+        )
+
+    # Summary
+    total_cv_flagged = sum(r.cross_validation_flagged for r in results)
+    total_gaps = sum(r.gaps_found for r in results)
+    total_cit_issues = sum(r.citations_unverified for r in results)
+    total_tokens = sum(r.total_tokens for r in results)
+
+    severity = "success" if (total_cv_flagged + total_gaps + total_cit_issues) == 0 else "warning"
+    summary_html = f"""
+    <div class="result-panel {severity}" style="margin-bottom:12px;">
+      <strong>Verification Complete</strong> ({len(results)} documents, {total_tokens:,} tokens)<br>
+      Cross-validation: {total_cv_flagged} flagged &middot;
+      Gap detection: {total_gaps} gaps &middot;
+      Citations: {total_cit_issues} unverified
+    </div>
+    """
+
+    rows_html = ""
+    for r in results:
+        doc_severity = (
+            "success" if (r.cross_validation_flagged + r.gaps_found + r.citations_unverified) == 0
+            else "warning" if r.cross_validation_avg_accuracy >= 0.8
+            else "danger"
+        )
+        rows_html += f"""
+        <tr>
+          <td><strong>{html_escape(r.document_label)}</strong></td>
+          <td class="text-{doc_severity}">{r.cross_validation_avg_accuracy:.1%}</td>
+          <td>{r.cross_validation_flagged}</td>
+          <td>{r.gaps_found} ({r.high_confidence_gaps} high)</td>
+          <td>{r.citations_verified}/{r.citations_checked}</td>
+          <td>{r.total_tokens:,}</td>
+        </tr>
+        """
+
+    table_html = f"""
+    {summary_html}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>CV Accuracy</th>
+          <th>CV Flagged</th>
+          <th>Gaps Found</th>
+          <th>Citations OK</th>
+          <th>Tokens</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    """
+
+    return HTMLResponse(table_html)

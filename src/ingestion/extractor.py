@@ -2030,3 +2030,307 @@ def compute_completeness_manifest(
         ))
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Verification Pipeline — post-extraction accuracy layers
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class VerificationResult:
+    """Combined result from all verification agents for a document."""
+
+    document_version_id: int
+    document_label: str
+
+    # Cross-validation results
+    cross_validation_passages: int
+    cross_validation_valid: int
+    cross_validation_flagged: int
+    cross_validation_avg_accuracy: float
+    cross_validation_issues: list[dict[str, Any]]
+
+    # Gap detection results
+    gap_detection_passages: int
+    gaps_found: int
+    high_confidence_gaps: int
+    gap_candidates: list[dict[str, Any]]
+
+    # Citation verification results
+    citations_checked: int
+    citations_verified: int
+    citations_unverified: int
+    citation_issues: list[dict[str, Any]]
+
+    # Token usage
+    total_input_tokens: int
+    total_output_tokens: int
+
+    @property
+    def total_tokens(self) -> int:
+        return self.total_input_tokens + self.total_output_tokens
+
+
+def run_verification_pass(
+    db,
+    document_version_id: int | None = None,
+    skip_cross_validation: bool = False,
+    skip_gap_detection: bool = False,
+    skip_citation_verification: bool = False,
+    on_progress: callable | None = None,
+) -> list[VerificationResult]:
+    """Run post-extraction verification agents on completed extractions.
+
+    Three verification layers:
+      1. Cross-Validation: Second LLM (different model) reviews each extraction
+         against the source passage for hallucinations, contradictions, etc.
+      2. Gap Detection: Second-pass agent identifies obligations the primary
+         extraction missed.
+      3. Citation Verification: Validates section_reference and cross_reference
+         fields against the actual document structure.
+
+    All three are independent and can be run selectively.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Run on a single document (None = all with extractions)
+        skip_cross_validation: Skip the cross-validation layer
+        skip_gap_detection: Skip the gap detection layer
+        skip_citation_verification: Skip citation verification
+        on_progress: Optional callback for status messages
+
+    Returns:
+        List of VerificationResult, one per document version.
+    """
+    from sqlalchemy import distinct
+
+    from src.agents.citation_verifier import verify_citations
+    from src.agents.cross_validation import run_cross_validation
+    from src.agents.gap_detector import run_gap_detection
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Find document versions to verify
+    dv_query = select(DocumentVersion.id)
+    if document_version_id:
+        dv_query = dv_query.where(DocumentVersion.id == document_version_id)
+    else:
+        dv_query = dv_query.where(
+            DocumentVersion.id.in_(
+                select(distinct(NormalizedSourceRecord.document_version_id))
+                .where(
+                    NormalizedSourceRecord.id.in_(
+                        select(distinct(Extraction.source_record_id))
+                    )
+                )
+            )
+        )
+
+    dv_ids = db.scalars(dv_query).all()
+    _log(f"Running verification on {len(dv_ids)} document version(s)...")
+
+    results: list[VerificationResult] = []
+
+    for dv_id in dv_ids:
+        if is_cancelled():
+            _log("Verification cancelled by user.")
+            break
+
+        dv = db.get(DocumentVersion, dv_id)
+        if not dv:
+            continue
+
+        label = "unknown"
+        if dv.family:
+            jur = dv.family.source.jurisdiction_code if dv.family.source else "??"
+            label = f"{jur} - {dv.family.short_cite or dv.family.canonical_title}"
+
+        _log(f"\n[{label}] Starting verification pass...")
+
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        # Get all passages + extractions for this document
+        records = db.scalars(
+            select(NormalizedSourceRecord)
+            .where(NormalizedSourceRecord.document_version_id == dv_id)
+            .order_by(NormalizedSourceRecord.ordinal)
+        ).all()
+
+        # --- Layer 1: Cross-Validation ---
+        cv_passages = 0
+        cv_valid = 0
+        cv_flagged = 0
+        cv_accuracy_sum = 0.0
+        cv_issues: list[dict[str, Any]] = []
+
+        if not skip_cross_validation:
+            _log(f"  [1/3] Cross-validation...")
+            for record in records:
+                if len(record.text_content) < MIN_PASSAGE_LENGTH:
+                    continue
+
+                extractions = db.scalars(
+                    select(Extraction).where(
+                        Extraction.source_record_id == record.id
+                    )
+                ).all()
+
+                if not extractions:
+                    continue
+
+                ext_payloads = [e.payload for e in extractions]
+                ext_ids = [e.id for e in extractions]
+                ctx = _build_context(db, record)
+
+                cv_result = run_cross_validation(
+                    passage_text=record.text_content,
+                    extractions=ext_payloads,
+                    passage_record_id=record.id,
+                    extraction_ids=ext_ids,
+                    context=ctx,
+                )
+
+                cv_passages += 1
+                cv_valid += cv_result.extractions_valid
+                cv_flagged += cv_result.extractions_flagged
+                cv_accuracy_sum += cv_result.avg_accuracy_score
+                total_input_tokens += cv_result.input_tokens
+                total_output_tokens += cv_result.output_tokens
+
+                # Store flagged issues
+                for r in cv_result.results:
+                    if not r.get("is_valid", True):
+                        cv_issues.append({
+                            "record_id": record.id,
+                            "section_path": record.section_path,
+                            **r,
+                        })
+
+                        # Update extraction metadata with cross-validation flag
+                        ext_id = r.get("extraction_id")
+                        if ext_id:
+                            extraction = db.get(Extraction, ext_id)
+                            if extraction:
+                                meta = dict(extraction.metadata_ or {})
+                                meta["cross_validation"] = {
+                                    "is_valid": r.get("is_valid", True),
+                                    "accuracy_score": r.get("accuracy_score", 1.0),
+                                    "issues": r.get("issues", []),
+                                }
+                                extraction.metadata_ = meta
+
+            cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
+            _log(
+                f"    {cv_passages} passages checked, {cv_valid} valid, "
+                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}"
+            )
+        else:
+            cv_avg = 1.0
+
+        # --- Layer 2: Gap Detection ---
+        gd_passages = 0
+        gd_gaps = 0
+        gd_high = 0
+        gd_candidates: list[dict[str, Any]] = []
+
+        if not skip_gap_detection:
+            _log(f"  [2/3] Gap detection...")
+            for record in records:
+                if len(record.text_content) < MIN_PASSAGE_LENGTH:
+                    continue
+
+                extractions = db.scalars(
+                    select(Extraction).where(
+                        Extraction.source_record_id == record.id
+                    )
+                ).all()
+
+                ext_payloads = [e.payload for e in extractions]
+                ctx = _build_context(db, record)
+
+                gd_result = run_gap_detection(
+                    passage_text=record.text_content,
+                    existing_extractions=ext_payloads,
+                    passage_record_id=record.id,
+                    context=ctx,
+                )
+
+                gd_passages += 1
+                gd_gaps += gd_result.gaps_found
+                gd_high += gd_result.high_confidence_gaps
+                total_input_tokens += gd_result.input_tokens
+                total_output_tokens += gd_result.output_tokens
+
+                for candidate in gd_result.candidates:
+                    gd_candidates.append({
+                        "record_id": record.id,
+                        "section_path": record.section_path,
+                        **candidate,
+                    })
+
+            _log(
+                f"    {gd_passages} passages checked, "
+                f"{gd_gaps} gaps found ({gd_high} high confidence)"
+            )
+
+        # --- Layer 3: Citation Verification ---
+        cit_checked = 0
+        cit_verified = 0
+        cit_unverified = 0
+        cit_issues: list[dict[str, Any]] = []
+
+        if not skip_citation_verification:
+            _log(f"  [3/3] Citation verification...")
+            cit_result = verify_citations(db, dv_id)
+            cit_checked = cit_result.total_citations_checked
+            cit_verified = cit_result.citations_verified
+            cit_unverified = cit_result.citations_unverified
+            cit_issues = [
+                {
+                    "extraction_id": issue.extraction_id,
+                    "field_name": issue.field_name,
+                    "cited_value": issue.cited_value,
+                    "issue_type": issue.issue_type,
+                    "closest_match": issue.closest_match,
+                }
+                for issue in cit_result.issues
+            ]
+            _log(
+                f"    {cit_checked} citations checked, "
+                f"{cit_verified} verified, {cit_unverified} unverified"
+            )
+
+        db.commit()
+
+        results.append(VerificationResult(
+            document_version_id=dv_id,
+            document_label=label,
+            cross_validation_passages=cv_passages,
+            cross_validation_valid=cv_valid,
+            cross_validation_flagged=cv_flagged,
+            cross_validation_avg_accuracy=round(cv_avg, 4),
+            cross_validation_issues=cv_issues,
+            gap_detection_passages=gd_passages,
+            gaps_found=gd_gaps,
+            high_confidence_gaps=gd_high,
+            gap_candidates=gd_candidates,
+            citations_checked=cit_checked,
+            citations_verified=cit_verified,
+            citations_unverified=cit_unverified,
+            citation_issues=cit_issues,
+            total_input_tokens=total_input_tokens,
+            total_output_tokens=total_output_tokens,
+        ))
+
+        _log(
+            f"  Verification complete for [{label}]: "
+            f"{total_input_tokens + total_output_tokens:,} tokens used"
+        )
+
+    _log(f"\nVerification pass complete: {len(results)} documents processed")
+    return results

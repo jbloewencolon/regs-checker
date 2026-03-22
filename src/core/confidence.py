@@ -1,17 +1,20 @@
-"""Simplified confidence scoring model — Recommendation #8.
+"""Confidence scoring model with 6 components — extended for verification layers.
 
-5-component weighted score replacing the original 7-component model.
-Self-check and cross-agent components are eliminated since those validation
-paths are removed per Recommendations #2 and #3.
+6-component weighted score. The original 5-component model (Recommendation #8)
+is extended with a cross-validation component that incorporates accuracy scores
+from post-extraction verification agents.
 
 Components:
-  - Schema validity (0.20): Pydantic validation pass/fail (binary)
-  - Evidence grounding (0.30): Proportion of fields with verified evidence spans
-  - Completeness (0.20): Proportion of non-null optional fields
-  - Source quality (0.15): Phase 1 parse quality score
-  - Orrick alignment (0.15): Token similarity vs Orrick key_requirements/enforcement
+  - Schema validity (0.15): Pydantic validation pass/fail (binary)
+  - Evidence grounding (0.25): Proportion of fields with verified evidence spans
+  - Completeness (0.15): Proportion of non-null optional fields
+  - Source quality (0.10): Phase 1 parse quality score
+  - Orrick alignment (0.10): Token similarity vs Orrick key_requirements/enforcement
     When no Orrick data exists, this component scores 0.5 (neutral) so it
     neither boosts nor penalises extractions without reference data.
+  - Cross-validation (0.25): Accuracy score from post-extraction verification
+    When not yet verified, this component scores 0.5 (neutral). When verified,
+    uses the accuracy_score from the cross-validation agent.
 
 Tiers:
   A: >= 0.85 (auto-approve candidates)
@@ -36,20 +39,26 @@ class ConfidenceBreakdown:
     completeness: float
     source_quality: float
     orrick_alignment: float
+    cross_validation: float
     total_score: float
     tier: str
     orrick_matched_tokens: list[str] = field(default_factory=list)
 
 
 # Component weights (sum to 1.0)
-WEIGHT_SCHEMA_VALIDITY = 0.20
-WEIGHT_EVIDENCE_GROUNDING = 0.30
-WEIGHT_COMPLETENESS = 0.20
-WEIGHT_SOURCE_QUALITY = 0.15
-WEIGHT_ORRICK_ALIGNMENT = 0.15
+# Redistributed from 5-component model to include cross-validation.
+# Evidence grounding and cross-validation are the two most important signals
+# for audit-grade accuracy.
+WEIGHT_SCHEMA_VALIDITY = 0.15
+WEIGHT_EVIDENCE_GROUNDING = 0.25
+WEIGHT_COMPLETENESS = 0.15
+WEIGHT_SOURCE_QUALITY = 0.10
+WEIGHT_ORRICK_ALIGNMENT = 0.10
+WEIGHT_CROSS_VALIDATION = 0.25
 
-# Neutral score when no Orrick data is available
+# Neutral scores for components without data
 ORRICK_NEUTRAL_SCORE = 0.5
+CROSS_VALIDATION_NEUTRAL_SCORE = 0.5
 
 # Tier thresholds
 TIER_A_THRESHOLD = 0.85
@@ -64,6 +73,7 @@ def compute_confidence(
     schema_class: type[BaseModel],
     parse_quality_score: float | None = None,
     orrick_similarity: "OrrickSimilarityResult | None" = None,
+    cross_validation_score: float | None = None,
 ) -> ConfidenceBreakdown:
     """Compute the confidence score for an extraction.
 
@@ -74,6 +84,8 @@ def compute_confidence(
         schema_class: The Pydantic model class for computing completeness.
         parse_quality_score: Phase 1 parse quality score (0.0-1.0).
         orrick_similarity: Optional Orrick similarity result for alignment scoring.
+        cross_validation_score: Optional accuracy score from cross-validation
+            agent (0.0-1.0). None means not yet verified (uses neutral score).
 
     Returns:
         ConfidenceBreakdown with component scores and final tier.
@@ -115,6 +127,16 @@ def compute_confidence(
             orrick_score = 0.3
         matched_tokens = orrick_similarity.matched_tokens
 
+    # 6. Cross-validation — accuracy score from verification agent
+    #    When not yet verified (None), use neutral score so the component
+    #    doesn't affect initial scoring.  After verification, the actual
+    #    accuracy_score directly becomes this component's value.
+    cv_score = (
+        cross_validation_score
+        if cross_validation_score is not None
+        else CROSS_VALIDATION_NEUTRAL_SCORE
+    )
+
     # Weighted total
     total = (
         WEIGHT_SCHEMA_VALIDITY * schema_score
@@ -122,6 +144,7 @@ def compute_confidence(
         + WEIGHT_COMPLETENESS * completeness_score
         + WEIGHT_SOURCE_QUALITY * source_score
         + WEIGHT_ORRICK_ALIGNMENT * orrick_score
+        + WEIGHT_CROSS_VALIDATION * cv_score
     )
 
     tier = _score_to_tier(total)
@@ -132,6 +155,7 @@ def compute_confidence(
         completeness=completeness_score,
         source_quality=source_score,
         orrick_alignment=orrick_score,
+        cross_validation=cv_score,
         total_score=round(total, 4),
         tier=tier,
         orrick_matched_tokens=matched_tokens,

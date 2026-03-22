@@ -26,6 +26,7 @@ class TestConfidenceScoring:
             },
             schema_class=ObligationPayload,
             parse_quality_score=1.0,
+            cross_validation_score=1.0,
         )
         assert result.tier == "A"
         assert result.total_score >= 0.85
