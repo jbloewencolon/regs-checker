@@ -628,6 +628,10 @@ def extract_single_record(
                 name, result = future.result()
                 agent_results.append((name, content_hash, result))
 
+    # Import monitor for live event emission
+    from src.core.extraction_monitor import get_monitor
+    monitor = get_monitor()
+
     # Process results (back on main thread for DB writes)
     for name, content_hash, result in agent_results:
         if isinstance(result, Exception):
@@ -642,6 +646,11 @@ def extract_single_record(
                 tracker.record_failure(
                     f"agent={name} record={record.id}: {result}"
                 )
+            monitor.record_agent_result(
+                agent_name=name,
+                record_id=record.id,
+                error=str(result),
+            )
             continue
 
         # Successful call — reset consecutive failure counter
@@ -665,6 +674,13 @@ def extract_single_record(
         )
 
         if result.abstention is not None:
+            monitor.record_agent_result(
+                agent_name=name,
+                record_id=record.id,
+                abstained=True,
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+            )
             continue
 
         # Mark hash as seen
@@ -733,6 +749,18 @@ def extract_single_record(
                         orrick_matched_tokens=confidence.orrick_matched_tokens[:5],
                     )
 
+                    # Emit to live monitor
+                    monitor.record_agent_result(
+                        agent_name=name,
+                        record_id=source_record.id,
+                        success=True,
+                        extraction_count=1,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        confidence_tier=confidence.tier,
+                        truncated=result.truncated,
+                    )
+
                 except Exception as e:
                     logger.error(
                         "extraction_record_failed",
@@ -740,6 +768,13 @@ def extract_single_record(
                         record_id=source_record.id,
                         error=str(e),
                     )
+
+    # Record passage-level completion to monitor
+    monitor.record_passage_complete(
+        record_id=record.id,
+        section_path=record.section_path,
+        extraction_count=extractions_created,
+    )
 
     return extractions_created
 
@@ -811,6 +846,11 @@ def run_extraction(
 
     _log(f"Found {len(records)} passages to extract from")
 
+    # Start the live extraction monitor
+    from src.core.extraction_monitor import get_monitor
+    _monitor = get_monitor()
+    _monitor.start_run(total_passages=len(records))
+
     # Filter out tiny passages
     original_count = len(records)
     records = [r for r in records if len(r.text_content) >= MIN_PASSAGE_LENGTH]
@@ -870,6 +910,7 @@ def run_extraction(
             f"\n[{label}] Processing {len(merged_passages)} passages "
             f"({len(dv_group)} records)..."
         )
+        _monitor.record_document_start(label, len(merged_passages))
 
         job_extractions = 0
         job_failures = 0
@@ -883,6 +924,7 @@ def run_extraction(
                 db.commit()
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
+                _monitor.stop_run(cancelled=True)
                 return summary
 
             try:
@@ -908,6 +950,8 @@ def run_extraction(
                 summary["circuit_breaker_tripped"] = True
                 summary["circuit_breaker_detail"] = str(cb)
                 _log(f"\n{cb}")
+                _monitor.record_circuit_breaker(str(cb))
+                _monitor.stop_run()
                 return summary
 
             except Exception as e:
@@ -926,6 +970,7 @@ def run_extraction(
         db.commit()
 
         summary["total_extractions"] += job_extractions
+        _monitor.record_document_complete(label, job_extractions, job_failures)
         _log(
             f"  Done: {job_extractions} extractions from {len(merged_passages)} passages "
             f"({job_failures} failures)"
@@ -952,6 +997,7 @@ def run_extraction(
         f"{token_usage.merged_passages} passages merged, "
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
+    _monitor.stop_run()
     return summary
 
 

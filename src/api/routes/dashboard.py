@@ -877,6 +877,203 @@ def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     )
 
 
+@router.get("/api/extraction-monitor")
+def get_extraction_monitor() -> HTMLResponse:
+    """Return live extraction health dashboard fragment (polled every 2s during runs).
+
+    Shows:
+      - Health gauges (failure rate, consecutive errors, confidence distribution)
+      - Per-agent performance bars
+      - Live event feed with color-coded severity
+      - Token burn rate
+    """
+    from src.core.extraction_monitor import get_monitor
+
+    monitor = get_monitor()
+    snap = monitor.snapshot(recent_count=30)
+    d = snap.to_dict()
+
+    if not d["is_running"] and d["passages_processed"] == 0:
+        return HTMLResponse(
+            '<div class="monitor-idle" style="color:var(--text-muted);font-size:13px;">'
+            "No extraction running. Start an extraction to see live monitoring.</div>"
+        )
+
+    # --- Health gauges ---
+    elapsed_min = d["elapsed_seconds"] / 60 if d["elapsed_seconds"] > 0 else 0
+    pct_done = (
+        round(d["passages_processed"] / d["passages_total"] * 100, 1)
+        if d["passages_total"] > 0
+        else 0
+    )
+
+    # Failure rate color
+    fr = d["failure_rate"]
+    fr_color = "var(--success)" if fr < 0.05 else "var(--warning)" if fr < 0.2 else "var(--danger)"
+    fr_label = f"{fr:.1%}"
+
+    # Consecutive errors color
+    ce = d["consecutive_errors"]
+    ce_color = "var(--success)" if ce == 0 else "var(--warning)" if ce < 3 else "var(--danger)"
+
+    status_label = "RUNNING" if d["is_running"] else "STOPPED"
+    status_color = "var(--success)" if d["is_running"] else "var(--text-muted)"
+
+    gauges_html = f"""
+    <div class="monitor-gauges" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{status_color};">{status_label}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Status</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['passages_processed']}/{d['passages_total']}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Passages ({pct_done}%)</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['extractions_created']}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Extractions</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{fr_color};">{fr_label}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Failure Rate</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{ce_color};">{ce}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Consecutive Errors</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['total_tokens']:,}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Tokens ({d['tokens_per_minute']:,.0f}/min)</div>
+      </div>
+    </div>
+    """
+
+    # --- Confidence distribution bar ---
+    tiers = d["confidence_tiers"]
+    total_ext = sum(tiers.values()) or 1
+    tier_colors = {"A": "var(--success)", "B": "#3b82f6", "C": "var(--warning)", "D": "var(--danger)"}
+    tier_segments = ""
+    for tier in ["A", "B", "C", "D"]:
+        pct = tiers[tier] / total_ext * 100
+        if pct > 0:
+            tier_segments += (
+                f'<div style="width:{pct}%;background:{tier_colors[tier]};height:100%;'
+                f'display:inline-block;" title="Tier {tier}: {tiers[tier]}"></div>'
+            )
+    conf_html = f"""
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Confidence Distribution</div>
+      <div style="height:16px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;display:flex;">
+        {tier_segments}
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;margin-top:3px;color:var(--text-muted);">
+        {''.join(f'<span><span style="color:{tier_colors[t]};">&#9632;</span> {t}: {tiers[t]}</span>' for t in ["A","B","C","D"])}
+      </div>
+    </div>
+    """
+
+    # --- Per-agent stats ---
+    agent_html = ""
+    if d["agent_stats"]:
+        agent_rows = ""
+        for name, stats in sorted(d["agent_stats"].items()):
+            afr = stats["failure_rate"]
+            afr_color = "var(--success)" if afr < 0.05 else "var(--warning)" if afr < 0.2 else "var(--danger)"
+            agent_rows += f"""
+            <tr>
+              <td><code>{html_escape(name)}</code></td>
+              <td>{stats['calls']}</td>
+              <td style="color:var(--success);">{stats['successes']}</td>
+              <td>{stats['abstentions']}</td>
+              <td style="color:{'var(--danger)' if stats['errors'] > 0 else 'var(--text-muted)'};">{stats['errors']}</td>
+              <td style="color:{afr_color};">{afr:.0%}</td>
+              <td>{stats['tokens']:,}</td>
+            </tr>
+            """
+        agent_html = f"""
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Agent Performance</div>
+          <table class="data-table" style="font-size:12px;">
+            <thead><tr>
+              <th>Agent</th><th>Calls</th><th>OK</th><th>Abstain</th>
+              <th>Errors</th><th>Fail%</th><th>Tokens</th>
+            </tr></thead>
+            <tbody>{agent_rows}</tbody>
+          </table>
+        </div>
+        """
+
+    # --- Issue summary badges ---
+    issue_badges = ""
+    if d["criticals"] > 0:
+        issue_badges += f'<span class="badge badge-danger">{d["criticals"]} Critical</span> '
+    if d["errors_count"] > 0:
+        issue_badges += f'<span class="badge badge-warning">{d["errors_count"]} Errors</span> '
+    if d["warnings"] > 0:
+        issue_badges += f'<span class="badge badge-info">{d["warnings"]} Warnings</span> '
+    if not issue_badges:
+        issue_badges = '<span style="color:var(--success);font-size:12px;">No issues detected</span>'
+
+    issue_html = f"""
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Issues</div>
+      {issue_badges}
+    </div>
+    """
+
+    # --- Live event feed ---
+    event_colors = {
+        "critical": "var(--danger)",
+        "error": "#dc3545",
+        "warning": "#e67e22",
+        "success": "var(--success)",
+        "info": "var(--text-muted)",
+    }
+    event_icons = {
+        "critical": "&#9888;",
+        "error": "&#10007;",
+        "warning": "&#9888;",
+        "success": "&#10003;",
+        "info": "&#8226;",
+    }
+
+    feed_items = ""
+    for evt in d["recent_events"][:20]:
+        color = event_colors.get(evt["severity"], "var(--text-muted)")
+        icon = event_icons.get(evt["severity"], "&#8226;")
+        age = evt["age_seconds"]
+        age_label = f"{age:.0f}s ago" if age < 60 else f"{age / 60:.0f}m ago"
+        feed_items += (
+            f'<div style="padding:3px 0;font-size:12px;border-bottom:1px solid var(--border);'
+            f'display:flex;gap:6px;align-items:baseline;">'
+            f'<span style="color:{color};flex-shrink:0;width:14px;">{icon}</span>'
+            f'<span style="flex:1;">{html_escape(evt["message"])}</span>'
+            f'<span style="color:var(--text-muted);font-size:10px;flex-shrink:0;">{age_label}</span>'
+            f'</div>'
+        )
+
+    feed_html = f"""
+    <div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Live Feed</div>
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+        {feed_items if feed_items else '<div style="color:var(--text-muted);font-size:12px;padding:8px;">Waiting for events...</div>'}
+      </div>
+    </div>
+    """
+
+    # --- Current document ---
+    doc_html = ""
+    if d["current_document"]:
+        doc_html = (
+            f'<div style="font-size:12px;margin-bottom:8px;color:var(--text-muted);">'
+            f'Processing: <strong>{html_escape(d["current_document"])}</strong></div>'
+        )
+
+    return HTMLResponse(
+        f"{gauges_html}{doc_html}{conf_html}{agent_html}{issue_html}{feed_html}"
+    )
+
+
 @router.post("/api/run/extract/cancel")
 def cancel_extract() -> HTMLResponse:
     """Signal the running extraction pipeline to stop after the current passage."""

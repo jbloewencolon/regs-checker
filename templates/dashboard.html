@@ -446,6 +446,20 @@
 
         <div id="extract-cancel-status"></div>
         <div class="step-result" id="extract-result"></div>
+
+        <!-- Live Extraction Monitor -->
+        <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="margin:0;font-size:14px;">Live Extraction Monitor</h4>
+            <span style="font-size:10px;color:var(--text-muted);">Auto-refresh every 2s during runs</span>
+          </div>
+          <div id="extraction-monitor"
+               hx-get="/dashboard/api/extraction-monitor"
+               hx-trigger="load, every 2s"
+               hx-swap="innerHTML">
+            <div style="color:var(--text-muted);font-size:13px;">Loading monitor...</div>
+          </div>
+        </div>
       </div>
     </div>
 
