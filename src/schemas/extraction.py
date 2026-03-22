@@ -75,6 +75,11 @@ class ObligationPayload(BaseModel):
     section_reference: str | None = None
     timeline: TimelineInfo | None = None
     enforcement: EnforcementInfo | None = None
+    preemption_signals: list[str] = Field(
+        default_factory=list,
+        description="Verbatim preemption language found in the passage "
+        "(e.g., 'this section does not preempt', 'notwithstanding any state law')",
+    )
 
 
 # ---------------------------------------------------------------------------

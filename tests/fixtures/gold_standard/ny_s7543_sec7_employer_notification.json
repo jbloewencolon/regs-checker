@@ -1,0 +1,49 @@
+{
+    "passage_id": "ny_s7543_sec7_employer_notification",
+    "source_document": "New York S7543 (Automated Employment Decision Tools)",
+    "jurisdiction": "NY",
+    "section_path": "Section 7 - Employer Notification Requirements",
+    "passage_text": "Any employer or employment agency that uses an automated employment decision tool to screen a candidate or employee for an employment decision is to notify each such candidate or employee who resides in the city that an automated employment decision tool will be used in connection with the assessment or evaluation of such candidate or employee. Such notice is to be made no later than ten business days before such use and allow the candidate or employee to request an alternative selection process or accommodation.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "Any employer or employment agency that uses an automated employment decision tool",
+            "subject_normalized": "deployer",
+            "modality": "must",
+            "action": "notify each candidate or employee who resides in the city that an automated employment decision tool will be used and allow request for alternative selection process or accommodation",
+            "object": "candidate or employee",
+            "condition": "when using an automated employment decision tool to screen for an employment decision",
+            "jurisdiction": "NY",
+            "section_reference": "Section 7",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": "no later than ten business days before such use",
+                "sunset_date": null,
+                "phase_in_period": null,
+                "timeline_text": "no later than ten business days before such use"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "alternative selection process or accommodation",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 7 - AEDT notification requirement"],
+            "interpretation_notes": "The requirement to 'allow the candidate or employee to request an alternative selection process or accommodation' does not specify what constitutes an adequate alternative, whether the employer must grant the request, or what accommodations are sufficient.",
+            "suggested_clarification": "Define minimum standards for alternative selection processes and specify whether employers have discretion to deny accommodation requests"
+        },
+        "rights_protection": {
+            "right_holder": "candidate or employee",
+            "right_holder_normalized": "consumer",
+            "right_type": "notice",
+            "right_description": "Right to be notified at least ten business days before an automated employment decision tool is used for screening",
+            "trigger_condition": "when employer uses AEDT for employment screening",
+            "duty_bearer": "employer or employment agency",
+            "remedies": [],
+            "section_reference": "Section 7",
+            "jurisdiction": "NY"
+        },
+        "notes": "Tests 'is to notify' and 'is to be made' obligation phrasing — neither uses shall/must/required. Previous keyword screening would miss this entirely."
+    }
+}

@@ -2557,3 +2557,117 @@ async def tracker_import(file: UploadFile) -> HTMLResponse:
         f'Imported <strong>{len(rows)}</strong> records.</div>'
         + _tracker_table_body(rows)
     )
+
+
+# ---------------------------------------------------------------------------
+# Completeness Manifest — extraction coverage reporting
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/completeness")
+def get_completeness_manifest(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Return extraction completeness manifest as an HTML table.
+
+    Shows per-document extraction coverage: total passages, processed,
+    skipped, coverage %, and flags gaps where passages have no extractions.
+    """
+    from src.ingestion.extractor import compute_completeness_manifest
+
+    reports = compute_completeness_manifest(db, document_version_id)
+
+    if not reports:
+        return HTMLResponse(
+            '<div class="result-panel info">No documents with passages found. '
+            "Run fetch & extraction first.</div>"
+        )
+
+    # Summary stats
+    total_docs = len(reports)
+    complete_docs = sum(1 for r in reports if r.is_complete)
+    total_passages = sum(r.total_passages for r in reports)
+    total_processed = sum(r.passages_processed for r in reports)
+    total_gaps = sum(len(r.gaps) for r in reports)
+    overall_coverage = round(total_processed / total_passages * 100, 1) if total_passages else 0
+
+    summary_html = f"""
+    <div class="result-panel {'success' if total_gaps == 0 else 'warning'}"
+         style="margin-bottom:12px;">
+      <strong>Completeness Summary:</strong>
+      {complete_docs}/{total_docs} documents fully covered &middot;
+      {total_processed}/{total_passages} passages processed &middot;
+      {total_gaps} gap{"s" if total_gaps != 1 else ""} found &middot;
+      {overall_coverage}% overall coverage
+    </div>
+    """
+
+    # Per-document table
+    rows_html = ""
+    for report in sorted(reports, key=lambda r: r.coverage_percent):
+        coverage_class = (
+            "success" if report.coverage_percent >= 95
+            else "warning" if report.coverage_percent >= 80
+            else "danger"
+        )
+        gap_count = len(report.gaps)
+        status_icon = "&#10003;" if report.is_complete else f"&#9888; {gap_count} gaps"
+
+        rows_html += f"""
+        <tr>
+          <td><strong>{html_escape(report.document_label)}</strong></td>
+          <td>{html_escape(report.jurisdiction or '—')}</td>
+          <td>{report.total_passages}</td>
+          <td>{report.passages_processed}</td>
+          <td>{report.passages_skipped_short + report.passages_skipped_boilerplate}</td>
+          <td class="text-{coverage_class}">
+            <strong>{report.coverage_percent}%</strong>
+          </td>
+          <td class="text-{coverage_class}">{status_icon}</td>
+        </tr>
+        """
+
+        # Show gaps if any
+        if report.gaps:
+            for gap in report.gaps[:5]:  # Show max 5 gaps per doc
+                preview = html_escape(gap.get("text_preview", "")[:100])
+                rows_html += f"""
+                <tr style="background: var(--bg-warning-subtle, #fff3cd);">
+                  <td colspan="2" style="padding-left:2em; font-size:0.85em;">
+                    &#8627; {html_escape(gap.get('section_path') or 'Unknown section')}
+                  </td>
+                  <td colspan="3" style="font-size:0.85em;">{preview}...</td>
+                  <td colspan="2" style="font-size:0.85em;">
+                    Expected: {', '.join(gap.get('expected_agents', []))}
+                  </td>
+                </tr>
+                """
+            if len(report.gaps) > 5:
+                rows_html += f"""
+                <tr style="background: var(--bg-warning-subtle, #fff3cd);">
+                  <td colspan="7" style="padding-left:2em; font-size:0.85em; font-style:italic;">
+                    ... and {len(report.gaps) - 5} more gaps
+                  </td>
+                </tr>
+                """
+
+    table_html = f"""
+    {summary_html}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>Jurisdiction</th>
+          <th>Total</th>
+          <th>Processed</th>
+          <th>Skipped</th>
+          <th>Coverage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    """
+
+    return HTMLResponse(table_html)

@@ -255,6 +255,39 @@ def get_change_feed(
 
 
 # ---------------------------------------------------------------------------
+# Completeness Manifest
+# ---------------------------------------------------------------------------
+
+
+@router.get("/completeness")
+def get_completeness(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Return extraction completeness manifest as JSON.
+
+    Reports per-document extraction coverage: total passages, processed,
+    skipped, coverage percentage, and gaps where passages have no extractions.
+    Use this to certify that all passages in a law have been processed.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import compute_completeness_manifest
+
+    reports = compute_completeness_manifest(db, document_version_id)
+    return {
+        "documents": [asdict(r) for r in reports],
+        "summary": {
+            "total_documents": len(reports),
+            "complete_documents": sum(1 for r in reports if r.is_complete),
+            "total_passages": sum(r.total_passages for r in reports),
+            "total_processed": sum(r.passages_processed for r in reports),
+            "total_gaps": sum(len(r.gaps) for r in reports),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

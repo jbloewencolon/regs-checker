@@ -1,0 +1,53 @@
+{
+    "passage_id": "va_hb2154_sec5_impact_assessment",
+    "source_document": "Virginia HB 2154 (High-Risk Artificial Intelligence Developer Duty of Care)",
+    "jurisdiction": "VA",
+    "section_path": "Section 5 - Impact Assessments",
+    "passage_text": "A deployer of a high-risk artificial intelligence system is directed to complete an impact assessment for any high-risk artificial intelligence system on an annual basis and within ninety days following any intentional and substantial modification to the high-risk artificial intelligence system. The impact assessment should include an analysis of the reasonably foreseeable risks of algorithmic discrimination, a description of the categories of data processed, and the outputs produced by the system. This section does not preempt or supersede any obligation imposed under federal law.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A deployer of a high-risk artificial intelligence system",
+            "subject_normalized": "deployer",
+            "modality": "must",
+            "action": "complete an impact assessment for any high-risk artificial intelligence system",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "VA",
+            "section_reference": "Section 5",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": null,
+                "sunset_date": null,
+                "phase_in_period": "annually and within ninety days following any intentional and substantial modification",
+                "timeline_text": "on an annual basis and within ninety days following any intentional and substantial modification to the high-risk artificial intelligence system"
+            },
+            "enforcement": null,
+            "preemption_signals": [
+                "This section does not preempt or supersede any obligation imposed under federal law."
+            ]
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "intentional and substantial modification",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 5 - impact assessment requirement"],
+            "interpretation_notes": "The threshold for what constitutes a 'substantial modification' triggering a new impact assessment is undefined. Routine model retraining, hyperparameter tuning, and data updates could all arguably be 'modifications' but their substantiality is subjective.",
+            "suggested_clarification": "Define quantitative thresholds for substantial modification, such as changes affecting more than a specified percentage of model parameters, training data, or output distributions"
+        },
+        "compliance_mechanism": {
+            "mechanism_type": "impact_assessment",
+            "description": "Impact assessment including analysis of algorithmic discrimination risks, categories of data processed, and system outputs",
+            "responsible_party": "deployer of a high-risk artificial intelligence system",
+            "responsible_party_normalized": "deployer",
+            "audits": [],
+            "record_retention_period": null,
+            "reporting_frequency": "annual and within 90 days of substantial modification",
+            "reporting_recipient": null,
+            "section_reference": "Section 5",
+            "jurisdiction": "VA"
+        },
+        "notes": "Tests non-standard obligation phrasing: 'is directed to' instead of shall/must. Also tests preemption_signals extraction and compliance mechanism co-extraction."
+    }
+}

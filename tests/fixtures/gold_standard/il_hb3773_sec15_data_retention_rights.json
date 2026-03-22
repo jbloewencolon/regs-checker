@@ -1,0 +1,42 @@
+{
+    "passage_id": "il_hb3773_sec15_data_retention_rights",
+    "source_document": "Illinois HB 3773 (Artificial Intelligence Video Interview Act)",
+    "jurisdiction": "IL",
+    "section_path": "Section 15 - Data Destruction and Applicant Rights",
+    "passage_text": "Upon request by the applicant, the employer will destroy the applicant's video interview and instruct any person who received a copy of the video interview to also destroy the applicant's video interview within 30 days after the date of the applicant's request. It is the policy of this State that individuals retain the right to know when artificial intelligence is being used in employment decisions that affect them.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "the employer",
+            "subject_normalized": "deployer",
+            "modality": "must",
+            "action": "destroy the applicant's video interview and instruct any person who received a copy to also destroy the video interview",
+            "object": "applicant's video interview",
+            "condition": "upon request by the applicant",
+            "jurisdiction": "IL",
+            "section_reference": "Section 15",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": "within 30 days after the date of the applicant's request",
+                "sunset_date": null,
+                "phase_in_period": null,
+                "timeline_text": "within 30 days after the date of the applicant's request"
+            },
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": null,
+        "rights_protection": {
+            "right_holder": "applicant",
+            "right_holder_normalized": "consumer",
+            "right_type": "deletion",
+            "right_description": "Right to request destruction of video interview and all copies within 30 days",
+            "trigger_condition": "upon request by the applicant",
+            "duty_bearer": "employer",
+            "remedies": [],
+            "section_reference": "Section 15",
+            "jurisdiction": "IL"
+        },
+        "notes": "Tests 'will' as obligation phrasing (not shall/must) and 'it is the policy of this State that' as an implicit obligation. Also tests rights_protection co-extraction with obligation."
+    }
+}

@@ -1,0 +1,54 @@
+{
+    "passage_id": "us_eo14110_sec5_nist_framework_ref",
+    "source_document": "US Executive Order 14110 (Safe, Secure, and Trustworthy Development and Use of Artificial Intelligence)",
+    "jurisdiction": "US",
+    "section_path": "Section 5 - Developing Standards and Frameworks",
+    "passage_text": "Within 270 days of the date of this order, the Secretary of Commerce, acting through the Director of NIST, is directed to establish guidelines and best practices, with the aim of promoting consensus industry standards, for developing and deploying safe, secure, and trustworthy AI systems, including for the purposes of identifying and mitigating AI risks. In addition to any requirements under existing federal law, the guidelines should address the management of AI risks throughout the AI lifecycle.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "the Secretary of Commerce, acting through the Director of NIST",
+            "subject_normalized": "developer",
+            "modality": "must",
+            "action": "establish guidelines and best practices for developing and deploying safe, secure, and trustworthy AI systems, including for identifying and mitigating AI risks",
+            "object": "AI systems guidelines and best practices",
+            "condition": null,
+            "jurisdiction": "US",
+            "section_reference": "Section 5",
+            "timeline": {
+                "effective_date": null,
+                "compliance_deadline": "within 270 days of the date of this order",
+                "sunset_date": null,
+                "phase_in_period": null,
+                "timeline_text": "Within 270 days of the date of this order"
+            },
+            "enforcement": null,
+            "preemption_signals": [
+                "In addition to any requirements under existing federal law"
+            ]
+        },
+        "definition": {
+            "term": null,
+            "definition_text": null,
+            "scope": null,
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [
+                {
+                    "framework_name": "NIST AI Risk Management Framework",
+                    "section_or_standard": null,
+                    "relationship": "incorporates"
+                }
+            ]
+        },
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "consensus industry standards",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 5 - NIST guidelines development"],
+            "interpretation_notes": "The aim of 'promoting consensus industry standards' is aspirational without defining what consensus means, how many industry participants must agree, or what happens if consensus cannot be reached within the 270-day timeline.",
+            "suggested_clarification": "Specify the process for achieving industry consensus, including minimum participation requirements and dispute resolution mechanisms"
+        },
+        "notes": "Tests 'is directed to' obligation phrasing, cross-framework reference extraction, and preemption signal ('in addition to any requirements under existing federal law')."
+    }
+}

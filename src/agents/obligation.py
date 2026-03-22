@@ -35,6 +35,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 - section_reference: Section/subsection reference
 - timeline: Object with effective_date, compliance_deadline, sunset_date, phase_in_period, timeline_text
 - enforcement: Object with enforcing_body, penalty_type, penalty_description, private_right_of_action, enforcement_text
+- preemption_signals: Array of VERBATIM strings capturing any preemption language (e.g., "this section does not preempt", "notwithstanding any state law", "in addition to federal requirements", "nothing in this act shall be construed to"). Empty array if none found.
 - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
 
 If the passage contains MULTIPLE obligations, include one object per obligation.
@@ -50,9 +51,10 @@ CRITICAL RULES:
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all regulatory obligations from the following legislative passage.
-Co-extract any timeline information (effective dates, deadlines, sunset dates) and
-enforcement mechanisms (penalties, enforcing bodies, private rights of action) that
-are associated with each obligation.
+Co-extract any timeline information (effective dates, deadlines, sunset dates),
+enforcement mechanisms (penalties, enforcing bodies, private rights of action), and
+preemption signals (language about federal/state preemption, savings clauses, or
+"notwithstanding" provisions) that are associated with each obligation.
 
 If there are multiple distinct obligations, return each as a separate object in the
 "extractions" array.

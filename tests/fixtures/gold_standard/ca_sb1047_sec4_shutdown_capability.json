@@ -1,0 +1,47 @@
+{
+    "passage_id": "ca_sb1047_sec4_shutdown_capability",
+    "source_document": "California SB 1047 (Safe and Secure Innovation for Frontier AI Models Act)",
+    "jurisdiction": "CA",
+    "section_path": "Section 4 - Shutdown Capability and Safety Protocols",
+    "passage_text": "No developer of a covered model may make the covered model available for use unless and until the developer has the ability to promptly enact a full shutdown of all copies and derivative models of the covered model that the developer has control over. The developer is also expected to maintain a written and comprehensive safety and security protocol. Nothing in this chapter shall be construed to preempt, displace, or supplant any federal law or regulation.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "developer of a covered model",
+            "subject_normalized": "developer",
+            "modality": "prohibited",
+            "action": "make the covered model available for use unless and until the developer has the ability to promptly enact a full shutdown of all copies and derivative models",
+            "object": "covered model",
+            "condition": "unless and until the developer has shutdown capability",
+            "jurisdiction": "CA",
+            "section_reference": "Section 4",
+            "timeline": null,
+            "enforcement": null,
+            "preemption_signals": [
+                "Nothing in this chapter shall be construed to preempt, displace, or supplant any federal law or regulation."
+            ]
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "promptly enact a full shutdown",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 4 - shutdown capability requirement"],
+            "interpretation_notes": "The term 'promptly' lacks a specific time requirement. For frontier AI models deployed across distributed infrastructure, the technical feasibility and timeline of a 'full shutdown' of 'all copies and derivative models' is highly uncertain.",
+            "suggested_clarification": "Define a maximum time window for shutdown enactment and specify whether derivative models created by third parties are included in scope"
+        },
+        "compliance_mechanism": {
+            "mechanism_type": "record_keeping",
+            "description": "Maintain a written and comprehensive safety and security protocol",
+            "responsible_party": "developer of a covered model",
+            "responsible_party_normalized": "developer",
+            "audits": [],
+            "record_retention_period": null,
+            "reporting_frequency": null,
+            "reporting_recipient": null,
+            "section_reference": "Section 4",
+            "jurisdiction": "CA"
+        },
+        "notes": "Tests 'No ... may' prohibition phrasing, 'is also expected to' obligation phrasing, and preemption savings clause extraction."
+    }
+}

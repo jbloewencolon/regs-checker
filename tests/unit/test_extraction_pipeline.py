@@ -23,9 +23,10 @@ from src.ingestion.extractor import (
     TokenUsageSummary,
     _content_hash,
     _confidence_to_priority,
+    _select_agents_for_passage,
     _wrap_passages,
 )
-from src.schemas.extraction import AbstentionResult
+from src.schemas.extraction import AbstentionResult, ObligationPayload
 
 
 class TestPromptLoader:
@@ -329,3 +330,277 @@ class TestBatchCustomIdFormat:
         """Legacy format without '--' should be detected."""
         custom_id = "123_obligation"
         assert "--" not in custom_id  # Falls to legacy parsing path
+
+
+# ---------------------------------------------------------------------------
+# Recall-safe agent selection (negative screening)
+# ---------------------------------------------------------------------------
+
+
+class TestRecallSafeAgentSelection:
+    """Tests for the negative-screening agent selection.
+
+    The system runs ALL agents by default and only excludes agents when the
+    passage is definitively irrelevant (boilerplate, enacting clauses, etc.).
+    This prevents false negatives from obligations phrased in non-standard ways.
+    """
+
+    @patch("src.agents.base.get_extraction_provider")
+    def _make_agents(self, mock_provider) -> dict:
+        """Create a minimal set of agents for testing."""
+        from src.agents.ambiguity import AmbiguityAgent
+        from src.agents.compliance_mechanism import ComplianceMechanismAgent
+        from src.agents.definition_actor import DefinitionActorAgent
+        from src.agents.obligation import ObligationAgent
+        from src.agents.rights_protection import RightsProtectionAgent
+        from src.agents.threshold_exception import ThresholdExceptionAgent
+
+        return {
+            "obligation": ObligationAgent(),
+            "definition_actor": DefinitionActorAgent(),
+            "threshold_exception": ThresholdExceptionAgent(),
+            "ambiguity": AmbiguityAgent(),
+            "rights_protection": RightsProtectionAgent(),
+            "compliance_mechanism": ComplianceMechanismAgent(),
+        }
+
+    def test_standard_obligation_runs_all_agents(self):
+        """A passage with 'shall' should run all agents (not just obligation)."""
+        agents = self._make_agents()
+        text = "A developer shall implement cybersecurity protections."
+        selected = _select_agents_for_passage(text, agents)
+        assert len(selected) == 6  # All agents run
+
+    def test_nonstandard_obligation_is_expected_to(self):
+        """'is expected to' doesn't contain shall/must — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "A developer is expected to provide deployers with sufficient documentation."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected, (
+            "Obligation agent must run on 'is expected to' phrasing"
+        )
+
+    def test_nonstandard_obligation_has_duty_to(self):
+        """'has a duty to' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "A developer has a duty to use reasonable care to protect consumers."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_is_responsible_for(self):
+        """'is responsible for ensuring' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "A person who operates generative AI is responsible for ensuring clear disclosure."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_is_directed_to(self):
+        """'is directed to' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "The Secretary of Commerce is directed to establish guidelines."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_it_is_the_policy(self):
+        """'it is the policy of this State' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "It is the policy of this State that individuals retain the right to know when AI is used."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_is_to_notify(self):
+        """'is to notify' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "An employer is to notify each candidate that an automated tool will be used."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_will_destroy(self):
+        """'will destroy' — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "Upon request by the applicant, the employer will destroy the video interview within 30 days."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_nonstandard_obligation_no_person_may(self):
+        """'No person may' prohibition — must still run obligation agent."""
+        agents = self._make_agents()
+        text = "No developer of a covered model may make the model available for use unless the developer has shutdown capability."
+        selected = _select_agents_for_passage(text, agents)
+        assert "obligation" in selected
+
+    def test_boilerplate_toc_excluded(self):
+        """Table of contents entries should exclude all agents."""
+        agents = self._make_agents()
+        text = "Table of Contents"
+        selected = _select_agents_for_passage(text, agents)
+        assert len(selected) == 0
+
+    def test_boilerplate_page_number_excluded(self):
+        """Bare page numbers should exclude all agents."""
+        agents = self._make_agents()
+        text = "Page 42"
+        selected = _select_agents_for_passage(text, agents)
+        assert len(selected) == 0
+
+    def test_enacting_clause_excluded(self):
+        """Pure enacting clauses should exclude all agents."""
+        agents = self._make_agents()
+        text = "Be it enacted by the General Assembly of the State of Colorado"
+        selected = _select_agents_for_passage(text, agents)
+        assert len(selected) == 0
+
+    def test_definitions_header_only_definition_agent(self):
+        """A bare 'DEFINITIONS' header should only run the definition agent."""
+        agents = self._make_agents()
+        text = "As used in this act:"
+        selected = _select_agents_for_passage(text, agents)
+        assert "definition_actor" in selected
+        assert len(selected) == 1
+
+    def test_substantive_passage_runs_all_agents(self):
+        """Regular legislative text should run all agents."""
+        agents = self._make_agents()
+        text = (
+            "The developer of a high-risk AI system shall conduct an impact assessment "
+            "annually. Any individual affected by a consequential decision has the right "
+            "to appeal. This requirement does not apply to AI systems used solely for "
+            "cybersecurity purposes."
+        )
+        selected = _select_agents_for_passage(text, agents)
+        assert len(selected) == 6  # All agents should run
+
+    def test_long_enacting_clause_not_excluded(self):
+        """A long passage starting with enacting language should NOT be excluded
+        because it likely contains substantive content beyond the clause."""
+        agents = self._make_agents()
+        text = (
+            "Be it enacted by the legislature that developers of artificial intelligence "
+            "systems shall implement bias testing, conduct annual audits, and maintain "
+            "records of all training data used. Penalties for non-compliance include fines "
+            "up to fifty thousand dollars per violation. " * 3
+        )
+        selected = _select_agents_for_passage(text, agents)
+        # The passage is > 300 chars, so even though it starts with "Be it enacted",
+        # it should NOT be excluded
+        assert len(selected) == 6
+
+
+# ---------------------------------------------------------------------------
+# Preemption signals schema
+# ---------------------------------------------------------------------------
+
+
+class TestPreemptionSignals:
+    """Tests for the preemption_signals field on ObligationPayload."""
+
+    def test_preemption_signals_default_empty(self):
+        """preemption_signals should default to empty list."""
+        payload = ObligationPayload(
+            subject="developer",
+            modality="shall",
+            action="comply",
+        )
+        assert payload.preemption_signals == []
+
+    def test_preemption_signals_populated(self):
+        """preemption_signals should accept a list of strings."""
+        signals = [
+            "This section does not preempt any federal law.",
+            "Nothing in this chapter shall be construed to supersede federal requirements.",
+        ]
+        payload = ObligationPayload(
+            subject="developer",
+            modality="shall",
+            action="comply",
+            preemption_signals=signals,
+        )
+        assert len(payload.preemption_signals) == 2
+        assert "preempt" in payload.preemption_signals[0]
+
+    def test_preemption_signals_serialization(self):
+        """preemption_signals should round-trip through JSON."""
+        signals = ["Notwithstanding any state law to the contrary."]
+        payload = ObligationPayload(
+            subject="developer",
+            modality="shall",
+            action="comply",
+            preemption_signals=signals,
+        )
+        data = payload.model_dump()
+        assert data["preemption_signals"] == signals
+
+        # Re-validate from dict
+        restored = ObligationPayload.model_validate(data)
+        assert restored.preemption_signals == signals
+
+
+# ---------------------------------------------------------------------------
+# Gold standard fixture validation
+# ---------------------------------------------------------------------------
+
+
+class TestGoldStandardFixtures:
+    """Validate that all gold standard fixtures are well-formed."""
+
+    def _load_fixtures(self):
+        import json
+        from pathlib import Path
+
+        fixture_dir = Path("tests/fixtures/gold_standard")
+        fixtures = []
+        for f in sorted(fixture_dir.glob("*.json")):
+            with open(f) as fp:
+                fixtures.append((f.name, json.load(fp)))
+        return fixtures
+
+    def test_minimum_fixture_count(self):
+        """Should have at least 25 fixtures (expanded coverage)."""
+        fixtures = self._load_fixtures()
+        assert len(fixtures) >= 25, f"Expected >= 25 fixtures, got {len(fixtures)}"
+
+    def test_jurisdiction_diversity(self):
+        """Should cover at least 5 distinct jurisdictions."""
+        fixtures = self._load_fixtures()
+        jurisdictions = {f[1].get("jurisdiction") for f in fixtures}
+        jurisdictions.discard(None)
+        assert len(jurisdictions) >= 5, (
+            f"Expected >= 5 jurisdictions, got {len(jurisdictions)}: {jurisdictions}"
+        )
+
+    def test_fixture_structure(self):
+        """Every fixture should have required fields."""
+        fixtures = self._load_fixtures()
+        for name, fixture in fixtures:
+            assert "passage_id" in fixture, f"{name}: missing passage_id"
+            assert "source_document" in fixture, f"{name}: missing source_document"
+            assert "jurisdiction" in fixture, f"{name}: missing jurisdiction"
+            assert "passage_text" in fixture, f"{name}: missing passage_text"
+            assert "expected_extractions" in fixture, f"{name}: missing expected_extractions"
+            assert len(fixture["passage_text"]) > 50, f"{name}: passage_text too short"
+
+    def test_nonstandard_obligation_fixtures_exist(self):
+        """Should have fixtures testing non-standard obligation phrasings
+        that the old keyword screening would have missed."""
+        fixtures = self._load_fixtures()
+        # Look for fixtures with notes about non-standard phrasing
+        nonstandard = [
+            name for name, fix in fixtures
+            if fix.get("expected_extractions", {}).get("notes", "")
+            and "non-standard" in fix["expected_extractions"].get("notes", "").lower()
+        ]
+        assert len(nonstandard) >= 3, (
+            f"Expected >= 3 non-standard phrasing fixtures, got {len(nonstandard)}"
+        )
+
+    def test_preemption_signal_fixtures_exist(self):
+        """Should have at least 2 fixtures with preemption_signals."""
+        fixtures = self._load_fixtures()
+        with_preemption = []
+        for name, fix in fixtures:
+            obligation = fix.get("expected_extractions", {}).get("obligation")
+            if obligation and obligation.get("preemption_signals"):
+                with_preemption.append(name)
+        assert len(with_preemption) >= 2, (
+            f"Expected >= 2 fixtures with preemption_signals, got {len(with_preemption)}"
+        )

@@ -7,7 +7,7 @@ Shared logic used by both:
 Steps:
   1. Query NormalizedSourceRecords without extractions (or with pending ExtractionJob)
   2. Filter out tiny passages (<150 chars) and merge adjacent short fragments
-  3. Select agents per passage based on content signals (keyword pre-screening)
+  3. Select agents per passage via negative screening (exclude only boilerplate)
   4. Run selected agents concurrently
   5. Validate output via Pydantic, verify evidence spans via string matching
   6. Compute confidence score and tier
@@ -24,7 +24,7 @@ Enhancements over initial implementation:
 Cost optimizations:
   - Skip passages under MIN_PASSAGE_LENGTH chars (boilerplate/stubs)
   - Merge consecutive short passages from same section into single API call
-  - Keyword-based agent selection skips irrelevant agents per passage
+  - Negative screening excludes agents only for definitively irrelevant passages
   - Orrick key_requirements injected as extraction context for higher accuracy
   - Batch API support via --batch flag (50% discount, 24h turnaround)
 """
@@ -216,6 +216,55 @@ def _discriminate_extraction_type(
 # Keyword patterns for selective agent routing
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Negative screening: passages matching these patterns are EXCLUDED from
+# specific agents because they are definitively irrelevant.  All other
+# passages run ALL agents (recall-safe approach).
+#
+# Previous approach used positive keyword matching (require "shall|must" for
+# obligation agent, etc.) which silently missed obligations phrased in
+# non-standard ways ("developers are expected to", "it is the policy of",
+# "no person may").  For audit-grade work where false negatives are
+# unacceptable, we invert the logic: run everything by default, only skip
+# when we're confident the passage can't contain relevant content.
+# ---------------------------------------------------------------------------
+
+# Passages that are purely structural / procedural boilerplate.
+# These never contain substantive legal content for ANY agent.
+_BOILERPLATE_PATTERN = re.compile(
+    r"^\s*("
+    r"table\s+of\s+contents"
+    r"|chapter\s+\d+"
+    r"|part\s+\d+\s*[-—]\s*$"
+    r"|article\s+\d+\s*$"
+    r"|_{5,}"  # separator lines
+    r"|\.{5,}"  # dot leaders (TOC)
+    r"|page\s+\d+"
+    r")\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Enacting / procedural clauses that contain no obligations, definitions,
+# thresholds, rights, or compliance mechanisms.
+_ENACTING_CLAUSE_PATTERN = re.compile(
+    r"^\s*(be\s+it\s+enacted|the\s+people\s+of\s+the\s+state\s+of"
+    r"|this\s+act\s+(shall\s+be\s+known\s+as|may\s+be\s+cited\s+as)"
+    r"|approved\s+(by\s+the\s+governor|on)"
+    r"|signed\s+(by\s+the\s+governor|into\s+law)"
+    r"|effective\s+immediately)\b",
+    re.IGNORECASE,
+)
+
+# Passages that are purely definitional structure (section headers like
+# "DEFINITIONS" or "As used in this section:") — these are relevant ONLY
+# to the definition_actor agent, not to obligation/threshold/rights/compliance.
+_DEFINITIONS_SECTION_HEADER = re.compile(
+    r"^\s*(definitions|as\s+used\s+in\s+this\s+(act|section|chapter|article|part))\s*[:.]?\s*$",
+    re.IGNORECASE,
+)
+
+# Legacy positive-match patterns kept for optional "hint" mode and tests.
+# These are NO LONGER used for agent selection in the default pipeline.
 _OBLIGATION_PATTERN = re.compile(
     r"\b(shall|must|may\s+not|prohibited|required|require|obligat)"
     r"\b",
@@ -413,37 +462,40 @@ def _content_hash(agent_name: str, text: str) -> str:
 def _select_agents_for_passage(
     text: str, all_agents: dict[str, BaseExtractionAgent]
 ) -> dict[str, BaseExtractionAgent]:
-    """Select which agents to run based on passage content signals.
+    """Select which agents to run via negative screening (recall-safe).
 
-    Keyword pre-screening avoids wasting API calls on passages that
-    are unlikely to contain content relevant to a specific agent.
-    Ambiguity always runs (catches vague terms even in short passages).
+    Runs ALL agents by default.  Only excludes agents when the passage is
+    definitively irrelevant — boilerplate, enacting clauses, or structural
+    headers.  This prevents false negatives from obligations phrased in
+    non-standard ways (e.g., "developers are expected to", "it is the
+    policy of this state that", "no person may deploy").
+
+    For audit-grade work where missing an obligation is worse than a
+    false positive, this approach prioritises recall over cost savings.
+    The LLM agents will abstain (return detected: false) on irrelevant
+    passages, so false positives are handled downstream.
     """
-    selected: dict[str, BaseExtractionAgent] = {}
+    text_stripped = text.strip()
 
-    # Ambiguity always runs
-    if "ambiguity" in all_agents:
-        selected["ambiguity"] = all_agents["ambiguity"]
+    # If the entire passage is boilerplate (TOC, page numbers, separators),
+    # skip ALL agents — no substantive content to extract.
+    if _BOILERPLATE_PATTERN.fullmatch(text_stripped):
+        return {}
 
-    # Obligation: needs modal verbs
-    if "obligation" in all_agents and _OBLIGATION_PATTERN.search(text):
-        selected["obligation"] = all_agents["obligation"]
+    # If it's a pure enacting/signing clause, skip all agents.
+    # These are procedural and never contain obligations or definitions.
+    if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
+        return {}
 
-    # Threshold/exception: needs numbers, dates, or conditional language
-    if "threshold_exception" in all_agents and _THRESHOLD_EXCEPTION_PATTERN.search(text):
-        selected["threshold_exception"] = all_agents["threshold_exception"]
+    # Start with all agents selected (recall-safe default)
+    selected = dict(all_agents)
 
-    # Definition/actor: needs definitional language
-    if "definition_actor" in all_agents and _DEFINITION_ACTOR_PATTERN.search(text):
-        selected["definition_actor"] = all_agents["definition_actor"]
-
-    # Rights/protections: needs rights-granting language
-    if "rights_protection" in all_agents and _RIGHTS_PROTECTION_PATTERN.search(text):
-        selected["rights_protection"] = all_agents["rights_protection"]
-
-    # Compliance mechanisms: needs procedural/audit language
-    if "compliance_mechanism" in all_agents and _COMPLIANCE_MECHANISM_PATTERN.search(text):
-        selected["compliance_mechanism"] = all_agents["compliance_mechanism"]
+    # Definitions section headers ("DEFINITIONS", "As used in this act:")
+    # are only useful for the definition_actor agent.  Other agents won't
+    # find obligations, thresholds, rights, or compliance mechanisms in a
+    # bare header line.
+    if _DEFINITIONS_SECTION_HEADER.fullmatch(text_stripped):
+        return {k: v for k, v in selected.items() if k == "definition_actor"}
 
     return selected
 
@@ -1759,3 +1811,222 @@ def retrieve_batch_results(
         "extractions_created": total_extractions,
         "errors": errors,
     }
+
+
+# ---------------------------------------------------------------------------
+# Completeness Manifest — per-document extraction coverage reporting
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PassageCoverage:
+    """Extraction coverage for a single passage."""
+
+    record_id: int
+    section_path: str | None
+    text_length: int
+    skipped_short: bool
+    skipped_boilerplate: bool
+    agents_run: list[str]
+    agents_with_extractions: list[str]
+    agents_abstained: list[str]
+    extraction_count: int
+
+
+@dataclass
+class DocumentCompleteness:
+    """Completeness manifest for a single document version."""
+
+    document_version_id: int
+    document_label: str
+    jurisdiction: str | None
+    total_passages: int
+    passages_processed: int
+    passages_skipped_short: int
+    passages_skipped_boilerplate: int
+    passages_with_extractions: int
+    passages_with_no_results: int
+    coverage_percent: float
+    agent_coverage: dict[str, dict[str, int]]  # agent -> {run, extracted, abstained}
+    gaps: list[dict[str, Any]]  # passages with incomplete coverage
+    is_complete: bool
+
+
+def compute_completeness_manifest(
+    db,
+    document_version_id: int | None = None,
+) -> list[DocumentCompleteness]:
+    """Compute extraction completeness for documents.
+
+    For each document version, reports:
+    - Total passages vs. processed passages
+    - Which agents ran on each passage and which produced results
+    - Gaps where passages were skipped or agents didn't run
+    - Overall coverage percentage
+
+    This enables audit-grade completeness assurance: you can certify
+    that every passage in a law has been processed and flag laws where
+    extraction coverage is below 100%.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Compute for a single doc (None = all with passages)
+
+    Returns:
+        List of DocumentCompleteness reports.
+    """
+    from sqlalchemy import distinct
+
+    agents = _get_agents()
+    agent_names = sorted(agents.keys())
+
+    # Find document versions to check
+    dv_query = select(DocumentVersion.id)
+    if document_version_id:
+        dv_query = dv_query.where(DocumentVersion.id == document_version_id)
+    else:
+        # Only check documents that have at least one passage
+        dv_query = dv_query.where(
+            DocumentVersion.id.in_(
+                select(distinct(NormalizedSourceRecord.document_version_id))
+            )
+        )
+
+    dv_ids = db.scalars(dv_query).all()
+    results: list[DocumentCompleteness] = []
+
+    for dv_id in dv_ids:
+        dv = db.get(DocumentVersion, dv_id)
+        if not dv:
+            continue
+
+        # Build document label
+        label = "unknown"
+        jurisdiction = None
+        if dv.family:
+            if dv.family.source:
+                jurisdiction = dv.family.source.jurisdiction_code
+            label = f"{jurisdiction or '??'} - {dv.family.short_cite or dv.family.canonical_title}"
+
+        # Get all passages for this document
+        records = db.scalars(
+            select(NormalizedSourceRecord)
+            .where(NormalizedSourceRecord.document_version_id == dv_id)
+            .order_by(NormalizedSourceRecord.ordinal)
+        ).all()
+
+        if not records:
+            continue
+
+        # Get existing extractions grouped by source_record_id
+        extraction_rows = db.execute(
+            select(
+                Extraction.source_record_id,
+                Extraction.extraction_type,
+                Extraction.model_id,
+            ).where(
+                Extraction.source_record_id.in_([r.id for r in records])
+            )
+        ).all()
+
+        # Build lookup: record_id -> set of extraction types
+        extractions_by_record: dict[int, set[str]] = {}
+        for src_id, ext_type, _ in extraction_rows:
+            ext_val = ext_type.value if hasattr(ext_type, "value") else str(ext_type)
+            extractions_by_record.setdefault(src_id, set()).add(ext_val)
+
+        # Analyze each passage
+        total = len(records)
+        processed = 0
+        skipped_short = 0
+        skipped_boilerplate = 0
+        with_extractions = 0
+        no_results = 0
+        agent_stats: dict[str, dict[str, int]] = {
+            name: {"run": 0, "extracted": 0, "abstained": 0}
+            for name in agent_names
+        }
+        gaps: list[dict[str, Any]] = []
+
+        for record in records:
+            text = record.text_content
+            text_len = len(text)
+
+            # Check if passage was skipped as too short
+            if text_len < MIN_PASSAGE_LENGTH:
+                skipped_short += 1
+                continue
+
+            # Check if passage would be excluded by negative screening
+            text_stripped = text.strip()
+            if _BOILERPLATE_PATTERN.fullmatch(text_stripped):
+                skipped_boilerplate += 1
+                continue
+            if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
+                skipped_boilerplate += 1
+                continue
+
+            processed += 1
+
+            # Determine which agents should have run
+            selected = _select_agents_for_passage(text, agents)
+            selected_names = sorted(selected.keys())
+
+            # Check which agents produced extractions for this passage
+            record_extractions = extractions_by_record.get(record.id, set())
+            agents_with_results = []
+            agents_abstained_list = []
+
+            for agent_name in selected_names:
+                agent_types = AGENT_EXTRACTION_TYPES[agent_name]
+                type_vals = {t.value for t in agent_types}
+                if record_extractions & type_vals:
+                    agents_with_results.append(agent_name)
+                    agent_stats[agent_name]["extracted"] += 1
+                else:
+                    agents_abstained_list.append(agent_name)
+                    agent_stats[agent_name]["abstained"] += 1
+                agent_stats[agent_name]["run"] += 1
+
+            has_extractions = len(agents_with_results) > 0
+            if has_extractions:
+                with_extractions += 1
+            elif record_extractions:
+                # Has extractions but from agents not in selected set (edge case)
+                with_extractions += 1
+            else:
+                no_results += 1
+
+            # Flag as a gap if no extractions at all, or if passage hasn't been processed
+            if not record_extractions:
+                gaps.append({
+                    "record_id": record.id,
+                    "section_path": record.section_path,
+                    "text_preview": text[:150].replace("\n", " "),
+                    "text_length": text_len,
+                    "expected_agents": selected_names,
+                    "reason": "no_extractions",
+                })
+
+        # Compute coverage
+        coverage = 0.0
+        if processed > 0:
+            coverage = round((with_extractions / processed) * 100, 1)
+
+        results.append(DocumentCompleteness(
+            document_version_id=dv_id,
+            document_label=label,
+            jurisdiction=jurisdiction,
+            total_passages=total,
+            passages_processed=processed,
+            passages_skipped_short=skipped_short,
+            passages_skipped_boilerplate=skipped_boilerplate,
+            passages_with_extractions=with_extractions,
+            passages_with_no_results=no_results,
+            coverage_percent=coverage,
+            agent_coverage=agent_stats,
+            gaps=gaps,
+            is_complete=(len(gaps) == 0 and processed > 0),
+        ))
+
+    return results
