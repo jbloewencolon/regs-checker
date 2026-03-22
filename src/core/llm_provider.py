@@ -2,16 +2,16 @@
 
 Supports two providers:
   - anthropic: Claude API (Haiku for extraction — production quality)
-  - local: Any OpenAI-compatible API server (llama.cpp, vLLM, Ollama, etc.)
+  - local: Any OpenAI-compatible API server (LM Studio, llama.cpp, vLLM, Ollama, etc.)
 
-The local provider targets Llama 3.1 8B (Q4/Q5 quantized) for discovery tasks
-(bill classification, metadata extraction). Extraction agents continue to use
-Anthropic Haiku for legal precision and evidence span quality.
+The local provider targets Llama 3.2 3B for discovery tasks (bill classification,
+metadata extraction). Extraction agents continue to use Anthropic Haiku for
+legal precision and evidence span quality.
 
 Configuration via environment variables:
   REGS_LLM_PROVIDER          — "anthropic" (default) or "local"
-  REGS_LOCAL_LLM_URL         — Base URL for local server (e.g. http://localhost:8080)
-  REGS_LOCAL_LLM_MODEL       — Model name for local server (e.g. "llama-3.1-8b")
+  REGS_LOCAL_LLM_URL         — Base URL for local server (e.g. http://localhost:1234)
+  REGS_LOCAL_LLM_MODEL       — Model name for local server (e.g. "llama-3.2-3b")
   REGS_DISCOVERY_PROVIDER    — Provider for discovery agent specifically ("local" default)
   REGS_EXTRACTION_PROVIDER   — Provider for extraction agents specifically ("anthropic" default)
 """
@@ -58,12 +58,15 @@ class BaseLLMProvider(ABC):
         max_tokens: int = 8192,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
         """Make a single LLM call. Returns provider-agnostic response.
 
         Args:
             model_override: If provided, use this model instead of the default.
                             Supported by LocalLLMProvider; ignored by AnthropicProvider.
+            reasoning_effort: "low", "medium", or "high". Supported by models
+                              like openai/gpt-oss-20b; ignored by others.
         """
 
     @property
@@ -92,9 +95,10 @@ class AnthropicProvider(BaseLLMProvider):
         max_tokens: int = 8192,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
-        # model_override is accepted for interface compatibility but ignored;
-        # Anthropic models are selected via settings.extraction_model.
+        # model_override and reasoning_effort are accepted for interface
+        # compatibility but ignored; Anthropic uses settings.extraction_model.
         response = self._client.messages.create(
             model=self._model,
             max_tokens=max_tokens,
@@ -128,10 +132,11 @@ class AnthropicProvider(BaseLLMProvider):
 
 
 class LocalLLMProvider(BaseLLMProvider):
-    """Local LLM provider via OpenAI-compatible API (llama.cpp, vLLM, Ollama).
+    """Local LLM provider via OpenAI-compatible API (LM Studio, llama.cpp, vLLM, Ollama).
 
-    Targets Llama 3.1 8B (Q4/Q5) for discovery tasks. Communicates via
-    the OpenAI chat completions API format, which is supported by:
+    Targets Llama 3.2 3B for discovery tasks. Communicates via the OpenAI
+    chat completions API format, which is supported by:
+      - LM Studio (http://localhost:1234)
       - llama.cpp server (--host 0.0.0.0 --port 8080)
       - vLLM (python -m vllm.entrypoints.openai.api_server)
       - Ollama (ollama serve)
@@ -166,15 +171,21 @@ class LocalLLMProvider(BaseLLMProvider):
 
     @staticmethod
     def normalize_model_id(model_name: str) -> str:
-        """Normalize an Ollama model name into a clean model_id.
+        """Normalize a local model name into a clean model_id.
 
-        ``deepseek-r1:32b`` → ``deepseek-r1-32b-local``
+        ``deepseek/deepseek-r1-0528-qwen3-8b`` → ``deepseek-deepseek-r1-0528-qwen3-8b-local``
+        ``qwen/qwen3.5-9b`` → ``qwen-qwen3.5-9b-local``
         """
         return model_name.replace(":", "-").replace("/", "-") + "-local"
 
     @property
     def model_id(self) -> str:
         return self.normalize_model_id(self._model)
+
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        """Rough token count estimate (~4 chars per token for English text)."""
+        return len(text) // 4
 
     def call(
         self,
@@ -183,28 +194,67 @@ class LocalLLMProvider(BaseLLMProvider):
         max_tokens: int = 4096,
         temperature: float = 0.0,
         model_override: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
         import httpx
 
         effective_model = model_override or self._model
 
-        payload = {
+        # Reasoning models (DeepSeek-R1, Qwen3 in thinking mode) use output
+        # tokens for <think> blocks before producing JSON.  Double the budget
+        # so the actual answer isn't truncated after the thinking phase.
+        is_reasoning = any(
+            tag in effective_model.lower()
+            for tag in ("deepseek-r1", "qwen3")
+        )
+        adjusted_max = max_tokens * 2 if is_reasoning else max_tokens
+
+        # Cap max_tokens to fit within context window.
+        # LM Studio needs: prompt_tokens + max_tokens <= n_ctx.
+        # Use a rough estimate (4 chars ≈ 1 token) with a safety margin.
+        context_limit = settings.local_context_length
+        estimated_prompt_tokens = self._estimate_tokens(system_prompt + user_prompt)
+        # Reserve 10% margin for tokenizer differences
+        available = int(context_limit * 0.9) - estimated_prompt_tokens
+        if available < 512:
+            logger.warning(
+                "local_llm_prompt_near_context_limit",
+                model=effective_model,
+                estimated_prompt_tokens=estimated_prompt_tokens,
+                context_limit=context_limit,
+                available=available,
+            )
+            available = 512  # Minimum viable output
+        effective_max_tokens = min(adjusted_max, available)
+
+        payload: dict[str, Any] = {
             "model": effective_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            "max_tokens": max_tokens,
+            "max_tokens": effective_max_tokens,
             "temperature": temperature,
             "stream": False,
         }
+
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
 
         response = httpx.post(
             f"{self._base_url}/v1/chat/completions",
             json=payload,
             timeout=120.0,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            # Include response body in error for diagnostics (LM Studio
+            # often returns useful model-not-loaded messages in the body)
+            body = response.text[:500] if response.text else ""
+            raise httpx.HTTPStatusError(
+                f"HTTP {response.status_code} for model {effective_model}: {body}",
+                request=response.request,
+                response=response,
+            )
         data = response.json()
 
         # Parse OpenAI-compatible response
@@ -223,6 +273,27 @@ class LocalLLMProvider(BaseLLMProvider):
                 f"Empty response from local LLM "
                 f"(finish_reason={finish_reason}, model={effective_model})"
             )
+
+        # Strip <think> blocks that reasoning models (DeepSeek-R1, Qwen3)
+        # may emit — they consume output tokens and can cause finish_reason=length
+        # before the actual JSON answer is complete.
+        import re
+        # Match both closed <think>...</think> and unclosed <think>... (truncated)
+        stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+        stripped = re.sub(r"<think>.*$", "", stripped, flags=re.DOTALL).strip()
+        if finish_reason == "length" and not stripped:
+            raise ValueError(
+                f"Empty response from local LLM "
+                f"(finish_reason={finish_reason}, model={effective_model})"
+            )
+        if stripped != text.strip():
+            logger.debug(
+                "local_llm_stripped_think_block",
+                model=effective_model,
+                original_len=len(text),
+                stripped_len=len(stripped),
+            )
+            text = stripped
 
         effective_model_id = self.normalize_model_id(effective_model)
 
@@ -286,7 +357,7 @@ def get_extraction_provider() -> BaseLLMProvider:
     """Get the provider configured for extraction tasks (default: anthropic).
 
     When extraction_provider is "local", uses ``local_extraction_model``
-    (default: deepseek-r1:32b) as the base model.  Per-agent
+    (default: DeepSeek-R1-0528) as the base model.  Per-agent
     ``model_override`` attributes still take precedence at call time.
     """
     provider_type = settings.extraction_provider

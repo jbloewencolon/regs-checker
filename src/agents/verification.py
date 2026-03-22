@@ -96,12 +96,25 @@ class VerificationAgent:
             f"SEARCH RESULTS:\n{results_str}"
         )
 
-        response = self._provider.call(
-            system_prompt=VERIFICATION_SYSTEM_PROMPT,
-            user_prompt=user_prompt,
-            max_tokens=512,
-            temperature=0.0,
-        )
+        try:
+            response = self._provider.call(
+                system_prompt=VERIFICATION_SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+                max_tokens=512,
+                temperature=0.0,
+            )
+        except Exception as exc:
+            logger.warning(
+                "verification_llm_fallback",
+                error=str(exc)[:200],
+            )
+            # Retry without model specifics — let provider use defaults
+            response = self._provider.call(
+                system_prompt=VERIFICATION_SYSTEM_PROMPT,
+                user_prompt=user_prompt,
+                max_tokens=1024,
+                temperature=0.0,
+            )
 
         parsed = self._parse_json(response.text)
 

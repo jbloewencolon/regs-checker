@@ -90,80 +90,82 @@
           {% endif %}
         </div>
 
-        <!-- Law Tracker tabs -->
-        <div class="tabs" id="step1-tabs" style="margin-top:12px;">
-          <button class="tab active" onclick="switchStep1Tab('tracker')">
+        <!-- Collapsible Law Tracker -->
+        <details class="law-tracker-details" style="margin-top:12px;">
+          <summary class="law-tracker-summary" style="cursor:pointer;font-weight:600;padding:8px 0;user-select:none;display:flex;align-items:center;gap:6px;">
+            <span class="tracker-chevron" style="transition:transform 0.2s;display:inline-block;">&#9654;</span>
             Law Tracker
-          </button>
-        </div>
+            <span style="font-weight:400;font-size:12px;color:var(--text-muted);">({{ stats.tracker_count|default(0) }} laws)</span>
+          </summary>
 
-        <div class="step1-tab-panel" id="step1-tab-tracker">
-          <div class="step-description" style="margin-bottom:8px;">
-            Ground-truth registry of all tracked AI laws
-            (<code>static/ai_law_tracker.csv</code>).
-            Edit any row inline, add new rows, or import/export the full CSV.
-          </div>
+          <div style="padding-top:8px;">
+            <div class="step-description" style="margin-bottom:8px;">
+              Ground-truth registry of all tracked AI laws
+              (<code>static/ai_law_tracker.csv</code>).
+              Edit any row inline, add new rows, or import/export the full CSV.
+            </div>
 
-          <!-- Toolbar: search + add + import/export -->
-          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">
-            <input type="text" id="tracker-search" placeholder="Filter by state, law, bill..."
-                   style="font-size:12px;padding:4px 8px;width:200px;"
-                   hx-get="/dashboard/api/tracker"
-                   hx-trigger="keyup changed delay:300ms"
-                   hx-target="#tracker-table-body"
-                   hx-swap="innerHTML"
-                   name="q">
-
-            <button class="btn btn-sm btn-primary"
-                    hx-post="/dashboard/api/tracker/add"
-                    hx-target="#tracker-table-body"
-                    hx-swap="innerHTML"
-                    hx-disabled-elt="this">
-              + Add Row
-            </button>
-
-            <a href="/dashboard/api/tracker/export"
-               class="btn btn-sm" download>
-              Export CSV
-            </a>
-
-            <form hx-post="/dashboard/api/tracker/import"
-                  hx-target="#tracker-import-result"
-                  hx-swap="innerHTML"
-                  hx-encoding="multipart/form-data"
-                  style="display:flex;gap:4px;align-items:center;">
-              <input type="file" name="file" accept=".csv"
-                     style="font-size:11px;max-width:180px;">
-              <button type="submit" class="btn btn-sm" hx-disabled-elt="this">
-                <span class="btn-label">Import CSV</span>
-                <span class="htmx-indicator"><span class="spinner"></span></span>
-              </button>
-            </form>
-          </div>
-          <div id="tracker-import-result"></div>
-
-          <!-- Tracker table -->
-          <div class="table-wrap">
-            <table class="review-table" id="tracker-table">
-              <thead><tr>
-                <th>State</th>
-                <th>AI Scope</th>
-                <th>Relevant Law</th>
-                <th>Bill ID</th>
-                <th>Eff. Date</th>
-                <th>Status</th>
-                <th>Source URL</th>
-                <th style="text-align:center;">Actions</th>
-              </tr></thead>
-              <tbody id="tracker-table-body"
+            <!-- Toolbar: search + add + import/export -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">
+              <input type="text" id="tracker-search" placeholder="Filter by state, law, bill..."
+                     style="font-size:12px;padding:4px 8px;width:200px;"
                      hx-get="/dashboard/api/tracker"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                <tr><td colspan="8"><span class="spinner"></span> Loading...</td></tr>
-              </tbody>
-            </table>
+                     hx-trigger="keyup changed delay:300ms"
+                     hx-target="#tracker-table-body"
+                     hx-swap="innerHTML"
+                     name="q">
+
+              <button class="btn btn-sm btn-primary"
+                      hx-post="/dashboard/api/tracker/add"
+                      hx-target="#tracker-table-body"
+                      hx-swap="innerHTML"
+                      hx-disabled-elt="this">
+                + Add Row
+              </button>
+
+              <a href="/dashboard/api/tracker/export"
+                 class="btn btn-sm" download>
+                Export CSV
+              </a>
+
+              <form hx-post="/dashboard/api/tracker/import"
+                    hx-target="#tracker-import-result"
+                    hx-swap="innerHTML"
+                    hx-encoding="multipart/form-data"
+                    style="display:flex;gap:4px;align-items:center;">
+                <input type="file" name="file" accept=".csv"
+                       style="font-size:11px;max-width:180px;">
+                <button type="submit" class="btn btn-sm" hx-disabled-elt="this">
+                  <span class="btn-label">Import CSV</span>
+                  <span class="htmx-indicator"><span class="spinner"></span></span>
+                </button>
+              </form>
+            </div>
+            <div id="tracker-import-result"></div>
+
+            <!-- Tracker table (lazy-loaded when details is opened) -->
+            <div class="table-wrap">
+              <table class="review-table" id="tracker-table">
+                <thead><tr>
+                  <th>State</th>
+                  <th>AI Scope</th>
+                  <th>Relevant Law</th>
+                  <th>Bill ID</th>
+                  <th>Eff. Date</th>
+                  <th>Status</th>
+                  <th>Source URL</th>
+                  <th style="text-align:center;">Actions</th>
+                </tr></thead>
+                <tbody id="tracker-table-body"
+                       hx-get="/dashboard/api/tracker"
+                       hx-trigger="revealed"
+                       hx-swap="innerHTML">
+                  <tr><td colspan="8"><span class="spinner"></span> Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
     </div>
 
@@ -200,52 +202,64 @@
             <span class="btn-label">Fetch 5 (Test)</span>
             <span class="htmx-indicator"><span class="spinner"></span></span>
           </button>
+          <button class="btn btn-danger"
+                  hx-post="/dashboard/api/run/fetch/cancel"
+                  hx-target="#fetch-cancel-status"
+                  hx-swap="innerHTML">
+            Terminate
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/fetch/reset"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="Reset all failed and review-pending jobs back to pending? Completed jobs will not be affected.">
+            Reset
+          </button>
         </div>
+        <div id="fetch-cancel-status"></div>
         <div class="step-result" id="step2-result"></div>
 
-        <!-- Document tabs -->
-        <div class="tabs" id="step2-tabs" style="margin-top:12px;">
-          <button class="tab active" onclick="switchStep2Tab('browse')">
-            Browse Documents
-          </button>
-          <button class="tab" onclick="switchStep2Tab('failed')">
-            Failed Documents
-          </button>
-          <button class="tab" onclick="switchStep2Tab('crossref')">
-            Cross-Reference
-          </button>
-        </div>
-
-        <div class="step2-tab-panel" id="step2-tab-browse"
-             hx-get="/dashboard/api/documents"
-             hx-trigger="load"
-             hx-swap="innerHTML">
-          <span class="spinner"></span> Loading...
-        </div>
-        <div class="step2-tab-panel" id="step2-tab-failed" style="display:none;">
-          <div hx-get="/dashboard/api/failed-documents"
-               hx-trigger="load"
+        <!-- Document accordions -->
+        <details class="step-accordion" style="margin-top:12px;">
+          <summary class="step-accordion-header">Browse Documents</summary>
+          <div class="step-accordion-body"
+               hx-get="/dashboard/api/documents"
+               hx-trigger="intersect once"
                hx-swap="innerHTML">
             <span class="spinner"></span> Loading...
           </div>
-        </div>
-        <div class="step2-tab-panel" id="step2-tab-crossref" style="display:none;">
-          <div class="step-description" style="margin-bottom:8px;">
-            Compare Orrick and IAPP tracker records to find discrepancies in titles,
-            URLs, effective dates, and AI topics. Choose which source's value to use as primary.
+        </details>
+
+        <details class="step-accordion">
+          <summary class="step-accordion-header">Failed Documents</summary>
+          <div class="step-accordion-body"
+               hx-get="/dashboard/api/failed-documents"
+               hx-trigger="intersect once"
+               hx-swap="innerHTML">
+            <span class="spinner"></span> Loading...
           </div>
-          <div class="step-actions">
-            <button class="btn btn-primary"
-                    hx-post="/dashboard/api/run/cross-reference"
-                    hx-target="#crossref-result"
-                    hx-swap="innerHTML"
-                    hx-disabled-elt="this">
-              <span class="btn-label">Run Cross-Reference</span>
-              <span class="htmx-indicator"><span class="spinner"></span> Comparing...</span>
-            </button>
+        </details>
+
+        <details class="step-accordion">
+          <summary class="step-accordion-header">Cross-Reference</summary>
+          <div class="step-accordion-body">
+            <div class="step-description" style="margin-bottom:8px;">
+              Compare Orrick and IAPP tracker records to find discrepancies in titles,
+              URLs, effective dates, and AI topics. Choose which source's value to use as primary.
+            </div>
+            <div class="step-actions">
+              <button class="btn btn-primary"
+                      hx-post="/dashboard/api/run/cross-reference"
+                      hx-target="#crossref-result"
+                      hx-swap="innerHTML"
+                      hx-disabled-elt="this">
+                <span class="btn-label">Run Cross-Reference</span>
+                <span class="htmx-indicator"><span class="spinner"></span> Comparing...</span>
+              </button>
+            </div>
+            <div id="crossref-result" style="margin-top:8px;"></div>
           </div>
-          <div id="crossref-result" style="margin-top:8px;"></div>
-        </div>
+        </details>
       </div>
     </div>
 
@@ -284,8 +298,8 @@
         <!-- Tab: Local LLM -->
         <div class="extract-tab-panel" id="tab-local">
           <div class="step-description" style="margin-bottom: 8px;">
-            Runs 4 extraction agents via <strong>Ollama</strong> (Qwen 2.5 32B + DeepSeek-R1 32B).
-            Requires Ollama running at <code>{{ config.local_llm_url or 'http://localhost:11434' }}</code>.
+            Runs 4 extraction agents via <strong>LM Studio</strong> (Qwen 3.5 9B + DeepSeek-R1-0528).
+            Requires LM Studio running at <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
           </div>
           <div class="step-actions">
             <button class="btn btn-primary"
@@ -318,13 +332,20 @@
             <details>
               <summary style="cursor:pointer; font-weight:500;">Setup instructions</summary>
               <div class="copy-box" style="margin-top: 6px;">
-                <code># 1. Install Ollama: https://ollama.com<br>
-                # 2. Pull models:<br>
-                ollama pull qwen2.5:32b-instruct-q4_K_M<br>
-                ollama pull deepseek-r1:32b<br><br>
-                # 3. Set in .env:<br>
+                <code># 1. Install LM Studio: https://lmstudio.ai<br>
+                # 2. Download models in LM Studio:<br>
+                #    - qwen/qwen3.5-9b<br>
+                #    - deepseek/deepseek-r1-0528-qwen3-8b<br>
+                #    - gpt-oss-20b<br><br>
+                # 3. IMPORTANT: Set context length in LM Studio<br>
+                #    Model Settings → Context Length → 32768<br>
+                #    (4096 is too small for extraction prompts)<br><br>
+                # 4. Start the local server in LM Studio<br>
+                #    (Developer tab → Start Server on port 1234)<br><br>
+                # 5. Set in .env:<br>
                 REGS_EXTRACTION_PROVIDER=local<br>
-                REGS_LOCAL_LLM_URL=http://localhost:11434</code>
+                REGS_LOCAL_LLM_URL=http://localhost:1234<br>
+                REGS_LOCAL_CONTEXT_LENGTH=32768</code>
               </div>
             </details>
           </div>
@@ -414,7 +435,75 @@
           {% endif %}
         </div>
 
+        <div style="margin-top: 8px;">
+          <button class="btn btn-danger"
+                  hx-post="/dashboard/api/run/extract/cancel"
+                  hx-target="#extract-cancel-status"
+                  hx-swap="innerHTML">
+            Terminate
+          </button>
+        </div>
+
+        <div id="extract-cancel-status"></div>
         <div class="step-result" id="extract-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <!-- STEP 3.5: Build Dependency Graph -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">3.5</div>
+        <div class="step-title">Build Dependency Graph</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Identifies relationships between extractions within each document:
+          definition references, exceptions, enforcement links, cross-references.
+          Uses <strong>GPT (gpt-oss-20b, 131k context)</strong> to analyze all extractions per document.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/dependency-graph"
+                  hx-target="#depgraph-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Build dependency graphs for all pending documents? This sends all extractions per document to GPT.">
+            <span class="btn-label">Build All Pending</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Analyzing relationships...</span>
+          </button>
+        </div>
+        <div class="step-result" id="depgraph-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <!-- STEP 3.75: Parse Applicability Conditions -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">3.75</div>
+        <div class="step-title">Parse Applicability Conditions</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Parses condition fields from obligations, thresholds, exceptions, and rights
+          into structured AND/OR/NOT/LEAF expression trees. Rule-based — no LLM needed.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/condition-parse"
+                  hx-target="#condparse-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Parse All Pending</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Parsing conditions...</span>
+          </button>
+        </div>
+        <div class="step-result" id="condparse-result"></div>
       </div>
     </div>
 
@@ -525,26 +614,13 @@ function switchExtractTab(tab) {
   event.currentTarget.classList.add('active');
 }
 
-function switchStep1Tab(tab) {
-  document.querySelectorAll('.step1-tab-panel').forEach(function(el) {
-    el.style.display = 'none';
+/* Rotate chevron when details is open */
+document.querySelectorAll('.law-tracker-details').forEach(function(d) {
+  d.addEventListener('toggle', function() {
+    var chevron = d.querySelector('.tracker-chevron');
+    if (chevron) chevron.style.transform = d.open ? 'rotate(90deg)' : '';
   });
-  document.querySelectorAll('#step1-tabs .tab').forEach(function(el) {
-    el.classList.remove('active');
-  });
-  document.getElementById('step1-tab-' + tab).style.display = 'block';
-  event.currentTarget.classList.add('active');
-}
-function switchStep2Tab(tab) {
-  document.querySelectorAll('.step2-tab-panel').forEach(function(el) {
-    el.style.display = 'none';
-  });
-  document.querySelectorAll('#step2-tabs .tab').forEach(function(el) {
-    el.classList.remove('active');
-  });
-  document.getElementById('step2-tab-' + tab).style.display = 'block';
-  event.currentTarget.classList.add('active');
-}
+});
 </script>
 
 {% endblock %}

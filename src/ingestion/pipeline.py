@@ -16,6 +16,7 @@ Steps per pending IngestionJob:
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime
 
 import structlog
@@ -28,6 +29,24 @@ from src.db.models import (
     NormalizedSourceRecord,
 )
 from src.ingestion.connector import fetch_document
+
+# Global cancellation event — set to signal running pipeline to stop.
+_cancel_event = threading.Event()
+
+
+def request_cancel() -> None:
+    """Signal the running fetch pipeline to stop after the current job."""
+    _cancel_event.set()
+
+
+def is_cancelled() -> bool:
+    """Check whether cancellation has been requested."""
+    return _cancel_event.is_set()
+
+
+def clear_cancel() -> None:
+    """Reset the cancellation flag (called at pipeline start)."""
+    _cancel_event.clear()
 from src.ingestion.parser import parse_and_normalize
 
 logger = structlog.get_logger()
@@ -59,7 +78,7 @@ def _verify_content_or_fallback(
     # Read a sample of the raw text for classification
     try:
         from src.ingestion.parser import extract_text_sample
-        text_sample = extract_text_sample(raw_artifact, max_chars=4000)
+        text_sample = extract_text_sample(raw_artifact, max_chars=32000)
     except Exception:
         # If we can't extract text yet, skip classification and let parse handle it
         return True
@@ -296,6 +315,9 @@ def run_pending_ingestion(
     if on_progress:
         on_progress(f"Found {len(pending_jobs)} pending ingestion jobs")
 
+    # Clear any stale cancellation from a previous run
+    clear_cancel()
+
     # Circuit breaker: abort if too many consecutive fetches fail
     # (network down, S3 unreachable, etc.)
     tracker = FailureTracker(
@@ -307,6 +329,13 @@ def run_pending_ingestion(
 
     try:
       for i, job in enumerate(pending_jobs, 1):
+        # Check for cancellation between jobs
+        if is_cancelled():
+            if on_progress:
+                on_progress(f"\nPipeline terminated by user after {i - 1} jobs.")
+            summary["cancelled"] = True
+            break
+
         if on_progress:
             dv = job.document_version
             label = "unknown"

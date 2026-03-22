@@ -260,9 +260,36 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
 
 
 def _get_extraction_rate(db: Session) -> float | None:
-    """Compute items/minute from recent extraction jobs."""
-    # Look at completed extraction jobs to estimate rate
-    recent_jobs = db.execute(
+    """Compute items/minute from extraction jobs.
+
+    Prefers the currently running job's rate (most accurate for ETA)
+    over historical averages which may reflect different model configs.
+    """
+    from datetime import datetime as dt
+
+    # 1. Check for a running job first — its live rate is most accurate
+    running_job = db.execute(
+        select(
+            ExtractionJob.records_processed,
+            ExtractionJob.started_at,
+        )
+        .where(
+            ExtractionJob.status == "running",
+            ExtractionJob.started_at.isnot(None),
+            ExtractionJob.records_processed > 0,
+        )
+        .order_by(ExtractionJob.started_at.desc())
+        .limit(1)
+    ).first()
+
+    if running_job:
+        elapsed = (dt.utcnow() - running_job.started_at).total_seconds()
+        if elapsed > 0:
+            return (running_job.records_processed / elapsed) * 60
+
+    # 2. Fall back to most recent completed job only (not historical
+    #    average, which mixes slow runs with fast ones)
+    recent_job = db.execute(
         select(
             ExtractionJob.records_processed,
             ExtractionJob.started_at,
@@ -275,24 +302,17 @@ def _get_extraction_rate(db: Session) -> float | None:
             ExtractionJob.records_processed > 0,
         )
         .order_by(ExtractionJob.completed_at.desc())
-        .limit(10)
-    ).all()
+        .limit(1)
+    ).first()
 
-    if not recent_jobs:
+    if not recent_job:
         return None
 
-    total_items = 0
-    total_seconds = 0
-    for job in recent_jobs:
-        duration = (job.completed_at - job.started_at).total_seconds()
-        if duration > 0:
-            total_items += job.records_processed
-            total_seconds += duration
-
-    if total_seconds == 0:
+    duration = (recent_job.completed_at - recent_job.started_at).total_seconds()
+    if duration <= 0:
         return None
 
-    return (total_items / total_seconds) * 60  # items per minute
+    return (recent_job.records_processed / duration) * 60  # items per minute
 
 
 def get_confidence_distribution(db: Session) -> dict[str, Any]:

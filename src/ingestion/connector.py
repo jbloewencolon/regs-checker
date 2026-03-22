@@ -115,6 +115,7 @@ class FederalNISTConnector(BaseConnector):
         return response.content, content_type
 
 
+@register_connector("pdf_tracker")
 @register_connector("orrick_tracker")
 class OrrickTrackerConnector(BaseConnector):
     """Connector for bills discovered via the Orrick AI Law Tracker.
@@ -126,7 +127,7 @@ class OrrickTrackerConnector(BaseConnector):
       - Alternative URL rewriting for known-blocked domains
     """
 
-    max_retries: int = 2
+    max_retries: int = 3
     base_timeout: float = 60.0
 
     def fetch(self, url: str) -> tuple[bytes, str]:
@@ -169,7 +170,12 @@ class OrrickTrackerConnector(BaseConnector):
                 else:
                     raise
 
-            except (httpx.ConnectError, httpx.TimeoutException) as e:
+            except (
+                httpx.ConnectError,
+                httpx.TimeoutException,
+                httpx.RemoteProtocolError,
+                httpx.ReadError,
+            ) as e:
                 last_exc = e
                 if attempt < self.max_retries:
                     wait = 2 ** (attempt + 1)

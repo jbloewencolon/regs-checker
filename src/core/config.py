@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     extraction_temperature: float = 0.0
     extraction_max_tokens: int = 8192
 
-    # Local LLM (OpenAI-compatible API: llama.cpp, vLLM, Ollama)
-    local_llm_url: str = ""  # e.g. http://localhost:11434
-    local_llm_model: str = "llama-3.2-3b"  # Default model for discovery tasks
-    local_extraction_model: str = "deepseek-r1:32b"  # Default model for local extraction
+    # Local LLM (OpenAI-compatible API: LM Studio, llama.cpp, vLLM, Ollama)
+    local_llm_url: str = "http://localhost:1234"  # LM Studio default
+    local_llm_model: str = "qwen/qwen3.5-9b"  # Default model for discovery tasks
+    local_extraction_model: str = "qwen/qwen3.5-9b"  # Default model for local extraction (also used as fallback)
+    local_context_length: int = 32768  # Context window size configured in LM Studio
+    local_extraction_max_tokens: int = 4096  # Max output tokens for local extraction (lower than cloud)
 
     # Web search (for fallback URL verification)
     search_provider: str = ""  # "tavily", "serper", or "google_cse"

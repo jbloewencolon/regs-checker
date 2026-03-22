@@ -687,6 +687,19 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
   white-space: nowrap;
 }
 
+.truncated-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  white-space: nowrap;
+  margin-left: 4px;
+  cursor: help;
+}
+
 /* Summary */
 .summary-text {
   font-size: 13px;
@@ -1066,6 +1079,43 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
 .tab.active .tab-count {
   background: var(--primary-light);
   color: var(--primary);
+}
+
+/* Step Accordion */
+.step-accordion {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.step-accordion-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  background: var(--bg-secondary, #f8f9fa);
+  user-select: none;
+  list-style: none;
+}
+
+.step-accordion-header::-webkit-details-marker {
+  display: none;
+}
+
+.step-accordion-header::before {
+  content: "▸ ";
+  display: inline;
+  transition: transform 0.15s;
+}
+
+.step-accordion[open] > .step-accordion-header::before {
+  content: "▾ ";
+}
+
+.step-accordion-body {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
 }
 
 /* Pagination */

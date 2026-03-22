@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -44,8 +45,10 @@ from sqlalchemy import select
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
+from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
+from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.confidence import compute_confidence
@@ -56,17 +59,38 @@ from src.core.jurisdiction_check import (
 )
 from src.db.models import (
     ConfidenceTier,
+    DocumentVersion,
     Extraction,
     ExtractionJob,
     ExtractionType,
     IngestionJob,
     NormalizedSourceRecord,
+    ObligationDependency,
     ReviewQueueItem,
     ReviewStatus,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
 logger = structlog.get_logger()
+
+# Global cancellation event — set to signal running extraction to stop.
+_cancel_event = threading.Event()
+
+
+def request_cancel() -> None:
+    """Signal the running extraction pipeline to stop after the current passage."""
+    _cancel_event.set()
+
+
+def is_cancelled() -> bool:
+    """Check whether cancellation has been requested."""
+    return _cancel_event.is_set()
+
+
+def clear_cancel() -> None:
+    """Reset the cancellation flag (called at extraction start)."""
+    _cancel_event.clear()
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -76,7 +100,7 @@ logger = structlog.get_logger()
 MIN_PASSAGE_LENGTH = 150
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
-# Prevents silently skipping data when Ollama/GPU is down.
+# Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
 
 # Agent registry — 4 consolidated agents per Recommendation #1
@@ -92,7 +116,101 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     ],
     "threshold_exception": [ExtractionType.threshold, ExtractionType.exception],
     "ambiguity": [ExtractionType.ambiguity],
+    "rights_protection": [ExtractionType.rights_protection],
+    "compliance_mechanism": [ExtractionType.compliance_mechanism],
 }
+
+
+def _discriminate_extraction_type(
+    agent_name: str, payload: dict[str, Any]
+) -> ExtractionType:
+    """Determine the specific extraction sub-type from the payload content.
+
+    Consolidated agents produce multiple sub-types but the pipeline
+    previously always tagged with the primary type (index [0]).  This
+    function inspects the payload to choose the most specific type when
+    the extraction is primarily about a sub-type.
+
+    Rules:
+      - obligation agent:
+          * ``enforcement`` if enforcing_body or penalty populated but
+            subject/action are absent or generic
+          * ``timeline`` if effective_date or compliance_deadline
+            populated but subject/action are absent or generic
+          * ``obligation`` (default)
+      - definition_actor agent:
+          * ``actor_mapping`` if actors are the primary content and
+            term/definition_text are absent
+          * ``framework_ref`` if framework_refs are the primary content
+            and term/definition_text are absent
+          * ``definition`` (default)
+      - threshold_exception agent:
+          * ``exception`` if no threshold data but has exceptions
+          * ``threshold`` (default)
+      - single-type agents: return their only type
+    """
+    types = AGENT_EXTRACTION_TYPES.get(agent_name)
+    if not types or len(types) == 1:
+        return types[0] if types else ExtractionType.obligation
+
+    primary = types[0]
+
+    # --- Obligation agent: obligation vs enforcement vs timeline ---
+    if agent_name == "obligation":
+        has_subject = bool(payload.get("subject", "").strip())
+        has_action = bool(payload.get("action", "").strip())
+        has_core_obligation = has_subject and has_action
+
+        enf = payload.get("enforcement") or {}
+        has_enforcement = bool(
+            enf.get("enforcing_body") or enf.get("penalty_type") or enf.get("penalty_description")
+        )
+
+        tl = payload.get("timeline") or {}
+        has_timeline = bool(
+            tl.get("effective_date") or tl.get("compliance_deadline")
+            or tl.get("sunset_date") or tl.get("phase_in_period")
+        )
+
+        if not has_core_obligation:
+            if has_enforcement:
+                return ExtractionType.enforcement
+            if has_timeline:
+                return ExtractionType.timeline
+
+        return ExtractionType.obligation
+
+    # --- Definition & Actor agent: definition vs actor_mapping vs framework_ref ---
+    if agent_name == "definition_actor":
+        has_term = bool(payload.get("term", "").strip())
+        has_def_text = bool(payload.get("definition_text", "").strip())
+        has_core_definition = has_term and has_def_text
+
+        actors = payload.get("actors") or []
+        framework_refs = payload.get("framework_refs") or []
+
+        if not has_core_definition:
+            if actors:
+                return ExtractionType.actor_mapping
+            if framework_refs:
+                return ExtractionType.framework_ref
+
+        return ExtractionType.definition
+
+    # --- Threshold & Exception agent: threshold vs exception ---
+    if agent_name == "threshold_exception":
+        has_threshold = bool(
+            payload.get("threshold_type") or payload.get("threshold_value")
+            or payload.get("threshold_condition")
+        )
+        exceptions = payload.get("exceptions") or []
+
+        if not has_threshold and exceptions:
+            return ExtractionType.exception
+
+        return ExtractionType.threshold
+
+    return primary
 
 # ---------------------------------------------------------------------------
 # Keyword patterns for selective agent routing
@@ -114,6 +232,24 @@ _THRESHOLD_EXCEPTION_PATTERN = re.compile(
 _DEFINITION_ACTOR_PATTERN = re.compile(
     r'\b(means|defined\s+as|shall\s+mean|includes|"[A-Z][^"]{2,}"'
     r"|refers\s+to|the\s+term)\b",
+    re.IGNORECASE,
+)
+
+_RIGHTS_PROTECTION_PATTERN = re.compile(
+    r"\b(right\s+to|entitled|opt.?out|appeal|contest|human\s+review"
+    r"|notif(y|ied|ication)|informed|disclos(e|ure)|consent"
+    r"|complain|remedy|recourse|delete|erasure|withdraw"
+    r"|request\s+(that|a\b|an\b|the\b|review|explanation))\b",
+    re.IGNORECASE,
+)
+
+_COMPLIANCE_MECHANISM_PATTERN = re.compile(
+    r"\b(impact\s+assessment|bias\s+audit|algorithmic\s+audit"
+    r"|risk\s+assessment|audit|register|certif(y|ication|ied)"
+    r"|record.?keeping|maintain\s+(records|logs|documentation)"
+    r"|report(ing)?\s+(to|requirement|annually|quarterly)"
+    r"|annual(ly)?\s+report|filing|retain|retention"
+    r"|third.?party\s+(audit|review|assessment)|self.?certif)\b",
     re.IGNORECASE,
 )
 
@@ -160,6 +296,8 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "definition_actor": DefinitionActorAgent(),
             "threshold_exception": ThresholdExceptionAgent(),
             "ambiguity": AmbiguityAgent(),
+            "rights_protection": RightsProtectionAgent(),
+            "compliance_mechanism": ComplianceMechanismAgent(),
         }
     return AGENTS
 
@@ -299,6 +437,14 @@ def _select_agents_for_passage(
     if "definition_actor" in all_agents and _DEFINITION_ACTOR_PATTERN.search(text):
         selected["definition_actor"] = all_agents["definition_actor"]
 
+    # Rights/protections: needs rights-granting language
+    if "rights_protection" in all_agents and _RIGHTS_PROTECTION_PATTERN.search(text):
+        selected["rights_protection"] = all_agents["rights_protection"]
+
+    # Compliance mechanisms: needs procedural/audit language
+    if "compliance_mechanism" in all_agents and _COMPLIANCE_MECHANISM_PATTERN.search(text):
+        selected["compliance_mechanism"] = all_agents["compliance_mechanism"]
+
     return selected
 
 
@@ -308,7 +454,7 @@ def _wrap_passages(
     """Wrap each record into a single-record MergedPassage (no merging).
 
     Passage merging was a cost-optimization for cloud API calls.  Running
-    locally on dedicated hardware (e.g. R9700 + Ollama) makes merging
+    locally on dedicated hardware (e.g. R9700 + LM Studio) makes merging
     unnecessary, and disabling it eliminates two classes of bugs:
       - Evidence span char-offsets becoming invalid after concatenation
       - N×M extraction duplication when multi-extraction agents run on
@@ -348,7 +494,7 @@ def _group_agents_by_model(
 
     Returns a list of dicts (one per model group), ordered so agents sharing
     the same model run together. Agents within a group can run concurrently;
-    groups run sequentially so Ollama only loads one model at a time.
+    groups run sequentially so LM Studio only loads one model at a time.
     """
     groups: dict[str | None, dict[str, BaseExtractionAgent]] = {}
     for name, agent in agents.items():
@@ -371,7 +517,7 @@ def extract_single_record(
 
     Returns extraction count. Agents are selected based on content signals.
 
-    To avoid VRAM thrashing when using local models via Ollama, agents are
+    To avoid VRAM thrashing when using local models via LM Studio, agents are
     grouped by their model_override and each group runs sequentially.  Agents
     within the same model group still run concurrently.
 
@@ -400,7 +546,7 @@ def extract_single_record(
         logger.debug("all_agents_skipped", record_id=record.id)
         return 0
 
-    # Group agents by model to minimise Ollama VRAM model swaps.
+    # Group agents by model to minimise LM Studio VRAM model swaps.
     # Each group runs sequentially; agents within a group run concurrently.
     model_groups = _group_agents_by_model(selected_agents)
     agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []
@@ -474,13 +620,14 @@ def extract_single_record(
             existing_hashes.add(content_hash)
 
         # Process each extraction from the multi-extraction result
-        primary_type = AGENT_EXTRACTION_TYPES[name][0]
-        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+        default_type = AGENT_EXTRACTION_TYPES[name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
         # Write extractions against all source records in the merged passage
         for source_record in passage.source_records:
             for item in result.extractions:
                 try:
+                    resolved_type = _discriminate_extraction_type(name, item)
                     evidence = item.get("evidence_spans", [])
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
@@ -492,9 +639,13 @@ def extract_single_record(
                         orrick_similarity=orrick_sim,
                     )
 
+                    extraction_meta: dict = {}
+                    if result.truncated:
+                        extraction_meta["truncated"] = True
+
                     extraction = Extraction(
                         source_record_id=source_record.id,
-                        extraction_type=primary_type,
+                        extraction_type=resolved_type,
                         payload=item,
                         evidence_spans=evidence,
                         confidence_score=confidence.total_score,
@@ -505,6 +656,7 @@ def extract_single_record(
                         template_version=result.template_version,
                         model_id=result.model_id,
                         extraction_job_id=extraction_job.id if extraction_job else None,
+                        metadata_=extraction_meta if extraction_meta else {},
                     )
                     db.add(extraction)
                     db.flush()
@@ -560,6 +712,9 @@ def run_extraction(
     """
     if batch_mode:
         return _run_batch_extraction(db, limit=limit, on_progress=on_progress)
+
+    # Clear any stale cancellation from a previous run
+    clear_cancel()
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
@@ -668,6 +823,16 @@ def run_extraction(
         job_failures = 0
 
         for i, passage in enumerate(merged_passages):
+            # Check for cancellation between passages
+            if is_cancelled():
+                _log(f"\nExtraction terminated by user after {summary['records_processed']} passages.")
+                extraction_job.status = "cancelled"
+                extraction_job.completed_at = datetime.utcnow()
+                db.commit()
+                summary["total_extractions"] += job_extractions
+                summary["cancelled"] = True
+                return summary
+
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
@@ -736,6 +901,163 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     return summary
+
+
+# ---------------------------------------------------------------------------
+# Dependency Graph Building (Phase 2 — post-extraction)
+# ---------------------------------------------------------------------------
+
+
+def run_dependency_graph(
+    db,
+    document_version_id: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Build dependency graphs for documents that have extractions.
+
+    This is a post-extraction step that identifies relationships between
+    extractions within each document and writes edges to the
+    ``obligation_dependencies`` table.
+
+    Uses GPT (gpt-oss-20b) with 131k context to process entire documents
+    at once, identifying cross-references between obligations, definitions,
+    thresholds, exceptions, enforcement mechanisms, rights, and compliance
+    mechanisms.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Process a single document version (None = all
+            document versions that have extractions but no dependency edges).
+        on_progress: Optional callback(message: str) for status updates.
+
+    Returns:
+        Summary dict with counts.
+    """
+    from src.agents.dependency_builder import build_dependency_graph
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    if document_version_id:
+        # Process a single document
+        result = build_dependency_graph(db, document_version_id, on_progress)
+        return {
+            "documents_processed": 1,
+            "total_edges": result["edges_created"],
+            "results": [result],
+        }
+
+    # Find all document versions that have extractions but no dependency edges
+    dv_ids_with_extractions = (
+        db.execute(
+            select(NormalizedSourceRecord.document_version_id)
+            .join(Extraction)
+            .group_by(NormalizedSourceRecord.document_version_id)
+        ).scalars().all()
+    )
+
+    if not dv_ids_with_extractions:
+        _log("No documents with extractions found.")
+        return {"documents_processed": 0, "total_edges": 0, "results": []}
+
+    # Filter to those without existing dependency edges
+    dv_ids_with_deps = set(
+        db.execute(
+            select(NormalizedSourceRecord.document_version_id)
+            .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+            .join(
+                ObligationDependency,
+                ObligationDependency.parent_extraction_id == Extraction.id,
+            )
+            .group_by(NormalizedSourceRecord.document_version_id)
+        ).scalars().all()
+    )
+
+    pending_ids = [
+        dv_id for dv_id in dv_ids_with_extractions
+        if dv_id not in dv_ids_with_deps
+    ]
+
+    if not pending_ids:
+        _log("All documents already have dependency graphs.")
+        return {"documents_processed": 0, "total_edges": 0, "results": []}
+
+    _log(f"Building dependency graphs for {len(pending_ids)} documents...")
+
+    results = []
+    total_edges = 0
+
+    for i, dv_id in enumerate(pending_ids):
+        if is_cancelled():
+            _log(f"Dependency graph building terminated after {i} documents.")
+            return {
+                "documents_processed": i,
+                "total_edges": total_edges,
+                "results": results,
+                "cancelled": True,
+            }
+
+        try:
+            result = build_dependency_graph(db, dv_id, on_progress)
+            results.append(result)
+            total_edges += result["edges_created"]
+        except Exception as e:
+            logger.error(
+                "dependency_graph_failed",
+                document_version_id=dv_id,
+                error=str(e),
+            )
+            results.append({
+                "document_version_id": dv_id,
+                "edges_created": 0,
+                "errors": 1,
+                "error_message": str(e),
+            })
+
+    _log(
+        f"\nDependency graph building complete: "
+        f"{total_edges} edges across {len(pending_ids)} documents"
+    )
+
+    return {
+        "documents_processed": len(pending_ids),
+        "total_edges": total_edges,
+        "results": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Applicability Condition Parsing (Phase 3 — post-extraction)
+# ---------------------------------------------------------------------------
+
+
+def run_condition_parsing(
+    db,
+    document_version_id: int | None = None,
+    on_progress: callable | None = None,
+) -> dict:
+    """Parse condition fields from extractions into structured expression trees.
+
+    This is a post-extraction step that converts free-text condition strings
+    (e.g. "if the system is high-risk and the deployer is in California")
+    into AND/OR/NOT/LEAF boolean expression trees stored in the
+    ``applicability_conditions`` table.
+
+    Rule-based parser — no LLM call required.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Process a single document (None = all pending).
+        on_progress: Optional callback for status messages.
+
+    Returns:
+        Summary dict with counts.
+    """
+    from src.core.condition_parser import run_condition_parsing as _run_parsing
+
+    return _run_parsing(db, document_version_id, on_progress)
 
 
 # ---------------------------------------------------------------------------
@@ -1020,11 +1342,12 @@ def run_recovery_extraction(
                         continue
 
                     existing_hashes.add(content_hash)
-                    primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-                    schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+                    default_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+                    schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
                     for item in result.extractions:
                         try:
+                            resolved_type = _discriminate_extraction_type(agent_name, item)
                             evidence = item.get("evidence_spans", [])
                             orrick_sim = validate_extraction_against_orrick(item, ctx)
                             confidence = compute_confidence(
@@ -1038,7 +1361,7 @@ def run_recovery_extraction(
 
                             extraction = Extraction(
                                 source_record_id=record.id,
-                                extraction_type=primary_type,
+                                extraction_type=resolved_type,
                                 payload=item,
                                 evidence_spans=evidence,
                                 confidence_score=confidence.total_score,
@@ -1307,8 +1630,8 @@ def retrieve_batch_results(
             continue
 
         schema = agent.get_output_schema()
-        primary_type = AGENT_EXTRACTION_TYPES[agent_name][0]
-        schema_class = EXTRACTION_TYPE_SCHEMAS.get(primary_type.value)
+        default_type = AGENT_EXTRACTION_TYPES[agent_name][0]
+        schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
         # Handle multi-extraction
         items = parsed.get("extractions", [parsed])
@@ -1366,10 +1689,11 @@ def retrieve_batch_results(
                 )
 
                 # Write extraction for each source record
+                resolved_type = _discriminate_extraction_type(agent_name, result_dict)
                 for source_record in source_records:
                     extraction = Extraction(
                         source_record_id=source_record.id,
-                        extraction_type=primary_type,
+                        extraction_type=resolved_type,
                         payload=result_dict,
                         evidence_spans=verified_spans,
                         confidence_score=confidence.total_score,

@@ -43,6 +43,7 @@ class ExtractionResult:
     prompt_hash: str
     model_id: str
     template_version: str | None
+    truncated: bool = False  # True when finish_reason=length (output cut off)
 
 
 class BaseExtractionAgent(ABC):
@@ -51,6 +52,7 @@ class BaseExtractionAgent(ABC):
     agent_name: str = "base"
     max_retries: int = 1
     model_override: str | None = None
+    reasoning_effort: str | None = None
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
@@ -99,7 +101,7 @@ class BaseExtractionAgent(ABC):
 
         while attempt <= self.max_retries:
             try:
-                raw_output, usage, response_model_id = self._call_llm(prompt, attempt)
+                raw_output, usage, response_model_id, stop_reason = self._call_llm(prompt, attempt)
                 logger.debug(
                     "extraction_pre_parse",
                     agent=self.agent_name,
@@ -109,6 +111,8 @@ class BaseExtractionAgent(ABC):
                 cleaned = self._strip_code_fences(raw_output)
                 cleaned = self._strip_think_blocks(cleaned)
                 parsed = json.loads(cleaned)
+
+                was_truncated = stop_reason == "length"
 
                 # Check for abstention
                 if parsed.get("detected") is False:
@@ -120,6 +124,7 @@ class BaseExtractionAgent(ABC):
                         prompt_hash=prompt_hash,
                         model_id=response_model_id,
                         template_version=template_version,
+                        truncated=was_truncated,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -142,6 +147,15 @@ class BaseExtractionAgent(ABC):
                     result["_template_version"] = template_version
                     validated_extractions.append(result)
 
+                if was_truncated:
+                    logger.warning(
+                        "extraction_truncated",
+                        agent=self.agent_name,
+                        model_id=response_model_id,
+                        output_tokens=usage.output_tokens,
+                        extractions_count=len(validated_extractions),
+                    )
+
                 return ExtractionResult(
                     extractions=validated_extractions,
                     abstention=None,
@@ -150,6 +164,7 @@ class BaseExtractionAgent(ABC):
                     prompt_hash=prompt_hash,
                     model_id=response_model_id,
                     template_version=template_version,
+                    truncated=was_truncated,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
@@ -191,12 +206,31 @@ class BaseExtractionAgent(ABC):
 
         Returns (text, usage, model_id) where usage is an LLMUsage dataclass
         and model_id is the actual model that served the request.
+
+        If a model_override is set and the call fails (e.g. 400 from LM Studio),
+        retries once with the provider's default model for resilience.
         """
         system_prompt = self._resolve_system_prompt()
         system_prompt += (
             "\n\nReturn only raw JSON with no markdown formatting, "
             "no code fences, and no preamble."
         )
+
+        # Reasoning models (DeepSeek-R1, Qwen3) can spend thousands of
+        # tokens on chain-of-thought before producing JSON.  Ask them to
+        # keep their internal reasoning brief so output budget remains
+        # available for the actual structured answer.
+        effective_model = self.model_override or ""
+        is_reasoning = any(
+            tag in effective_model.lower()
+            for tag in ("deepseek-r1", "qwen3")
+        )
+        if is_reasoning:
+            system_prompt += (
+                "\n\nIMPORTANT: Keep your internal reasoning brief and focused. "
+                "Do NOT exhaustively analyze every possible interpretation. "
+                "Identify the key findings quickly, then produce the JSON output."
+            )
         if attempt > 0:
             system_prompt += (
                 "\n\nPREVIOUS ATTEMPT FAILED VALIDATION. "
@@ -204,13 +238,49 @@ class BaseExtractionAgent(ABC):
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
-        response = self._provider.call(
+        # Use lower max_tokens for local models to fit within context window
+        max_tokens = settings.extraction_max_tokens
+        if settings.extraction_provider == "local":
+            max_tokens = min(max_tokens, settings.local_extraction_max_tokens)
+
+        call_kwargs = dict(
             system_prompt=system_prompt,
             user_prompt=prompt,
-            max_tokens=settings.extraction_max_tokens,
+            max_tokens=max_tokens,
             temperature=settings.extraction_temperature,
             model_override=self.model_override,
+            reasoning_effort=self.reasoning_effort,
         )
+
+        try:
+            response = self._provider.call(**call_kwargs)
+        except Exception as exc:
+            if self.model_override is not None:
+                fallback_model = self._provider.model_id
+                logger.warning(
+                    "extraction_model_fallback",
+                    agent=self.agent_name,
+                    failed_model=self.model_override,
+                    fallback_model=fallback_model,
+                    error=str(exc)[:300],
+                )
+                call_kwargs["model_override"] = None
+                call_kwargs["reasoning_effort"] = None
+                try:
+                    response = self._provider.call(**call_kwargs)
+                except Exception as fallback_exc:
+                    logger.error(
+                        "extraction_fallback_also_failed",
+                        agent=self.agent_name,
+                        failed_model=self.model_override,
+                        fallback_model=fallback_model,
+                        original_error=str(exc)[:200],
+                        fallback_error=str(fallback_exc)[:200],
+                    )
+                    # Raise the original error — more informative
+                    raise exc from fallback_exc
+            else:
+                raise
 
         logger.debug(
             "llm_raw_response",
@@ -222,29 +292,52 @@ class BaseExtractionAgent(ABC):
             raw_text_preview=response.text[:500] if response.text else "<empty>",
         )
 
-        return response.text, response.usage, response.model_id
+        return response.text, response.usage, response.model_id, response.stop_reason
+
+    @staticmethod
+    def _normalize_whitespace(text: str) -> str:
+        """Collapse all whitespace (spaces, newlines, tabs) to single spaces."""
+        return " ".join(text.split())
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
     ) -> list[dict]:
         """Verify evidence spans via string matching (Rec #3).
 
-        Confirms each evidence span text appears verbatim in the passage.
-        This replaces the self-check LLM call and is more reliable for
-        detecting hallucinated quotes.
+        Confirms each evidence span text appears in the passage.
+        Uses whitespace-normalized matching because source passages
+        often contain newlines and varied spacing that LLMs normalize
+        when quoting.  Falls back to case-insensitive matching for
+        minor casing differences.
         """
+        norm_passage = self._normalize_whitespace(passage)
+        lower_passage = norm_passage.lower()
         verified = []
         for span_data in spans:
             span = EvidenceSpan(**span_data)
-            if span.text in passage:
-                # Update char offsets to actual positions
-                start = passage.index(span.text)
+            norm_span = self._normalize_whitespace(span.text)
+
+            # Try exact match on whitespace-normalized text
+            if norm_span in norm_passage:
+                start = norm_passage.index(norm_span)
                 verified.append(
                     {
                         "field_name": span.field_name,
                         "text": span.text,
                         "char_start": start,
-                        "char_end": start + len(span.text),
+                        "char_end": start + len(norm_span),
+                        "verified": True,
+                    }
+                )
+            # Try case-insensitive match
+            elif norm_span.lower() in lower_passage:
+                start = lower_passage.index(norm_span.lower())
+                verified.append(
+                    {
+                        "field_name": span.field_name,
+                        "text": span.text,
+                        "char_start": start,
+                        "char_end": start + len(norm_span),
                         "verified": True,
                     }
                 )

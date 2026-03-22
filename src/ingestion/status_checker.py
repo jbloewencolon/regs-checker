@@ -97,6 +97,8 @@ class StatusCheckResult:
     changes: list[StatusChange] = field(default_factory=list)
     pdf_records: int = 0
     iapp_records: int = 0
+    pdf_matched: int = 0
+    iapp_matched: int = 0
 
 
 def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResult:
@@ -156,6 +158,14 @@ def check_all_statuses(db: Session, *, dry_run: bool = False) -> StatusCheckResu
             if hasattr(version.temporal_status, "value")
             else str(version.temporal_status)
         )
+
+        # Track which bills are found in each source index
+        norm_name = _normalize_name(law_name)
+        key = (jurisdiction, norm_name)
+        if key in pdf_index:
+            result.pdf_matched += 1
+        if key in iapp_index:
+            result.iapp_matched += 1
 
         # Step 3: Look up this bill in both sources
         new_status = _resolve_status(

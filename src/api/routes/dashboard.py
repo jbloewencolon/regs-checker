@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from src.db.engine import get_db
 from src.db.models import (
+    ApplicabilityCondition,
     ConfidenceTier,
     DocumentFamily,
     DocumentVersion,
@@ -27,6 +28,7 @@ from src.db.models import (
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
+    ObligationDependency,
     RawArtifact,
     ReviewQueueItem,
     ReviewStatus,
@@ -112,6 +114,7 @@ def review_page(
     request: Request,
     status: str = "pending",
     page: int = Query(default=1, ge=1),
+    truncated_only: bool = Query(default=False),
     db: Session = Depends(get_db),
 ):
     """Review queue page with filtering and pagination."""
@@ -126,11 +129,33 @@ def review_page(
             )
         ) or 0
 
+    # Count truncated items (pending only)
+    truncated_count = db.scalar(
+        select(func.count()).select_from(
+            select(ReviewQueueItem)
+            .join(Extraction)
+            .where(
+                ReviewQueueItem.status == "pending",
+                Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
+            )
+            .subquery()
+        )
+    ) or 0
+
     # Get items for current status
     query = (
         select(ReviewQueueItem)
         .join(Extraction)
         .where(ReviewQueueItem.status == status)
+    )
+
+    if truncated_only:
+        query = query.where(
+            Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
+        )
+
+    query = (
+        query
         .order_by(ReviewQueueItem.priority.desc(), ReviewQueueItem.created_at)
         .offset((page - 1) * per_page)
         .limit(per_page)
@@ -151,6 +176,8 @@ def review_page(
         if e and e.metadata_:
             breakdown = e.metadata_.get("confidence_breakdown")
 
+        truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
+
         items.append({
             "queue_id": qi.id,
             "extraction_id": e.id if e else None,
@@ -164,7 +191,8 @@ def review_page(
             "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,
-            "source_text": nsr.passage_text if nsr else None,
+            "source_text": nsr.text_content if nsr else None,
+            "truncated": truncated,
         })
 
     total = counts.get(status, 0)
@@ -176,6 +204,8 @@ def review_page(
         "filter_status": status,
         "current_page": page,
         "total_pages": total_pages,
+        "truncated_only": truncated_only,
+        "truncated_count": truncated_count,
     })
 
 
@@ -664,9 +694,12 @@ def run_status_check(
         if result.changed == 0:
             return HTMLResponse(
                 f'<div class="result-panel info">'
-                f'Checked <strong>{result.checked}</strong> bills against '
-                f'PDF tracker (<strong>{result.pdf_records}</strong> matched) and '
-                f'IAPP (<strong>{result.iapp_records}</strong> matched). '
+                f'Checked <strong>{result.checked}</strong> bills. '
+                f'Cross-referenced against PDF tracker '
+                f'(<strong>{result.pdf_matched}</strong>/{result.checked} matched '
+                f'from {result.pdf_records} index records) and '
+                f'IAPP (<strong>{result.iapp_matched}</strong>/{result.checked} matched '
+                f'from {result.iapp_records} index records). '
                 f'No status changes detected.'
                 f'{iapp_note}'
                 f'</div>'
@@ -713,6 +746,15 @@ def run_fetch(
         total = summary["completed"] + summary["failed"] + summary["skipped"]
         panel_class = "success" if summary["failed"] == 0 and summary["skipped"] == 0 else "warning"
 
+        cancelled_note = ""
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Pipeline was terminated by user. Remaining jobs still pending.'
+                '</div>'
+            )
+            panel_class = "warning"
+
         failed_note = ""
         if summary["failed"] > 0 or summary["skipped"] > 0:
             failed_note = (
@@ -731,6 +773,7 @@ def run_fetch(
             f'<strong>{summary["completed"]}/{total}</strong> documents fetched, '
             f'<strong>{summary["total_passages"]}</strong> passages extracted.'
             f'{failed_note}'
+            f'{cancelled_note}'
             f'</div>'
         )
     except Exception as e:
@@ -738,6 +781,115 @@ def run_fetch(
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/run/fetch/cancel")
+def cancel_fetch() -> HTMLResponse:
+    """Signal the running fetch pipeline to stop after the current job."""
+    from src.ingestion.pipeline import is_cancelled, request_cancel
+
+    if is_cancelled():
+        return HTMLResponse(
+            '<div class="result-panel info">Cancellation already requested.</div>'
+        )
+    request_cancel()
+    return HTMLResponse(
+        '<div class="result-panel warning">Termination requested — pipeline will stop after the current job completes.</div>'
+    )
+
+
+@router.post("/api/run/fetch/reset")
+def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset non-approved ingestion jobs back to pending for re-fetching.
+
+    Only resets failed, manual-review, and stale intermediate-state jobs.
+    Completed (approved) jobs are never touched.
+    """
+    from sqlalchemy import update
+
+    try:
+        result = db.execute(
+            update(IngestionJob)
+            .where(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.requires_manual_review,
+                    IngestionStatus.fetching,
+                    IngestionStatus.fetched,
+                    IngestionStatus.parsing,
+                ])
+            )
+            .values(
+                status=IngestionStatus.pending,
+                error_message=None,
+                fetch_started_at=None,
+                fetch_completed_at=None,
+                parse_started_at=None,
+                parse_completed_at=None,
+            )
+        )
+        db.commit()
+        count = result.rowcount
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No jobs to reset — all are either pending or completed.</div>'
+            )
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Reset <strong>{count}</strong> non-approved jobs back to pending. '
+            f'Completed jobs were not affected. Ready to re-fetch.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/retry-job/{job_id}")
+def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset a single failed/manual-review job back to pending for re-fetching."""
+    job = db.get(IngestionJob, job_id)
+    if not job:
+        return HTMLResponse(
+            f'<span style="color:var(--danger);font-size:12px;">Job #{job_id} not found.</span>'
+        )
+    if job.status not in (
+        IngestionStatus.failed,
+        IngestionStatus.requires_manual_review,
+        IngestionStatus.completed,
+    ):
+        return HTMLResponse(
+            f'<span style="color:var(--warning);font-size:12px;">'
+            f'Job #{job_id} is {job.status.value} — cannot re-fetch.</span>'
+        )
+    job.status = IngestionStatus.pending
+    job.error_message = None
+    job.fetch_started_at = None
+    job.fetch_completed_at = None
+    job.parse_started_at = None
+    job.parse_completed_at = None
+    db.commit()
+    return HTMLResponse(
+        f'<span style="color:var(--success);font-size:12px;">'
+        f'Job #{job_id} reset to pending. Run Fetch to re-process.</span>'
+    )
+
+
+@router.post("/api/run/extract/cancel")
+def cancel_extract() -> HTMLResponse:
+    """Signal the running extraction pipeline to stop after the current passage."""
+    from src.ingestion.extractor import is_cancelled, request_cancel
+
+    if is_cancelled():
+        return HTMLResponse(
+            '<div class="result-panel info">Cancellation already requested.</div>'
+        )
+    request_cancel()
+    return HTMLResponse(
+        '<div class="result-panel warning">Termination requested — extraction will stop after the current passage completes.</div>'
+    )
 
 
 @router.post("/api/run/export-passages")
@@ -834,11 +986,122 @@ def run_api_extract(
 
         tokens = summary.get("token_usage", {})
         label = f"via {provider}" if provider else ""
+        panel_class = "success"
+        cancelled_note = ""
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Extraction was terminated by user. Remaining passages still unprocessed.'
+                '</div>'
+            )
+            panel_class = "warning"
         return HTMLResponse(
-            f'<div class="result-panel success">'
+            f'<div class="result-panel {panel_class}">'
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
+            f'{cancelled_note}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/dependency-graph")
+def run_dependency_graph(
+    document_version_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Build dependency graphs linking extractions within documents.
+
+    Uses GPT (gpt-oss-20b, 131k context) to identify relationships between
+    obligations, definitions, thresholds, exceptions, enforcement mechanisms,
+    rights, and compliance mechanisms.
+
+    Args:
+        document_version_id: Process a single document (None = all pending).
+    """
+    try:
+        from src.ingestion.extractor import run_dependency_graph as _run_dep_graph
+        summary = _run_dep_graph(db, document_version_id=document_version_id)
+
+        docs = summary["documents_processed"]
+        edges = summary["total_edges"]
+        cancelled_note = ""
+        panel_class = "success"
+
+        if summary.get("cancelled"):
+            cancelled_note = (
+                '<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+                'Dependency graph building was terminated by user.'
+                '</div>'
+            )
+            panel_class = "warning"
+
+        if docs == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">'
+                'No documents pending dependency graph construction. '
+                'All documents with extractions already have dependency edges.'
+                '</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel {panel_class}">'
+            f'Built dependency graphs for {docs} document(s): '
+            f'{edges} relationship edges created.'
+            f'{cancelled_note}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/condition-parse")
+def run_condition_parse(
+    document_version_id: int | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Parse condition fields into structured boolean expression trees.
+
+    Rule-based parser — no LLM call needed. Converts free-text conditions
+    from obligation, threshold, exception, and rights extractions into
+    AND/OR/NOT/LEAF expression trees in the applicability_conditions table.
+
+    Args:
+        document_version_id: Process a single document (None = all pending).
+    """
+    try:
+        from src.ingestion.extractor import run_condition_parsing
+        summary = run_condition_parsing(db, document_version_id=document_version_id)
+
+        processed = summary["extractions_processed"]
+        nodes = summary["nodes_created"]
+        with_conds = summary["extractions_with_conditions"]
+        errors = summary.get("errors", 0)
+
+        if processed == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">'
+                'No extractions pending condition parsing. '
+                'All condition fields have already been parsed.'
+                '</div>'
+            )
+
+        error_note = ""
+        if errors:
+            error_note = f' ({errors} errors)'
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Parsed conditions from {with_conds}/{processed} extractions: '
+            f'{nodes} tree nodes created.{error_note}'
             f'</div>'
         )
     except Exception as e:
@@ -1654,6 +1917,15 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             </form>
             <button class="btn btn-sm" onclick="toggleFailedEdit({jid})"
                     style="margin-left:4px;">Edit</button>
+            <button class="btn btn-sm"
+                    hx-post="/dashboard/api/retry-job/{jid}"
+                    hx-target="#failed-result-{jid}"
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    style="margin-left:4px;">
+              <span class="btn-label">Re-fetch</span>
+              <span class="htmx-indicator"><span class="spinner"></span></span>
+            </button>
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
@@ -1923,10 +2195,32 @@ def _get_pipeline_stats(db: Session) -> dict:
         status_val = row[0].value if hasattr(row[0], "value") else str(row[0])
         status_summary[status_val] = row[1]
 
+    # Dependency graph stats
+    try:
+        dependency_edges = db.scalar(
+            select(func.count()).select_from(ObligationDependency)
+        ) or 0
+    except Exception:
+        dependency_edges = 0
+        db.rollback()
+
+    # Applicability condition stats
+    try:
+        condition_nodes = db.scalar(
+            select(func.count()).select_from(ApplicabilityCondition)
+        ) or 0
+    except Exception:
+        condition_nodes = 0
+        db.rollback()
+
     # Pending result files
     pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
 
+    # Tracker CSV row count for the collapsible header
+    tracker_count = len(_read_tracker())
+
     return {
+        "tracker_count": tracker_count,
         "pending_ingestion": pending_ingestion,
         "total_passages": total_passages,
         "unprocessed_passages": unprocessed_passages,
@@ -1935,6 +2229,8 @@ def _get_pipeline_stats(db: Session) -> dict:
         "pending_review": pending_review,
         "review_by_tier": review_by_tier,
         "pending_results": pending_results,
+        "dependency_edges": dependency_edges,
+        "condition_nodes": condition_nodes,
         "status_summary": status_summary,
     }
 
