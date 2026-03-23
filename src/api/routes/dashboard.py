@@ -1175,8 +1175,16 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         # Check which jobs already have a raw artifact downloaded
         reset_to_fetched = 0
         reset_to_pending = 0
+        skipped_manual_review = 0
 
         for job in jobs:
+            # Manual-review jobs had bad content (Discovery rejected it).
+            # Don't re-parse the same garbage — skip them unless user
+            # provides a new URL.
+            if job.status == IngestionStatus.requires_manual_review:
+                skipped_manual_review += 1
+                continue
+
             has_artifact = db.scalar(
                 select(func.count()).where(
                     RawArtifact.document_version_id == job.document_version_id
@@ -1204,11 +1212,23 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         db.commit()
 
         total = reset_to_fetched + reset_to_pending
+        if total == 0 and skipped_manual_review > 0:
+            return HTMLResponse(
+                f'<div class="result-panel info">'
+                f'No jobs to reset. {skipped_manual_review} manual-review jobs '
+                f'were skipped (bad content — update their URLs first).'
+                f'</div>'
+            )
         parts = [f'Reset <strong>{total}</strong> jobs.']
         if reset_to_fetched > 0:
             parts.append(f'{reset_to_fetched} will re-parse only (files already downloaded).')
         if reset_to_pending > 0:
             parts.append(f'{reset_to_pending} will re-fetch and parse.')
+        if skipped_manual_review > 0:
+            parts.append(
+                f'<span style="color:var(--warning);">{skipped_manual_review} manual-review '
+                f'jobs skipped (bad content — update URLs first).</span>'
+            )
 
         return HTMLResponse(
             f'<div class="result-panel success">'
