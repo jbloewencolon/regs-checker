@@ -84,9 +84,13 @@ def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
     for element in soup(["script", "style", "nav", "footer", "header"]):
         element.decompose()
 
-    # Extract text from main content
+    # Extract text from main content.
+    # Use "\n\n" separator so each block element (p, div, li, h1-h6, etc.)
+    # creates a double-newline paragraph break.  With "\n" the entire document
+    # collapses into single-newline-separated text, making the paragraph
+    # fallback splitter treat 100KB of text as a single passage.
     body = soup.find("body") or soup
-    full_text = body.get_text(separator="\n", strip=True)
+    full_text = body.get_text(separator="\n\n", strip=True)
 
     return _segment_text(full_text)
 
@@ -100,23 +104,34 @@ def _parse_plaintext(content: bytes) -> list[tuple[str, str, int, int]]:
 def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     """Segment legislative text into passage-level chunks.
 
-    Uses section headers and paragraph boundaries as delimiters.
+    Strategy:
+      1. Try section-header splitting (Section X, Article Y, § Z, etc.)
+      2. Fall back to paragraph splitting on double-newlines
+      3. If paragraphs are too large (>2000 chars), split them further
+
     Returns list of (section_path, text, char_start, char_end).
     """
-    # Pattern for common legislative section markers
+    # Pattern for common legislative section markers — covers:
+    #   Section 1, SECTION 1, Sec. 1, SEC. 1, § 1, §1
+    #   Article I, ARTICLE 1
+    #   Chapter 1, CHAPTER 1, Part 1, PART 1, Title 1, TITLE 1
+    #   Rule 1, RULE 1
+    #   (a), (b), (1), (2), (i), (ii)
     section_pattern = re.compile(
-        r"(?:^|\n)"
-        r"((?:Section|SECTION|Sec\.|SEC\.)\s+\d+[\w.]*"
+        r"(?:^|\n\n?)"
+        r"((?:Section|SECTION|Sec\.|SEC\.)\s+\d+[\w.\-]*"
+        r"|§\s*\d+[\w.\-]*"
         r"|(?:Article|ARTICLE)\s+\w+"
+        r"|(?:Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE)\s+\d+[\w.\-]*"
         r"|(?:\(\w+\))\s)"
-        r"(.*?)(?=\n(?:Section|SECTION|Sec\.|SEC\.|Article|ARTICLE|\(\w+\)\s)|\Z)",
+        r"(.*?)(?=\n\n?(?:Section|SECTION|Sec\.|SEC\.|§\s*\d|Article|ARTICLE"
+        r"|Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE|\(\w+\)\s)|\Z)",
         re.DOTALL,
     )
 
     matches = list(section_pattern.finditer(text))
 
     if not matches:
-        # Fallback: split on double newlines
         return _split_on_paragraphs(text)
 
     passages = []
@@ -138,7 +153,11 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
 
 
 def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
-    """Fallback paragraph splitter."""
+    """Fallback paragraph splitter.
+
+    Splits on double-newlines first, then sub-splits any oversized chunks
+    on single newlines to avoid giant single-passage documents.
+    """
     paragraphs = re.split(r"\n\s*\n", text)
     passages = []
     offset = 0
@@ -149,12 +168,29 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
             offset += len(para) + 2
             continue
 
-        passages.append((
-            f"Paragraph {len(passages) + 1}",
-            para,
-            offset,
-            offset + len(para),
-        ))
+        # Sub-split oversized paragraphs on single newlines
+        if len(para) > 2000:
+            sub_parts = para.split("\n")
+            sub_offset = offset
+            for sub in sub_parts:
+                sub = sub.strip()
+                if len(sub) < 10:
+                    sub_offset += len(sub) + 1
+                    continue
+                passages.append((
+                    f"Paragraph {len(passages) + 1}",
+                    sub,
+                    sub_offset,
+                    sub_offset + len(sub),
+                ))
+                sub_offset += len(sub) + 1
+        else:
+            passages.append((
+                f"Paragraph {len(passages) + 1}",
+                para,
+                offset,
+                offset + len(para),
+            ))
         offset += len(para) + 2
 
     return passages
