@@ -110,6 +110,62 @@ MIN_PASSAGE_LENGTH = 150
 # Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
 
+def _ensure_triage_table(db, _log=None) -> None:
+    """Create the section_triage_results table if it doesn't exist.
+
+    Handles the case where the alembic migration hasn't been applied
+    to the local database. Creates enum types and the table idempotently.
+    """
+    from sqlalchemy import inspect as sa_inspect, text
+
+    bind = db.get_bind()
+    inspector = sa_inspect(bind)
+    if inspector.has_table("section_triage_results"):
+        return
+
+    if _log:
+        _log("Creating section_triage_results table (migration not applied)...")
+
+    with bind.begin() as conn:
+        conn.execute(text("""
+            DO $$ BEGIN
+                CREATE TYPE triagedecision AS ENUM ('relevant', 'not_relevant', 'uncertain');
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """))
+        conn.execute(text("""
+            DO $$ BEGIN
+                CREATE TYPE triagemethod AS ENUM ('keyword', 'orrick_cross_check', 'llm_generic', 'quality_fail', 'passthrough');
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS section_triage_results (
+                id SERIAL PRIMARY KEY,
+                source_record_id INTEGER NOT NULL UNIQUE REFERENCES normalized_source_records(id),
+                decision triagedecision NOT NULL,
+                method triagemethod NOT NULL,
+                confidence FLOAT NOT NULL DEFAULT 0.0,
+                matched_keywords JSONB DEFAULT '[]'::jsonb,
+                orrick_terms_checked JSONB DEFAULT '[]'::jsonb,
+                llm_reasoning TEXT,
+                pdf_quality_score FLOAT,
+                quality_flags JSONB DEFAULT '[]'::jsonb,
+                model_id VARCHAR(100),
+                created_at TIMESTAMP DEFAULT now()
+            )
+        """))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_triage_source_record ON section_triage_results (source_record_id)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_triage_decision ON section_triage_results (decision)"
+        ))
+
+    if _log:
+        _log("Table created.")
+
+
 # Agent registry — 4 consolidated agents per Recommendation #1
 AGENTS: dict[str, BaseExtractionAgent] = {}
 
@@ -807,6 +863,10 @@ def run_triage(
             on_progress(msg)
         logger.info(msg)
 
+    # Ensure section_triage_results table exists (may not if migration
+    # hasn't been applied to the local database yet).
+    _ensure_triage_table(db, _log)
+
     # Find all passages from completed ingestion jobs that haven't been triaged
     triaged_ids = select(SectionTriageResult.source_record_id)
     records = db.scalars(
@@ -966,6 +1026,7 @@ def run_extraction(
     # ---- Section Triage (Step 2b) ----
     # Run AI-relevance filtering before sending to the full agent battery.
     # Decisions are stored in section_triage_results for human review.
+    _ensure_triage_table(db, _log)
     from src.agents.section_triage import triage_passage
 
     triage_relevant = 0
