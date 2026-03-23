@@ -917,6 +917,40 @@ def extract_single_record(
     return extractions_created
 
 
+def _get_neighbor_texts(
+    record,
+    siblings: list,
+    window: int = 1,
+) -> list[str]:
+    """Return text from neighboring passages (before/after) in the same document.
+
+    Gives the triage model surrounding context so it can tell whether a generic
+    section lives inside an AI-specific part of the bill.
+    """
+    if not siblings or len(siblings) <= 1:
+        return []
+
+    # Find index of this record in the sibling list (ordered by ordinal)
+    idx = None
+    for j, r in enumerate(siblings):
+        if r.id == record.id:
+            idx = j
+            break
+    if idx is None:
+        return []
+
+    texts: list[str] = []
+    for offset in range(-window, window + 1):
+        if offset == 0:
+            continue
+        neighbor_idx = idx + offset
+        if 0 <= neighbor_idx < len(siblings):
+            txt = siblings[neighbor_idx].text_content or ""
+            if txt.strip():
+                texts.append(txt)
+    return texts
+
+
 def run_triage(
     db,
     on_progress: callable | None = None,
@@ -979,9 +1013,45 @@ def run_triage(
     except Exception as e:
         _log(f"Triaging {len(records)} passages (keyword-only, no LLM: {e})...")
 
+    # Pre-build bill-level context per document_version so every passage in
+    # the same bill shares definitions/scope/structure context.
+    from src.core.bill_context import get_or_build_bill_context
+    from itertools import groupby
+    from operator import attrgetter
+
+    # Group records by document_version_id so we build context once per bill
+    records_sorted = sorted(records, key=attrgetter("document_version_id", "ordinal"))
+    _bill_ctx_cache: dict[int, dict] = {}
+    _dv_records: dict[int, list] = {}
+    for dv_id, grp in groupby(records_sorted, key=attrgetter("document_version_id")):
+        _dv_records[dv_id] = list(grp)
+        try:
+            _bill_ctx_cache[dv_id] = get_or_build_bill_context(db, dv_id, records=_dv_records[dv_id])
+        except Exception:
+            logger.debug("bill_context_build_failed", dv_id=dv_id, exc_info=True)
+            _bill_ctx_cache[dv_id] = {}
+
     for i, record in enumerate(records):
         ctx = _build_context(db, record)
-        result = triage_passage(record.text_content, ctx, llm_provider=llm_provider)
+        # Inject bill-level context (definitions, scope, structure)
+        bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
+        if bill_ctx:
+            if bill_ctx.get("definitions"):
+                ctx["bill_definitions"] = bill_ctx["definitions"]
+            if bill_ctx.get("scope"):
+                ctx["bill_scope"] = bill_ctx["scope"]
+            if bill_ctx.get("structure"):
+                ctx["bill_structure"] = bill_ctx["structure"]
+            if bill_ctx.get("defined_terms"):
+                ctx["defined_terms"] = bill_ctx["defined_terms"]
+
+        # Gather neighboring passage texts for surrounding context
+        siblings = _dv_records.get(record.document_version_id, [])
+        neighbors = _get_neighbor_texts(record, siblings)
+
+        result = triage_passage(
+            record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
+        )
 
         triage_row = SectionTriageResult(
             source_record_id=record.id,
@@ -1137,11 +1207,26 @@ def run_extraction(
     # Decisions are stored in section_triage_results for human review.
     _ensure_triage_table(db, _log)
     from src.agents.section_triage import triage_passage
+    from src.core.bill_context import get_or_build_bill_context as _get_bill_ctx
 
     triage_relevant = 0
     triage_skipped = 0
     triage_uncertain = 0
     triaged_records: list[NormalizedSourceRecord] = []
+
+    # Build bill-level context once for triage (reused later by extraction)
+    _triage_bill_ctx: dict[int, dict] = {}
+    _triage_dv_records: dict[int, list] = {}
+    records_by_ord = sorted(records, key=lambda r: (r.document_version_id, r.ordinal or 0))
+    from itertools import groupby as _groupby
+    from operator import attrgetter as _attrgetter
+    for dv_id, grp in _groupby(records_by_ord, key=_attrgetter("document_version_id")):
+        _triage_dv_records[dv_id] = list(grp)
+        try:
+            _triage_bill_ctx[dv_id] = _get_bill_ctx(db, dv_id, records=_triage_dv_records[dv_id])
+        except Exception:
+            logger.debug("triage_bill_ctx_failed", dv_id=dv_id, exc_info=True)
+            _triage_bill_ctx[dv_id] = {}
 
     for record in records:
         # Skip if already triaged (re-run safety)
@@ -1162,7 +1247,24 @@ def run_extraction(
             continue
 
         ctx = _build_context(db, record)
-        result = triage_passage(record.text_content, ctx, llm_provider=None)
+        # Inject bill-level context
+        bill_ctx = _triage_bill_ctx.get(record.document_version_id, {})
+        if bill_ctx:
+            if bill_ctx.get("definitions"):
+                ctx["bill_definitions"] = bill_ctx["definitions"]
+            if bill_ctx.get("scope"):
+                ctx["bill_scope"] = bill_ctx["scope"]
+            if bill_ctx.get("structure"):
+                ctx["bill_structure"] = bill_ctx["structure"]
+            if bill_ctx.get("defined_terms"):
+                ctx["defined_terms"] = bill_ctx["defined_terms"]
+
+        siblings = _triage_dv_records.get(record.document_version_id, [])
+        neighbors = _get_neighbor_texts(record, siblings)
+
+        result = triage_passage(
+            record.text_content, ctx, llm_provider=None, neighbors=neighbors,
+        )
 
         # Store triage result
         triage_row = SectionTriageResult(

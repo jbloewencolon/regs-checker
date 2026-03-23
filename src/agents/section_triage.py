@@ -287,68 +287,141 @@ def _keyword_screen(text: str, orrick_terms: set[str]) -> tuple[bool, list[str]]
     return bool(matched), matched
 
 
-def _build_triage_prompt(passage: str, context: dict) -> str:
-    """Build the LLM prompt for section-level AI-relevance triage."""
+def _build_bill_context_block(context: dict) -> str:
+    """Build a text block summarising bill-level context for the LLM prompt.
+
+    Includes definitions, scope, structure and defined terms when available
+    so the triage model can judge relevance against the full bill, not just
+    the isolated passage.
+    """
+    parts: list[str] = []
+
+    bill_defs = context.get("bill_definitions", "")
+    if bill_defs:
+        parts.append(f"DEFINITIONS FROM THIS BILL (excerpt):\n{bill_defs[:2000]}")
+
+    bill_scope = context.get("bill_scope", "")
+    if bill_scope:
+        parts.append(f"SCOPE / APPLICABILITY (excerpt):\n{bill_scope[:1500]}")
+
+    defined_terms = context.get("defined_terms")
+    if defined_terms:
+        terms_str = ", ".join(defined_terms[:40])
+        parts.append(f"DEFINED TERMS: {terms_str}")
+
+    bill_structure = context.get("bill_structure", "")
+    if bill_structure:
+        parts.append(f"BILL STRUCTURE (section outline):\n{bill_structure[:500]}")
+
+    if not parts:
+        return ""
+
+    return "\n\n".join(parts)
+
+
+def _build_neighbor_block(neighbors: list[str]) -> str:
+    """Build a text block showing neighboring passages for context."""
+    if not neighbors:
+        return ""
+    trimmed = [n[:300] for n in neighbors]
+    return "SURROUNDING SECTIONS (for context):\n" + "\n---\n".join(trimmed)
+
+
+def _build_triage_prompt(
+    passage: str,
+    context: dict,
+    neighbors: list[str] | None = None,
+) -> str:
+    """Build the LLM prompt for section-level AI-relevance triage.
+
+    When bill-level context (definitions, scope, structure) or neighboring
+    passage text is available, include it so the model can judge relevance
+    against the *whole* bill rather than the isolated passage.
+    """
     ai_scope = context.get("ai_scope", "")
     key_reqs = context.get("key_requirements", "")
     title = context.get("document_title", "Unknown")
 
+    bill_ctx_block = _build_bill_context_block(context)
+    neighbor_block = _build_neighbor_block(neighbors or [])
+
+    # Extra context sections (only included when data is available)
+    extra_sections = ""
+    if bill_ctx_block:
+        extra_sections += f"\n\n{bill_ctx_block}"
+    if neighbor_block:
+        extra_sections += f"\n\n{neighbor_block}"
+
     if ai_scope or key_reqs:
         # Layer 2: Orrick-informed triage
-        prompt = f"""You are a legal triage agent. Determine whether this legislative passage
-contains content relevant to AI regulation.
+        prompt = f"""You are a legal triage agent. Your job is to determine whether a
+passage from a bill or law contains content that is SPECIFICALLY relevant to
+artificial intelligence or automated-decision-system regulation.
 
 BILL: {title}
 KNOWN AI SCOPE: {ai_scope or 'Not specified'}
 KEY REQUIREMENTS (from Orrick AI Law Tracker):
-{key_reqs or 'Not available'}
+{key_reqs or 'Not available'}{extra_sections}
 
-PASSAGE:
+PASSAGE TO EVALUATE:
 ---
 {passage}
 ---
 
-Does this passage contain regulatory content relevant to the AI scope described above?
-Consider: obligations, definitions, rights, thresholds, exceptions, enforcement,
-compliance mechanisms, or terms that would apply to AI systems/developers/deployers.
+INSTRUCTIONS:
+1. First, read the passage carefully. Identify any terms, obligations, or
+   concepts that are specifically about AI, automated decision-making, machine
+   learning, algorithmic systems, or the actors who build/deploy them.
+2. Consider the bill-level context above (definitions, scope, structure).
+   A generic procedural section (severability, effective dates, general
+   appropriations) is NOT relevant just because it appears in an AI bill.
+3. A passage IS relevant if it:
+   - Defines, regulates, or creates obligations for AI/automated systems
+   - Establishes rights for people affected by AI/automated decisions
+   - Sets thresholds, exceptions, or enforcement for AI-specific rules
+   - Specifically references the AI-related scope of this bill
+4. A passage is NOT relevant if it:
+   - Is purely procedural / administrative with no AI-specific content
+   - Covers general topics (tax, zoning, appropriations) that happen to be
+     in the same bill but do not touch AI regulation
+   - Mentions "technology" only in a generic, non-AI sense
 
 Respond with EXACTLY one JSON object:
-{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation", "ai_signals": "list the specific words, phrases, or concepts in the passage that suggest AI relevance (or explain why none were found)"}}
+{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation of your decision", "ai_signals": "quote the specific words/phrases from the passage that indicate AI relevance, or explain why none exist — be explicit about whether the connection is direct or indirect"}}
 
-The "ai_signals" field is critical — it must explain WHAT in the passage made you
-think it is (or is not) related to AI regulation. Quote specific words or phrases
-from the passage. If the connection is indirect (e.g. a general technology provision
-that COULD apply to AI), say so explicitly.
-
-Be CONSERVATIVE — when in doubt, mark as relevant. Missing an obligation is
-worse than sending a non-relevant section to extraction."""
+Be CONSERVATIVE — when genuinely in doubt, mark as relevant. But do NOT mark
+generic procedural sections as relevant simply because they sit inside an AI bill."""
     else:
         # Layer 3: Generic AI-relevance check (no Orrick data)
-        prompt = f"""You are a legal triage agent. Determine whether this legislative passage
-contains content relevant to artificial intelligence regulation.
+        prompt = f"""You are a legal triage agent. Your job is to determine whether a
+passage from a bill or law contains content that is SPECIFICALLY relevant to
+artificial intelligence or automated-decision-system regulation.
 
-BILL: {title}
+BILL: {title}{extra_sections}
 
-PASSAGE:
+PASSAGE TO EVALUATE:
 ---
 {passage}
 ---
 
-Does this passage contain regulatory content about AI, automated decision systems,
-machine learning, algorithmic systems, or related technology regulation?
-
-Consider: obligations, definitions, rights, thresholds, exceptions, enforcement,
-compliance mechanisms, or terms that would apply to AI systems.
+INSTRUCTIONS:
+1. First, read the passage carefully. Identify any terms, obligations, or
+   concepts that are specifically about AI, automated decision-making, machine
+   learning, algorithmic systems, or the actors who build/deploy them.
+2. If bill-level context is shown above, use it to understand the bill's
+   purpose. A generic procedural section (severability, effective dates,
+   general appropriations) is NOT relevant just because it appears in an
+   AI bill.
+3. A passage IS relevant if it directly addresses AI, automated systems, ML,
+   algorithmic regulation, or the people/entities affected by such systems.
+4. A passage is NOT relevant if it covers general topics that do not touch
+   AI regulation, even if the surrounding bill is about AI.
 
 Respond with EXACTLY one JSON object:
-{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation", "ai_signals": "list the specific words, phrases, or concepts in the passage that suggest AI relevance (or explain why none were found)"}}
+{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation of your decision", "ai_signals": "quote the specific words/phrases from the passage that indicate AI relevance, or explain why none exist — be explicit about whether the connection is direct or indirect"}}
 
-The "ai_signals" field is critical — it must explain WHAT in the passage made you
-think it is (or is not) related to AI regulation. Quote specific words or phrases
-from the passage. If the connection is indirect (e.g. a general technology provision
-that COULD apply to AI), say so explicitly.
-
-Be CONSERVATIVE — when in doubt, mark as relevant."""
+Be CONSERVATIVE — when genuinely in doubt, mark as relevant. But do NOT mark
+generic procedural sections as relevant simply because they sit inside an AI bill."""
 
     return prompt
 
@@ -357,14 +430,20 @@ def triage_passage(
     text: str,
     context: dict,
     llm_provider=None,
+    neighbors: list[str] | None = None,
 ) -> TriageResult:
     """Triage a single passage for AI-relevance.
 
     Args:
         text: The passage text to evaluate.
         context: Build context dict (from _build_context) with Orrick metadata.
+            May also include bill-level keys (bill_definitions, bill_scope,
+            bill_structure, defined_terms) when the caller has built bill
+            context — these give the LLM the full picture of the bill.
         llm_provider: Optional LLM provider for Layer 2/3 triage.
             If None, passages that fail keyword screening default to "uncertain"
+        neighbors: Optional list of neighboring passage texts (before/after)
+            to give the model surrounding context.
             (conservative — they'll still be sent to extraction).
 
     Returns:
@@ -419,7 +498,7 @@ def triage_passage(
     method = "orrick_cross_check" if has_orrick else "llm_generic"
 
     try:
-        prompt = _build_triage_prompt(text, context)
+        prompt = _build_triage_prompt(text, context, neighbors=neighbors)
         llm_response = llm_provider.call(
             system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
             user_prompt=prompt,
