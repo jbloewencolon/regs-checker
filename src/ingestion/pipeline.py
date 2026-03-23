@@ -357,6 +357,11 @@ def run_pending_ingestion(
 
     pending_jobs = db.scalars(query).all()
 
+    # Process already-fetched (re-parse only) jobs first so network errors
+    # from pending (download) jobs don't trip the circuit breaker and block
+    # parsing work that needs no network access.
+    pending_jobs.sort(key=lambda j: (0 if j.status == IngestionStatus.fetched else 1))
+
     summary = {
         "total_pending": len(pending_jobs),
         "completed": 0,
