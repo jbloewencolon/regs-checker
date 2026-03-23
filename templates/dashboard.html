@@ -303,9 +303,12 @@
       <div class="step-body">
         <div class="step-description">
           Run extraction agents on unprocessed passages. Choose a method below.
-          {% if stats.unprocessed_passages > 0 %}
-          <strong>{{ stats.unprocessed_passages }}</strong> passages waiting.
-          {% endif %}
+          {% set extracted_passages = stats.total_passages - stats.unprocessed_passages %}
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ extracted_passages }}</strong> / {{ stats.total_passages }} passages extracted{% if stats.unprocessed_passages > 0 %},
+            <strong>{{ stats.unprocessed_passages }}</strong> pending{% endif %}.
+            <strong>{{ stats.total_extractions }}</strong> extractions total.
+          </div>
         </div>
 
         <!-- Extraction method tabs -->
@@ -514,6 +517,9 @@
           Identifies relationships between extractions within each document:
           definition references, exceptions, enforcement links, cross-references.
           Uses <strong>GPT (gpt-oss-20b, 131k context)</strong> to analyze all extractions per document.
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.dependency_edges }}</strong> dependency edges.
+          </div>
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -551,6 +557,9 @@
         <div class="step-description">
           Parses condition fields from obligations, thresholds, exceptions, and rights
           into structured AND/OR/NOT/LEAF expression trees. Rule-based — no LLM needed.
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.condition_nodes }}</strong> condition nodes.
+          </div>
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -586,6 +595,11 @@
       <div class="step-body">
         <div class="step-description">
           Approve/reject extractions. Focus on Tier C and D items.
+          {% set extracted_passages = stats.total_passages - stats.unprocessed_passages %}
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.approved_extractions }}</strong> / {{ stats.total_extractions }} extractions approved.
+            <strong>{{ extracted_passages }}</strong> / {{ stats.total_passages }} passages extracted.
+          </div>
         </div>
         {% if stats.pending_review > 0 %}
         <div class="review-summary">
