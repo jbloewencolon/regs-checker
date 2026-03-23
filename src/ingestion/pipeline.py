@@ -226,26 +226,60 @@ def process_single_job(
         logger.info(msg, job_id=job.id)
 
     try:
-        # --- Phase 1: Fetch ---
-        job.status = IngestionStatus.fetching
-        job.fetch_started_at = datetime.utcnow()
-        db.commit()
-        _log(f"Fetching {job.fetch_url}")
+        # --- Phase 1: Fetch (skip if already fetched) ---
+        raw_artifact = None
+        already_fetched = job.status == IngestionStatus.fetched
 
-        raw_artifact = fetch_document(db, job)
+        if already_fetched:
+            # Already downloaded — find existing raw artifact
+            from src.db.models import RawArtifact as RawArtifactModel
+            raw_artifact = db.scalars(
+                select(RawArtifactModel)
+                .where(RawArtifactModel.document_version_id == job.document_version_id)
+                .order_by(RawArtifactModel.created_at.desc())
+            ).first()
 
-        job.status = IngestionStatus.fetched
-        job.fetch_completed_at = datetime.utcnow()
-        db.commit()
-        _log(
-            f"Stored artifact: {raw_artifact.content_type}, "
-            f"{raw_artifact.size_bytes:,} bytes, sha256={raw_artifact.sha256_hash[:12]}"
-        )
+            if raw_artifact is not None:
+                _log(
+                    f"Skipping fetch (already downloaded): {raw_artifact.content_type}, "
+                    f"{raw_artifact.size_bytes:,} bytes"
+                )
+                # Delete old parsed records so re-parse starts clean
+                from src.db.models import NormalizedSourceRecord as NSR
+                old_records = db.scalars(
+                    select(NSR).where(
+                        NSR.document_version_id == job.document_version_id
+                    )
+                ).all()
+                if old_records:
+                    for rec in old_records:
+                        db.delete(rec)
+                    db.commit()
+                    _log(f"Cleared {len(old_records)} old passages for re-parse")
+            else:
+                _log(f"Artifact missing for fetched job — re-fetching {job.fetch_url}")
+                already_fetched = False  # Fall through to fetch
 
-        # --- Phase 1.5: Discovery classification + fallback verification ---
-        if not _verify_content_or_fallback(db, job, raw_artifact, _log):
-            # Content was not AI legislation and fallback couldn't auto-fix
-            return 0
+        if not already_fetched:
+            job.status = IngestionStatus.fetching
+            job.fetch_started_at = datetime.utcnow()
+            db.commit()
+            _log(f"Fetching {job.fetch_url}")
+
+            raw_artifact = fetch_document(db, job)
+
+            job.status = IngestionStatus.fetched
+            job.fetch_completed_at = datetime.utcnow()
+            db.commit()
+            _log(
+                f"Stored artifact: {raw_artifact.content_type}, "
+                f"{raw_artifact.size_bytes:,} bytes, sha256={raw_artifact.sha256_hash[:12]}"
+            )
+
+            # --- Phase 1.5: Discovery classification + fallback verification ---
+            if not _verify_content_or_fallback(db, job, raw_artifact, _log):
+                # Content was not AI legislation and fallback couldn't auto-fix
+                return 0
 
         # --- Phase 2: Parse + Chunk ---
         job.status = IngestionStatus.parsing
@@ -288,7 +322,10 @@ def run_pending_ingestion(
     from sqlalchemy import select
 
     query = select(IngestionJob).where(
-        IngestionJob.status == IngestionStatus.pending,
+        IngestionJob.status.in_([
+            IngestionStatus.pending,
+            IngestionStatus.fetched,  # Already downloaded, needs re-parse
+        ]),
         IngestionJob.fetch_url.isnot(None),
         IngestionJob.fetch_url != "",
     )

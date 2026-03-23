@@ -946,44 +946,77 @@ def cancel_fetch() -> HTMLResponse:
 
 @router.post("/api/run/fetch/reset")
 def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Reset non-approved ingestion jobs back to pending for re-fetching.
+    """Reset non-completed ingestion jobs for re-parsing.
 
-    Only resets failed, manual-review, and stale intermediate-state jobs.
-    Completed (approved) jobs are never touched.
+    Jobs that already have a raw artifact (file downloaded) are set to
+    'fetched' so the pipeline skips the download and only re-parses.
+    Jobs without a raw artifact are set to 'pending' for full re-fetch.
+    Completed jobs are never touched.
     """
     from sqlalchemy import update
 
     try:
-        result = db.execute(
-            update(IngestionJob)
-            .where(
-                IngestionJob.status.in_([
-                    IngestionStatus.failed,
-                    IngestionStatus.requires_manual_review,
-                    IngestionStatus.fetching,
-                    IngestionStatus.fetched,
-                    IngestionStatus.parsing,
-                ])
+        # Find jobs eligible for reset
+        resettable_statuses = [
+            IngestionStatus.failed,
+            IngestionStatus.requires_manual_review,
+            IngestionStatus.fetching,
+            IngestionStatus.fetched,
+            IngestionStatus.parsing,
+        ]
+
+        jobs = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.status.in_(resettable_statuses)
             )
-            .values(
-                status=IngestionStatus.pending,
-                error_message=None,
-                fetch_started_at=None,
-                fetch_completed_at=None,
-                parse_started_at=None,
-                parse_completed_at=None,
-            )
-        )
-        db.commit()
-        count = result.rowcount
-        if count == 0:
+        ).all()
+
+        if not jobs:
             return HTMLResponse(
                 '<div class="result-panel info">No jobs to reset — all are either pending or completed.</div>'
             )
+
+        # Check which jobs already have a raw artifact downloaded
+        reset_to_fetched = 0
+        reset_to_pending = 0
+
+        for job in jobs:
+            has_artifact = db.scalar(
+                select(func.count()).where(
+                    RawArtifact.document_version_id == job.document_version_id
+                )
+            ) or 0
+
+            if has_artifact > 0:
+                # File already downloaded — only re-parse
+                job.status = IngestionStatus.fetched
+                job.error_message = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                job.parse_quality_score = None
+                reset_to_fetched += 1
+            else:
+                # No file yet — full re-fetch
+                job.status = IngestionStatus.pending
+                job.error_message = None
+                job.fetch_started_at = None
+                job.fetch_completed_at = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                reset_to_pending += 1
+
+        db.commit()
+
+        total = reset_to_fetched + reset_to_pending
+        parts = [f'Reset <strong>{total}</strong> jobs.']
+        if reset_to_fetched > 0:
+            parts.append(f'{reset_to_fetched} will re-parse only (files already downloaded).')
+        if reset_to_pending > 0:
+            parts.append(f'{reset_to_pending} will re-fetch and parse.')
+
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Reset <strong>{count}</strong> non-approved jobs back to pending. '
-            f'Completed jobs were not affected. Ready to re-fetch.'
+            f'{" ".join(parts)}'
             f'</div>'
         )
     except Exception as e:
