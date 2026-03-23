@@ -25,6 +25,8 @@ from src.db.models import (
     ObligationDependency,
     ReviewQueueItem,
     ReviewStatus,
+    SectionTriageResult,
+    TriageDecision,
 )
 
 # ---------------------------------------------------------------------------
@@ -92,7 +94,7 @@ def _get_pipeline_stats(db: Session) -> dict:
         select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
     ) or 0
 
-    total_passages = db.scalar(
+    total_passages_raw = db.scalar(
         select(func.count()).select_from(NormalizedSourceRecord)
     ) or 0
 
@@ -100,13 +102,56 @@ def _get_pipeline_stats(db: Session) -> dict:
         select(func.count()).select_from(Extraction)
     ) or 0
 
-    # Unprocessed passages (no extractions yet)
+    # Compute triage-aware passage counts: only relevant + uncertain passages
+    # are candidates for extraction. If triage hasn't run, fall back to all.
+    triage_count = 0
+    triage_relevant = 0
+    try:
+        triage_count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+        if triage_count > 0:
+            triage_relevant = db.scalar(
+                select(func.count()).where(
+                    SectionTriageResult.decision.in_([
+                        TriageDecision.relevant,
+                        TriageDecision.uncertain,
+                    ])
+                )
+            ) or 0
+    except Exception:
+        db.rollback()
+        triage_count = 0
+
+    if triage_count > 0:
+        untriaged = total_passages_raw - triage_count
+        total_passages = triage_relevant + untriaged
+    else:
+        total_passages = total_passages_raw
+
+    # Unprocessed passages (relevant/uncertain with no extractions yet)
     extracted_ids = select(Extraction.source_record_id).distinct()
-    unprocessed_passages = db.scalar(
-        select(func.count()).where(
-            NormalizedSourceRecord.id.notin_(extracted_ids)
+    if triage_count > 0:
+        # Only count passages that passed triage and still lack extractions
+        relevant_ids = (
+            select(SectionTriageResult.source_record_id)
+            .where(SectionTriageResult.decision.in_([
+                TriageDecision.relevant,
+                TriageDecision.uncertain,
+            ]))
         )
-    ) or 0
+        unprocessed_passages = db.scalar(
+            select(func.count()).where(
+                NormalizedSourceRecord.id.in_(relevant_ids),
+                NormalizedSourceRecord.id.notin_(extracted_ids),
+            )
+        ) or 0
+    else:
+        unprocessed_passages = db.scalar(
+            select(func.count()).where(
+                NormalizedSourceRecord.id.notin_(extracted_ids)
+            )
+        ) or 0
 
     pending_review = db.scalar(
         select(func.count()).where(ReviewQueueItem.status == ReviewStatus.pending)
@@ -170,6 +215,7 @@ def _get_pipeline_stats(db: Session) -> dict:
         "tracker_count": tracker_count,
         "pending_ingestion": pending_ingestion,
         "total_passages": total_passages,
+        "total_passages_raw": total_passages_raw,
         "unprocessed_passages": unprocessed_passages,
         "total_extractions": total_extractions,
         "approved_extractions": approved_extractions,

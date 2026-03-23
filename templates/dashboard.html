@@ -9,7 +9,7 @@
 <!-- ================================================================== -->
 <section class="section" id="progress-section"
          hx-get="/dashboard/api/progress"
-         hx-trigger="load, every 10s"
+         hx-trigger="load, every 10s, pipelineReset from:body"
          hx-swap="innerHTML">
   <div class="progress-loading">
     <span class="spinner"></span> Loading progress...
@@ -184,8 +184,8 @@
           {% if stats.pending_ingestion > 0 %}
           <span style="color: var(--warning); font-weight: 600;">{{ stats.pending_ingestion }} documents pending fetch.</span>
           {% endif %}
-          {% if stats.total_passages > 0 %}
-          <strong>{{ stats.total_passages }}</strong> passages in database.
+          {% if stats.total_passages_raw > 0 %}
+          <strong>{{ stats.total_passages_raw }}</strong> passages in database.
           {% endif %}
         </div>
 

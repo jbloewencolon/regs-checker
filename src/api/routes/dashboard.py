@@ -364,7 +364,6 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             """
 
     # ETA
-    eta_text = "Calculating..."
     if progress.estimated_remaining_seconds is not None:
         if progress.estimated_remaining_seconds == 0:
             eta_text = "Complete"
@@ -372,6 +371,12 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             hrs = progress.estimated_remaining_seconds // 3600
             mins = (progress.estimated_remaining_seconds % 3600) // 60
             eta_text = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m remaining"
+    elif progress.overall_percent >= 100:
+        eta_text = "Complete"
+    elif progress.completed_items == 0:
+        eta_text = "Not started"
+    else:
+        eta_text = "Calculating..."
 
     rate_text = ""
     if progress.items_per_minute:
