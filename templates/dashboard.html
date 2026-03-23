@@ -705,6 +705,26 @@ document.querySelectorAll('.law-tracker-details').forEach(function(d) {
     if (chevron) chevron.style.transform = d.open ? 'rotate(90deg)' : '';
   });
 });
+
+/* Auto-dismiss result panels after 8 seconds; click to dismiss immediately */
+document.body.addEventListener('htmx:afterSettle', function(evt) {
+  var panels = evt.target.querySelectorAll
+    ? evt.target.querySelectorAll('.result-panel')
+    : [];
+  if (evt.target.classList && evt.target.classList.contains('result-panel')) {
+    panels = [evt.target];
+  }
+  panels.forEach(function(panel) {
+    panel.style.cursor = 'pointer';
+    panel.title = 'Click to dismiss';
+    panel.addEventListener('click', function() { panel.remove(); });
+    setTimeout(function() {
+      panel.style.transition = 'opacity 0.5s';
+      panel.style.opacity = '0';
+      setTimeout(function() { panel.remove(); }, 500);
+    }, 8000);
+  });
+});
 </script>
 
 {% endblock %}
