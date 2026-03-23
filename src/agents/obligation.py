@@ -3,6 +3,12 @@
 Co-extracts obligations, their timelines, and enforcement mechanisms in a
 single pass because these are structurally co-located in legislative text
 (Recommendation #1).
+
+Uses GPT (openai/gpt-oss-20b) because obligation extraction is a structured
+extraction task — find "shall"/"must"/"prohibited" patterns, copy verbatim text,
+fill the schema.  Reasoning models (Qwen3, DeepSeek-R1) waste thousands of
+tokens on chain-of-thought before producing JSON, risking truncation on the
+most token-heavy output schema in the pipeline.
 """
 
 from pydantic import BaseModel
@@ -13,7 +19,7 @@ from src.schemas.extraction import ObligationPayload
 
 class ObligationAgent(BaseExtractionAgent):
     agent_name = "obligation"
-    model_override = "qwen/qwen3.5-9b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in regulatory obligations.

@@ -5,10 +5,13 @@ Kept separate because it's genuinely different from extraction — it's a
 meta-analysis task that evaluates the quality and clarity of the legal text
 itself (Recommendation #1).
 
-Uses GPT (openai/gpt-oss-20b) because reasoning models like DeepSeek-R1
-spend thousands of tokens on chain-of-thought analysis, often exceeding
-the output budget before producing any JSON.  GPT answers in 1-2 seconds
-with clean, structured output.
+Uses Qwen 3.5 (qwen/qwen3.5-9b) because ambiguity detection is the one
+agent task that genuinely benefits from reasoning.  Judging whether language
+is "vague" vs. acceptably general, spotting contradictions between provisions,
+and evaluating scope clarity all require deliberation — not just pattern
+matching.  The thinking-token overhead is justified here because the output
+schema is simpler than obligation/compliance and the task quality improves
+with chain-of-thought analysis.
 """
 
 from pydantic import BaseModel
@@ -19,7 +22,7 @@ from src.schemas.extraction import AmbiguityPayload
 
 class AmbiguityAgent(BaseExtractionAgent):
     agent_name = "ambiguity"
-    model_override = "openai/gpt-oss-20b"
+    model_override = "qwen/qwen3.5-9b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal analysis agent specializing in identifying ambiguity in legislative text.
