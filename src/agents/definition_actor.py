@@ -37,7 +37,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage defines MULTIPLE terms, include one object per definition.
 
 If the passage contains NO extractable definition, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no definitions were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage

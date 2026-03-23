@@ -56,7 +56,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage contains MULTIPLE compliance mechanisms, include one object per mechanism.
 
 If the passage contains NO extractable compliance mechanisms, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no compliance mechanisms were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage

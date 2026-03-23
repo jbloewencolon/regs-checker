@@ -38,7 +38,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage contains MULTIPLE boundary conditions, include one object per condition.
 
 If the passage contains NO extractable thresholds or exceptions, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no thresholds or exceptions were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage

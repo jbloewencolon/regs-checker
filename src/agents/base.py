@@ -369,32 +369,32 @@ class BaseExtractionAgent(ABC):
         try:
             response = self._provider.call(**call_kwargs)
         except Exception as exc:
-            if self.model_override is not None:
-                fallback_model = self._provider.model_id
-                logger.warning(
-                    "extraction_model_fallback",
+            # Retry the SAME model once after a brief pause.  The previous
+            # fallback strategy tried a different model (local_extraction_model),
+            # but LM Studio can only hold one model in VRAM — so the fallback
+            # model was always unloaded, causing a cascade failure.  Retrying
+            # the same model is more reliable: the timeout was likely transient
+            # (GPU busy with another group's requests).
+            import time
+
+            logger.warning(
+                "extraction_retry_same_model",
+                agent=self.agent_name,
+                model=self.model_override or self._provider.model_id,
+                error=str(exc)[:300],
+            )
+            time.sleep(2)
+            try:
+                response = self._provider.call(**call_kwargs)
+            except Exception as retry_exc:
+                logger.error(
+                    "extraction_retry_failed",
                     agent=self.agent_name,
-                    failed_model=self.model_override,
-                    fallback_model=fallback_model,
-                    error=str(exc)[:300],
+                    model=self.model_override or self._provider.model_id,
+                    original_error=str(exc)[:200],
+                    retry_error=str(retry_exc)[:200],
                 )
-                call_kwargs["model_override"] = None
-                call_kwargs["reasoning_effort"] = None
-                try:
-                    response = self._provider.call(**call_kwargs)
-                except Exception as fallback_exc:
-                    logger.error(
-                        "extraction_fallback_also_failed",
-                        agent=self.agent_name,
-                        failed_model=self.model_override,
-                        fallback_model=fallback_model,
-                        original_error=str(exc)[:200],
-                        fallback_error=str(fallback_exc)[:200],
-                    )
-                    # Raise the original error — more informative
-                    raise exc from fallback_exc
-            else:
-                raise
+                raise exc from retry_exc
 
         logger.debug(
             "llm_raw_response",

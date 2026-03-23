@@ -54,7 +54,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage contains MULTIPLE ambiguities, include one object per ambiguity.
 
 If the passage contains NO identifiable ambiguity, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no ambiguity was found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage

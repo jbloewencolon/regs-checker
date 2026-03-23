@@ -54,7 +54,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage grants MULTIPLE rights, include one object per right.
 
 If the passage contains NO individual rights or protections, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no rights or protections were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
