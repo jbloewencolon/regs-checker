@@ -62,7 +62,17 @@ CRITICAL RULES:
 - Distinguish rights (what individuals get) from obligations (what entities must do)
 - A notice OBLIGATION on a company implies a notice RIGHT for the individual — extract the right
 - Capture remedies and recourse mechanisms when specified
-- Preserve exact legal language — do not paraphrase"""
+- Preserve exact legal language — do not paraphrase
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+
+EXAMPLE (for a passage containing "A consumer has the right to opt out of automated decision-making."):
+  CORRECT: {"field_name": "text", "text": "A consumer has the right to opt out of automated decision-making."}
+  WRONG:   {"field_name": "text", "text": "Consumers have the right to opt out of automated decision-making."}
+The second is wrong because it changes "A consumer" to "Consumers"."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Analyze the following legislative passage and extract all individual rights

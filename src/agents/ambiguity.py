@@ -60,7 +60,17 @@ CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than over-flagging clear language
 - Severity should reflect actual compliance risk, not stylistic preference
-- Not all general terms are ambiguous — consider legislative context"""
+- Not all general terms are ambiguous — consider legislative context
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- The ambiguous_text field must ALSO be an exact verbatim quote from the passage
+
+EXAMPLE (for a passage containing "the system shall use reasonable measures to prevent harm"):
+  CORRECT evidence_span: {"field_name": "ambiguous_text", "text": "the system shall use reasonable measures to prevent harm"}
+  WRONG:  {"field_name": "ambiguous_text", "text": "reasonable measures to prevent harm"}
+The second is wrong because it drops the beginning of the phrase."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Analyze the following legislative passage for ambiguity, vagueness,

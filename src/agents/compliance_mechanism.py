@@ -64,7 +64,17 @@ CRITICAL RULES:
 - Distinguish compliance MECHANISMS (how to comply) from general OBLIGATIONS (what to do)
 - Capture specific parameters: frequency, assessor, scope, recipients, retention periods
 - "Shall conduct an impact assessment" is a compliance mechanism; "shall not discriminate" is an obligation
-- Preserve exact legal language — do not paraphrase"""
+- Preserve exact legal language — do not paraphrase
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+
+EXAMPLE (for a passage containing "The developer shall complete an algorithmic impact assessment prior to deployment."):
+  CORRECT: {"field_name": "text", "text": "The developer shall complete an algorithmic impact assessment prior to deployment."}
+  WRONG:   {"field_name": "text", "text": "Developers must complete algorithmic impact assessments before deployment."}
+The second is wrong because it paraphrases instead of quoting verbatim."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all compliance mechanisms from the following legislative passage.

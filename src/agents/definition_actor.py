@@ -43,7 +43,17 @@ CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than hallucinating definitions
 - Preserve the exact legal language of definitions — do not paraphrase
-- Capture the full definition, not a summary"""
+- Capture the full definition, not a summary
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+
+EXAMPLE (for a passage containing "'Artificial intelligence system' means a machine-based system that generates outputs."):
+  CORRECT: {"field_name": "text", "text": "'Artificial intelligence system' means a machine-based system that generates outputs."}
+  WRONG:   {"field_name": "text", "text": "Artificial intelligence system: a machine-based system that generates outputs."}
+The second is wrong because it reformats the definition instead of quoting verbatim."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all definitions, actor role mappings, and framework references from

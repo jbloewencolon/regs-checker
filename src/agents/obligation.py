@@ -53,7 +53,20 @@ CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than hallucinating obligations
 - Extract ALL obligations if the passage contains multiple
-- Preserve legal precision — do not paraphrase legal terms of art"""
+- Preserve legal precision — do not paraphrase legal terms of art
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+- Include enough context for the span to be meaningful (usually 10-40 words)
+- If the relevant text spans multiple lines, include it exactly as written
+
+EXAMPLE (for a passage containing "The deployer shall, within 90 days of deployment, complete an impact assessment."):
+  CORRECT: {"field_name": "action", "text": "The deployer shall, within 90 days of deployment, complete an impact assessment."}
+  WRONG:   {"field_name": "action", "text": "The deployer shall complete an impact assessment within 90 days of deployment."}
+  WRONG:   {"field_name": "action", "text": "deployer shall, within 90 days of deployment, complete an impact assessment"}
+The second is wrong because it reorders words. The third is wrong because it drops "The" at the start."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all regulatory obligations from the following legislative passage.

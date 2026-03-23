@@ -21,17 +21,28 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enums
+    # Create enums first, then reference them in the table with
+    # create_type=False so SQLAlchemy doesn't try to create them again.
     triage_decision = sa.Enum(
         "relevant", "not_relevant", "uncertain",
         name="triagedecision",
+        create_type=False,
     )
     triage_method = sa.Enum(
         "keyword", "orrick_cross_check", "llm_generic", "quality_fail", "passthrough",
         name="triagemethod",
+        create_type=False,
     )
-    triage_decision.create(op.get_bind(), checkfirst=True)
-    triage_method.create(op.get_bind(), checkfirst=True)
+
+    # Explicitly create the types (idempotent via checkfirst)
+    sa.Enum(
+        "relevant", "not_relevant", "uncertain",
+        name="triagedecision",
+    ).create(op.get_bind(), checkfirst=True)
+    sa.Enum(
+        "keyword", "orrick_cross_check", "llm_generic", "quality_fail", "passthrough",
+        name="triagemethod",
+    ).create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "section_triage_results",
