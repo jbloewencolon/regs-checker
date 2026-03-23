@@ -102,10 +102,11 @@ def _get_pipeline_stats(db: Session) -> dict:
         select(func.count()).select_from(Extraction)
     ) or 0
 
-    # Compute triage-aware passage counts: only relevant + uncertain passages
-    # are candidates for extraction. If triage hasn't run, fall back to all.
+    # Compute triage-aware passage counts.
+    # Only relevant + uncertain passages are candidates for extraction.
     triage_count = 0
     triage_relevant = 0
+    triage_skipped = 0
     try:
         triage_count = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
@@ -119,20 +120,28 @@ def _get_pipeline_stats(db: Session) -> dict:
                     ])
                 )
             ) or 0
+            triage_skipped = triage_count - triage_relevant
     except Exception:
         db.rollback()
         triage_count = 0
 
+    # total_passages = passages eligible for extraction.
+    # If triage has run, only count passages that passed triage (relevant/uncertain)
+    # plus any that haven't been triaged yet.  Do NOT count triage-skipped passages.
+    untriaged = max(total_passages_raw - triage_count, 0)
     if triage_count > 0:
-        untriaged = total_passages_raw - triage_count
         total_passages = triage_relevant + untriaged
     else:
         total_passages = total_passages_raw
 
-    # Unprocessed passages (relevant/uncertain with no extractions yet)
+    # Passages that have at least one extraction
     extracted_ids = select(Extraction.source_record_id).distinct()
+    passages_with_extractions = db.scalar(
+        select(func.count(Extraction.source_record_id.distinct()))
+    ) or 0
+
+    # Unprocessed = eligible for extraction but no extractions yet
     if triage_count > 0:
-        # Only count passages that passed triage and still lack extractions
         relevant_ids = (
             select(SectionTriageResult.source_record_id)
             .where(SectionTriageResult.decision.in_([
@@ -217,6 +226,9 @@ def _get_pipeline_stats(db: Session) -> dict:
         "total_passages": total_passages,
         "total_passages_raw": total_passages_raw,
         "unprocessed_passages": unprocessed_passages,
+        "passages_with_extractions": passages_with_extractions,
+        "triage_skipped": triage_skipped,
+        "untriaged": untriaged,
         "total_extractions": total_extractions,
         "approved_extractions": approved_extractions,
         "pending_review": pending_review,

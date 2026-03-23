@@ -303,11 +303,13 @@
       <div class="step-body">
         <div class="step-description">
           Run extraction agents on unprocessed passages. Choose a method below.
-          {% set extracted_passages = stats.total_passages - stats.unprocessed_passages %}
           <div style="margin-top:4px;font-size:13px;">
-            <strong>{{ extracted_passages }}</strong> / {{ stats.total_passages }} passages extracted{% if stats.unprocessed_passages > 0 %},
+            <strong>{{ stats.passages_with_extractions }}</strong> / {{ stats.total_passages }} passages extracted{% if stats.unprocessed_passages > 0 %},
             <strong>{{ stats.unprocessed_passages }}</strong> pending{% endif %}.
             <strong>{{ stats.total_extractions }}</strong> extractions total.
+            {% if stats.triage_skipped > 0 %}
+            <span style="color: var(--text-muted);">({{ stats.triage_skipped }} skipped by triage{% if stats.untriaged > 0 %}, {{ stats.untriaged }} not yet triaged{% endif %})</span>
+            {% endif %}
           </div>
         </div>
 
@@ -595,10 +597,9 @@
       <div class="step-body">
         <div class="step-description">
           Approve/reject extractions. Focus on Tier C and D items.
-          {% set extracted_passages = stats.total_passages - stats.unprocessed_passages %}
           <div style="margin-top:4px;font-size:13px;">
             <strong>{{ stats.approved_extractions }}</strong> / {{ stats.total_extractions }} extractions approved.
-            <strong>{{ extracted_passages }}</strong> / {{ stats.total_passages }} passages extracted.
+            <strong>{{ stats.passages_with_extractions }}</strong> / {{ stats.total_passages }} passages extracted.
           </div>
         </div>
         {% if stats.pending_review > 0 %}
