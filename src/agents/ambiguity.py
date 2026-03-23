@@ -5,15 +5,8 @@ Kept separate because it's genuinely different from extraction — it's a
 meta-analysis task that evaluates the quality and clarity of the legal text
 itself (Recommendation #1).
 
-Uses DeepSeek-R1 (deepseek/deepseek-r1-0528-qwen3-8b) because ambiguity
-detection is the one agent task that genuinely benefits from reasoning.
-Judging whether language is "vague" vs. acceptably general, spotting
-contradictions between provisions, and evaluating scope clarity all require
-deliberation — not just pattern matching.  DeepSeek-R1 outperforms Haiku on
-reasoning benchmarks, making it the strongest open-source option for this
-meta-analysis task.  The thinking-token overhead is justified here because
-the output schema is simpler than obligation/compliance and the task quality
-improves with chain-of-thought analysis.
+Uses openai/gpt-oss-20b (same as all other agents) to avoid VRAM model
+swapping in LM Studio, which adds seconds of latency per passage.
 """
 
 from pydantic import BaseModel
@@ -24,7 +17,7 @@ from src.schemas.extraction import AmbiguityPayload
 
 class AmbiguityAgent(BaseExtractionAgent):
     agent_name = "ambiguity"
-    model_override = "deepseek/deepseek-r1-0528-qwen3-8b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal analysis agent specializing in identifying ambiguity in legislative text.

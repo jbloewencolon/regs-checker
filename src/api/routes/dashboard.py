@@ -218,17 +218,27 @@ def triage_page(
     """Section triage review page — accordion by state with passage details."""
     from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
 
-    # Get totals
+    # Get totals — gracefully handle missing/empty table
     totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
-    for row in db.execute(
-        text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
-    ).all():
-        decision, method, cnt = row
-        totals["total"] += cnt
-        if method == "quality_fail":
-            totals["quality_fail"] += cnt
-        elif decision in totals:
-            totals[decision] += cnt
+    try:
+        for row in db.execute(
+            text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
+        ).all():
+            decision, method, cnt = row
+            totals["total"] += cnt
+            if method == "quality_fail":
+                totals["quality_fail"] += cnt
+            elif decision in totals:
+                totals[decision] += cnt
+    except Exception:
+        db.rollback()
+
+    if totals["total"] == 0:
+        return _render(request, "triage.html", {
+            "states": [],
+            "totals": totals,
+            "filter": filter,
+        })
 
     # Build query for triage results joined with source records and documents
     query = (
