@@ -23,6 +23,8 @@ import structlog
 
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.config import settings
+from sqlalchemy import select
+
 from src.db.models import (
     IngestionJob,
     IngestionStatus,
@@ -342,8 +344,6 @@ def run_pending_ingestion(
     Returns:
         Summary dict with counts of completed, failed, total_passages.
     """
-    from sqlalchemy import select
-
     query = select(IngestionJob).where(
         IngestionJob.status.in_([
             IngestionStatus.pending,
