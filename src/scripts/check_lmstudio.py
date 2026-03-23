@@ -68,10 +68,10 @@ def main():
     print()
     for model_id in model_ids:
         lower = model_id.lower()
-        if "qwen" in lower:
+        if "deepseek" in lower:
             print(f'  Ambiguity agent (reasoning): model_override = "{model_id}"')
-        elif "deepseek" in lower:
-            print(f'  (DeepSeek available but not assigned — reasoning overhead)')
+        elif "qwen" in lower:
+            print(f'  (Qwen available but not assigned — no thinking mode toggle)')
         elif "gpt" in lower or "oss" in lower:
             print(f'  Obligation agent:            model_override = "{model_id}"')
             print(f'  Compliance Mechanism agent:   model_override = "{model_id}"')
