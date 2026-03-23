@@ -254,6 +254,7 @@ class TriageResult:
     matched_keywords: list[str] = field(default_factory=list)
     orrick_terms_checked: list[str] = field(default_factory=list)
     llm_reasoning: str | None = None
+    ai_signals: str | None = None
     pdf_quality_score: float | None = None
     quality_flags: list[str] = field(default_factory=list)
     model_id: str | None = None
@@ -312,7 +313,12 @@ Consider: obligations, definitions, rights, thresholds, exceptions, enforcement,
 compliance mechanisms, or terms that would apply to AI systems/developers/deployers.
 
 Respond with EXACTLY one JSON object:
-{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation"}}
+{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation", "ai_signals": "list the specific words, phrases, or concepts in the passage that suggest AI relevance (or explain why none were found)"}}
+
+The "ai_signals" field is critical — it must explain WHAT in the passage made you
+think it is (or is not) related to AI regulation. Quote specific words or phrases
+from the passage. If the connection is indirect (e.g. a general technology provision
+that COULD apply to AI), say so explicitly.
 
 Be CONSERVATIVE — when in doubt, mark as relevant. Missing an obligation is
 worse than sending a non-relevant section to extraction."""
@@ -335,7 +341,12 @@ Consider: obligations, definitions, rights, thresholds, exceptions, enforcement,
 compliance mechanisms, or terms that would apply to AI systems.
 
 Respond with EXACTLY one JSON object:
-{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation"}}
+{{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation", "ai_signals": "list the specific words, phrases, or concepts in the passage that suggest AI relevance (or explain why none were found)"}}
+
+The "ai_signals" field is critical — it must explain WHAT in the passage made you
+think it is (or is not) related to AI regulation. Quote specific words or phrases
+from the passage. If the connection is indirect (e.g. a general technology provision
+that COULD apply to AI), say so explicitly.
 
 Be CONSERVATIVE — when in doubt, mark as relevant."""
 
@@ -430,6 +441,7 @@ def triage_passage(
             is_relevant = result.get("relevant", True)  # Default to relevant (conservative)
             conf = float(result.get("confidence", 0.5))
             reasoning = result.get("reasoning", "")
+            ai_signals = result.get("ai_signals", "")
 
             if is_relevant:
                 decision = "relevant"
@@ -445,6 +457,7 @@ def triage_passage(
                 confidence=conf,
                 orrick_terms_checked=sorted(orrick_terms)[:20],
                 llm_reasoning=reasoning,
+                ai_signals=ai_signals,
                 pdf_quality_score=quality_score,
                 quality_flags=quality_flags,
                 model_id=llm_provider.model_id if hasattr(llm_provider, "model_id") else None,

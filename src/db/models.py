@@ -569,6 +569,7 @@ class SectionTriageResult(Base):
     matched_keywords = Column(JSONB, default=list)    # ["artificial intelligence", "deployer"]
     orrick_terms_checked = Column(JSONB, default=list)  # terms extracted from Orrick metadata
     llm_reasoning = Column(Text)                       # LLM explanation (if LLM was used)
+    ai_signals = Column(Text)                           # Why the passage might be AI-related
 
     # PDF quality metrics for this passage
     pdf_quality_score = Column(Float)  # 0.0-1.0; None if not a PDF

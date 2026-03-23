@@ -121,6 +121,11 @@
                   <details class="triage-passage-expand">
                     <summary>{{ p.text_preview }}</summary>
                     <pre class="triage-full-text">{{ p.text_full }}</pre>
+                    {% if p.ai_signals %}
+                    <div class="triage-reasoning triage-ai-signals">
+                      <strong>Why AI-related?</strong> {{ p.ai_signals }}
+                    </div>
+                    {% endif %}
                     {% if p.llm_reasoning %}
                     <div class="triage-reasoning">
                       <strong>LLM reasoning:</strong> {{ p.llm_reasoning }}

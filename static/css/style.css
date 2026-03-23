@@ -1857,6 +1857,11 @@ select.edit-field-input {
   border-radius: 4px;
 }
 
+.triage-ai-signals {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
 .triage-quality {
   font-weight: 600;
   font-size: 11px;

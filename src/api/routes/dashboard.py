@@ -233,6 +233,7 @@ def triage_page(
             "matched_keywords": triage.matched_keywords or [],
             "orrick_terms_checked": triage.orrick_terms_checked or [],
             "llm_reasoning": triage.llm_reasoning,
+            "ai_signals": triage.ai_signals,
             "pdf_quality_score": triage.pdf_quality_score,
             "quality_flags": triage.quality_flags or [],
             "confidence": triage.confidence or 0.0,
