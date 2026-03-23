@@ -849,6 +849,67 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
   white-space: pre-wrap;
 }
 
+/* Evidence highlighting in source passage */
+.evidence-highlight {
+  background: #fef08a;
+  border-bottom: 2px solid #eab308;
+  padding: 1px 2px;
+  border-radius: 2px;
+  cursor: help;
+}
+
+/* Model reasoning panel */
+.model-reasoning {
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 10px 14px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-left: 3px solid #7c3aed;
+  border-radius: var(--radius-sm);
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: #374151;
+}
+
+/* Confidence explanation bars */
+.confidence-explain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.confidence-explain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.conf-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 170px;
+  flex-shrink: 0;
+}
+.conf-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.conf-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.conf-pct {
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 36px;
+  text-align: right;
+  color: var(--text);
+}
+
 .doc-cell {
   font-size: 12px;
   color: var(--text-muted);

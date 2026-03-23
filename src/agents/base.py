@@ -44,6 +44,7 @@ class ExtractionResult:
     model_id: str
     template_version: str | None
     truncated: bool = False  # True when finish_reason=length (output cut off)
+    model_reasoning: str | None = None  # Chain-of-thought from <think> blocks
 
 
 class BaseExtractionAgent(ABC):
@@ -150,6 +151,7 @@ class BaseExtractionAgent(ABC):
                     raw_output_preview=raw_output[:300],
                 )
                 cleaned = self._strip_code_fences(raw_output)
+                model_reasoning = self._extract_think_blocks(cleaned)
                 cleaned = self._strip_think_blocks(cleaned)
                 cleaned = self._repair_json(cleaned)
                 parsed = json.loads(cleaned)
@@ -167,6 +169,7 @@ class BaseExtractionAgent(ABC):
                         model_id=response_model_id,
                         template_version=template_version,
                         truncated=was_truncated,
+                        model_reasoning=model_reasoning,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -207,6 +210,7 @@ class BaseExtractionAgent(ABC):
                     model_id=response_model_id,
                     template_version=template_version,
                     truncated=was_truncated,
+                    model_reasoning=model_reasoning,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
@@ -233,6 +237,17 @@ class BaseExtractionAgent(ABC):
             # Strip closing ```
             text = text.rsplit("```", 1)[0].strip()
         return text
+
+    @staticmethod
+    def _extract_think_blocks(text: str) -> str | None:
+        """Extract reasoning text from <think>...</think> blocks.
+
+        Returns the concatenated reasoning content, or None if no blocks found.
+        """
+        blocks = re.findall(r"<think>(.*?)</think>", text, flags=re.DOTALL)
+        if not blocks:
+            return None
+        return "\n".join(b.strip() for b in blocks if b.strip()) or None
 
     @staticmethod
     def _strip_think_blocks(text: str) -> str:

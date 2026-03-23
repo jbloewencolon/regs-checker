@@ -92,6 +92,9 @@ def review_page(
             breakdown = e.metadata_.get("confidence_breakdown")
 
         truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
+        model_reasoning = None
+        if e and e.metadata_:
+            model_reasoning = e.metadata_.get("model_reasoning")
 
         items.append({
             "queue_id": qi.id,
@@ -103,6 +106,7 @@ def review_page(
             "confidence_breakdown": breakdown,
             "model_id": e.model_id if e else None,
             "evidence_spans": e.evidence_spans if e else [],
+            "model_reasoning": model_reasoning,
             "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,

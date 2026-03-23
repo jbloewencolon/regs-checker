@@ -189,7 +189,7 @@
               <!-- Evidence Spans -->
               {% if item.evidence_spans %}
               <div class="detail-section">
-                <h4>Evidence Spans</h4>
+                <h4>Evidence Spans ({{ item.evidence_spans | length }})</h4>
                 {% for span in item.evidence_spans %}
                 <div class="evidence-span {% if span.get('verified') %}verified{% else %}unverified{% endif %}">
                   <div class="evidence-header">
@@ -209,11 +209,95 @@
               </div>
               {% endif %}
 
-              <!-- Source Passage -->
+              <!-- Model Reasoning -->
+              {% if item.model_reasoning %}
+              <div class="detail-section">
+                <h4>Model Reasoning</h4>
+                <div class="model-reasoning">{{ item.model_reasoning }}</div>
+              </div>
+              {% endif %}
+
+              <!-- Confidence Explanation -->
+              {% if item.confidence_breakdown %}
+              <div class="detail-section">
+                <h4>Why This Score?</h4>
+                <div class="confidence-explain">
+                  {% set bd = item.confidence_breakdown %}
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Schema Validity (15%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('schema_validity', 0) * 100) | round }}%; background:#2563eb;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('schema_validity', 0) * 100) | round }}%</span>
+                  </div>
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Evidence Grounding (25%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('evidence_grounding', 0) * 100) | round }}%; background:#16a34a;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('evidence_grounding', 0) * 100) | round }}%</span>
+                  </div>
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Completeness (15%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('completeness', 0) * 100) | round }}%; background:#7c3aed;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('completeness', 0) * 100) | round }}%</span>
+                  </div>
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Source Quality (10%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('source_quality', 0) * 100) | round }}%; background:#0891b2;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('source_quality', 0) * 100) | round }}%</span>
+                  </div>
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Orrick Alignment (10%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('orrick_alignment', 0) * 100) | round }}%; background:#ea580c;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('orrick_alignment', 0) * 100) | round }}%</span>
+                  </div>
+                  {% if bd.get('cross_validation', 0) > 0 %}
+                  <div class="confidence-explain-row">
+                    <span class="conf-label">Cross-Validation (25%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('cross_validation', 0) * 100) | round }}%; background:#be185d;"></div></div>
+                    <span class="conf-pct">{{ (bd.get('cross_validation', 0) * 100) | round }}%</span>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Source Passage (with evidence highlighting) -->
               {% if item.source_text %}
               <div class="detail-section">
                 <h4>Source Passage</h4>
-                <div class="source-passage">{{ item.source_text }}</div>
+                <div class="source-passage" id="source-{{ item.queue_id }}">{{ item.source_text }}</div>
+                {% if item.evidence_spans %}
+                <script>
+                (function() {
+                  var el = document.getElementById('source-{{ item.queue_id }}');
+                  if (!el) return;
+                  var text = el.textContent;
+                  var spans = {{ item.evidence_spans | tojson }};
+                  // Sort spans by char_start descending so replacements don't shift offsets
+                  var charSpans = spans.filter(function(s) { return s.char_start != null && s.char_end != null; });
+                  charSpans.sort(function(a, b) { return b.char_start - a.char_start; });
+                  if (charSpans.length > 0) {
+                    // Use character offsets for precise highlighting
+                    for (var i = 0; i < charSpans.length; i++) {
+                      var s = charSpans[i];
+                      var before = text.substring(0, s.char_start);
+                      var match = text.substring(s.char_start, s.char_end);
+                      var after = text.substring(s.char_end);
+                      text = before + '<mark class="evidence-highlight" title="' + (s.field_name || 'evidence') + '">' + match + '</mark>' + after;
+                    }
+                    el.innerHTML = text;
+                  } else {
+                    // Fallback: highlight by text match
+                    var textSpans = spans.filter(function(s) { return s.text && s.text.length > 10; });
+                    var html = el.textContent;
+                    for (var i = 0; i < textSpans.length; i++) {
+                      var needle = textSpans[i].text;
+                      var escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                      html = html.replace(new RegExp(escaped, 'i'), '<mark class="evidence-highlight" title="' + (textSpans[i].field_name || 'evidence') + '">$&</mark>');
+                    }
+                    el.innerHTML = html;
+                  }
+                })();
+                </script>
+                {% endif %}
               </div>
               {% endif %}
             </div>

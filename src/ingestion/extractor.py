@@ -781,6 +781,29 @@ def extract_single_record(
             for item in result.extractions:
                 try:
                     resolved_type = _discriminate_extraction_type(name, item)
+
+                    # --- Payload-level deduplication ---
+                    # Strip internal meta keys before comparing payloads
+                    payload_for_compare = {
+                        k: v for k, v in item.items()
+                        if not k.startswith("_") and k != "evidence_spans"
+                    }
+                    existing_dup = db.scalars(
+                        select(Extraction).where(
+                            Extraction.source_record_id == source_record.id,
+                            Extraction.extraction_type == resolved_type,
+                            Extraction.payload.contains(payload_for_compare),
+                        ).limit(1)
+                    ).first()
+                    if existing_dup:
+                        logger.debug(
+                            "extraction_payload_duplicate_skipped",
+                            agent=name,
+                            record_id=source_record.id,
+                            extraction_type=resolved_type.value,
+                        )
+                        continue
+
                     evidence = item.get("evidence_spans", [])
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
@@ -795,6 +818,16 @@ def extract_single_record(
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.model_reasoning:
+                        extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
+                    extraction_meta["confidence_breakdown"] = {
+                        "schema_validity": confidence.schema_validity,
+                        "evidence_grounding": confidence.evidence_grounding,
+                        "completeness": confidence.completeness,
+                        "source_quality": confidence.source_quality,
+                        "orrick_alignment": confidence.orrick_alignment,
+                        "cross_validation": confidence.cross_validation,
+                    }
 
                     extraction = Extraction(
                         source_record_id=source_record.id,
