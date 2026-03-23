@@ -15,8 +15,11 @@
     to review individual passage decisions.
   </p>
 
-  <!-- Summary stats -->
-  <div class="triage-summary">
+  <!-- Summary stats (auto-refresh while triage is running) -->
+  <div class="triage-summary"
+       hx-get="/dashboard/api/triage-stats"
+       hx-trigger="every 5s"
+       hx-swap="outerHTML">
     <div class="triage-stat">
       <span class="triage-stat-value">{{ totals.relevant }}</span>
       <span class="triage-stat-label">Relevant</span>
@@ -41,27 +44,27 @@
 
   <!-- Filter tabs -->
   <div class="tabs">
-    <button class="tab {% if filter == 'all' %}active{% endif %}"
-            hx-get="/dashboard/triage?filter=all" hx-target="main" hx-push-url="true">
+    <a class="tab {% if filter == 'all' %}active{% endif %}"
+       href="/dashboard/triage?filter=all">
       All <span class="tab-count">{{ totals.total }}</span>
-    </button>
-    <button class="tab {% if filter == 'relevant' %}active{% endif %}"
-            hx-get="/dashboard/triage?filter=relevant" hx-target="main" hx-push-url="true">
+    </a>
+    <a class="tab {% if filter == 'relevant' %}active{% endif %}"
+       href="/dashboard/triage?filter=relevant">
       Relevant <span class="tab-count">{{ totals.relevant }}</span>
-    </button>
-    <button class="tab {% if filter == 'not_relevant' %}active{% endif %}"
-            hx-get="/dashboard/triage?filter=not_relevant" hx-target="main" hx-push-url="true">
+    </a>
+    <a class="tab {% if filter == 'not_relevant' %}active{% endif %}"
+       href="/dashboard/triage?filter=not_relevant">
       Skipped <span class="tab-count">{{ totals.not_relevant }}</span>
-    </button>
-    <button class="tab {% if filter == 'uncertain' %}active{% endif %}"
-            hx-get="/dashboard/triage?filter=uncertain" hx-target="main" hx-push-url="true">
+    </a>
+    <a class="tab {% if filter == 'uncertain' %}active{% endif %}"
+       href="/dashboard/triage?filter=uncertain">
       Uncertain <span class="tab-count">{{ totals.uncertain }}</span>
-    </button>
-    <button class="tab {% if filter == 'quality_fail' %}active{% endif %}"
-            hx-get="/dashboard/triage?filter=quality_fail" hx-target="main" hx-push-url="true"
-            style="{% if totals.quality_fail > 0 %}border-color: #fca5a5; color: #dc2626;{% endif %}">
+    </a>
+    <a class="tab {% if filter == 'quality_fail' %}active{% endif %}"
+       href="/dashboard/triage?filter=quality_fail"
+       style="{% if totals.quality_fail > 0 %}border-color: #fca5a5; color: #dc2626;{% endif %}">
       Quality Fail <span class="tab-count" {% if totals.quality_fail > 0 %}style="background: #fef2f2; color: #dc2626;"{% endif %}>{{ totals.quality_fail }}</span>
-    </button>
+    </a>
   </div>
 
   <!-- Accordion by state -->
@@ -101,14 +104,15 @@
                 <th style="width: 90px;">Keywords</th>
                 <th style="width: 60px;">Quality</th>
                 <th style="width: 50px;">Conf.</th>
+                <th style="width: 100px;">Override</th>
               </tr>
             </thead>
             <tbody>
               {% for p in doc.passages %}
               <tr class="triage-row-{{ p.decision }}">
-                <td>
+                <td id="triage-decision-{{ p.id }}">
                   <span class="triage-decision triage-decision-{{ p.decision }}">
-                    {{ p.decision }}
+                    {{ p.decision | replace("_", " ") }}
                   </span>
                 </td>
                 <td style="font-size: 11px; color: var(--text-muted);">{{ p.method }}</td>
@@ -144,6 +148,26 @@
                   {% endif %}
                 </td>
                 <td style="font-size: 12px;">{{ "%.0f" | format(p.confidence * 100) }}%</td>
+                <td>
+                  <span id="triage-override-{{ p.id }}">
+                  {% if p.decision in ('uncertain', 'quality_fail', 'not_relevant') %}
+                    <button class="btn-triage-override btn-triage-relevant"
+                            hx-post="/dashboard/api/triage/{{ p.id }}/override"
+                            hx-vals='{"decision": "relevant"}'
+                            hx-target="#triage-decision-{{ p.id }}"
+                            hx-swap="innerHTML"
+                            title="Mark as relevant for extraction">&#10003;</button>
+                  {% endif %}
+                  {% if p.decision in ('uncertain', 'quality_fail', 'relevant') %}
+                    <button class="btn-triage-override btn-triage-skip"
+                            hx-post="/dashboard/api/triage/{{ p.id }}/override"
+                            hx-vals='{"decision": "not_relevant"}'
+                            hx-target="#triage-decision-{{ p.id }}"
+                            hx-swap="innerHTML"
+                            title="Mark as not relevant (skip extraction)">&#10007;</button>
+                  {% endif %}
+                  </span>
+                </td>
               </tr>
               {% endfor %}
             </tbody>

@@ -529,6 +529,7 @@ class TriageMethod(str, enum.Enum):
     llm_generic = "llm_generic"      # LLM generic AI-relevance (no Orrick data)
     quality_fail = "quality_fail"    # PDF quality too low to triage
     passthrough = "passthrough"      # No triage run (e.g., all-agents fallback)
+    manual_review = "manual_review"  # Human override from triage UI
 
 
 class SectionTriageResult(Base):

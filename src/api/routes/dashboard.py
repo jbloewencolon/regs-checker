@@ -330,6 +330,7 @@ def triage_page(
             preview += "..."
 
         doc["passages"].append({
+            "id": triage.id,
             "decision": decision_val,
             "method": method_val,
             "section_path": section_path,
@@ -515,6 +516,54 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     </div>
     """
     return HTMLResponse(html)
+
+
+@router.get("/api/triage-stats")
+def triage_stats(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return live triage summary stats as an HTML fragment."""
+    from src.db.models import SectionTriageResult
+
+    totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
+    try:
+        for row in db.execute(
+            text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
+        ).all():
+            decision, method, cnt = row
+            totals["total"] += cnt
+            if method == "quality_fail":
+                totals["quality_fail"] += cnt
+            elif decision in totals:
+                totals[decision] += cnt
+    except Exception:
+        db.rollback()
+
+    return HTMLResponse(
+        f'<div class="triage-summary"'
+        f'     hx-get="/dashboard/api/triage-stats"'
+        f'     hx-trigger="every 5s"'
+        f'     hx-swap="outerHTML">'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value">{totals["relevant"]}</span>'
+        f'    <span class="triage-stat-label">Relevant</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-uncertain">{totals["uncertain"]}</span>'
+        f'    <span class="triage-stat-label">Uncertain</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-skipped">{totals["not_relevant"]}</span>'
+        f'    <span class="triage-stat-label">Skipped</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-quality-fail">{totals["quality_fail"]}</span>'
+        f'    <span class="triage-stat-label">Quality Fail</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value" style="color: var(--text-muted);">{totals["total"]}</span>'
+        f'    <span class="triage-stat-label">Total Passages</span>'
+        f'  </div>'
+        f'</div>'
+    )
 
 
 @router.get("/api/pipeline-tracker")
@@ -1242,13 +1291,35 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+_triage_progress: dict | None = None
+_triage_lock = threading.Lock()
+
+
 @router.post("/api/run/triage")
 def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Run section triage on all untriaged passages from completed documents."""
+    """Run section triage on all untriaged passages, streaming progress."""
+    global _triage_progress
+
+    if _triage_progress is not None and _triage_progress.get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info">Triage is already running. '
+            'Check the Triage tab for live results.</div>'
+        )
+
     try:
         from src.ingestion.extractor import run_triage
 
-        summary = run_triage(db)
+        _triage_progress = {"running": True, "relevant": 0, "uncertain": 0, "skipped": 0, "total": 0, "done": 0}
+
+        def _on_progress(msg: str):
+            pass  # Logged by run_triage internally
+
+        summary = run_triage(db, on_progress=_on_progress)
+
+        _triage_progress = {
+            "running": False,
+            **summary,
+        }
 
         if summary["total"] == 0:
             return HTMLResponse(
@@ -1261,10 +1332,12 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Triaged <strong>{summary["total"]}</strong> passages: '
             f'<span style="color:var(--success);">{summary["relevant"]} relevant</span>, '
             f'<span style="color:var(--warning);">{summary["uncertain"]} uncertain</span>, '
-            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>.'
+            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>. '
+            f'<a href="/dashboard/triage">View results &rarr;</a>'
             f'</div>'
         )
     except Exception as e:
+        _triage_progress = None
         db.rollback()
         return HTMLResponse(
             f'<div class="result-panel error">Triage error: {html_escape(str(e))}</div>'
@@ -1273,28 +1346,48 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.post("/api/run/triage/reset")
 def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Clear all triage results so passages can be re-triaged."""
-    from src.db.models import SectionTriageResult
+    """Clear uncertain and low-confidence triage results for re-triaging.
+
+    Only resets:
+    - 'uncertain' decisions (passthrough / unconfident LLM results)
+    - 'quality_fail' decisions
+    - Any result with confidence < 0.7
+
+    High-confidence 'relevant' and 'not_relevant' decisions are preserved,
+    as are manually overridden results.
+    """
+    from sqlalchemy import or_, delete
+    from src.db.models import SectionTriageResult, TriageDecision
     from src.ingestion.extractor import _ensure_triage_table
 
     try:
         _ensure_triage_table(db)
 
+        # Count what will be reset
+        reset_filter = or_(
+            SectionTriageResult.decision == TriageDecision.uncertain,
+            SectionTriageResult.confidence < 0.7,
+        )
+
         count = db.scalar(
-            select(func.count()).select_from(SectionTriageResult)
+            select(func.count()).where(reset_filter)
         ) or 0
 
         if count == 0:
             return HTMLResponse(
-                '<div class="result-panel info">No triage results to clear.</div>'
+                '<div class="result-panel info">No low-confidence or uncertain results to reset. '
+                'All triage decisions are confident.</div>'
             )
 
-        db.execute(SectionTriageResult.__table__.delete())
+        db.execute(
+            delete(SectionTriageResult).where(reset_filter)
+        )
         db.commit()
 
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Cleared <strong>{count}</strong> triage results. '
+            f'Cleared <strong>{count}</strong> uncertain/low-confidence triage results. '
+            f'High-confidence and manually reviewed results preserved. '
             f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
             f'</div>'
         )
@@ -1303,6 +1396,52 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(
             f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/triage/{triage_id}/override")
+def override_triage(
+    triage_id: int,
+    decision: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Manually override a triage decision."""
+    from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
+
+    valid = {"relevant", "not_relevant"}
+    if decision not in valid:
+        return HTMLResponse(
+            '<span class="triage-decision triage-decision-uncertain">invalid</span>'
+        )
+
+    triage = db.get(SectionTriageResult, triage_id)
+    if not triage:
+        return HTMLResponse('<span style="color:var(--danger);">not found</span>')
+
+    old_decision = triage.decision.value if hasattr(triage.decision, "value") else str(triage.decision)
+    triage.decision = TriageDecision(decision)
+    triage.confidence = 1.0
+    triage.llm_reasoning = f"Manual override: {old_decision} → {decision}"
+
+    # Add manual_review enum value to Postgres if needed, then set it
+    try:
+        triage.method = TriageMethod.manual_review
+    except Exception:
+        try:
+            db.execute(text(
+                "ALTER TYPE triagemethod ADD VALUE IF NOT EXISTS 'manual_review'"
+            ))
+            db.commit()
+            triage.method = TriageMethod.manual_review
+        except Exception:
+            pass  # Leave original method if enum update fails
+
+    db.commit()
+
+    label = "relevant" if decision == "relevant" else "not relevant"
+    css_class = f"triage-decision-{decision}"
+    return HTMLResponse(
+        f'<span class="triage-decision {css_class}">{label}</span>'
+    )
 
 
 @router.post("/api/retry-job/{job_id}")

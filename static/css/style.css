@@ -1472,6 +1472,28 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
   color: var(--warning);
 }
 
+.btn-triage-override {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-triage-override:hover { background: var(--bg); }
+.btn-triage-relevant { color: var(--success); }
+.btn-triage-relevant:hover { border-color: var(--success); background: var(--success-bg); }
+.btn-triage-skip { color: var(--text-muted); }
+.btn-triage-skip:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+
 .triage-passage-cell {
   max-width: 350px;
 }

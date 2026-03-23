@@ -135,7 +135,7 @@ def _ensure_triage_table(db, _log=None) -> None:
         """))
         conn.execute(text("""
             DO $$ BEGIN
-                CREATE TYPE triagemethod AS ENUM ('keyword', 'orrick_cross_check', 'llm_generic', 'quality_fail', 'passthrough');
+                CREATE TYPE triagemethod AS ENUM ('keyword', 'orrick_cross_check', 'llm_generic', 'quality_fail', 'passthrough', 'manual_review');
             EXCEPTION WHEN duplicate_object THEN NULL;
             END $$
         """))
