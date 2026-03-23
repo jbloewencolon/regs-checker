@@ -241,10 +241,19 @@ class LocalLLMProvider(BaseLLMProvider):
         if reasoning_effort is not None:
             payload["reasoning_effort"] = reasoning_effort
 
+        # Reasoning models (DeepSeek-R1, Qwen3) spend thousands of tokens
+        # on chain-of-thought before producing JSON — they need a longer
+        # timeout than normal models to avoid client disconnects.
+        is_reasoning_model = any(
+            tag in effective_model.lower()
+            for tag in ("deepseek-r1", "qwen3")
+        )
+        request_timeout = 300.0 if is_reasoning_model else 120.0
+
         response = httpx.post(
             f"{self._base_url}/v1/chat/completions",
             json=payload,
-            timeout=120.0,
+            timeout=request_timeout,
         )
         if response.status_code >= 400:
             # Include response body in error for diagnostics (LM Studio
