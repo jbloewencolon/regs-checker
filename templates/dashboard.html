@@ -181,6 +181,9 @@
       <div class="step-body">
         <div class="step-description">
           Downloads bill PDFs/HTML, extracts text, splits into passages.
+          {% if stats.pending_ingestion > 0 %}
+          <span style="color: var(--warning); font-weight: 600;">{{ stats.pending_ingestion }} documents pending fetch.</span>
+          {% endif %}
           {% if stats.total_passages > 0 %}
           <strong>{{ stats.total_passages }}</strong> passages in database.
           {% endif %}

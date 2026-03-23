@@ -368,11 +368,20 @@ def get_stats(db: Session = Depends(get_db)) -> HTMLResponse:
         else:
             eta_html = f'<span class="stat"><span class="stat-label">ETA</span> <span class="stat-value">{mins}m</span></span>'
 
+    pending_html = ""
+    if stats['pending_ingestion'] > 0:
+        pending_html = f"""
+    <span class="stat">
+      <span class="stat-value" style="color: var(--warning);">{stats['pending_ingestion']}</span>
+      <span class="stat-label">pending fetch</span>
+    </span>"""
+
     html = f"""
     <span class="stat">
       <span class="stat-label">Progress</span>
       <span class="stat-value">{progress.overall_percent}%</span>
     </span>
+    {pending_html}
     <span class="stat">
       <span class="stat-value">{stats['total_passages']}</span>
       <span class="stat-label">passages</span>

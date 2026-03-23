@@ -24,6 +24,8 @@ from src.db.models import (
     NormalizedSourceRecord,
     ReviewQueueItem,
     ReviewStatus,
+    SectionTriageResult,
+    TriageDecision,
 )
 
 
@@ -170,11 +172,36 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         in_progress=ingestion_in_progress,
     )
 
-    # Step 3: Extraction — total = passages from completed fetches.
-    # This number grows as more documents are fetched and parsed.
+    # Step 3: Extraction — total = passages that need extraction.
+    # If triage has run, only count passages marked relevant or uncertain
+    # (not_relevant passages are intentionally skipped).
+    # If triage hasn't run yet, fall back to total passages.
     total_passages = db.scalar(
         select(func.count()).select_from(NormalizedSourceRecord)
     ) or 0
+
+    triage_count = db.scalar(
+        select(func.count()).select_from(SectionTriageResult)
+    ) or 0
+
+    if triage_count > 0:
+        # Triage has run — only count passages that passed triage
+        triage_relevant = db.scalar(
+            select(func.count()).where(
+                SectionTriageResult.decision.in_([
+                    TriageDecision.relevant,
+                    TriageDecision.uncertain,
+                ])
+            )
+        ) or 0
+        # Passages not yet triaged should also be counted (pending triage)
+        untriaged = total_passages - triage_count
+        extraction_total = triage_relevant + untriaged
+        triage_skipped = triage_count - triage_relevant
+    else:
+        extraction_total = total_passages
+        triage_skipped = 0
+
     extracted_passage_ids = select(Extraction.source_record_id).distinct()
     extracted_passages = db.scalar(
         select(func.count()).select_from(extracted_passage_ids.subquery())
@@ -183,7 +210,7 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
     step345 = StepProgress(
         step=4,
         name="Extraction",
-        total=total_passages,
+        total=extraction_total,
         completed=extracted_passages,
     )
 
@@ -235,7 +262,7 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
     estimated_remaining_seconds = None
     items_per_minute = None
 
-    remaining_passages = total_passages - extracted_passages
+    remaining_passages = extraction_total - extracted_passages
     if remaining_passages > 0:
         # Check actual extraction rate from recent jobs
         rate = _get_extraction_rate(db)
