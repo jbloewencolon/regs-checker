@@ -470,6 +470,15 @@
                   hx-swap="innerHTML">
             Terminate
           </button>
+          <button class="btn btn-sm"
+                  style="margin-left: 8px;"
+                  hx-post="/dashboard/api/run/extract/reset"
+                  hx-target="#extract-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear ALL extractions, dependency graph, conditions, and review queue? Triage results will be preserved. This cannot be undone.">
+            Reset Extractions
+          </button>
         </div>
 
         <div id="extract-cancel-status"></div>
@@ -516,6 +525,14 @@
             <span class="btn-label">Build All Pending</span>
             <span class="htmx-indicator"><span class="spinner"></span> Analyzing relationships...</span>
           </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/dependency-graph/reset"
+                  hx-target="#depgraph-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear all dependency graph edges? You can rebuild them afterwards.">
+            Reset
+          </button>
         </div>
         <div class="step-result" id="depgraph-result"></div>
       </div>
@@ -543,6 +560,14 @@
                   hx-disabled-elt="this">
             <span class="btn-label">Parse All Pending</span>
             <span class="htmx-indicator"><span class="spinner"></span> Parsing conditions...</span>
+          </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/condition-parse/reset"
+                  hx-target="#condparse-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear all parsed applicability condition trees? You can re-parse afterwards.">
+            Reset
           </button>
         </div>
         <div class="step-result" id="condparse-result"></div>
@@ -578,7 +603,16 @@
         {% endif %}
         <div class="step-actions">
           <a href="/dashboard/review" class="btn btn-primary">Open Review Queue</a>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/review/reset"
+                  hx-target="#review-reset-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Reset all review decisions back to pending? This clears the review audit log.">
+            Reset Reviews
+          </button>
         </div>
+        <div class="step-result" id="review-reset-result"></div>
       </div>
     </div>
 
@@ -629,6 +663,14 @@
                   hx-disabled-elt="this">
             <span class="btn-label">Check Bridge Gaps</span>
             <span class="htmx-indicator"><span class="spinner"></span></span>
+          </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/sync/reset"
+                  hx-target="#step7-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear sync status on all extractions? They will be re-synced on the next run.">
+            Reset Sync
           </button>
         </div>
         <div class="step-result" id="step7-result">

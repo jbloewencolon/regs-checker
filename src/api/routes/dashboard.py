@@ -24,12 +24,14 @@ from src.db.models import (
     DocumentFamily,
     DocumentVersion,
     Extraction,
+    ExtractionJob,
     ExtractionType,
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
     ObligationDependency,
     RawArtifact,
+    ReviewAction,
     ReviewQueueItem,
     ReviewStatus,
     Source,
@@ -1389,6 +1391,205 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Cleared <strong>{count}</strong> uncertain/low-confidence triage results. '
             f'High-confidence and manually reviewed results preserved. '
             f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/extract/reset")
+def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all extractions and extraction jobs so passages can be re-extracted.
+
+    Cascading deletes: review_queue → review_actions, extractions,
+    extraction_jobs. Triage results are preserved.
+    """
+    from sqlalchemy import delete
+
+    try:
+        # Count before clearing
+        ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
+        job_count = db.scalar(select(func.count()).select_from(ExtractionJob)) or 0
+
+        if ext_count == 0 and job_count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No extractions to clear.</div>'
+            )
+
+        # Delete in FK order: review_actions → review_queue → extractions → extraction_jobs
+        # Also clear downstream: applicability_conditions, obligation_dependencies
+        db.execute(delete(ApplicabilityCondition))
+        db.execute(delete(ObligationDependency))
+        db.execute(delete(ReviewAction))
+        db.execute(delete(ReviewQueueItem))
+        db.execute(delete(Extraction))
+        db.execute(delete(ExtractionJob))
+
+        # Clear cached bill_context so it can be rebuilt
+        db.execute(text(
+            "UPDATE document_versions SET metadata = metadata - 'bill_context' "
+            "WHERE metadata ? 'bill_context'"
+        ))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{ext_count}</strong> extractions and '
+            f'<strong>{job_count}</strong> extraction jobs. '
+            f'Also cleared dependency graph, applicability conditions, and review queue. '
+            f'Triage results preserved. Hit <strong>Extract</strong> to re-run.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/dependency-graph/reset")
+def reset_dependency_graph(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all obligation dependency edges."""
+    from sqlalchemy import delete
+
+    try:
+        count = db.scalar(
+            select(func.count()).select_from(ObligationDependency)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No dependency edges to clear.</div>'
+            )
+
+        db.execute(delete(ObligationDependency))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> dependency edges. '
+            f'Hit <strong>Build All Pending</strong> to rebuild.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/condition-parse/reset")
+def reset_applicability_conditions(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all parsed applicability condition trees."""
+    from sqlalchemy import delete
+
+    try:
+        count = db.scalar(
+            select(func.count()).select_from(ApplicabilityCondition)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No condition trees to clear.</div>'
+            )
+
+        db.execute(delete(ApplicabilityCondition))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> condition nodes. '
+            f'Hit <strong>Parse All Pending</strong> to rebuild.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/review/reset")
+def reset_review(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset all review decisions back to pending.
+
+    Clears review actions (audit log) and resets all review queue items
+    and extraction review statuses to pending.
+    """
+    from sqlalchemy import delete, update
+
+    try:
+        action_count = db.scalar(
+            select(func.count()).select_from(ReviewAction)
+        ) or 0
+        reviewed_count = db.scalar(
+            select(func.count()).select_from(ReviewQueueItem).where(
+                ReviewQueueItem.status != ReviewStatus.pending
+            )
+        ) or 0
+
+        if action_count == 0 and reviewed_count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No review decisions to reset. All items are already pending.</div>'
+            )
+
+        # Clear review actions audit log
+        db.execute(delete(ReviewAction))
+
+        # Reset review queue statuses to pending
+        db.execute(
+            update(ReviewQueueItem).values(status=ReviewStatus.pending)
+        )
+
+        # Reset extraction review statuses to pending
+        db.execute(
+            update(Extraction).where(
+                Extraction.review_status != ReviewStatus.pending
+            ).values(review_status=ReviewStatus.pending)
+        )
+
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Reset <strong>{reviewed_count}</strong> review decisions to pending. '
+            f'Cleared <strong>{action_count}</strong> review actions. '
+            f'All extractions are now awaiting review.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/sync/reset")
+def reset_sync(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear synced_at timestamps so all approved extractions can be re-synced."""
+    try:
+        count = db.scalar(
+            text("SELECT count(*) FROM extractions WHERE metadata->>'synced_at' IS NOT NULL")
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No synced extractions to reset.</div>'
+            )
+
+        db.execute(text(
+            "UPDATE extractions SET metadata = metadata - 'synced_at' "
+            "WHERE metadata ? 'synced_at'"
+        ))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared sync status on <strong>{count}</strong> extractions. '
+            f'They will be included in the next sync run.'
             f'</div>'
         )
     except Exception as e:
