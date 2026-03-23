@@ -517,6 +517,192 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+@router.get("/api/pipeline-tracker")
+def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return fetch/parse/triage stats as an HTML fragment."""
+    from src.db.models import SectionTriageResult
+
+    # --- Fetch stats ---
+    total_jobs = db.scalar(
+        select(func.count()).select_from(IngestionJob)
+    ) or 0
+
+    fetched = db.scalar(
+        select(func.count()).where(
+            IngestionJob.fetch_completed_at.isnot(None)
+        )
+    ) or 0
+
+    fetch_failed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.failed,
+            IngestionJob.fetch_completed_at.is_(None),
+        )
+    ) or 0
+
+    fetch_in_progress = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.fetching,
+        )
+    ) or 0
+
+    # --- Parse stats ---
+    parsed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.parse_completed_at.isnot(None)
+        )
+    ) or 0
+
+    parse_failed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.failed,
+            IngestionJob.fetch_completed_at.isnot(None),
+            IngestionJob.parse_completed_at.is_(None),
+        )
+    ) or 0
+
+    parse_in_progress = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.parsing,
+        )
+    ) or 0
+
+    # --- Avg durations ---
+    avg_fetch_sec = db.scalar(
+        select(
+            func.avg(
+                func.extract("epoch", IngestionJob.fetch_completed_at)
+                - func.extract("epoch", IngestionJob.fetch_started_at)
+            )
+        ).where(
+            IngestionJob.fetch_started_at.isnot(None),
+            IngestionJob.fetch_completed_at.isnot(None),
+        )
+    )
+
+    avg_parse_sec = db.scalar(
+        select(
+            func.avg(
+                func.extract("epoch", IngestionJob.parse_completed_at)
+                - func.extract("epoch", IngestionJob.parse_started_at)
+            )
+        ).where(
+            IngestionJob.parse_started_at.isnot(None),
+            IngestionJob.parse_completed_at.isnot(None),
+        )
+    )
+
+    # --- Triage stats ---
+    triage_total = 0
+    triage_relevant = 0
+    triage_skipped = 0
+    triage_uncertain = 0
+    avg_triage_sec = None
+    try:
+        triage_total = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+        if triage_total > 0:
+            triage_relevant = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "relevant")
+            ) or 0
+            triage_skipped = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "not_relevant")
+            ) or 0
+            triage_uncertain = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "uncertain")
+            ) or 0
+
+            total_passages = db.scalar(
+                select(func.count()).select_from(NormalizedSourceRecord)
+            ) or 0
+            if total_passages > 0 and triage_total > 0:
+                # Estimate avg triage time from parsed job duration minus parse time
+                # divided by passage count (rough proxy)
+                pass
+    except Exception:
+        db.rollback()
+
+    # --- Format helpers ---
+    def fmt_duration(seconds):
+        if seconds is None:
+            return "—"
+        if seconds < 1:
+            return f"{seconds * 1000:.0f}ms"
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        mins = seconds / 60
+        return f"{mins:.1f}m"
+
+    def pct(n, total):
+        if total == 0:
+            return 0
+        return round(n / total * 100, 1)
+
+    fetch_pct = pct(fetched, total_jobs)
+    parse_pct = pct(parsed, total_jobs)
+    triage_pct = pct(triage_total, db.scalar(select(func.count()).select_from(NormalizedSourceRecord)) or 1)
+
+    # Build status badges
+    def status_badge(in_prog, failed):
+        parts = []
+        if in_prog > 0:
+            parts.append(f'<span class="tracker-badge running">{in_prog} running</span>')
+        if failed > 0:
+            parts.append(f'<span class="tracker-badge failed">{failed} failed</span>')
+        return " ".join(parts)
+
+    html = f"""
+    <div class="tracker-grid">
+      <div class="tracker-card">
+        <div class="tracker-header">Fetched</div>
+        <div class="tracker-value">{fetched}<span class="tracker-total">/{total_jobs}</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill" style="width:{fetch_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{fetch_pct}%</span>
+          {status_badge(fetch_in_progress, fetch_failed)}
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">Parsed</div>
+        <div class="tracker-value">{parsed}<span class="tracker-total">/{total_jobs}</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill parsed" style="width:{parse_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{parse_pct}%</span>
+          {status_badge(parse_in_progress, parse_failed)}
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">Triaged</div>
+        <div class="tracker-value">{triage_total}<span class="tracker-total"> passages</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill triaged" style="width:{triage_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-detail">{triage_relevant} relevant</span>
+          <span class="tracker-detail uncertain">{triage_uncertain} uncertain</span>
+          <span class="tracker-detail skipped">{triage_skipped} skipped</span>
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">Avg. Time</div>
+        <div class="tracker-timings">
+          <div class="tracker-timing-row">
+            <span class="tracker-timing-label">Fetch</span>
+            <span class="tracker-timing-value">{fmt_duration(avg_fetch_sec)}</span>
+          </div>
+          <div class="tracker-timing-row">
+            <span class="tracker-timing-label">Parse</span>
+            <span class="tracker-timing-value">{fmt_duration(avg_parse_sec)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+    return HTMLResponse(html)
+
+
 @router.get("/api/analytics/confidence")
 def get_confidence_chart(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return confidence distribution as an HTML chart."""

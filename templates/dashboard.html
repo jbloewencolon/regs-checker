@@ -188,6 +188,15 @@
           <strong>{{ stats.total_passages }}</strong> passages in database.
           {% endif %}
         </div>
+
+        <!-- Pipeline Tracker -->
+        <div id="pipeline-tracker"
+             hx-get="/dashboard/api/pipeline-tracker"
+             hx-trigger="load, every 10s"
+             hx-swap="innerHTML">
+          <span class="spinner"></span> Loading tracker...
+        </div>
+
         <div class="step-actions">
           <button class="btn btn-primary"
                   hx-post="/dashboard/api/run/fetch"
