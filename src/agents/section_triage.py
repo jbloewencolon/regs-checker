@@ -409,14 +409,15 @@ def triage_passage(
 
     try:
         prompt = _build_triage_prompt(text, context)
-        response = llm_provider.complete(
-            prompt=prompt,
-            system="You are a legal text triage agent. Respond only with valid JSON.",
+        llm_response = llm_provider.call(
+            system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
+            user_prompt=prompt,
             max_tokens=200,
+            temperature=0.0,
         )
 
         # Parse LLM response
-        response_text = response.strip()
+        response_text = llm_response.text.strip()
         # Strip think blocks from reasoning models
         response_text = re.sub(
             r"<think>.*?</think>", "", response_text, flags=re.DOTALL
@@ -446,7 +447,7 @@ def triage_passage(
                 llm_reasoning=reasoning,
                 pdf_quality_score=quality_score,
                 quality_flags=quality_flags,
-                model_id=getattr(llm_provider, "model_id", None),
+                model_id=llm_provider.model_id if hasattr(llm_provider, "model_id") else None,
             )
         else:
             logger.warning("triage_llm_parse_failed", response=response_text[:200])

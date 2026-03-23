@@ -895,11 +895,18 @@ def run_triage(
         _log("No untriaged passages found.")
         return summary
 
-    _log(f"Triaging {len(records)} passages...")
+    # Get LLM provider for Layer 2/3 triage (keyword-only passages are free)
+    llm_provider = None
+    try:
+        from src.core.llm_provider import get_discovery_provider
+        llm_provider = get_discovery_provider()
+        _log(f"Triaging {len(records)} passages with LLM fallback ({llm_provider.model_id})...")
+    except Exception as e:
+        _log(f"Triaging {len(records)} passages (keyword-only, no LLM: {e})...")
 
     for i, record in enumerate(records):
         ctx = _build_context(db, record)
-        result = triage_passage(record.text_content, ctx, llm_provider=None)
+        result = triage_passage(record.text_content, ctx, llm_provider=llm_provider)
 
         triage_row = SectionTriageResult(
             source_record_id=record.id,
