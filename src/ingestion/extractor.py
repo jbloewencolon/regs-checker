@@ -46,7 +46,7 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import inspect as sa_inspect, select
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
@@ -106,6 +106,9 @@ def clear_cancel() -> None:
 
 # Passages shorter than this are legislative boilerplate (headers, stubs, etc.)
 MIN_PASSAGE_LENGTH = 150
+
+# Set at module-load or first extraction run — True once migration adds column
+_payload_hash_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
@@ -800,21 +803,22 @@ def extract_single_record(
 
                     # --- Payload-level deduplication (indexed hash lookup) ---
                     p_hash = _payload_hash(item)
-                    existing_dup = db.scalars(
-                        select(Extraction.id).where(
-                            Extraction.source_record_id == source_record.id,
-                            Extraction.extraction_type == resolved_type,
-                            Extraction.payload_hash == p_hash,
-                        ).limit(1)
-                    ).first()
-                    if existing_dup:
-                        logger.debug(
-                            "extraction_payload_duplicate_skipped",
-                            agent=name,
-                            record_id=source_record.id,
-                            extraction_type=resolved_type.value,
-                        )
-                        continue
+                    if _payload_hash_available:
+                        existing_dup = db.scalars(
+                            select(Extraction.id).where(
+                                Extraction.source_record_id == source_record.id,
+                                Extraction.extraction_type == resolved_type,
+                                Extraction.payload_hash == p_hash,
+                            ).limit(1)
+                        ).first()
+                        if existing_dup:
+                            logger.debug(
+                                "extraction_payload_duplicate_skipped",
+                                agent=name,
+                                record_id=source_record.id,
+                                extraction_type=resolved_type.value,
+                            )
+                            continue
 
                     evidence = item.get("evidence_spans", [])
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
@@ -841,11 +845,10 @@ def extract_single_record(
                         "cross_validation": confidence.cross_validation,
                     }
 
-                    extraction = Extraction(
+                    extraction_kwargs: dict[str, Any] = dict(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,
                         payload=item,
-                        payload_hash=p_hash,
                         evidence_spans=evidence,
                         confidence_score=confidence.total_score,
                         confidence_tier=ConfidenceTier(confidence.tier),
@@ -857,6 +860,9 @@ def extract_single_record(
                         extraction_job_id=extraction_job.id if extraction_job else None,
                         metadata_=extraction_meta if extraction_meta else {},
                     )
+                    if _payload_hash_available:
+                        extraction_kwargs["payload_hash"] = p_hash
+                    extraction = Extraction(**extraction_kwargs)
                     db.add(extraction)
                     db.flush()
 
@@ -893,6 +899,7 @@ def extract_single_record(
                     )
 
                 except Exception as e:
+                    db.rollback()
                     logger.error(
                         "extraction_record_failed",
                         agent=name,
@@ -1042,6 +1049,15 @@ def run_extraction(
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
+
+    # Check whether payload_hash column exists (migration may not have run yet)
+    global _payload_hash_available
+    try:
+        _payload_hash_available = "payload_hash" in {
+            c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
+        }
+    except Exception:
+        _payload_hash_available = False
 
     # Build set of existing content hashes for deduplication.
     # Pre-populate from DB so re-runs don't re-call agents on passages that
