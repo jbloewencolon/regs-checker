@@ -419,11 +419,19 @@ def _confidence_to_priority(tier: str) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}.get(tier, 1)
 
 
-def _build_context(db, record: NormalizedSourceRecord) -> dict:
+def _build_context(
+    db,
+    record: NormalizedSourceRecord,
+    bill_context: dict[str, Any] | None = None,
+) -> dict:
     """Build context dict for an extraction agent.
 
     Includes Orrick key_requirements and enforcement metadata when available,
     giving the model richer signal about what the passage is about.
+
+    If bill_context is provided (from bill_context.get_or_build_bill_context),
+    injects bill-level definitions, scope, structure, and defined terms so
+    agents can resolve cross-references and understand actor terminology.
     """
     dv = record.document_version
     df = dv.family if dv else None
@@ -474,6 +482,17 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         iapp_topic = df.metadata_.get("iapp_ai_topic")
         if iapp_topic:
             ctx["iapp_ai_topic"] = iapp_topic
+
+    # Inject bill-level context (definitions, scope, structure, defined terms)
+    if bill_context:
+        if bill_context.get("definitions"):
+            ctx["bill_definitions"] = bill_context["definitions"]
+        if bill_context.get("scope"):
+            ctx["bill_scope"] = bill_context["scope"]
+        if bill_context.get("structure"):
+            ctx["bill_structure"] = bill_context["structure"]
+        if bill_context.get("defined_terms"):
+            ctx["defined_terms"] = bill_context["defined_terms"]
 
     return ctx
 
@@ -627,6 +646,7 @@ def extract_single_record(
     token_usage: TokenUsageSummary | None = None,
     existing_hashes: set[str] | None = None,
     tracker: FailureTracker | None = None,
+    bill_context: dict[str, Any] | None = None,
 ) -> int:
     """Run selected agents against a passage.
 
@@ -642,9 +662,11 @@ def extract_single_record(
         tracker: Shared FailureTracker that monitors consecutive and total
             failure rates across the full extraction run.  Raises
             CircuitBreakerTripped when thresholds are exceeded.
+        bill_context: Pre-built bill-level context (definitions, scope,
+            structure, defined_terms) from bill_context.get_or_build_bill_context.
     """
     record = passage.primary_record
-    ctx = _build_context(db, record)
+    ctx = _build_context(db, record, bill_context=bill_context)
     extractions_created = 0
 
     # Jurisdiction cross-check: skip if document state doesn't match law state
@@ -1154,6 +1176,18 @@ def run_extraction(
         )
         _monitor.record_document_start(label, len(merged_passages))
 
+        # Build bill-level context (definitions, scope, structure) once per bill
+        from src.core.bill_context import get_or_build_bill_context
+
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=dv_group)
+        if bill_ctx.get("stats"):
+            stats = bill_ctx["stats"]
+            _log(
+                f"  Bill context: {stats.get('definition_passages', 0)} definition sections, "
+                f"{stats.get('scope_passages', 0)} scope sections, "
+                f"{stats.get('defined_terms_count', 0)} defined terms"
+            )
+
         job_extractions = 0
         job_failures = 0
 
@@ -1173,6 +1207,7 @@ def run_extraction(
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
                     token_usage, existing_hashes, tracker,
+                    bill_context=bill_ctx,
                 )
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
@@ -1465,13 +1500,16 @@ def _run_batch_extraction(
         dv_records.setdefault(record.document_version_id, []).append(record)
 
     # Build batch requests
+    from src.core.bill_context import get_or_build_bill_context
+
     batch_requests = []
     for dv_id, dv_group in dv_records.items():
         merged_passages = _wrap_passages(dv_group)
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=dv_group)
 
         for passage in merged_passages:
             record = passage.primary_record
-            ctx = _build_context(db, record)
+            ctx = _build_context(db, record, bill_context=bill_ctx)
             selected = _select_agents_for_passage(passage.text, agents)
 
             for agent_name, agent in selected.items():
@@ -1635,6 +1673,8 @@ def run_recovery_extraction(
         _log(f"  {agent_name}: {count} passages missing")
 
     # Step 3: Re-run missing agents
+    from src.core.bill_context import get_or_build_bill_context
+
     total_extractions = 0
     errors = 0
     existing_hashes: set[str] = set()
@@ -1652,7 +1692,8 @@ def run_recovery_extraction(
             if not record:
                 continue
 
-            ctx = _build_context(db, record)
+            bill_ctx = get_or_build_bill_context(db, record.document_version_id)
+            ctx = _build_context(db, record, bill_context=bill_ctx)
             passage = MergedPassage(text=record.text_content, source_records=[record])
 
             # Only run the missing agents
@@ -1815,6 +1856,7 @@ def retrieve_batch_results(
     import json
 
     import anthropic
+    from src.core.bill_context import get_or_build_bill_context
 
     from src.agents.base import BaseExtractionAgent
 
@@ -2004,7 +2046,8 @@ def retrieve_batch_results(
         passage_text = "\n".join(r.text_content for r in source_records)
 
         # Build context for Orrick similarity validation
-        batch_ctx = _build_context(db, first_record)
+        bill_ctx = get_or_build_bill_context(db, first_record.document_version_id)
+        batch_ctx = _build_context(db, first_record, bill_context=bill_ctx)
 
         entry_failed = False
         for item in items:
@@ -2396,6 +2439,7 @@ def run_verification_pass(
     from src.agents.citation_verifier import verify_citations
     from src.agents.cross_validation import run_cross_validation
     from src.agents.gap_detector import run_gap_detection
+    from src.core.bill_context import get_or_build_bill_context
 
     def _log(msg: str) -> None:
         if on_progress:
@@ -2449,6 +2493,8 @@ def run_verification_pass(
             .order_by(NormalizedSourceRecord.ordinal)
         ).all()
 
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=records)
+
         # --- Layer 1: Cross-Validation ---
         cv_passages = 0
         cv_valid = 0
@@ -2473,7 +2519,7 @@ def run_verification_pass(
 
                 ext_payloads = [e.payload for e in extractions]
                 ext_ids = [e.id for e in extractions]
-                ctx = _build_context(db, record)
+                ctx = _build_context(db, record, bill_context=bill_ctx)
 
                 cv_result = run_cross_validation(
                     passage_text=record.text_content,
@@ -2539,7 +2585,7 @@ def run_verification_pass(
                 ).all()
 
                 ext_payloads = [e.payload for e in extractions]
-                ctx = _build_context(db, record)
+                ctx = _build_context(db, record, bill_context=bill_ctx)
 
                 gd_result = run_gap_detection(
                     passage_text=record.text_content,

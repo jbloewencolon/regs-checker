@@ -96,6 +96,7 @@ PASSAGE:
                 )
             if context.get("enforcement_summary"):
                 prompt += f"\nENFORCEMENT SUMMARY: {context['enforcement_summary']}"
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

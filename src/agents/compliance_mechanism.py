@@ -108,6 +108,7 @@ PASSAGE:
                     f"\n\nAI SCOPE (helps identify which AI systems these "
                     f"compliance mechanisms apply to):\n{context['ai_scope']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

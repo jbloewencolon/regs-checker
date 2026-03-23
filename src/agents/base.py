@@ -85,6 +85,47 @@ class BaseExtractionAgent(ABC):
             return render_prompt(self._template["extraction_prompt"], render_ctx)
         return self.get_extraction_prompt(passage, context)
 
+    @staticmethod
+    def _append_bill_context(prompt: str, context: dict | None) -> str:
+        """Append bill-level context (definitions, scope, defined terms) to a prompt.
+
+        Called by each agent's get_extraction_prompt() after building its
+        agent-specific context block.  Adds the bill's definitions and scope
+        sections so the model can resolve cross-references and understand
+        actor terminology used elsewhere in the bill.
+        """
+        if not context:
+            return prompt
+
+        parts: list[str] = []
+
+        defined_terms = context.get("defined_terms")
+        if defined_terms:
+            parts.append(
+                f"DEFINED TERMS IN THIS BILL: {', '.join(defined_terms)}"
+            )
+
+        bill_defs = context.get("bill_definitions")
+        if bill_defs:
+            parts.append(
+                "BILL DEFINITIONS (verbatim from the bill's definitions section — "
+                "use to resolve terms referenced in the passage above):\n"
+                f"{bill_defs}"
+            )
+
+        bill_scope = context.get("bill_scope")
+        if bill_scope:
+            parts.append(
+                "BILL SCOPE & APPLICABILITY (verbatim from the bill — "
+                "use to understand what entities and systems this bill covers):\n"
+                f"{bill_scope}"
+            )
+
+        if parts:
+            prompt += "\n\n" + "\n\n".join(parts)
+
+        return prompt
+
     def extract(
         self, passage: str, context: dict | None = None
     ) -> ExtractionResult:

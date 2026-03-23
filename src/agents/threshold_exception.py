@@ -78,6 +78,7 @@ PASSAGE:
                     f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
                     f"context to improve extraction accuracy):\n{context['key_requirements']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

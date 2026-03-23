@@ -104,6 +104,7 @@ PASSAGE:
                     f"\n\nENFORCEMENT CONTEXT (helps identify remedies available "
                     f"to rights holders):\n{context['enforcement_summary']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

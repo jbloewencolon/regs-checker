@@ -89,6 +89,7 @@ PASSAGE:
                     f"context to identify ambiguity in scope and applicability):\n"
                     f"{context['key_requirements']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:
