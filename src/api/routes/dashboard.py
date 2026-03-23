@@ -2686,20 +2686,34 @@ async def resolve_discrepancy(
 
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
-    """List all failed and manual-review ingestion jobs with upload + edit forms."""
+    """List all failed, manual-review, and missing-URL ingestion jobs with upload + edit forms."""
+    from sqlalchemy import or_, and_
+
     jobs = db.scalars(
         select(IngestionJob)
-        .where(IngestionJob.status.in_([
-            IngestionStatus.failed,
-            IngestionStatus.requires_manual_review,
-        ]))
+        .where(
+            or_(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.requires_manual_review,
+                ]),
+                # Pending jobs with no URL — fetcher will skip these
+                and_(
+                    IngestionJob.status == IngestionStatus.pending,
+                    or_(
+                        IngestionJob.fetch_url.is_(None),
+                        IngestionJob.fetch_url == "",
+                    ),
+                ),
+            )
+        )
         .order_by(IngestionJob.updated_at.desc())
     ).all()
 
     if not jobs:
         return HTMLResponse(
             '<div class="result-panel success" style="margin-top:10px;">'
-            'No failed documents. All jobs completed successfully.'
+            'No failed or missing documents. All jobs completed successfully.'
             '</div>'
         )
 
@@ -2730,8 +2744,19 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         # Ingestion status badge (small, secondary — not the main Status column)
-        ing_class = "danger" if job.status == IngestionStatus.failed else "warning"
-        ing_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+        is_missing_url = (
+            job.status == IngestionStatus.pending
+            and not job.fetch_url
+        )
+        if job.status == IngestionStatus.failed:
+            ing_class = "danger"
+            ing_label = "Failed"
+        elif is_missing_url:
+            ing_class = "warning"
+            ing_label = "No URL"
+        else:
+            ing_class = "warning"
+            ing_label = "Needs Review"
 
         # Bill Status: prefer raw IAPP status, fall back to normalized TemporalStatus
         bill_status_display = iapp_status or leg_status or "—"
@@ -2778,7 +2803,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             </form>
             <button class="btn btn-sm" onclick="toggleFailedEdit({jid})"
                     style="margin-left:4px;">Edit</button>
-            <button class="btn btn-sm"
+            {"" if is_missing_url else f'''<button class="btn btn-sm"
                     hx-post="/dashboard/api/retry-job/{jid}"
                     hx-target="#failed-result-{jid}"
                     hx-swap="innerHTML"
@@ -2786,7 +2811,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                     style="margin-left:4px;">
               <span class="btn-label">Re-fetch</span>
               <span class="htmx-indicator"><span class="spinner"></span></span>
-            </button>
+            </button>'''}
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
@@ -2864,7 +2889,8 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<tbody>{rows_html}</tbody>'
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
-        f'Upload the PDF/HTML manually, or click Edit to fix metadata/URL and retry.'
+        f'Upload the PDF/HTML manually, click Edit to add/fix the URL and re-fetch, '
+        f'or update metadata for laws with no source URL.'
         f'</div></div>'
         f'<script>'
         f'function toggleFailedEdit(id) {{'
@@ -2879,20 +2905,32 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.get("/api/export-failed-txt")
 def export_failed_txt(db: Session = Depends(get_db)):
-    """Export all failed documents as a plain .txt file for searching/printing."""
+    """Export all failed/missing-URL documents as a plain .txt file for searching/printing."""
     from fastapi.responses import PlainTextResponse
+    from sqlalchemy import or_, and_
 
     jobs = db.scalars(
         select(IngestionJob)
-        .where(IngestionJob.status.in_([
-            IngestionStatus.failed,
-            IngestionStatus.requires_manual_review,
-        ]))
+        .where(
+            or_(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.requires_manual_review,
+                ]),
+                and_(
+                    IngestionJob.status == IngestionStatus.pending,
+                    or_(
+                        IngestionJob.fetch_url.is_(None),
+                        IngestionJob.fetch_url == "",
+                    ),
+                ),
+            )
+        )
         .order_by(IngestionJob.updated_at.desc())
     ).all()
 
     lines = [
-        "FAILED DOCUMENT DOWNLOADS",
+        "FAILED / MISSING DOCUMENT DOWNLOADS",
         "=" * 60,
         f"Generated: {__import__('datetime').datetime.utcnow().isoformat()}Z",
         f"Total: {len(jobs)} documents",
@@ -2920,7 +2958,12 @@ def export_failed_txt(db: Session = Depends(get_db)):
         if dv and dv.temporal_status:
             leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
-        status_label = "FAILED" if job.status == IngestionStatus.failed else "NEEDS REVIEW"
+        if job.status == IngestionStatus.failed:
+            status_label = "FAILED"
+        elif job.status == IngestionStatus.pending and not job.fetch_url:
+            status_label = "NO URL"
+        else:
+            status_label = "NEEDS REVIEW"
 
         lines.append(f"{i}. [{jurisdiction}] {label}")
         if bill_title and bill_title != label:
@@ -2942,6 +2985,7 @@ def export_failed_txt(db: Session = Depends(get_db)):
 
     lines.append("=" * 60)
     lines.append("Search tips:")
+    lines.append("  - For NO URL: search the state legislature site for the bill and add the URL or upload the PDF")
     lines.append("  - For 403 errors: try downloading the PDF in a browser")
     lines.append("  - For SSL errors: the site may need a different URL or mirror")
     lines.append("  - For 404 errors: search for the bill by name on the state legislature site")
