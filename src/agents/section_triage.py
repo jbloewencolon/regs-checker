@@ -412,7 +412,7 @@ def triage_passage(
         llm_response = llm_provider.call(
             system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
             user_prompt=prompt,
-            max_tokens=200,
+            max_tokens=1024,
             temperature=0.0,
         )
 

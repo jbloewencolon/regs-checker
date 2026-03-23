@@ -332,7 +332,7 @@ class BaseExtractionAgent(ABC):
         effective_model = self.model_override or ""
         is_reasoning = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
         )
         if is_reasoning:
             system_prompt += (

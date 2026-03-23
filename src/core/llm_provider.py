@@ -205,7 +205,7 @@ class LocalLLMProvider(BaseLLMProvider):
         # so the actual answer isn't truncated after the thinking phase.
         is_reasoning = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
         )
         adjusted_max = max_tokens * 2 if is_reasoning else max_tokens
 
@@ -246,7 +246,7 @@ class LocalLLMProvider(BaseLLMProvider):
         # timeout than normal models to avoid client disconnects.
         is_reasoning_model = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
         )
         request_timeout = 300.0 if is_reasoning_model else 120.0
 
@@ -268,8 +268,15 @@ class LocalLLMProvider(BaseLLMProvider):
 
         # Parse OpenAI-compatible response
         choice = data["choices"][0]
-        text = choice["message"]["content"]
+        text = choice["message"]["content"] or ""
         finish_reason = choice.get("finish_reason")
+
+        # gpt-oss-20b and similar reasoning models put chain-of-thought
+        # in a separate "reasoning" field.  If content is empty but
+        # reasoning exists, the model exhausted its token budget on
+        # thinking.  Include the finish_reason in the error so callers
+        # can distinguish truncation from true empty responses.
+        reasoning_field = choice["message"].get("reasoning")
 
         usage_data = data.get("usage", {})
         usage = LLMUsage(
@@ -277,10 +284,16 @@ class LocalLLMProvider(BaseLLMProvider):
             output_tokens=usage_data.get("completion_tokens", 0),
         )
 
-        if not text or not text.strip():
+        if not text.strip():
+            detail = ""
+            if reasoning_field and finish_reason == "length":
+                detail = (
+                    " Model spent all tokens on reasoning with no content produced. "
+                    "Increase max_tokens."
+                )
             raise ValueError(
                 f"Empty response from local LLM "
-                f"(finish_reason={finish_reason}, model={effective_model})"
+                f"(finish_reason={finish_reason}, model={effective_model}){detail}"
             )
 
         # Strip <think> blocks that reasoning models (DeepSeek-R1, Qwen3)
