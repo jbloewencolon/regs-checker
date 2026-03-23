@@ -1271,6 +1271,40 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/run/triage/reset")
+def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all triage results so passages can be re-triaged."""
+    from src.db.models import SectionTriageResult
+    from src.ingestion.extractor import _ensure_triage_table
+
+    try:
+        _ensure_triage_table(db)
+
+        count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No triage results to clear.</div>'
+            )
+
+        db.execute(SectionTriageResult.__table__.delete())
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> triage results. '
+            f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/retry-job/{job_id}")
 def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     """Reset a single failed/manual-review job back to pending for re-fetching."""
