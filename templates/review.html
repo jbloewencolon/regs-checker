@@ -47,7 +47,7 @@
       </thead>
       <tbody>
         {% for item in items %}
-        <tr>
+        <tr class="review-row" id="review-row-{{ item.queue_id }}">
           <td>
             <span class="tier-badge tier-{{ item.confidence_tier }}">
               {{ item.confidence_tier }}
@@ -91,14 +91,21 @@
               {% endif %}
             </div>
             {% if item.evidence_spans %}
-            <div class="evidence-count">{{ item.evidence_spans | length }} evidence spans</div>
+            <button class="expand-toggle" onclick="toggleDetail({{ item.queue_id }})"
+                    title="Show full payload and evidence spans">
+              {{ item.evidence_spans | length }} evidence spans &#x25B8;
+            </button>
+            {% else %}
+            <button class="expand-toggle" onclick="toggleDetail({{ item.queue_id }})"
+                    title="Show full payload">
+              details &#x25B8;
+            </button>
             {% endif %}
           </td>
           <td class="doc-cell">
-            {{ item.jurisdiction_code or '?' }} — {{ item.short_cite or '' }}
+            {{ item.jurisdiction_code or '?' }} &mdash; {{ item.short_cite or '' }}
           </td>
           <td>
-            <!-- Confidence score + mini breakdown -->
             <div class="confidence-cell">
               <span class="confidence-score">{{ "%.0f" | format(item.confidence_score * 100) }}%</span>
               {% if item.confidence_breakdown %}
@@ -138,18 +145,78 @@
             <div class="action-btns">
               <button class="btn btn-sm btn-success"
                       hx-post="/dashboard/api/review/{{ item.queue_id }}/approve"
-                      hx-target="closest tr"
+                      hx-target="#review-row-{{ item.queue_id }}"
                       hx-swap="outerHTML"
                       title="Approve">Approve</button>
               <button class="btn btn-sm btn-danger"
                       hx-post="/dashboard/api/review/{{ item.queue_id }}/reject"
-                      hx-target="closest tr"
+                      hx-target="#review-row-{{ item.queue_id }}"
                       hx-swap="outerHTML"
                       title="Reject">Reject</button>
             </div>
             {% else %}
             <span class="review-status-label">{{ item.review_status }}</span>
             {% endif %}
+          </td>
+        </tr>
+        <!-- Expandable detail row (hidden by default) -->
+        <tr class="detail-row" id="detail-{{ item.queue_id }}" style="display: none;">
+          <td colspan="7">
+            <div class="review-detail-panel">
+              <!-- Full Payload -->
+              <div class="detail-section">
+                <h4>Full Payload</h4>
+                <dl class="detail-fields">
+                  {% for key, value in item.payload.items() %}
+                  <div class="detail-field">
+                    <dt>{{ key }}</dt>
+                    <dd>
+                      {% if value is mapping %}
+                        <pre class="detail-json">{{ value | tojson(indent=2) }}</pre>
+                      {% elif value is iterable and value is not string %}
+                        <pre class="detail-json">{{ value | tojson(indent=2) }}</pre>
+                      {% elif value is none %}
+                        <span class="detail-null">null</span>
+                      {% else %}
+                        {{ value }}
+                      {% endif %}
+                    </dd>
+                  </div>
+                  {% endfor %}
+                </dl>
+              </div>
+
+              <!-- Evidence Spans -->
+              {% if item.evidence_spans %}
+              <div class="detail-section">
+                <h4>Evidence Spans</h4>
+                {% for span in item.evidence_spans %}
+                <div class="evidence-span {% if span.get('verified') %}verified{% else %}unverified{% endif %}">
+                  <div class="evidence-header">
+                    <span class="evidence-field">{{ span.get('field_name') or 'general' }}</span>
+                    {% if span.get('verified') %}
+                    <span class="evidence-verified-badge">Verified</span>
+                    {% else %}
+                    <span class="evidence-unverified-badge">Unverified</span>
+                    {% endif %}
+                    {% if span.get('char_start') is not none %}
+                    <span class="evidence-offset">chars {{ span.get('char_start') }}&ndash;{{ span.get('char_end') }}</span>
+                    {% endif %}
+                  </div>
+                  <blockquote class="evidence-text">{{ span.get('text', '') }}</blockquote>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <!-- Source Passage -->
+              {% if item.source_text %}
+              <div class="detail-section">
+                <h4>Source Passage</h4>
+                <div class="source-passage">{{ item.source_text }}</div>
+              </div>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -159,11 +226,11 @@
 
   <!-- Confidence breakdown legend -->
   <div class="breakdown-legend">
-    <span><span class="bl-swatch" style="background: #2563eb;"></span> Schema (20%)</span>
-    <span><span class="bl-swatch" style="background: #16a34a;"></span> Evidence (30%)</span>
-    <span><span class="bl-swatch" style="background: #7c3aed;"></span> Completeness (20%)</span>
-    <span><span class="bl-swatch" style="background: #0891b2;"></span> Source Quality (15%)</span>
-    <span><span class="bl-swatch" style="background: #ea580c;"></span> Orrick Alignment (15%)</span>
+    <span><span class="bl-swatch" style="background: #2563eb;"></span> Schema (15%)</span>
+    <span><span class="bl-swatch" style="background: #16a34a;"></span> Evidence (25%)</span>
+    <span><span class="bl-swatch" style="background: #7c3aed;"></span> Completeness (15%)</span>
+    <span><span class="bl-swatch" style="background: #0891b2;"></span> Source Quality (10%)</span>
+    <span><span class="bl-swatch" style="background: #ea580c;"></span> Orrick Alignment (10%)</span>
   </div>
 
   {% if total_pages > 1 %}
@@ -183,4 +250,18 @@
   </div>
   {% endif %}
 </section>
+
+<script>
+function toggleDetail(queueId) {
+  var row = document.getElementById('detail-' + queueId);
+  var btn = row.previousElementSibling.querySelector('.expand-toggle');
+  if (row.style.display === 'none') {
+    row.style.display = 'table-row';
+    btn.innerHTML = btn.innerHTML.replace('\u25B8', '\u25BE');
+  } else {
+    row.style.display = 'none';
+    btn.innerHTML = btn.innerHTML.replace('\u25BE', '\u25B8');
+  }
+}
+</script>
 {% endblock %}

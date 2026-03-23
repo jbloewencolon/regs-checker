@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.ingestion.iapp_scraper import (
+from src.ingestion.legacy.iapp_scraper import (
     IAPPScraperError,
     STATE_CODES,
     _build_column_map,
@@ -188,7 +188,7 @@ class TestScrapeTracker:
         mock_response.content = MOCK_IAPP_HTML.encode()
         mock_response.status_code = 200
 
-        with patch("src.ingestion.iapp_scraper.httpx.get", return_value=mock_response):
+        with patch("src.ingestion.legacy.iapp_scraper.httpx.get", return_value=mock_response):
             records = scrape_tracker(url="https://example.com/mock")
 
         assert len(records) == 3
@@ -211,7 +211,7 @@ class TestScrapeTracker:
         mock_response.content = b"<html><body><p>No table here</p></body></html>"
         mock_response.status_code = 200
 
-        with patch("src.ingestion.iapp_scraper.httpx.get", return_value=mock_response):
+        with patch("src.ingestion.legacy.iapp_scraper.httpx.get", return_value=mock_response):
             with pytest.raises(IAPPScraperError):
                 scrape_tracker(url="https://example.com/mock")
 

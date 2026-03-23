@@ -30,7 +30,6 @@ from src.agents.citation_verifier import (
     _build_section_index,
 )
 from src.core.confidence import (
-    CROSS_VALIDATION_NEUTRAL_SCORE,
     WEIGHT_CROSS_VALIDATION,
     compute_confidence,
 )
@@ -331,10 +330,10 @@ class TestConfidenceWithCrossValidation:
             parse_quality_score=0.8,
         )
 
-    def test_neutral_when_not_verified(self):
-        """Without cross-validation, score should use neutral (0.5)."""
+    def test_excluded_when_not_verified(self):
+        """Without cross-validation, component is excluded (weight redistributed)."""
         result = compute_confidence(**self._base_kwargs())
-        assert result.cross_validation == CROSS_VALIDATION_NEUTRAL_SCORE
+        assert result.cross_validation == 0.0
 
     def test_high_cv_score_boosts_confidence(self):
         """High cross-validation score should boost overall confidence."""

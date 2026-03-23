@@ -10,11 +10,16 @@ Components:
   - Completeness (0.15): Proportion of non-null optional fields
   - Source quality (0.10): Phase 1 parse quality score
   - Orrick alignment (0.10): Token similarity vs Orrick key_requirements/enforcement
-    When no Orrick data exists, this component scores 0.5 (neutral) so it
-    neither boosts nor penalises extractions without reference data.
+    When no Orrick data exists, this component is excluded and its weight is
+    redistributed to the remaining active components.
   - Cross-validation (0.25): Accuracy score from post-extraction verification
-    When not yet verified, this component scores 0.5 (neutral). When verified,
-    uses the accuracy_score from the cross-validation agent.
+    When not yet verified, this component is excluded and its weight is
+    redistributed to the remaining active components.
+
+Weight redistribution: when optional components (Orrick, cross-validation)
+lack real data, their weights are proportionally redistributed to the active
+components. This ensures fresh extractions are scored only on available
+signals and can reach Tier A/B on their own merits.
 
 Tiers:
   A: >= 0.85 (auto-approve candidates)
@@ -45,8 +50,7 @@ class ConfidenceBreakdown:
     orrick_matched_tokens: list[str] = field(default_factory=list)
 
 
-# Component weights (sum to 1.0)
-# Redistributed from 5-component model to include cross-validation.
+# Component weights (sum to 1.0 when all components are active)
 # Evidence grounding and cross-validation are the two most important signals
 # for audit-grade accuracy.
 WEIGHT_SCHEMA_VALIDITY = 0.15
@@ -55,10 +59,6 @@ WEIGHT_COMPLETENESS = 0.15
 WEIGHT_SOURCE_QUALITY = 0.10
 WEIGHT_ORRICK_ALIGNMENT = 0.10
 WEIGHT_CROSS_VALIDATION = 0.25
-
-# Neutral scores for components without data
-ORRICK_NEUTRAL_SCORE = 0.5
-CROSS_VALIDATION_NEUTRAL_SCORE = 0.5
 
 # Tier thresholds
 TIER_A_THRESHOLD = 0.85
@@ -85,7 +85,7 @@ def compute_confidence(
         parse_quality_score: Phase 1 parse quality score (0.0-1.0).
         orrick_similarity: Optional Orrick similarity result for alignment scoring.
         cross_validation_score: Optional accuracy score from cross-validation
-            agent (0.0-1.0). None means not yet verified (uses neutral score).
+            agent (0.0-1.0). None means not yet verified.
 
     Returns:
         ConfidenceBreakdown with component scores and final tier.
@@ -109,43 +109,41 @@ def compute_confidence(
     source_score = parse_quality_score if parse_quality_score is not None else 0.5
 
     # 5. Orrick alignment — token similarity with Orrick metadata
-    #    When no Orrick data exists, use neutral score (0.5) so the component
-    #    neither helps nor hurts.  When data exists, scale the Jaccard score
-    #    (typically 0.05–0.40) into a 0–1 range with a generous curve:
-    #    combined_score >= 0.25 → 1.0, 0.10–0.25 → proportional, < 0.10 → 0.3
-    orrick_score = ORRICK_NEUTRAL_SCORE
+    has_orrick = (
+        orrick_similarity is not None and orrick_similarity.has_orrick_data
+    )
+    orrick_score = 0.0
     matched_tokens: list[str] = []
-    if orrick_similarity is not None and orrick_similarity.has_orrick_data:
+    if has_orrick:
         cs = orrick_similarity.combined_score
         if cs >= 0.25:
             orrick_score = 1.0
         elif cs >= 0.10:
-            # Linear interpolation: 0.10→0.5, 0.25→1.0
             orrick_score = 0.5 + (cs - 0.10) / (0.25 - 0.10) * 0.5
         else:
-            # Low overlap — not necessarily wrong, just less corroborated
             orrick_score = 0.3
         matched_tokens = orrick_similarity.matched_tokens
 
     # 6. Cross-validation — accuracy score from verification agent
-    #    When not yet verified (None), use neutral score so the component
-    #    doesn't affect initial scoring.  After verification, the actual
-    #    accuracy_score directly becomes this component's value.
-    cv_score = (
-        cross_validation_score
-        if cross_validation_score is not None
-        else CROSS_VALIDATION_NEUTRAL_SCORE
-    )
+    has_cv = cross_validation_score is not None
+    cv_score = cross_validation_score if has_cv else 0.0
 
-    # Weighted total
-    total = (
-        WEIGHT_SCHEMA_VALIDITY * schema_score
-        + WEIGHT_EVIDENCE_GROUNDING * evidence_score
-        + WEIGHT_COMPLETENESS * completeness_score
-        + WEIGHT_SOURCE_QUALITY * source_score
-        + WEIGHT_ORRICK_ALIGNMENT * orrick_score
-        + WEIGHT_CROSS_VALIDATION * cv_score
-    )
+    # Build weighted average using only active components.
+    # When Orrick or cross-validation data is missing, exclude those
+    # components and redistribute their weight proportionally.
+    components: list[tuple[float, float]] = [
+        (WEIGHT_SCHEMA_VALIDITY, schema_score),
+        (WEIGHT_EVIDENCE_GROUNDING, evidence_score),
+        (WEIGHT_COMPLETENESS, completeness_score),
+        (WEIGHT_SOURCE_QUALITY, source_score),
+    ]
+    if has_orrick:
+        components.append((WEIGHT_ORRICK_ALIGNMENT, orrick_score))
+    if has_cv:
+        components.append((WEIGHT_CROSS_VALIDATION, cv_score))
+
+    active_weight = sum(w for w, _ in components)
+    total = sum(w * s for w, s in components) / active_weight if active_weight > 0 else 0.0
 
     tier = _score_to_tier(total)
 
