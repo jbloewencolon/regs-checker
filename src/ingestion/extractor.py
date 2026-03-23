@@ -36,6 +36,7 @@ Cost optimizations:
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -541,6 +542,21 @@ def _content_hash(agent_name: str, text: str) -> str:
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
 
 
+def _payload_hash(payload: dict) -> str:
+    """Compute a stable SHA-256 hash of an extraction payload for dedup.
+
+    Strips internal meta keys (``_prompt_hash``, ``_model_id``, etc.) and
+    ``evidence_spans`` so that the hash reflects only the substantive content.
+    """
+    clean = {
+        k: v for k, v in sorted(payload.items())
+        if not k.startswith("_") and k != "evidence_spans"
+    }
+    return hashlib.sha256(
+        json.dumps(clean, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
 def _select_agents_for_passage(
     text: str, all_agents: dict[str, BaseExtractionAgent]
 ) -> dict[str, BaseExtractionAgent]:
@@ -782,17 +798,13 @@ def extract_single_record(
                 try:
                     resolved_type = _discriminate_extraction_type(name, item)
 
-                    # --- Payload-level deduplication ---
-                    # Strip internal meta keys before comparing payloads
-                    payload_for_compare = {
-                        k: v for k, v in item.items()
-                        if not k.startswith("_") and k != "evidence_spans"
-                    }
+                    # --- Payload-level deduplication (indexed hash lookup) ---
+                    p_hash = _payload_hash(item)
                     existing_dup = db.scalars(
-                        select(Extraction).where(
+                        select(Extraction.id).where(
                             Extraction.source_record_id == source_record.id,
                             Extraction.extraction_type == resolved_type,
-                            Extraction.payload.contains(payload_for_compare),
+                            Extraction.payload_hash == p_hash,
                         ).limit(1)
                     ).first()
                     if existing_dup:
@@ -833,6 +845,7 @@ def extract_single_record(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,
                         payload=item,
+                        payload_hash=p_hash,
                         evidence_spans=evidence,
                         confidence_score=confidence.total_score,
                         confidence_tier=ConfidenceTier(confidence.tier),
@@ -1030,8 +1043,25 @@ def run_extraction(
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
-    # Build set of existing content hashes for deduplication
+    # Build set of existing content hashes for deduplication.
+    # Pre-populate from DB so re-runs don't re-call agents on passages that
+    # already have extractions (e.g. after an interrupted run or re-run).
     existing_hashes: set[str] = set()
+    _already_extracted = db.execute(
+        select(NormalizedSourceRecord.text_content)
+        .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .distinct()
+    ).all()
+    for (text_content,) in _already_extracted:
+        for agent_name in agents:
+            existing_hashes.add(_content_hash(agent_name, text_content))
+    if existing_hashes:
+        logger.info(
+            "dedup_hashes_loaded",
+            passages_with_extractions=len(_already_extracted),
+            total_hashes=len(existing_hashes),
+        )
+    del _already_extracted
 
     def _log(msg: str) -> None:
         if on_progress:

@@ -41,6 +41,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -256,6 +257,15 @@ class IngestionJob(Base):
 
     document_version = relationship("DocumentVersion", back_populates="ingestion_jobs")
 
+    __table_args__ = (
+        Index(
+            "uq_ingestion_job_version_url",
+            "document_version_id", "fetch_url",
+            unique=True,
+            postgresql_where=text("fetch_url IS NOT NULL"),
+        ),
+    )
+
 
 # ---------------------------------------------------------------------------
 # 5. Raw Artifacts (immutable, content-addressable)
@@ -305,6 +315,11 @@ class NormalizedSourceRecord(Base):
 
     __table_args__ = (
         Index("ix_nsr_version_ordinal", "document_version_id", "ordinal"),
+        Index(
+            "uq_nsr_version_ordinal",
+            "document_version_id", "ordinal",
+            unique=True,
+        ),
     )
 
 
@@ -333,6 +348,7 @@ class Extraction(Base):
     template_version = Column(String(50))  # version from YAML template
     model_id = Column(String(100))
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
+    payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -344,6 +360,11 @@ class Extraction(Base):
     __table_args__ = (
         Index("ix_extractions_type_status", "extraction_type", "review_status"),
         Index("ix_extractions_payload", "payload", postgresql_using="gin"),
+        Index(
+            "uq_extractions_dedup",
+            "source_record_id", "extraction_type", "payload_hash",
+            unique=True,
+        ),
     )
 
 

@@ -86,6 +86,17 @@ def _verify_content_or_fallback(
     if not text_sample or len(text_sample.strip()) < 50:
         return True  # Too short to classify, proceed normally
 
+    # --- Memoization: skip re-classification if already classified for this artifact ---
+    dv = job.document_version
+    df = dv.family if dv else None
+    cached = (df.metadata_ or {}).get("discovery_classification") if df else None
+    if cached and cached.get("artifact_hash") == raw_artifact.sha256_hash:
+        _log(
+            f"Discovery classification (cached): is_ai={cached.get('is_ai_legislation')}, "
+            f"confidence={cached.get('confidence', 0):.2f}"
+        )
+        return cached.get("is_ai_legislation", True)
+
     try:
         discovery = DiscoveryAgent()
         classification = discovery.classify_bill(text_sample)
@@ -94,6 +105,18 @@ def _verify_content_or_fallback(
             f"Discovery classification: is_ai_legislation={classification.is_ai_legislation}, "
             f"confidence={classification.confidence:.2f}"
         )
+
+        # Cache result on DocumentFamily metadata
+        if df is not None:
+            meta = dict(df.metadata_ or {})
+            meta["discovery_classification"] = {
+                "is_ai_legislation": classification.is_ai_legislation,
+                "confidence": classification.confidence,
+                "reasoning": classification.reasoning,
+                "artifact_hash": raw_artifact.sha256_hash,
+            }
+            df.metadata_ = meta
+            db.commit()
 
         if classification.is_ai_legislation:
             return True  # Content is valid, proceed
