@@ -41,7 +41,6 @@
           <th>Summary</th>
           <th>Document</th>
           <th style="width: 200px;">Confidence</th>
-          <th style="width: 70px;">Model</th>
           <th style="width: 140px;">Actions</th>
         </tr>
       </thead>
@@ -90,17 +89,10 @@
                 {{ item.payload | string | truncate(80) }}
               {% endif %}
             </div>
-            {% if item.evidence_spans %}
             <button class="expand-toggle" onclick="toggleDetail({{ item.queue_id }})"
-                    title="Show full payload and evidence spans">
-              {{ item.evidence_spans | length }} evidence spans &#x25B8;
-            </button>
-            {% else %}
-            <button class="expand-toggle" onclick="toggleDetail({{ item.queue_id }})"
-                    title="Show full payload">
+                    title="Show full details, source passage, and edit fields">
               details &#x25B8;
             </button>
-            {% endif %}
           </td>
           <td class="doc-cell">
             {{ item.jurisdiction_code or '?' }} &mdash; {{ item.short_cite or '' }}
@@ -111,34 +103,36 @@
               {% if item.confidence_breakdown %}
               <div class="confidence-breakdown-mini">
                 {% set bd = item.confidence_breakdown %}
-                <div class="breakdown-bar" title="Schema: {{ (bd.get('schema_validity', 0) * 100) | round }}%">
-                  <div class="breakdown-fill breakdown-schema" style="width: {{ (bd.get('schema_validity', 0) * 100) | round }}%;"></div>
+                {# Show labeled mini bars with score text #}
+                {% set components = [
+                  ('Schema', 'schema_validity', '#2563eb', 0.15, 'Did the extraction pass Pydantic schema validation?'),
+                  ('Evidence', 'evidence_grounding', '#16a34a', 0.25, 'What fraction of fields have verified source text spans?'),
+                  ('Completeness', 'completeness', '#7c3aed', 0.15, 'How many optional fields were filled in?'),
+                  ('Source', 'source_quality', '#0891b2', 0.10, 'Parse quality score from the ingestion pipeline'),
+                  ('Orrick', 'orrick_alignment', '#ea580c', 0.10, 'Token overlap with Orrick reference data (if available)')
+                ] %}
+                {% for label, key, color, weight, tip in components %}
+                {% set score_pct = (bd.get(key, 0) * 100) | round %}
+                <div class="breakdown-bar-labeled" title="{{ tip }} &mdash; {{ score_pct }}% (weight: {{ (weight * 100) | int }}%)">
+                  <span class="breakdown-label">{{ label }}</span>
+                  <div class="breakdown-bar">
+                    <div class="breakdown-fill" style="width: {{ score_pct }}%; background: {{ color }};"></div>
+                  </div>
+                  <span class="breakdown-score">{{ score_pct }}%</span>
                 </div>
-                <div class="breakdown-bar" title="Evidence: {{ (bd.get('evidence_grounding', 0) * 100) | round }}%">
-                  <div class="breakdown-fill breakdown-evidence" style="width: {{ (bd.get('evidence_grounding', 0) * 100) | round }}%;"></div>
+                {% endfor %}
+                {% if bd.get('cross_validation', 0) > 0 %}
+                <div class="breakdown-bar-labeled" title="Accuracy score from cross-validation agent &mdash; {{ (bd.get('cross_validation', 0) * 100) | round }}% (weight: 25%)">
+                  <span class="breakdown-label">Cross-val</span>
+                  <div class="breakdown-bar">
+                    <div class="breakdown-fill" style="width: {{ (bd.get('cross_validation', 0) * 100) | round }}%; background: #be185d;"></div>
+                  </div>
+                  <span class="breakdown-score">{{ (bd.get('cross_validation', 0) * 100) | round }}%</span>
                 </div>
-                <div class="breakdown-bar" title="Completeness: {{ (bd.get('completeness', 0) * 100) | round }}%">
-                  <div class="breakdown-fill breakdown-complete" style="width: {{ (bd.get('completeness', 0) * 100) | round }}%;"></div>
-                </div>
-                <div class="breakdown-bar" title="Source Quality: {{ (bd.get('source_quality', 0) * 100) | round }}%">
-                  <div class="breakdown-fill breakdown-source" style="width: {{ (bd.get('source_quality', 0) * 100) | round }}%;"></div>
-                </div>
-                <div class="breakdown-bar" title="Orrick Alignment: {{ (bd.get('orrick_alignment', 0) * 100) | round }}%">
-                  <div class="breakdown-fill breakdown-orrick" style="width: {{ (bd.get('orrick_alignment', 0) * 100) | round }}%;"></div>
-                </div>
-              </div>
-              <div class="breakdown-legend-mini">
-                <span class="bl-dot" style="background: #2563eb;" title="Schema"></span>
-                <span class="bl-dot" style="background: #16a34a;" title="Evidence"></span>
-                <span class="bl-dot" style="background: #7c3aed;" title="Completeness"></span>
-                <span class="bl-dot" style="background: #0891b2;" title="Source"></span>
-                <span class="bl-dot" style="background: #ea580c;" title="Orrick"></span>
+                {% endif %}
               </div>
               {% endif %}
             </div>
-          </td>
-          <td class="model-cell">
-            {{ (item.model_id or '?') | truncate(12) }}
           </td>
           <td>
             {% if item.review_status == 'pending' %}
@@ -161,30 +155,46 @@
         </tr>
         <!-- Expandable detail row (hidden by default) -->
         <tr class="detail-row" id="detail-{{ item.queue_id }}" style="display: none;">
-          <td colspan="7">
+          <td colspan="6">
             <div class="review-detail-panel">
-              <!-- Full Payload -->
+              <!-- Source Passage (with evidence highlighting) — shown FIRST -->
+              {% if item.source_text %}
               <div class="detail-section">
-                <h4>Full Payload</h4>
-                <dl class="detail-fields">
-                  {% for key, value in item.payload.items() %}
-                  <div class="detail-field">
-                    <dt>{{ key }}</dt>
-                    <dd>
-                      {% if value is mapping %}
-                        <pre class="detail-json">{{ value | tojson(indent=2) }}</pre>
-                      {% elif value is iterable and value is not string %}
-                        <pre class="detail-json">{{ value | tojson(indent=2) }}</pre>
-                      {% elif value is none %}
-                        <span class="detail-null">null</span>
-                      {% else %}
-                        {{ value }}
-                      {% endif %}
-                    </dd>
-                  </div>
-                  {% endfor %}
-                </dl>
+                <h4>Source Passage</h4>
+                <div class="source-passage" id="source-{{ item.queue_id }}">{{ item.source_text }}</div>
+                {% if item.evidence_spans %}
+                <script>
+                (function() {
+                  var el = document.getElementById('source-{{ item.queue_id }}');
+                  if (!el) return;
+                  var text = el.textContent;
+                  var spans = {{ item.evidence_spans | tojson }};
+                  var charSpans = spans.filter(function(s) { return s.char_start != null && s.char_end != null; });
+                  charSpans.sort(function(a, b) { return b.char_start - a.char_start; });
+                  if (charSpans.length > 0) {
+                    for (var i = 0; i < charSpans.length; i++) {
+                      var s = charSpans[i];
+                      var before = text.substring(0, s.char_start);
+                      var match = text.substring(s.char_start, s.char_end);
+                      var after = text.substring(s.char_end);
+                      text = before + '<mark class="evidence-highlight" title="' + (s.field_name || 'evidence') + '">' + match + '</mark>' + after;
+                    }
+                    el.innerHTML = text;
+                  } else {
+                    var textSpans = spans.filter(function(s) { return s.text && s.text.length > 10; });
+                    var html = el.textContent;
+                    for (var i = 0; i < textSpans.length; i++) {
+                      var needle = textSpans[i].text;
+                      var escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                      html = html.replace(new RegExp(escaped, 'i'), '<mark class="evidence-highlight" title="' + (textSpans[i].field_name || 'evidence') + '">$&</mark>');
+                    }
+                    el.innerHTML = html;
+                  }
+                })();
+                </script>
+                {% endif %}
               </div>
+              {% endif %}
 
               <!-- Evidence Spans -->
               {% if item.evidence_spans %}
@@ -209,6 +219,113 @@
               </div>
               {% endif %}
 
+              <!-- Editable Extraction Fields -->
+              <div class="detail-section">
+                <h4>Extraction Fields <span style="font-size:10px;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:400;">(edit values, then save)</span></h4>
+                <form class="edit-extraction-form" id="edit-form-{{ item.queue_id }}">
+                  <div class="edit-fields-grid">
+                    {% for key, value in item.payload.items() %}
+                    <div class="edit-field-row">
+                      <label class="edit-field-label" for="field-{{ item.queue_id }}-{{ key }}">{{ key }}</label>
+                      {% if key == 'modality' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['must', 'shall', 'may', 'should', 'prohibited', 'required'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['must', 'shall', 'may', 'should', 'prohibited', 'required'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif key == 'severity' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['low', 'medium', 'high', 'critical'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                      </select>
+                      {% elif key == 'threshold_type' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['numeric', 'categorical', 'temporal', 'conditional', 'geographic', 'entity_size'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['numeric', 'categorical', 'temporal', 'conditional', 'geographic', 'entity_size'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif key == 'right_type' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['notice', 'explanation', 'opt_out', 'appeal', 'deletion', 'human_review', 'non_discrimination', 'portability', 'access'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['notice', 'explanation', 'opt_out', 'appeal', 'deletion', 'human_review', 'non_discrimination', 'portability', 'access'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif key == 'mechanism_type' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['impact_assessment', 'bias_audit', 'registration', 'certification', 'record_keeping', 'reporting', 'disclosure', 'notification'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['impact_assessment', 'bias_audit', 'registration', 'certification', 'record_keeping', 'reporting', 'disclosure', 'notification'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif key == 'ambiguity_type' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        {% for opt in ['vague_term', 'conflicting_provisions', 'undefined_reference', 'scope_ambiguity', 'temporal_ambiguity'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['vague_term', 'conflicting_provisions', 'undefined_reference', 'scope_ambiguity', 'temporal_ambiguity'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif key == 'private_right_of_action' %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        <option value="" {% if value is none %}selected{% endif %}>Unknown</option>
+                        <option value="true" {% if value == true %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if value == false %}selected{% endif %}>No</option>
+                      </select>
+                      {% elif key in ('subject_normalized', 'right_holder_normalized', 'responsible_party_normalized') %}
+                      <select class="edit-field-input" name="{{ key }}" id="field-{{ item.queue_id }}-{{ key }}">
+                        <option value="" {% if not value %}selected{% endif %}>(none)</option>
+                        {% for opt in ['developer', 'deployer', 'operator', 'vendor', 'consumer', 'employee', 'public', 'regulator'] %}
+                        <option value="{{ opt }}" {% if value == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                        {% if value and value not in ['developer', 'deployer', 'operator', 'vendor', 'consumer', 'employee', 'public', 'regulator'] %}
+                        <option value="{{ value }}" selected>{{ value }}</option>
+                        {% endif %}
+                      </select>
+                      {% elif value is mapping or (value is iterable and value is not string and value is not none) %}
+                      <textarea class="edit-field-input edit-field-json" name="{{ key }}"
+                                id="field-{{ item.queue_id }}-{{ key }}"
+                                rows="3">{{ value | tojson(indent=2) }}</textarea>
+                      {% elif value is none %}
+                      <input type="text" class="edit-field-input" name="{{ key }}"
+                             id="field-{{ item.queue_id }}-{{ key }}"
+                             value="" placeholder="(empty)">
+                      {% else %}
+                      {% if (value | string | length) > 120 %}
+                      <textarea class="edit-field-input" name="{{ key }}"
+                                id="field-{{ item.queue_id }}-{{ key }}"
+                                rows="2">{{ value }}</textarea>
+                      {% else %}
+                      <input type="text" class="edit-field-input" name="{{ key }}"
+                             id="field-{{ item.queue_id }}-{{ key }}"
+                             value="{{ value }}">
+                      {% endif %}
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <div class="edit-actions">
+                    <button type="button" class="btn btn-sm btn-primary"
+                            onclick="saveExtraction({{ item.queue_id }})">
+                      Save Changes
+                    </button>
+                    <span class="edit-save-result" id="edit-result-{{ item.queue_id }}"></span>
+                  </div>
+                </form>
+              </div>
+
               <!-- Model Reasoning -->
               {% if item.model_reasoning %}
               <div class="detail-section">
@@ -223,81 +340,61 @@
                 <h4>Why This Score?</h4>
                 <div class="confidence-explain">
                   {% set bd = item.confidence_breakdown %}
+                  {% set active_weights = [0.15, 0.25, 0.15, 0.10] %}
+                  {% set has_orrick = bd.get('orrick_alignment', 0) > 0 %}
+                  {% set has_cv = bd.get('cross_validation', 0) > 0 %}
+                  {% if has_orrick %}{% set _ = active_weights.append(0.10) %}{% endif %}
+                  {% if has_cv %}{% set _ = active_weights.append(0.25) %}{% endif %}
+
+                  {% set explain_components = [
+                    ('Schema Validity', 'schema_validity', '#2563eb', 0.15, 'Pass/fail: did the LLM output conform to the expected Pydantic schema? A 0% here means the extraction is structurally broken.'),
+                    ('Evidence Grounding', 'evidence_grounding', '#16a34a', 0.25, 'What fraction of the extracted fields have a verified evidence span pointing back to source text? Higher = better provenance.'),
+                    ('Completeness', 'completeness', '#7c3aed', 0.15, 'What proportion of optional fields were filled in by the model? Missing fields lower this score.'),
+                    ('Source Quality', 'source_quality', '#0891b2', 0.10, 'How clean was the source document parse? Low scores indicate OCR errors, garbled text, or truncated content.')
+                  ] %}
+
+                  {% for label, key, color, weight, explanation in explain_components %}
+                  {% set score_val = bd.get(key, 0) %}
                   <div class="confidence-explain-row">
-                    <span class="conf-label">Schema Validity (15%)</span>
-                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('schema_validity', 0) * 100) | round }}%; background:#2563eb;"></div></div>
-                    <span class="conf-pct">{{ (bd.get('schema_validity', 0) * 100) | round }}%</span>
+                    <span class="conf-label">{{ label }} ({{ (weight * 100) | int }}%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (score_val * 100) | round }}%; background:{{ color }};"></div></div>
+                    <span class="conf-pct">{{ (score_val * 100) | round }}%</span>
                   </div>
-                  <div class="confidence-explain-row">
-                    <span class="conf-label">Evidence Grounding (25%)</span>
-                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('evidence_grounding', 0) * 100) | round }}%; background:#16a34a;"></div></div>
-                    <span class="conf-pct">{{ (bd.get('evidence_grounding', 0) * 100) | round }}%</span>
-                  </div>
-                  <div class="confidence-explain-row">
-                    <span class="conf-label">Completeness (15%)</span>
-                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('completeness', 0) * 100) | round }}%; background:#7c3aed;"></div></div>
-                    <span class="conf-pct">{{ (bd.get('completeness', 0) * 100) | round }}%</span>
-                  </div>
-                  <div class="confidence-explain-row">
-                    <span class="conf-label">Source Quality (10%)</span>
-                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('source_quality', 0) * 100) | round }}%; background:#0891b2;"></div></div>
-                    <span class="conf-pct">{{ (bd.get('source_quality', 0) * 100) | round }}%</span>
-                  </div>
+                  <div class="conf-explanation">{{ explanation }}</div>
+                  {% endfor %}
+
+                  {% if has_orrick %}
                   <div class="confidence-explain-row">
                     <span class="conf-label">Orrick Alignment (10%)</span>
                     <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('orrick_alignment', 0) * 100) | round }}%; background:#ea580c;"></div></div>
                     <span class="conf-pct">{{ (bd.get('orrick_alignment', 0) * 100) | round }}%</span>
                   </div>
-                  {% if bd.get('cross_validation', 0) > 0 %}
+                  <div class="conf-explanation">Token overlap between this extraction and the Orrick law tracker reference data. Absent if no Orrick data exists for this jurisdiction.</div>
+                  {% else %}
+                  <div class="confidence-explain-row" style="opacity: 0.4;">
+                    <span class="conf-label">Orrick Alignment (10%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:0%;"></div></div>
+                    <span class="conf-pct">N/A</span>
+                  </div>
+                  <div class="conf-explanation" style="opacity: 0.5;">No Orrick reference data available &mdash; this weight is redistributed to other components.</div>
+                  {% endif %}
+
+                  {% if has_cv %}
                   <div class="confidence-explain-row">
                     <span class="conf-label">Cross-Validation (25%)</span>
                     <div class="conf-bar-wrap"><div class="conf-bar" style="width:{{ (bd.get('cross_validation', 0) * 100) | round }}%; background:#be185d;"></div></div>
                     <span class="conf-pct">{{ (bd.get('cross_validation', 0) * 100) | round }}%</span>
                   </div>
+                  <div class="conf-explanation">Accuracy score from post-extraction cross-validation agent. Checks extracted facts against the source passage independently.</div>
+                  {% else %}
+                  <div class="confidence-explain-row" style="opacity: 0.4;">
+                    <span class="conf-label">Cross-Validation (25%)</span>
+                    <div class="conf-bar-wrap"><div class="conf-bar" style="width:0%;"></div></div>
+                    <span class="conf-pct">N/A</span>
+                  </div>
+                  <div class="conf-explanation" style="opacity: 0.5;">Not yet verified &mdash; this weight is redistributed to other components.</div>
                   {% endif %}
                 </div>
-              </div>
-              {% endif %}
-
-              <!-- Source Passage (with evidence highlighting) -->
-              {% if item.source_text %}
-              <div class="detail-section">
-                <h4>Source Passage</h4>
-                <div class="source-passage" id="source-{{ item.queue_id }}">{{ item.source_text }}</div>
-                {% if item.evidence_spans %}
-                <script>
-                (function() {
-                  var el = document.getElementById('source-{{ item.queue_id }}');
-                  if (!el) return;
-                  var text = el.textContent;
-                  var spans = {{ item.evidence_spans | tojson }};
-                  // Sort spans by char_start descending so replacements don't shift offsets
-                  var charSpans = spans.filter(function(s) { return s.char_start != null && s.char_end != null; });
-                  charSpans.sort(function(a, b) { return b.char_start - a.char_start; });
-                  if (charSpans.length > 0) {
-                    // Use character offsets for precise highlighting
-                    for (var i = 0; i < charSpans.length; i++) {
-                      var s = charSpans[i];
-                      var before = text.substring(0, s.char_start);
-                      var match = text.substring(s.char_start, s.char_end);
-                      var after = text.substring(s.char_end);
-                      text = before + '<mark class="evidence-highlight" title="' + (s.field_name || 'evidence') + '">' + match + '</mark>' + after;
-                    }
-                    el.innerHTML = text;
-                  } else {
-                    // Fallback: highlight by text match
-                    var textSpans = spans.filter(function(s) { return s.text && s.text.length > 10; });
-                    var html = el.textContent;
-                    for (var i = 0; i < textSpans.length; i++) {
-                      var needle = textSpans[i].text;
-                      var escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                      html = html.replace(new RegExp(escaped, 'i'), '<mark class="evidence-highlight" title="' + (textSpans[i].field_name || 'evidence') + '">$&</mark>');
-                    }
-                    el.innerHTML = html;
-                  }
-                })();
-                </script>
-                {% endif %}
               </div>
               {% endif %}
             </div>
@@ -306,15 +403,6 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
-
-  <!-- Confidence breakdown legend -->
-  <div class="breakdown-legend">
-    <span><span class="bl-swatch" style="background: #2563eb;"></span> Schema (15%)</span>
-    <span><span class="bl-swatch" style="background: #16a34a;"></span> Evidence (25%)</span>
-    <span><span class="bl-swatch" style="background: #7c3aed;"></span> Completeness (15%)</span>
-    <span><span class="bl-swatch" style="background: #0891b2;"></span> Source Quality (10%)</span>
-    <span><span class="bl-swatch" style="background: #ea580c;"></span> Orrick Alignment (10%)</span>
   </div>
 
   {% if total_pages > 1 %}
@@ -346,6 +434,56 @@ function toggleDetail(queueId) {
     row.style.display = 'none';
     btn.innerHTML = btn.innerHTML.replace('\u25BE', '\u25B8');
   }
+}
+
+function saveExtraction(queueId) {
+  var form = document.getElementById('edit-form-' + queueId);
+  var resultEl = document.getElementById('edit-result-' + queueId);
+  var fields = form.querySelectorAll('.edit-field-input');
+  var payload = {};
+
+  for (var i = 0; i < fields.length; i++) {
+    var field = fields[i];
+    var name = field.name;
+    var value = field.value;
+
+    // Handle JSON fields (textareas with edit-field-json class)
+    if (field.classList.contains('edit-field-json')) {
+      try {
+        payload[name] = JSON.parse(value);
+      } catch (e) {
+        resultEl.innerHTML = '<span style="color:var(--danger);">Invalid JSON in "' + name + '"</span>';
+        field.focus();
+        return;
+      }
+    } else if (field.tagName === 'SELECT' && name === 'private_right_of_action') {
+      // Boolean select
+      if (value === 'true') payload[name] = true;
+      else if (value === 'false') payload[name] = false;
+      else payload[name] = null;
+    } else if (value === '') {
+      payload[name] = null;
+    } else {
+      payload[name] = value;
+    }
+  }
+
+  // Send via fetch (htmx doesn't handle dynamic JSON well)
+  var formData = new FormData();
+  formData.append('payload_json', JSON.stringify(payload));
+
+  fetch('/dashboard/api/review/' + queueId + '/edit', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(resp) { return resp.text(); })
+  .then(function(html) {
+    resultEl.innerHTML = html;
+    setTimeout(function() { resultEl.innerHTML = ''; }, 4000);
+  })
+  .catch(function(err) {
+    resultEl.innerHTML = '<span style="color:var(--danger);">Save failed: ' + err.message + '</span>';
+  });
 }
 </script>
 {% endblock %}

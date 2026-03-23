@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Request
+import json
+
+from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -149,7 +151,7 @@ def _review_action(db: Session, queue_id: int, action: str) -> HTMLResponse:
     """Apply a review action and return updated table row."""
     item = db.get(ReviewQueueItem, queue_id)
     if not item:
-        return HTMLResponse('<tr><td colspan="7">Item not found</td></tr>')
+        return HTMLResponse('<tr><td colspan="6">Item not found</td></tr>')
 
     status = ReviewStatus(action)
     db.add(ReviewAction(
@@ -164,8 +166,65 @@ def _review_action(db: Session, queue_id: int, action: str) -> HTMLResponse:
     color = "var(--success)" if action == "approved" else "var(--danger)"
     return HTMLResponse(
         f'<tr style="opacity: 0.5;">'
-        f'<td colspan="6" style="color: {color}; font-style: italic;">'
+        f'<td colspan="5" style="color: {color}; font-style: italic;">'
         f'Item #{queue_id} {action}'
         f'</td>'
         f'<td></td></tr>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# Edit extraction payload (HTMX endpoint)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/review/{queue_id}/edit")
+def edit_extraction(
+    queue_id: int,
+    payload_json: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Update extraction payload fields from the review UI."""
+    item = db.get(ReviewQueueItem, queue_id)
+    if not item:
+        return HTMLResponse(
+            '<div class="result-panel danger">Item not found</div>',
+            status_code=404,
+        )
+
+    try:
+        updates = json.loads(payload_json)
+    except json.JSONDecodeError:
+        return HTMLResponse(
+            '<div class="result-panel danger">Invalid JSON payload</div>',
+            status_code=400,
+        )
+
+    extraction = item.extraction
+    if not extraction:
+        return HTMLResponse(
+            '<div class="result-panel danger">No extraction linked</div>',
+            status_code=404,
+        )
+
+    # Merge updates into existing payload
+    current = dict(extraction.payload) if extraction.payload else {}
+    for key, value in updates.items():
+        if key in current or value:  # only add new keys if they have values
+            current[key] = value
+
+    extraction.payload = current
+
+    # Record the edit as a review action
+    db.add(ReviewAction(
+        queue_item_id=queue_id,
+        action=ReviewStatus.pending,  # stays pending after edit
+        reviewer="dashboard",
+        comment=f"Edited fields: {', '.join(updates.keys())}",
+    ))
+    db.commit()
+
+    return HTMLResponse(
+        '<div class="result-panel success" style="padding:6px 12px;font-size:12px;">'
+        f'Saved changes to {len(updates)} field(s).</div>'
     )
