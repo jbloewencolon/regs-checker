@@ -9,6 +9,25 @@
     <a href="/dashboard" class="btn btn-sm">&larr; Back to Pipeline</a>
   </div>
 
+  <details class="confidence-explainer">
+    <summary>How confidence scores work</summary>
+    <div class="confidence-explainer-body">
+      <p>Each extraction receives a <strong>composite confidence score</strong> (0–100%) built from up to six weighted components. The score determines the <strong>tier</strong> (A&nbsp;≥&nbsp;85%, B&nbsp;≥&nbsp;70%, C&nbsp;≥&nbsp;50%, D&nbsp;&lt;&nbsp;50%).</p>
+      <table class="confidence-explainer-table">
+        <thead><tr><th>Component</th><th>Weight</th><th>What it measures</th></tr></thead>
+        <tbody>
+          <tr><td><span style="color:#2563eb;">&#9632;</span> Schema Validity</td><td>15%</td><td>Did the LLM output conform to the expected Pydantic schema? 0% means structurally broken.</td></tr>
+          <tr><td><span style="color:#16a34a;">&#9632;</span> Evidence Grounding</td><td>25%</td><td>Fraction of extracted fields with a verified evidence span pointing back to source text.</td></tr>
+          <tr><td><span style="color:#7c3aed;">&#9632;</span> Completeness</td><td>15%</td><td>Proportion of optional fields the model filled in. Missing fields lower this score.</td></tr>
+          <tr><td><span style="color:#0891b2;">&#9632;</span> Source Quality</td><td>10%</td><td>Parse quality from the ingestion pipeline. Low scores indicate OCR errors or truncated content.</td></tr>
+          <tr><td><span style="color:#ea580c;">&#9632;</span> Orrick Alignment</td><td>10%</td><td>Token overlap with Orrick reference data. N/A if no reference data exists for the jurisdiction.</td></tr>
+          <tr><td><span style="color:#be185d;">&#9632;</span> Cross-Validation</td><td>25%</td><td>Accuracy from the cross-validation agent that independently checks extracted facts against the source.</td></tr>
+        </tbody>
+      </table>
+      <p class="confidence-explainer-note">When Orrick Alignment or Cross-Validation are unavailable, their weight is redistributed proportionally among the active components.</p>
+    </div>
+  </details>
+
   <div class="tabs">
     <button class="tab {% if filter_status == 'pending' and not truncated_only %}active{% endif %}"
             hx-get="/dashboard/review?status=pending" hx-target="main" hx-push-url="true">

@@ -874,6 +874,58 @@ header .subtitle { color: var(--text-muted); font-size: 13px; display: none; }
 }
 
 /* Confidence explanation bars */
+/* Confidence explainer banner */
+.confidence-explainer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.confidence-explainer summary {
+  cursor: pointer;
+  padding: 8px 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+.confidence-explainer summary:hover {
+  color: var(--text);
+}
+.confidence-explainer-body {
+  padding: 4px 14px 14px;
+  line-height: 1.5;
+}
+.confidence-explainer-body p {
+  margin: 0 0 8px;
+}
+.confidence-explainer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.confidence-explainer-table th {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.confidence-explainer-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.confidence-explainer-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 0;
+}
+
 .confidence-explain {
   display: flex;
   flex-direction: column;
