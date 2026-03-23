@@ -1160,6 +1160,107 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/run/fetch/reset-all")
+def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Hard reset ALL ingestion jobs (including completed) for re-parsing.
+
+    Jobs that have a raw artifact are set to 'fetched' (re-parse only).
+    Jobs without an artifact are set to 'pending' (full re-fetch).
+    Also deletes downstream NormalizedSourceRecords so passages are rebuilt.
+    """
+    from sqlalchemy import delete
+    from src.db.models import SectionTriageResult
+
+    try:
+        jobs = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.status != IngestionStatus.pending,
+            )
+        ).all()
+
+        if not jobs:
+            return HTMLResponse(
+                '<div class="result-panel info">No jobs to reset — all are already pending.</div>'
+            )
+
+        # Delete downstream passages so parser regenerates them
+        completed_version_ids = [
+            j.document_version_id for j in jobs
+            if j.status == IngestionStatus.completed
+        ]
+        passages_deleted = 0
+        if completed_version_ids:
+            # Delete triage results for these passages first
+            passage_ids = db.scalars(
+                select(NormalizedSourceRecord.id).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            ).all()
+            if passage_ids:
+                db.execute(
+                    delete(SectionTriageResult).where(
+                        SectionTriageResult.source_record_id.in_(passage_ids)
+                    )
+                )
+            passages_deleted = db.scalar(
+                select(func.count()).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            ) or 0
+            db.execute(
+                delete(NormalizedSourceRecord).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            )
+
+        reset_to_fetched = 0
+        reset_to_pending = 0
+
+        for job in jobs:
+            has_artifact = db.scalar(
+                select(func.count()).where(
+                    RawArtifact.document_version_id == job.document_version_id
+                )
+            ) or 0
+
+            if has_artifact > 0:
+                job.status = IngestionStatus.fetched
+                job.error_message = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                job.parse_quality_score = None
+                reset_to_fetched += 1
+            else:
+                job.status = IngestionStatus.pending
+                job.error_message = None
+                job.fetch_started_at = None
+                job.fetch_completed_at = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                reset_to_pending += 1
+
+        db.commit()
+
+        total = reset_to_fetched + reset_to_pending
+        parts = [f'Hard reset <strong>{total}</strong> jobs (including completed).']
+        if reset_to_fetched > 0:
+            parts.append(f'{reset_to_fetched} will re-parse (files already downloaded).')
+        if reset_to_pending > 0:
+            parts.append(f'{reset_to_pending} will re-fetch and parse.')
+        if passages_deleted > 0:
+            parts.append(f'{passages_deleted} passages cleared for rebuilding.')
+
+        return HTMLResponse(
+            f'<div class="result-panel success">{" ".join(parts)}</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
 _triage_progress: dict | None = None
 _triage_lock = threading.Lock()
 
@@ -1258,6 +1359,42 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Cleared <strong>{count}</strong> uncertain/low-confidence triage results. '
             f'High-confidence and manually reviewed results preserved. '
             f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/triage/reset-all")
+def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Hard reset: clear ALL triage results so every passage is re-triaged."""
+    from sqlalchemy import delete
+    from src.db.models import SectionTriageResult
+    from src.ingestion.extractor import _ensure_triage_table
+
+    try:
+        _ensure_triage_table(db)
+
+        count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No triage results to clear.</div>'
+            )
+
+        db.execute(delete(SectionTriageResult))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>all {count}</strong> triage results. '
+            f'Hit <strong>Triage Passages</strong> to re-triage everything with the updated triager.'
             f'</div>',
             headers={"HX-Trigger": "pipelineReset"},
         )
