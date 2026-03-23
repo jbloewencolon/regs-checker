@@ -46,7 +46,7 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import inspect as sa_inspect, select
+from sqlalchemy import func, inspect as sa_inspect, select
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
@@ -1155,11 +1155,25 @@ def run_extraction(
             on_progress(msg)
         logger.info(msg)
 
-    # Find passages without any extractions
+    # Find passages that:
+    #   1. Have no extractions yet, AND
+    #   2. Have been triaged as relevant or uncertain (not "not_relevant")
+    # If triage hasn't been run yet, passages without any triage result are
+    # also excluded — the user must run "Triage Passages" first.
+    triaged_relevant_ids = (
+        select(SectionTriageResult.source_record_id)
+        .where(SectionTriageResult.decision.in_([
+            TriageDecision.relevant,
+            TriageDecision.uncertain,
+        ]))
+    )
     query = (
         select(NormalizedSourceRecord)
         .outerjoin(Extraction)
-        .where(Extraction.id.is_(None))
+        .where(
+            Extraction.id.is_(None),
+            NormalizedSourceRecord.id.in_(triaged_relevant_ids),
+        )
     )
     if limit:
         query = query.limit(limit)
@@ -1182,10 +1196,23 @@ def run_extraction(
     }
 
     if not records:
-        _log("No unprocessed passages found.")
+        # Distinguish between "everything already extracted" vs "triage not run"
+        total_passages = db.scalar(
+            select(func.count()).select_from(NormalizedSourceRecord)
+        ) or 0
+        total_triaged = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+        if total_passages > 0 and total_triaged == 0:
+            _log(
+                f"No triaged passages found ({total_passages} passages exist). "
+                f"Run 'Triage Passages' before extracting."
+            )
+        else:
+            _log("No unprocessed passages found — all triaged-relevant passages already extracted.")
         return summary
 
-    _log(f"Found {len(records)} passages to extract from")
+    _log(f"Found {len(records)} triaged-relevant passages to extract from")
 
     # Start the live extraction monitor
     from src.core.extraction_monitor import get_monitor
@@ -1201,112 +1228,6 @@ def run_extraction(
 
     if skipped_short:
         _log(f"Skipped {skipped_short} passages under {MIN_PASSAGE_LENGTH} chars")
-
-    # ---- Section Triage (Step 2b) ----
-    # Run AI-relevance filtering before sending to the full agent battery.
-    # Decisions are stored in section_triage_results for human review.
-    _ensure_triage_table(db, _log)
-    from src.agents.section_triage import triage_passage
-    from src.core.bill_context import get_or_build_bill_context as _get_bill_ctx
-
-    triage_relevant = 0
-    triage_skipped = 0
-    triage_uncertain = 0
-    triaged_records: list[NormalizedSourceRecord] = []
-
-    # Build bill-level context once for triage (reused later by extraction)
-    _triage_bill_ctx: dict[int, dict] = {}
-    _triage_dv_records: dict[int, list] = {}
-    records_by_ord = sorted(records, key=lambda r: (r.document_version_id, r.ordinal or 0))
-    from itertools import groupby as _groupby
-    from operator import attrgetter as _attrgetter
-    for dv_id, grp in _groupby(records_by_ord, key=_attrgetter("document_version_id")):
-        _triage_dv_records[dv_id] = list(grp)
-        try:
-            _triage_bill_ctx[dv_id] = _get_bill_ctx(db, dv_id, records=_triage_dv_records[dv_id])
-        except Exception:
-            logger.debug("triage_bill_ctx_failed", dv_id=dv_id, exc_info=True)
-            _triage_bill_ctx[dv_id] = {}
-
-    for record in records:
-        # Skip if already triaged (re-run safety)
-        existing_triage = db.scalars(
-            select(SectionTriageResult).where(
-                SectionTriageResult.source_record_id == record.id
-            )
-        ).first()
-        if existing_triage:
-            if existing_triage.decision == TriageDecision.not_relevant:
-                triage_skipped += 1
-                continue
-            triaged_records.append(record)
-            if existing_triage.decision == TriageDecision.relevant:
-                triage_relevant += 1
-            else:
-                triage_uncertain += 1
-            continue
-
-        ctx = _build_context(db, record)
-        # Inject bill-level context
-        bill_ctx = _triage_bill_ctx.get(record.document_version_id, {})
-        if bill_ctx:
-            if bill_ctx.get("definitions"):
-                ctx["bill_definitions"] = bill_ctx["definitions"]
-            if bill_ctx.get("scope"):
-                ctx["bill_scope"] = bill_ctx["scope"]
-            if bill_ctx.get("structure"):
-                ctx["bill_structure"] = bill_ctx["structure"]
-            if bill_ctx.get("defined_terms"):
-                ctx["defined_terms"] = bill_ctx["defined_terms"]
-
-        siblings = _triage_dv_records.get(record.document_version_id, [])
-        neighbors = _get_neighbor_texts(record, siblings)
-
-        result = triage_passage(
-            record.text_content, ctx, llm_provider=None, neighbors=neighbors,
-        )
-
-        # Store triage result
-        triage_row = SectionTriageResult(
-            source_record_id=record.id,
-            decision=TriageDecision(result.decision),
-            method=TriageMethod(result.method),
-            confidence=result.confidence,
-            matched_keywords=result.matched_keywords,
-            orrick_terms_checked=result.orrick_terms_checked,
-            llm_reasoning=result.llm_reasoning,
-            ai_signals=result.ai_signals,
-            pdf_quality_score=result.pdf_quality_score,
-            quality_flags=result.quality_flags,
-            model_id=result.model_id,
-        )
-        db.add(triage_row)
-
-        if result.decision == "not_relevant":
-            triage_skipped += 1
-        else:
-            triaged_records.append(record)
-            if result.decision == "relevant":
-                triage_relevant += 1
-            else:
-                triage_uncertain += 1
-
-    # Commit triage results
-    db.commit()
-
-    summary["triage_relevant"] = triage_relevant
-    summary["triage_skipped"] = triage_skipped
-    summary["triage_uncertain"] = triage_uncertain
-
-    _log(
-        f"Triage: {triage_relevant} relevant, {triage_uncertain} uncertain, "
-        f"{triage_skipped} skipped (not AI-relevant)"
-    )
-
-    records = triaged_records
-    if not records:
-        _log("No AI-relevant passages found after triage.")
-        return summary
 
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}
