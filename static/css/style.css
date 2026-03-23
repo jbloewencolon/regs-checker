@@ -1521,12 +1521,15 @@ select.edit-field-input {
 
 .tracker-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin: 12px 0 16px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .tracker-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
   .tracker-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -1576,6 +1579,21 @@ select.edit-field-input {
 
 .tracker-bar-fill.parsed { background: var(--success); }
 .tracker-bar-fill.triaged { background: var(--info); }
+.tracker-bar-fill.extracted { background: var(--warning); }
+
+.tracker-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  color: var(--bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-right: 4px;
+}
 
 .tracker-footer {
   display: flex;

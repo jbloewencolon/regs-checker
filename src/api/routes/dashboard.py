@@ -546,7 +546,6 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
     triage_relevant = 0
     triage_skipped = 0
     triage_uncertain = 0
-    avg_triage_sec = None
     try:
         triage_total = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
@@ -561,16 +560,24 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
             triage_uncertain = db.scalar(
                 select(func.count()).where(SectionTriageResult.decision == "uncertain")
             ) or 0
-
-            total_passages = db.scalar(
-                select(func.count()).select_from(NormalizedSourceRecord)
-            ) or 0
-            if total_passages > 0 and triage_total > 0:
-                # Estimate avg triage time from parsed job duration minus parse time
-                # divided by passage count (rough proxy)
-                pass
     except Exception:
         db.rollback()
+
+    # --- Extraction stats ---
+    # Count passages that have at least one extraction (= fully extracted)
+    extracted_passages = db.scalar(
+        select(func.count(func.distinct(Extraction.source_record_id)))
+        .select_from(Extraction)
+    ) or 0
+    # The denominator is triaged-relevant + uncertain passages
+    extractable_passages = triage_relevant + triage_uncertain
+
+    extraction_in_progress = db.scalar(
+        select(func.count()).where(ExtractionJob.status == "running")
+    ) or 0
+    extraction_failed = db.scalar(
+        select(func.count()).where(ExtractionJob.status == "failed")
+    ) or 0
 
     # --- Format helpers ---
     def fmt_duration(seconds):
@@ -588,9 +595,14 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
             return 0
         return round(n / total * 100, 1)
 
+    total_passages = db.scalar(
+        select(func.count()).select_from(NormalizedSourceRecord)
+    ) or 0
+
     fetch_pct = pct(fetched, total_jobs)
     parse_pct = pct(parsed, total_jobs)
-    triage_pct = pct(triage_total, db.scalar(select(func.count()).select_from(NormalizedSourceRecord)) or 1)
+    triage_pct = pct(triage_total, total_passages) if total_passages else 0
+    extract_pct = pct(extracted_passages, extractable_passages) if extractable_passages else 0
 
     # Build status badges
     def status_badge(in_prog, failed):
@@ -604,7 +616,9 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
     html = f"""
     <div class="tracker-grid">
       <div class="tracker-card">
-        <div class="tracker-header">Fetched</div>
+        <div class="tracker-header">
+          <span class="tracker-step-num">1</span> Fetched
+        </div>
         <div class="tracker-value">{fetched}<span class="tracker-total">/{total_jobs}</span></div>
         <div class="tracker-bar"><div class="tracker-bar-fill" style="width:{fetch_pct}%"></div></div>
         <div class="tracker-footer">
@@ -614,7 +628,9 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
       </div>
 
       <div class="tracker-card">
-        <div class="tracker-header">Parsed</div>
+        <div class="tracker-header">
+          <span class="tracker-step-num">2</span> Parsed
+        </div>
         <div class="tracker-value">{parsed}<span class="tracker-total">/{total_jobs}</span></div>
         <div class="tracker-bar"><div class="tracker-bar-fill parsed" style="width:{parse_pct}%"></div></div>
         <div class="tracker-footer">
@@ -624,13 +640,27 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
       </div>
 
       <div class="tracker-card">
-        <div class="tracker-header">Triaged</div>
-        <div class="tracker-value">{triage_total}<span class="tracker-total"> passages</span></div>
+        <div class="tracker-header">
+          <span class="tracker-step-num">3</span> Triaged
+        </div>
+        <div class="tracker-value">{triage_total}<span class="tracker-total">/{total_passages} passages</span></div>
         <div class="tracker-bar"><div class="tracker-bar-fill triaged" style="width:{triage_pct}%"></div></div>
         <div class="tracker-footer">
           <span class="tracker-detail">{triage_relevant} relevant</span>
           <span class="tracker-detail uncertain">{triage_uncertain} uncertain</span>
           <span class="tracker-detail skipped">{triage_skipped} skipped</span>
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <span class="tracker-step-num">4</span> Extracted
+        </div>
+        <div class="tracker-value">{extracted_passages}<span class="tracker-total">/{extractable_passages} passages</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill extracted" style="width:{extract_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{extract_pct}%</span>
+          {status_badge(extraction_in_progress, extraction_failed)}
         </div>
       </div>
 
