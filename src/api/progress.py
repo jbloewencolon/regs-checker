@@ -180,20 +180,29 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).select_from(NormalizedSourceRecord)
     ) or 0
 
-    triage_count = db.scalar(
-        select(func.count()).select_from(SectionTriageResult)
-    ) or 0
+    triage_count = 0
+    triage_relevant = 0
+    try:
+        triage_count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+
+        if triage_count > 0:
+            # Triage has run — only count passages that passed triage
+            triage_relevant = db.scalar(
+                select(func.count()).where(
+                    SectionTriageResult.decision.in_([
+                        TriageDecision.relevant,
+                        TriageDecision.uncertain,
+                    ])
+                )
+            ) or 0
+    except Exception:
+        # Table may not exist yet if migration hasn't been applied
+        db.rollback()
+        triage_count = 0
 
     if triage_count > 0:
-        # Triage has run — only count passages that passed triage
-        triage_relevant = db.scalar(
-            select(func.count()).where(
-                SectionTriageResult.decision.in_([
-                    TriageDecision.relevant,
-                    TriageDecision.uncertain,
-                ])
-            )
-        ) or 0
         # Passages not yet triaged should also be counted (pending triage)
         untriaged = total_passages - triage_count
         extraction_total = triage_relevant + untriaged
