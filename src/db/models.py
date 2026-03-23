@@ -16,6 +16,7 @@ Table inventory:
 13. applicability_conditions – AND/OR/NOT expression tree (adjacency list)
 14. api_keys                 – API authentication for /v1/
 15. export_jobs              – async export task tracking
+16. section_triage_results   – AI-relevance filtering per passage
 
 Materialized views (not tables):
  - current_active_obligations
@@ -509,6 +510,56 @@ class ApiKey(Base):
 # ---------------------------------------------------------------------------
 # 15. Export Jobs
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# 16. Section Triage Results — AI-relevance filtering per passage
+# ---------------------------------------------------------------------------
+
+
+class TriageDecision(str, enum.Enum):
+    relevant = "relevant"
+    not_relevant = "not_relevant"
+    uncertain = "uncertain"  # Passed to extraction as precaution
+
+
+class TriageMethod(str, enum.Enum):
+    keyword = "keyword"              # Matched AI keywords / Orrick terms
+    orrick_cross_check = "orrick_cross_check"  # LLM cross-check against Orrick metadata
+    llm_generic = "llm_generic"      # LLM generic AI-relevance (no Orrick data)
+    quality_fail = "quality_fail"    # PDF quality too low to triage
+    passthrough = "passthrough"      # No triage run (e.g., all-agents fallback)
+
+
+class SectionTriageResult(Base):
+    __tablename__ = "section_triage_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_record_id = Column(
+        Integer, ForeignKey("normalized_source_records.id"),
+        nullable=False, unique=True, index=True,
+    )
+    decision = Column(Enum(TriageDecision), nullable=False)
+    method = Column(Enum(TriageMethod), nullable=False)
+    confidence = Column(Float, nullable=False, default=0.0)
+
+    # What matched (keyword hits, Orrick terms, LLM reasoning)
+    matched_keywords = Column(JSONB, default=list)    # ["artificial intelligence", "deployer"]
+    orrick_terms_checked = Column(JSONB, default=list)  # terms extracted from Orrick metadata
+    llm_reasoning = Column(Text)                       # LLM explanation (if LLM was used)
+
+    # PDF quality metrics for this passage
+    pdf_quality_score = Column(Float)  # 0.0-1.0; None if not a PDF
+    quality_flags = Column(JSONB, default=list)  # ["ocr_noise", "garbled_chars", ...]
+
+    model_id = Column(String(100))     # which model triaged (null if keyword-only)
+    created_at = Column(DateTime, server_default=func.now())
+
+    source_record = relationship("NormalizedSourceRecord", backref="triage_result")
+
+    __table_args__ = (
+        Index("ix_triage_decision", "decision"),
+    )
 
 
 class ExportJob(Base):

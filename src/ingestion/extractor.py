@@ -7,6 +7,10 @@ Shared logic used by both:
 Steps:
   1. Query NormalizedSourceRecords without extractions (or with pending ExtractionJob)
   2. Filter out tiny passages (<150 chars) and merge adjacent short fragments
+  2b. TRIAGE: Run section-level AI-relevance filter (keyword + Orrick + LLM)
+      - Passages marked "not_relevant" skip the agent battery
+      - Passages marked "uncertain" proceed (conservative)
+      - All decisions stored in section_triage_results for review
   3. Select agents per passage via negative screening (exclude only boilerplate)
   4. Run selected agents concurrently
   5. Validate output via Pydantic, verify evidence spans via string matching
@@ -68,6 +72,9 @@ from src.db.models import (
     ObligationDependency,
     ReviewQueueItem,
     ReviewStatus,
+    SectionTriageResult,
+    TriageDecision,
+    TriageMethod,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
@@ -860,6 +867,78 @@ def run_extraction(
 
     if skipped_short:
         _log(f"Skipped {skipped_short} passages under {MIN_PASSAGE_LENGTH} chars")
+
+    # ---- Section Triage (Step 2b) ----
+    # Run AI-relevance filtering before sending to the full agent battery.
+    # Decisions are stored in section_triage_results for human review.
+    from src.agents.section_triage import triage_passage
+
+    triage_relevant = 0
+    triage_skipped = 0
+    triage_uncertain = 0
+    triaged_records: list[NormalizedSourceRecord] = []
+
+    for record in records:
+        # Skip if already triaged (re-run safety)
+        existing_triage = db.scalars(
+            select(SectionTriageResult).where(
+                SectionTriageResult.source_record_id == record.id
+            )
+        ).first()
+        if existing_triage:
+            if existing_triage.decision == TriageDecision.not_relevant:
+                triage_skipped += 1
+                continue
+            triaged_records.append(record)
+            if existing_triage.decision == TriageDecision.relevant:
+                triage_relevant += 1
+            else:
+                triage_uncertain += 1
+            continue
+
+        ctx = _build_context(db, record)
+        result = triage_passage(record.text_content, ctx, llm_provider=None)
+
+        # Store triage result
+        triage_row = SectionTriageResult(
+            source_record_id=record.id,
+            decision=TriageDecision(result.decision),
+            method=TriageMethod(result.method),
+            confidence=result.confidence,
+            matched_keywords=result.matched_keywords,
+            orrick_terms_checked=result.orrick_terms_checked,
+            llm_reasoning=result.llm_reasoning,
+            pdf_quality_score=result.pdf_quality_score,
+            quality_flags=result.quality_flags,
+            model_id=result.model_id,
+        )
+        db.add(triage_row)
+
+        if result.decision == "not_relevant":
+            triage_skipped += 1
+        else:
+            triaged_records.append(record)
+            if result.decision == "relevant":
+                triage_relevant += 1
+            else:
+                triage_uncertain += 1
+
+    # Commit triage results
+    db.commit()
+
+    summary["triage_relevant"] = triage_relevant
+    summary["triage_skipped"] = triage_skipped
+    summary["triage_uncertain"] = triage_uncertain
+
+    _log(
+        f"Triage: {triage_relevant} relevant, {triage_uncertain} uncertain, "
+        f"{triage_skipped} skipped (not AI-relevant)"
+    )
+
+    records = triaged_records
+    if not records:
+        _log("No AI-relevant passages found after triage.")
+        return summary
 
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}

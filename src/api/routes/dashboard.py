@@ -209,6 +209,143 @@ def review_page(
     })
 
 
+@router.get("/triage", response_class=HTMLResponse)
+def triage_page(
+    request: Request,
+    filter: str = "all",
+    db: Session = Depends(get_db),
+):
+    """Section triage review page — accordion by state with passage details."""
+    from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
+
+    # Get totals
+    totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
+    for row in db.execute(
+        text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
+    ).all():
+        decision, method, cnt = row
+        totals["total"] += cnt
+        if method == "quality_fail":
+            totals["quality_fail"] += cnt
+        elif decision in totals:
+            totals[decision] += cnt
+
+    # Build query for triage results joined with source records and documents
+    query = (
+        select(
+            SectionTriageResult,
+            NormalizedSourceRecord.section_path,
+            NormalizedSourceRecord.text_content,
+            NormalizedSourceRecord.document_version_id,
+            DocumentFamily.canonical_title,
+            DocumentFamily.short_cite,
+            Source.jurisdiction_code,
+            Source.jurisdiction_name,
+        )
+        .join(NormalizedSourceRecord, SectionTriageResult.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+        .join(Source, DocumentFamily.source_id == Source.id)
+    )
+
+    if filter == "relevant":
+        query = query.where(SectionTriageResult.decision == "relevant")
+    elif filter == "not_relevant":
+        query = query.where(SectionTriageResult.decision == "not_relevant")
+    elif filter == "uncertain":
+        query = query.where(SectionTriageResult.decision == "uncertain")
+    elif filter == "quality_fail":
+        query = query.where(SectionTriageResult.method == "quality_fail")
+
+    query = query.order_by(
+        Source.jurisdiction_code,
+        DocumentFamily.canonical_title,
+        NormalizedSourceRecord.ordinal,
+    )
+
+    rows = db.execute(query).all()
+
+    # Group by state → document → passages
+    from collections import OrderedDict
+    states_dict: dict[str, dict] = OrderedDict()
+
+    for row in rows:
+        triage = row[0]
+        section_path = row[1]
+        text_content = row[2]
+        dv_id = row[3]
+        doc_title = row[4] or "Untitled"
+        short_cite = row[5]
+        jur_code = row[6] or "??"
+        jur_name = row[7] or jur_code
+
+        if jur_code not in states_dict:
+            states_dict[jur_code] = {
+                "jurisdiction_code": jur_code,
+                "jurisdiction_name": jur_name,
+                "relevant": 0,
+                "not_relevant": 0,
+                "uncertain": 0,
+                "quality_fail": 0,
+                "documents": OrderedDict(),
+            }
+
+        state = states_dict[jur_code]
+        doc_key = f"{dv_id}:{doc_title}"
+        if doc_key not in state["documents"]:
+            state["documents"][doc_key] = {
+                "title": doc_title,
+                "short_cite": short_cite,
+                "relevant": 0,
+                "not_relevant": 0,
+                "uncertain": 0,
+                "passages": [],
+            }
+
+        doc = state["documents"][doc_key]
+
+        # Count
+        decision_val = triage.decision.value if hasattr(triage.decision, "value") else str(triage.decision)
+        method_val = triage.method.value if hasattr(triage.method, "value") else str(triage.method)
+
+        if method_val == "quality_fail":
+            state["quality_fail"] += 1
+        elif decision_val in ("relevant", "not_relevant", "uncertain"):
+            state[decision_val] += 1
+            doc[decision_val] += 1
+
+        # Preview: first 120 chars, full text for expansion
+        preview = (text_content or "")[:120].replace("\n", " ")
+        if len(text_content or "") > 120:
+            preview += "..."
+
+        doc["passages"].append({
+            "decision": decision_val,
+            "method": method_val,
+            "section_path": section_path,
+            "text_preview": html_escape(preview),
+            "text_full": html_escape(text_content or ""),
+            "matched_keywords": triage.matched_keywords or [],
+            "orrick_terms_checked": triage.orrick_terms_checked or [],
+            "llm_reasoning": triage.llm_reasoning,
+            "pdf_quality_score": triage.pdf_quality_score,
+            "quality_flags": triage.quality_flags or [],
+            "confidence": triage.confidence or 0.0,
+        })
+
+    # Convert OrderedDicts to lists for template
+    states = []
+    for state in states_dict.values():
+        state["documents"] = list(state["documents"].values())
+        states.append(state)
+
+    return _render(request, "triage.html", {
+        "states": states,
+        "totals": totals,
+        "filter": filter,
+    })
+
+
 # ---------------------------------------------------------------------------
 # API endpoints (called by HTMX buttons)
 # ---------------------------------------------------------------------------
