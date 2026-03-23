@@ -1284,7 +1284,8 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         return HTMLResponse(
             f'<div class="result-panel success">'
             f'{" ".join(parts)}'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1391,7 +1392,8 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Cleared <strong>{count}</strong> uncertain/low-confidence triage results. '
             f'High-confidence and manually reviewed results preserved. '
             f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1441,7 +1443,8 @@ def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
             f'<strong>{job_count}</strong> extraction jobs. '
             f'Also cleared dependency graph, applicability conditions, and review queue. '
             f'Triage results preserved. Hit <strong>Extract</strong> to re-run.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1472,7 +1475,8 @@ def reset_dependency_graph(db: Session = Depends(get_db)) -> HTMLResponse:
             f'<div class="result-panel success">'
             f'Cleared <strong>{count}</strong> dependency edges. '
             f'Hit <strong>Build All Pending</strong> to rebuild.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1503,7 +1507,8 @@ def reset_applicability_conditions(db: Session = Depends(get_db)) -> HTMLRespons
             f'<div class="result-panel success">'
             f'Cleared <strong>{count}</strong> condition nodes. '
             f'Hit <strong>Parse All Pending</strong> to rebuild.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1558,7 +1563,8 @@ def reset_review(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Reset <strong>{reviewed_count}</strong> review decisions to pending. '
             f'Cleared <strong>{action_count}</strong> review actions. '
             f'All extractions are now awaiting review.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
@@ -1590,7 +1596,8 @@ def reset_sync(db: Session = Depends(get_db)) -> HTMLResponse:
             f'<div class="result-panel success">'
             f'Cleared sync status on <strong>{count}</strong> extractions. '
             f'They will be included in the next sync run.'
-            f'</div>'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()

@@ -720,6 +720,11 @@ document.querySelectorAll('.law-tracker-details').forEach(function(d) {
   });
 });
 
+/* Reload page after a pipeline reset so stats update */
+document.body.addEventListener('pipelineReset', function() {
+  setTimeout(function() { location.reload(); }, 1500);
+});
+
 /* Auto-dismiss result panels after 8 seconds; click to dismiss immediately */
 document.body.addEventListener('htmx:afterSettle', function(evt) {
   var panels = evt.target.querySelectorAll
