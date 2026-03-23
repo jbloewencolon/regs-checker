@@ -227,6 +227,15 @@
                   hx-confirm="Reset failed jobs for re-parsing? Already-downloaded files will NOT be re-fetched. Completed jobs will not be affected.">
             Reset (Re-parse)
           </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/triage"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  style="border-color: var(--info); color: var(--info);">
+            <span class="btn-label">Triage Passages</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Triaging...</span>
+          </button>
         </div>
         <div id="fetch-cancel-status"></div>
         <div class="step-result" id="step2-result"></div>

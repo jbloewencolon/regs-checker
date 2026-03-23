@@ -786,6 +786,101 @@ def extract_single_record(
     return extractions_created
 
 
+def run_triage(
+    db,
+    on_progress: callable | None = None,
+) -> dict:
+    """Run section triage on all untriaged passages.
+
+    Triages passages from completed ingestion jobs that don't yet have
+    a SectionTriageResult. This is the same logic as the inline triage
+    in run_extraction(), extracted into a standalone function so it can
+    be triggered independently from the dashboard.
+
+    Returns:
+        Summary dict with relevant/uncertain/skipped/total counts.
+    """
+    from src.agents.section_triage import triage_passage
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Find all passages from completed ingestion jobs that haven't been triaged
+    triaged_ids = select(SectionTriageResult.source_record_id)
+    records = db.scalars(
+        select(NormalizedSourceRecord)
+        .where(
+            NormalizedSourceRecord.id.notin_(triaged_ids),
+            NormalizedSourceRecord.document_version_id.in_(
+                select(IngestionJob.document_version_id).where(
+                    IngestionJob.status.in_(["completed", "fetched"])
+                )
+            ),
+        )
+    ).all()
+
+    # Filter out tiny passages
+    records = [r for r in records if len(r.text_content or "") >= MIN_PASSAGE_LENGTH]
+
+    summary = {
+        "total": len(records),
+        "relevant": 0,
+        "uncertain": 0,
+        "skipped": 0,
+    }
+
+    if not records:
+        _log("No untriaged passages found.")
+        return summary
+
+    _log(f"Triaging {len(records)} passages...")
+
+    for i, record in enumerate(records):
+        ctx = _build_context(db, record)
+        result = triage_passage(record.text_content, ctx, llm_provider=None)
+
+        triage_row = SectionTriageResult(
+            source_record_id=record.id,
+            decision=TriageDecision(result.decision),
+            method=TriageMethod(result.method),
+            confidence=result.confidence,
+            matched_keywords=result.matched_keywords,
+            orrick_terms_checked=result.orrick_terms_checked,
+            llm_reasoning=result.llm_reasoning,
+            pdf_quality_score=result.pdf_quality_score,
+            quality_flags=result.quality_flags,
+            model_id=result.model_id,
+        )
+        db.add(triage_row)
+
+        if result.decision == "not_relevant":
+            summary["skipped"] += 1
+        elif result.decision == "relevant":
+            summary["relevant"] += 1
+        else:
+            summary["uncertain"] += 1
+
+        # Commit in batches of 100 for progress visibility
+        if (i + 1) % 100 == 0:
+            db.commit()
+            _log(
+                f"Triaged {i + 1}/{len(records)}: "
+                f"{summary['relevant']} relevant, "
+                f"{summary['uncertain']} uncertain, "
+                f"{summary['skipped']} skipped"
+            )
+
+    db.commit()
+    _log(
+        f"Triage complete: {summary['relevant']} relevant, "
+        f"{summary['uncertain']} uncertain, {summary['skipped']} skipped "
+        f"out of {summary['total']} passages"
+    )
+    return summary
+
+
 def run_extraction(
     db,
     limit: int | None = None,

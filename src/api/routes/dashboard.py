@@ -1242,6 +1242,35 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/run/triage")
+def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Run section triage on all untriaged passages from completed documents."""
+    try:
+        from src.ingestion.extractor import run_triage
+
+        summary = run_triage(db)
+
+        if summary["total"] == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No untriaged passages found. '
+                'All passages have already been triaged, or no documents have been parsed yet.</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Triaged <strong>{summary["total"]}</strong> passages: '
+            f'<span style="color:var(--success);">{summary["relevant"]} relevant</span>, '
+            f'<span style="color:var(--warning);">{summary["uncertain"]} uncertain</span>, '
+            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Triage error: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/retry-job/{job_id}")
 def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     """Reset a single failed/manual-review job back to pending for re-fetching."""
