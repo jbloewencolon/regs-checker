@@ -14,6 +14,7 @@ Split into sub-modules:
 
 from __future__ import annotations
 
+import threading
 from html import escape as html_escape
 from pathlib import Path
 
