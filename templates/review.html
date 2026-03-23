@@ -243,7 +243,8 @@
                 <h4>Extraction Fields <span style="font-size:10px;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:400;">(edit values, then save)</span></h4>
                 <form class="edit-extraction-form" id="edit-form-{{ item.queue_id }}">
                   <div class="edit-fields-grid">
-                    {% for key, value in item.payload.items() %}
+                    {% set hidden_fields = ('_model_id', 'exceptions', '_prompt_hash', '_template_version') %}
+                    {% for key, value in item.payload.items() if key not in hidden_fields %}
                     <div class="edit-field-row">
                       <label class="edit-field-label" for="field-{{ item.queue_id }}-{{ key }}">{{ key }}</label>
                       {% if key == 'modality' %}
