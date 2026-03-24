@@ -10,12 +10,21 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from collections import Counter
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 from sqlalchemy import create_engine, text
 
-DB_URL = "postgresql://regs:regs@localhost:5432/regs_checker"
+DB_URL = os.environ.get(
+    "REGS_DATABASE_URL",
+    "postgresql://regs:regs@localhost:5434/regs_checker",
+)
 
 # ── Supabase baseline (queried via MCP 2026-03-24) ──────────────────────
 SUPABASE = {
