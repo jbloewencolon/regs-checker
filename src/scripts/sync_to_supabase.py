@@ -152,9 +152,12 @@ def sync_tables(
                 summary[table_name] = 0
                 continue
 
-            # Fetch all rows from source
+            # Fetch all rows from source (sort self-referential tables for FK order)
+            order_clause = ""
+            if table_name == "applicability_conditions":
+                order_clause = " ORDER BY parent_id NULLS FIRST, id"
             rows = conn.execute(
-                text(f"SELECT * FROM {table_name}")  # noqa: S608
+                text(f"SELECT * FROM {table_name}{order_clause}")  # noqa: S608
             ).mappings().all()
 
             if not rows:
