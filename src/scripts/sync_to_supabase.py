@@ -39,6 +39,7 @@ SYNC_TABLES = [
     "ingestion_jobs",
     "raw_artifacts",
     "normalized_source_records",
+    "section_triage_results",
     "extraction_jobs",
     "extractions",
     "review_queue",
@@ -169,7 +170,7 @@ def main():
     parser = argparse.ArgumentParser(description="Sync local DB to Supabase")
     parser.add_argument(
         "--source-url",
-        default="postgresql://regs:regs@localhost:5432/regs_checker",
+        default="postgresql://regs:regs@localhost:5434/regs_checker",
         help="Source database URL (default: local Docker postgres)",
     )
     parser.add_argument(
