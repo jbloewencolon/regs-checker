@@ -21,8 +21,13 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect, text
+
+# Load .env from project root so REGS_SUPABASE_URL is available
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 from sqlalchemy.orm import Session, sessionmaker
 
 # Application tables to sync (in dependency order for FK constraints)
