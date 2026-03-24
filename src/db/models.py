@@ -16,6 +16,7 @@ Table inventory:
 13. applicability_conditions – AND/OR/NOT expression tree (adjacency list)
 14. api_keys                 – API authentication for /v1/
 15. export_jobs              – async export task tracking
+16. section_triage_results   – AI-relevance filtering per passage
 
 Materialized views (not tables):
  - current_active_obligations
@@ -40,6 +41,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -255,6 +257,15 @@ class IngestionJob(Base):
 
     document_version = relationship("DocumentVersion", back_populates="ingestion_jobs")
 
+    __table_args__ = (
+        Index(
+            "uq_ingestion_job_version_url",
+            "document_version_id", "fetch_url",
+            unique=True,
+            postgresql_where=text("fetch_url IS NOT NULL"),
+        ),
+    )
+
 
 # ---------------------------------------------------------------------------
 # 5. Raw Artifacts (immutable, content-addressable)
@@ -304,6 +315,11 @@ class NormalizedSourceRecord(Base):
 
     __table_args__ = (
         Index("ix_nsr_version_ordinal", "document_version_id", "ordinal"),
+        Index(
+            "uq_nsr_version_ordinal",
+            "document_version_id", "ordinal",
+            unique=True,
+        ),
     )
 
 
@@ -332,6 +348,7 @@ class Extraction(Base):
     template_version = Column(String(50))  # version from YAML template
     model_id = Column(String(100))
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
+    payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -343,6 +360,11 @@ class Extraction(Base):
     __table_args__ = (
         Index("ix_extractions_type_status", "extraction_type", "review_status"),
         Index("ix_extractions_payload", "payload", postgresql_using="gin"),
+        Index(
+            "uq_extractions_dedup",
+            "source_record_id", "extraction_type", "payload_hash",
+            unique=True,
+        ),
     )
 
 
@@ -509,6 +531,58 @@ class ApiKey(Base):
 # ---------------------------------------------------------------------------
 # 15. Export Jobs
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# 16. Section Triage Results — AI-relevance filtering per passage
+# ---------------------------------------------------------------------------
+
+
+class TriageDecision(str, enum.Enum):
+    relevant = "relevant"
+    not_relevant = "not_relevant"
+    uncertain = "uncertain"  # Passed to extraction as precaution
+
+
+class TriageMethod(str, enum.Enum):
+    keyword = "keyword"              # Matched AI keywords / Orrick terms
+    orrick_cross_check = "orrick_cross_check"  # LLM cross-check against Orrick metadata
+    llm_generic = "llm_generic"      # LLM generic AI-relevance (no Orrick data)
+    quality_fail = "quality_fail"    # PDF quality too low to triage
+    passthrough = "passthrough"      # No triage run (e.g., all-agents fallback)
+    manual_review = "manual_review"  # Human override from triage UI
+
+
+class SectionTriageResult(Base):
+    __tablename__ = "section_triage_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_record_id = Column(
+        Integer, ForeignKey("normalized_source_records.id"),
+        nullable=False, unique=True, index=True,
+    )
+    decision = Column(Enum(TriageDecision), nullable=False)
+    method = Column(Enum(TriageMethod), nullable=False)
+    confidence = Column(Float, nullable=False, default=0.0)
+
+    # What matched (keyword hits, Orrick terms, LLM reasoning)
+    matched_keywords = Column(JSONB, default=list)    # ["artificial intelligence", "deployer"]
+    orrick_terms_checked = Column(JSONB, default=list)  # terms extracted from Orrick metadata
+    llm_reasoning = Column(Text)                       # LLM explanation (if LLM was used)
+    ai_signals = Column(Text)                           # Why the passage might be AI-related
+
+    # PDF quality metrics for this passage
+    pdf_quality_score = Column(Float)  # 0.0-1.0; None if not a PDF
+    quality_flags = Column(JSONB, default=list)  # ["ocr_noise", "garbled_chars", ...]
+
+    model_id = Column(String(100))     # which model triaged (null if keyword-only)
+    created_at = Column(DateTime, server_default=func.now())
+
+    source_record = relationship("NormalizedSourceRecord", backref="triage_result")
+
+    __table_args__ = (
+        Index("ix_triage_decision", "decision"),
+    )
 
 
 class ExportJob(Base):

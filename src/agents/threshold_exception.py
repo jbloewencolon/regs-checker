@@ -38,13 +38,24 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage contains MULTIPLE boundary conditions, include one object per condition.
 
 If the passage contains NO extractable thresholds or exceptions, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no thresholds or exceptions were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than hallucinating boundaries
 - Distinguish clearly between thresholds (when it applies) and exceptions (when it doesn't)
-- Capture exact numeric values and units"""
+- Capture exact numeric values and units
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+- Include enough context for the span to be meaningful (usually 10-40 words)
+
+EXAMPLE (for a passage containing "This section does not apply to a covered entity that employs fewer than 50 employees."):
+  CORRECT: {"field_name": "text", "text": "This section does not apply to a covered entity that employs fewer than 50 employees."}
+  WRONG:   {"field_name": "text", "text": "Does not apply to covered entities with fewer than 50 employees."}
+The second is wrong because it paraphrases instead of copying the exact text."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all thresholds and exceptions from the following legislative passage.
@@ -67,6 +78,7 @@ PASSAGE:
                     f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
                     f"context to improve extraction accuracy):\n{context['key_requirements']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

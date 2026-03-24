@@ -9,16 +9,93 @@ All share auth middleware, database connections, Pydantic models,
 error handling, and deployment infrastructure.
 """
 
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func, select
 from starlette.templating import Jinja2Templates
 
 from src.api.routes import dashboard, internal, v1
 from src.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+def _recover_stale_jobs() -> None:
+    """Reset jobs left in transient states (fetching/parsing/running) from a prior crash."""
+    from sqlalchemy import update
+
+    from src.db.engine import SessionLocal
+    from src.db.models import ExtractionJob, IngestionJob, IngestionStatus, RawArtifact
+
+    db = SessionLocal()
+    try:
+        # IngestionJobs stuck in "fetching" — reset to pending (or fetched if artifact exists)
+        stale_fetching = db.scalars(
+            select(IngestionJob).where(IngestionJob.status == IngestionStatus.fetching)
+        ).all()
+        for job in stale_fetching:
+            has_artifact = db.scalar(
+                select(func.count()).select_from(RawArtifact).where(
+                    RawArtifact.document_version_id == job.document_version_id
+                )
+            )
+            if has_artifact:
+                job.status = IngestionStatus.fetched
+            else:
+                job.status = IngestionStatus.pending
+            job.error_message = "Recovered: process stopped during fetch"
+
+        # IngestionJobs stuck in "parsing" — reset to fetched (artifact already downloaded)
+        stale_parsing = db.execute(
+            update(IngestionJob)
+            .where(IngestionJob.status == IngestionStatus.parsing)
+            .values(
+                status=IngestionStatus.fetched,
+                error_message="Recovered: process stopped during parse",
+            )
+        )
+
+        # ExtractionJobs stuck in "running" — mark as interrupted
+        stale_extraction = db.execute(
+            update(ExtractionJob)
+            .where(ExtractionJob.status == "running")
+            .values(
+                status="interrupted",
+                error_message="Recovered: process stopped during extraction",
+            )
+        )
+
+        db.commit()
+
+        counts = (
+            len(stale_fetching),
+            stale_parsing.rowcount,
+            stale_extraction.rowcount,
+        )
+        if any(counts):
+            logger.warning(
+                "Recovered stale jobs from prior crash: "
+                f"{counts[0]} fetching, {counts[1]} parsing, {counts[2]} extracting"
+            )
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to recover stale jobs on startup")
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup/shutdown lifecycle."""
+    _recover_stale_jobs()
+    yield
+
 
 app = FastAPI(
     title="Regs Checker — AI Legal Corpus",
@@ -30,6 +107,7 @@ app = FastAPI(
     ),
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Static files and templates

@@ -5,10 +5,8 @@ Kept separate because it's genuinely different from extraction — it's a
 meta-analysis task that evaluates the quality and clarity of the legal text
 itself (Recommendation #1).
 
-Uses GPT (openai/gpt-oss-20b) because reasoning models like DeepSeek-R1
-spend thousands of tokens on chain-of-thought analysis, often exceeding
-the output budget before producing any JSON.  GPT answers in 1-2 seconds
-with clean, structured output.
+Uses openai/gpt-oss-20b (same as all other agents) to avoid VRAM model
+swapping in LM Studio, which adds seconds of latency per passage.
 """
 
 from pydantic import BaseModel
@@ -49,13 +47,23 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage contains MULTIPLE ambiguities, include one object per ambiguity.
 
 If the passage contains NO identifiable ambiguity, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no ambiguity was found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than over-flagging clear language
 - Severity should reflect actual compliance risk, not stylistic preference
-- Not all general terms are ambiguous — consider legislative context"""
+- Not all general terms are ambiguous — consider legislative context
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- The ambiguous_text field must ALSO be an exact verbatim quote from the passage
+
+EXAMPLE (for a passage containing "the system shall use reasonable measures to prevent harm"):
+  CORRECT evidence_span: {"field_name": "ambiguous_text", "text": "the system shall use reasonable measures to prevent harm"}
+  WRONG:  {"field_name": "ambiguous_text", "text": "reasonable measures to prevent harm"}
+The second is wrong because it drops the beginning of the phrase."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Analyze the following legislative passage for ambiguity, vagueness,
@@ -81,6 +89,7 @@ PASSAGE:
                     f"context to identify ambiguity in scope and applicability):\n"
                     f"{context['key_requirements']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

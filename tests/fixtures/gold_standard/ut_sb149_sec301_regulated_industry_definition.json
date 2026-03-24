@@ -1,0 +1,27 @@
+{
+    "passage_id": "ut_sb149_sec301_regulated_industry_definition",
+    "source_document": "Utah SB 149 (Artificial Intelligence Policy Act)",
+    "jurisdiction": "UT",
+    "section_path": "Section 301 - Definitions",
+    "passage_text": "As used in this part: (1) \"Generative artificial intelligence\" means an artificial intelligence system that is capable of generating derived synthetic content, including text, images, video, and audio, that emulates the structure and characteristics of the system's training data. (2) \"Regulated industry\" means an industry that is subject to regulation by the state under this title.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Generative artificial intelligence",
+            "definition_text": "an artificial intelligence system that is capable of generating derived synthetic content, including text, images, video, and audio, that emulates the structure and characteristics of the system's training data",
+            "scope": "this part",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": []
+        },
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "emulates the structure and characteristics of the system's training data",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Section 304 - generative AI disclosure requirement"],
+            "interpretation_notes": "The phrase 'emulates the structure and characteristics' is subjective. It is unclear at what point AI output crosses from 'inspired by' to 'emulating' training data, which determines whether a system qualifies as generative AI under this act.",
+            "suggested_clarification": "Provide technical criteria or thresholds for what constitutes emulation of training data structure and characteristics"
+        }
+    }
+}

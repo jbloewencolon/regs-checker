@@ -1,0 +1,194 @@
+{% extends "layout.html" %}
+{% set title = "Section Triage" %}
+{% set active_nav = "triage" %}
+
+{% block content %}
+<section class="section">
+  <div class="section-header">
+    <h2>Section Triage — AI-Relevance Review</h2>
+    <a href="/dashboard" class="btn btn-sm">&larr; Back to Pipeline</a>
+  </div>
+
+  <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+    Every passage is triaged for AI-relevance before extraction. Passages marked
+    <strong>not_relevant</strong> skip the extraction agents. Expand any state
+    to review individual passage decisions.
+  </p>
+
+  <!-- Summary stats (auto-refresh while triage is running) -->
+  <div class="triage-summary"
+       hx-get="/dashboard/api/triage-stats"
+       hx-trigger="every 5s"
+       hx-swap="outerHTML">
+    <div class="triage-stat">
+      <span class="triage-stat-value">{{ totals.relevant }}</span>
+      <span class="triage-stat-label">Relevant</span>
+    </div>
+    <div class="triage-stat">
+      <span class="triage-stat-value triage-uncertain">{{ totals.uncertain }}</span>
+      <span class="triage-stat-label">Uncertain</span>
+    </div>
+    <div class="triage-stat">
+      <span class="triage-stat-value triage-skipped">{{ totals.not_relevant }}</span>
+      <span class="triage-stat-label">Skipped</span>
+    </div>
+    <div class="triage-stat">
+      <span class="triage-stat-value triage-quality-fail">{{ totals.quality_fail }}</span>
+      <span class="triage-stat-label">Quality Fail</span>
+    </div>
+    <div class="triage-stat">
+      <span class="triage-stat-value" style="color: var(--text-muted);">{{ totals.total }}</span>
+      <span class="triage-stat-label">Total Passages</span>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="tabs">
+    <a class="tab {% if filter == 'all' %}active{% endif %}"
+       href="/dashboard/triage?filter=all">
+      All <span class="tab-count">{{ totals.total }}</span>
+    </a>
+    <a class="tab {% if filter == 'relevant' %}active{% endif %}"
+       href="/dashboard/triage?filter=relevant">
+      Relevant <span class="tab-count">{{ totals.relevant }}</span>
+    </a>
+    <a class="tab {% if filter == 'not_relevant' %}active{% endif %}"
+       href="/dashboard/triage?filter=not_relevant">
+      Skipped <span class="tab-count">{{ totals.not_relevant }}</span>
+    </a>
+    <a class="tab {% if filter == 'uncertain' %}active{% endif %}"
+       href="/dashboard/triage?filter=uncertain">
+      Uncertain <span class="tab-count">{{ totals.uncertain }}</span>
+    </a>
+    <a class="tab {% if filter == 'quality_fail' %}active{% endif %}"
+       href="/dashboard/triage?filter=quality_fail"
+       style="{% if totals.quality_fail > 0 %}border-color: #fca5a5; color: #dc2626;{% endif %}">
+      Quality Fail <span class="tab-count" {% if totals.quality_fail > 0 %}style="background: #fef2f2; color: #dc2626;"{% endif %}>{{ totals.quality_fail }}</span>
+    </a>
+  </div>
+
+  <!-- Accordion by state -->
+  {% if states %}
+  {% for state in states %}
+  <details class="step-accordion triage-state-accordion" {% if states|length == 1 %}open{% endif %}>
+    <summary class="step-accordion-header">
+      <strong>{{ state.jurisdiction_code }}</strong> — {{ state.jurisdiction_name }}
+      <span class="triage-state-counts">
+        <span class="triage-badge triage-badge-relevant">{{ state.relevant }}</span>
+        <span class="triage-badge triage-badge-uncertain">{{ state.uncertain }}</span>
+        <span class="triage-badge triage-badge-skipped">{{ state.not_relevant }}</span>
+        {% if state.quality_fail > 0 %}
+        <span class="triage-badge triage-badge-quality">{{ state.quality_fail }}</span>
+        {% endif %}
+      </span>
+    </summary>
+    <div class="step-accordion-body" style="padding: 0;">
+      {% for doc in state.documents %}
+      <details class="triage-doc-accordion">
+        <summary class="triage-doc-header">
+          <span class="triage-doc-title">{{ doc.title }}</span>
+          <span class="triage-doc-cite">{{ doc.short_cite or '' }}</span>
+          <span class="triage-state-counts">
+            <span class="triage-badge triage-badge-relevant" title="Relevant">{{ doc.relevant }}</span>
+            <span class="triage-badge triage-badge-skipped" title="Skipped">{{ doc.not_relevant }}</span>
+          </span>
+        </summary>
+        <div class="triage-doc-body">
+          <table class="triage-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">Decision</th>
+                <th style="width: 80px;">Method</th>
+                <th>Section</th>
+                <th>Passage (preview)</th>
+                <th style="width: 90px;">Keywords</th>
+                <th style="width: 60px;">Quality</th>
+                <th style="width: 50px;">Conf.</th>
+                <th style="width: 100px;">Override</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in doc.passages %}
+              <tr class="triage-row-{{ p.decision }}">
+                <td id="triage-decision-{{ p.id }}">
+                  <span class="triage-decision triage-decision-{{ p.decision }}">
+                    {{ p.decision | replace("_", " ") }}
+                  </span>
+                </td>
+                <td style="font-size: 11px; color: var(--text-muted);">{{ p.method }}</td>
+                <td style="font-size: 12px;">{{ p.section_path or '—' }}</td>
+                <td class="triage-passage-cell">
+                  <details class="triage-passage-expand">
+                    <summary>{{ p.text_preview }}</summary>
+                    <pre class="triage-full-text">{{ p.text_full }}</pre>
+                    {% if p.ai_signals %}
+                    <div class="triage-reasoning triage-ai-signals">
+                      <strong>Why AI-related?</strong> {{ p.ai_signals }}
+                    </div>
+                    {% endif %}
+                    {% if p.llm_reasoning %}
+                    <div class="triage-reasoning">
+                      <strong>LLM reasoning:</strong> {{ p.llm_reasoning }}
+                    </div>
+                    {% endif %}
+                  </details>
+                </td>
+                <td style="font-size: 11px;">
+                  {% if p.matched_keywords %}
+                  <span title="{{ p.matched_keywords | join(', ') }}">
+                    {{ p.matched_keywords | length }} hit{{ 's' if p.matched_keywords | length != 1 else '' }}
+                  </span>
+                  {% else %}
+                  <span style="color: var(--text-muted);">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if p.pdf_quality_score is not none %}
+                  <span class="triage-quality {% if p.pdf_quality_score < 0.5 %}triage-quality-low{% elif p.pdf_quality_score < 0.8 %}triage-quality-mid{% endif %}"
+                        title="{{ p.quality_flags | join(', ') if p.quality_flags else 'Clean' }}">
+                    {{ "%.0f" | format(p.pdf_quality_score * 100) }}%
+                  </span>
+                  {% else %}
+                  <span style="color: var(--text-muted);">—</span>
+                  {% endif %}
+                </td>
+                <td style="font-size: 12px;">{{ "%.0f" | format(p.confidence * 100) }}%</td>
+                <td>
+                  <span id="triage-override-{{ p.id }}">
+                  {% if p.decision in ('uncertain', 'quality_fail', 'not_relevant') %}
+                    <button class="btn-triage-override btn-triage-relevant"
+                            hx-post="/dashboard/api/triage/{{ p.id }}/override"
+                            hx-vals='{"decision": "relevant"}'
+                            hx-target="#triage-decision-{{ p.id }}"
+                            hx-swap="innerHTML"
+                            title="Mark as relevant for extraction">&#10003;</button>
+                  {% endif %}
+                  {% if p.decision in ('uncertain', 'quality_fail', 'relevant') %}
+                    <button class="btn-triage-override btn-triage-skip"
+                            hx-post="/dashboard/api/triage/{{ p.id }}/override"
+                            hx-vals='{"decision": "not_relevant"}'
+                            hx-target="#triage-decision-{{ p.id }}"
+                            hx-swap="innerHTML"
+                            title="Mark as not relevant (skip extraction)">&#10007;</button>
+                  {% endif %}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+  </details>
+  {% endfor %}
+
+  {% else %}
+  <div class="result-panel info">
+    No triage results yet. Run extraction to trigger section triage.
+  </div>
+  {% endif %}
+
+</section>
+{% endblock %}

@@ -255,6 +255,72 @@ def get_change_feed(
 
 
 # ---------------------------------------------------------------------------
+# Completeness Manifest
+# ---------------------------------------------------------------------------
+
+
+@router.get("/completeness")
+def get_completeness(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Return extraction completeness manifest as JSON.
+
+    Reports per-document extraction coverage: total passages, processed,
+    skipped, coverage percentage, and gaps where passages have no extractions.
+    Use this to certify that all passages in a law have been processed.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import compute_completeness_manifest
+
+    reports = compute_completeness_manifest(db, document_version_id)
+    return {
+        "documents": [asdict(r) for r in reports],
+        "summary": {
+            "total_documents": len(reports),
+            "complete_documents": sum(1 for r in reports if r.is_complete),
+            "total_passages": sum(r.total_passages for r in reports),
+            "total_processed": sum(r.passages_processed for r in reports),
+            "total_gaps": sum(len(r.gaps) for r in reports),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Verification
+# ---------------------------------------------------------------------------
+
+
+@router.get("/verification")
+def get_verification_results(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Run verification pass and return results as JSON.
+
+    Three layers: cross-validation, gap detection, citation verification.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import run_verification_pass
+
+    results = run_verification_pass(db, document_version_id)
+    return {
+        "documents": [asdict(r) for r in results],
+        "summary": {
+            "total_documents": len(results),
+            "total_cv_flagged": sum(r.cross_validation_flagged for r in results),
+            "total_gaps": sum(r.gaps_found for r in results),
+            "total_high_confidence_gaps": sum(r.high_confidence_gaps for r in results),
+            "total_citations_checked": sum(r.citations_checked for r in results),
+            "total_citations_unverified": sum(r.citations_unverified for r in results),
+            "total_tokens": sum(r.total_tokens for r in results),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

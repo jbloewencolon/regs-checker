@@ -1,0 +1,32 @@
+{
+    "passage_id": "va_hb2154_sec3_developer_duty",
+    "source_document": "Virginia HB 2154 (High-Risk Artificial Intelligence Developer Duty of Care)",
+    "jurisdiction": "VA",
+    "section_path": "Section 3 - Developer Duties",
+    "passage_text": "A developer of a high-risk artificial intelligence system has a duty to use reasonable care to protect consumers from any known or reasonably foreseeable risks of algorithmic discrimination arising from the intended and contracted uses of the high-risk artificial intelligence system. A developer is expected to provide deployers with sufficient documentation to enable the deployer to understand the outputs and monitor the performance of the high-risk artificial intelligence system.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A developer of a high-risk artificial intelligence system",
+            "subject_normalized": "developer",
+            "modality": "must",
+            "action": "use reasonable care to protect consumers from any known or reasonably foreseeable risks of algorithmic discrimination arising from the intended and contracted uses of the high-risk artificial intelligence system",
+            "object": "high-risk artificial intelligence system",
+            "condition": null,
+            "jurisdiction": "VA",
+            "section_reference": "Section 3",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "reasonable care",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 3 - developer duty of care"],
+            "interpretation_notes": "The 'reasonable care' standard imports tort law concepts into AI regulation without specifying what technical or procedural measures constitute reasonable care for algorithmic discrimination prevention. The phrase 'reasonably foreseeable risks' compounds this by requiring developers to predict discrimination risks without defining methodology.",
+            "suggested_clarification": "Specify technical standards, testing methodologies, or reference frameworks (e.g., NIST AI RMF) that constitute reasonable care for algorithmic discrimination prevention"
+        },
+        "notes": "Tests two non-standard obligation phrasings: 'has a duty to' and 'is expected to' — neither uses shall/must/required. Previous keyword screening would miss both."
+    }
+}

@@ -23,6 +23,8 @@ import structlog
 
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.config import settings
+from sqlalchemy import select
+
 from src.db.models import (
     IngestionJob,
     IngestionStatus,
@@ -86,6 +88,17 @@ def _verify_content_or_fallback(
     if not text_sample or len(text_sample.strip()) < 50:
         return True  # Too short to classify, proceed normally
 
+    # --- Memoization: skip re-classification if already classified for this artifact ---
+    dv = job.document_version
+    df = dv.family if dv else None
+    cached = (df.metadata_ or {}).get("discovery_classification") if df else None
+    if cached and cached.get("artifact_hash") == raw_artifact.sha256_hash:
+        _log(
+            f"Discovery classification (cached): is_ai={cached.get('is_ai_legislation')}, "
+            f"confidence={cached.get('confidence', 0):.2f}"
+        )
+        return cached.get("is_ai_legislation", True)
+
     try:
         discovery = DiscoveryAgent()
         classification = discovery.classify_bill(text_sample)
@@ -94,6 +107,18 @@ def _verify_content_or_fallback(
             f"Discovery classification: is_ai_legislation={classification.is_ai_legislation}, "
             f"confidence={classification.confidence:.2f}"
         )
+
+        # Cache result on DocumentFamily metadata
+        if df is not None:
+            meta = dict(df.metadata_ or {})
+            meta["discovery_classification"] = {
+                "is_ai_legislation": classification.is_ai_legislation,
+                "confidence": classification.confidence,
+                "reasoning": classification.reasoning,
+                "artifact_hash": raw_artifact.sha256_hash,
+            }
+            df.metadata_ = meta
+            db.commit()
 
         if classification.is_ai_legislation:
             return True  # Content is valid, proceed
@@ -226,26 +251,60 @@ def process_single_job(
         logger.info(msg, job_id=job.id)
 
     try:
-        # --- Phase 1: Fetch ---
-        job.status = IngestionStatus.fetching
-        job.fetch_started_at = datetime.utcnow()
-        db.commit()
-        _log(f"Fetching {job.fetch_url}")
+        # --- Phase 1: Fetch (skip if already fetched) ---
+        raw_artifact = None
+        already_fetched = job.status == IngestionStatus.fetched
 
-        raw_artifact = fetch_document(db, job)
+        if already_fetched:
+            # Already downloaded — find existing raw artifact
+            from src.db.models import RawArtifact as RawArtifactModel
+            raw_artifact = db.scalars(
+                select(RawArtifactModel)
+                .where(RawArtifactModel.document_version_id == job.document_version_id)
+                .order_by(RawArtifactModel.created_at.desc())
+            ).first()
 
-        job.status = IngestionStatus.fetched
-        job.fetch_completed_at = datetime.utcnow()
-        db.commit()
-        _log(
-            f"Stored artifact: {raw_artifact.content_type}, "
-            f"{raw_artifact.size_bytes:,} bytes, sha256={raw_artifact.sha256_hash[:12]}"
-        )
+            if raw_artifact is not None:
+                _log(
+                    f"Skipping fetch (already downloaded): {raw_artifact.content_type}, "
+                    f"{raw_artifact.size_bytes:,} bytes"
+                )
+                # Delete old parsed records so re-parse starts clean
+                from src.db.models import NormalizedSourceRecord as NSR
+                old_records = db.scalars(
+                    select(NSR).where(
+                        NSR.document_version_id == job.document_version_id
+                    )
+                ).all()
+                if old_records:
+                    for rec in old_records:
+                        db.delete(rec)
+                    db.commit()
+                    _log(f"Cleared {len(old_records)} old passages for re-parse")
+            else:
+                _log(f"Artifact missing for fetched job — re-fetching {job.fetch_url}")
+                already_fetched = False  # Fall through to fetch
 
-        # --- Phase 1.5: Discovery classification + fallback verification ---
-        if not _verify_content_or_fallback(db, job, raw_artifact, _log):
-            # Content was not AI legislation and fallback couldn't auto-fix
-            return 0
+        if not already_fetched:
+            job.status = IngestionStatus.fetching
+            job.fetch_started_at = datetime.utcnow()
+            db.commit()
+            _log(f"Fetching {job.fetch_url}")
+
+            raw_artifact = fetch_document(db, job)
+
+            job.status = IngestionStatus.fetched
+            job.fetch_completed_at = datetime.utcnow()
+            db.commit()
+            _log(
+                f"Stored artifact: {raw_artifact.content_type}, "
+                f"{raw_artifact.size_bytes:,} bytes, sha256={raw_artifact.sha256_hash[:12]}"
+            )
+
+            # --- Phase 1.5: Discovery classification + fallback verification ---
+            if not _verify_content_or_fallback(db, job, raw_artifact, _log):
+                # Content was not AI legislation and fallback couldn't auto-fix
+                return 0
 
         # --- Phase 2: Parse + Chunk ---
         job.status = IngestionStatus.parsing
@@ -285,10 +344,11 @@ def run_pending_ingestion(
     Returns:
         Summary dict with counts of completed, failed, total_passages.
     """
-    from sqlalchemy import select
-
     query = select(IngestionJob).where(
-        IngestionJob.status == IngestionStatus.pending,
+        IngestionJob.status.in_([
+            IngestionStatus.pending,
+            IngestionStatus.fetched,  # Already downloaded, needs re-parse
+        ]),
         IngestionJob.fetch_url.isnot(None),
         IngestionJob.fetch_url != "",
     )
@@ -296,6 +356,11 @@ def run_pending_ingestion(
         query = query.limit(limit)
 
     pending_jobs = db.scalars(query).all()
+
+    # Process already-fetched (re-parse only) jobs first so network errors
+    # from pending (download) jobs don't trip the circuit breaker and block
+    # parsing work that needs no network access.
+    pending_jobs.sort(key=lambda j: (0 if j.status == IngestionStatus.fetched else 1))
 
     summary = {
         "total_pending": len(pending_jobs),

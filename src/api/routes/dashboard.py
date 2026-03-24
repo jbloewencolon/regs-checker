@@ -5,10 +5,16 @@ Serves an HTMX-powered dashboard with:
   - Pipeline step controls (run each step or run-all)
   - Analytics: confidence breakdown, model comparison, jurisdiction view
   - Review queue with confidence component visualization
+
+Split into sub-modules:
+  - _dashboard_helpers: shared constants, lock, render, stats helpers
+  - review_routes: review queue page + approve/reject
+  - tracker_routes: tracker CRUD + import/export
 """
 
 from __future__ import annotations
 
+import threading
 from html import escape as html_escape
 from pathlib import Path
 
@@ -24,48 +30,36 @@ from src.db.models import (
     DocumentFamily,
     DocumentVersion,
     Extraction,
+    ExtractionJob,
     ExtractionType,
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
     ObligationDependency,
     RawArtifact,
+    ReviewAction,
     ReviewQueueItem,
     ReviewStatus,
     Source,
 )
 
-import threading
+from src.api.routes._dashboard_helpers import (
+    EXPORT_DIR,
+    _acquire_pipeline_lock,
+    _get_export_files,
+    _get_pipeline_stats,
+    _pipeline_lock,
+    _render,
+)
+from src.api.routes.review_routes import router as review_router
+from src.api.routes.tracker_routes import (
+    _tracker_csv_to_records,
+    router as tracker_router,
+)
 
 router = APIRouter()
-
-EXPORT_DIR = Path("export")
-
-# In-process lock to prevent concurrent pipeline operations from rapid clicks.
-# Only one pipeline operation (pdf discovery, status check, extraction, sync)
-# can run at a time. The lock is non-blocking: if busy, we return immediately.
-_pipeline_lock = threading.Lock()
-
-
-def _acquire_pipeline_lock() -> bool:
-    """Try to acquire the pipeline lock (non-blocking).
-
-    Returns True if acquired, False if another operation is running.
-    Caller MUST release with _pipeline_lock.release() when done.
-    """
-    return _pipeline_lock.acquire(blocking=False)
-
-
-# ---------------------------------------------------------------------------
-# Template rendering helper
-# ---------------------------------------------------------------------------
-
-def _render(request: Request, template: str, context: dict = None) -> HTMLResponse:
-    """Render a Jinja2 template. Uses the templates instance from app state."""
-    ctx = context or {}
-    ctx["request"] = request
-    templates = request.app.state.templates
-    return templates.TemplateResponse(template, ctx)
+router.include_router(review_router)
+router.include_router(tracker_router)
 
 
 # ---------------------------------------------------------------------------
@@ -109,103 +103,152 @@ def analytics_page(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@router.get("/review", response_class=HTMLResponse)
-def review_page(
+@router.get("/triage", response_class=HTMLResponse)
+def triage_page(
     request: Request,
-    status: str = "pending",
-    page: int = Query(default=1, ge=1),
-    truncated_only: bool = Query(default=False),
+    filter: str = "all",
     db: Session = Depends(get_db),
 ):
-    """Review queue page with filtering and pagination."""
-    per_page = 25
+    """Section triage review page — accordion by state with passage details."""
+    from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
 
-    # Get counts per status
-    counts = {}
-    for s in ["pending", "approved", "rejected"]:
-        counts[s] = db.scalar(
-            select(func.count()).select_from(
-                select(ReviewQueueItem).where(ReviewQueueItem.status == s).subquery()
-            )
-        ) or 0
+    # Get totals — gracefully handle missing/empty table
+    totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
+    try:
+        for row in db.execute(
+            text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
+        ).all():
+            decision, method, cnt = row
+            totals["total"] += cnt
+            if method == "quality_fail":
+                totals["quality_fail"] += cnt
+            elif decision in totals:
+                totals[decision] += cnt
+    except Exception:
+        db.rollback()
 
-    # Count truncated items (pending only)
-    truncated_count = db.scalar(
-        select(func.count()).select_from(
-            select(ReviewQueueItem)
-            .join(Extraction)
-            .where(
-                ReviewQueueItem.status == "pending",
-                Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
-            )
-            .subquery()
-        )
-    ) or 0
-
-    # Get items for current status
-    query = (
-        select(ReviewQueueItem)
-        .join(Extraction)
-        .where(ReviewQueueItem.status == status)
-    )
-
-    if truncated_only:
-        query = query.where(
-            Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
-        )
-
-    query = (
-        query
-        .order_by(ReviewQueueItem.priority.desc(), ReviewQueueItem.created_at)
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-    )
-    queue_items = db.scalars(query).all()
-
-    # Build display items
-    items = []
-    for qi in queue_items:
-        e = qi.extraction
-        nsr = e.source_record if e else None
-        dv = nsr.document_version if nsr else None
-        df = dv.family if dv else None
-        src = df.source if df else None
-
-        # Try to get confidence breakdown from metadata
-        breakdown = None
-        if e and e.metadata_:
-            breakdown = e.metadata_.get("confidence_breakdown")
-
-        truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
-
-        items.append({
-            "queue_id": qi.id,
-            "extraction_id": e.id if e else None,
-            "extraction_type": e.extraction_type.value if e and hasattr(e.extraction_type, 'value') else str(e.extraction_type),
-            "payload": e.payload if e else {},
-            "confidence_score": e.confidence_score if e else 0,
-            "confidence_tier": e.confidence_tier.value if e and hasattr(e.confidence_tier, 'value') else 'D',
-            "confidence_breakdown": breakdown,
-            "model_id": e.model_id if e else None,
-            "evidence_spans": e.evidence_spans if e else [],
-            "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
-            "jurisdiction_code": src.jurisdiction_code if src else None,
-            "short_cite": df.short_cite if df else None,
-            "source_text": nsr.text_content if nsr else None,
-            "truncated": truncated,
+    if totals["total"] == 0:
+        return _render(request, "triage.html", {
+            "states": [],
+            "totals": totals,
+            "filter": filter,
         })
 
-    total = counts.get(status, 0)
-    total_pages = max(1, (total + per_page - 1) // per_page)
+    # Build query for triage results joined with source records and documents
+    query = (
+        select(
+            SectionTriageResult,
+            NormalizedSourceRecord.section_path,
+            NormalizedSourceRecord.text_content,
+            NormalizedSourceRecord.document_version_id,
+            DocumentFamily.canonical_title,
+            DocumentFamily.short_cite,
+            Source.jurisdiction_code,
+            Source.jurisdiction_name,
+        )
+        .join(NormalizedSourceRecord, SectionTriageResult.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+        .join(Source, DocumentFamily.source_id == Source.id)
+    )
 
-    return _render(request, "review.html", {
-        "items": items,
-        "counts": counts,
-        "filter_status": status,
-        "current_page": page,
-        "total_pages": total_pages,
-        "truncated_only": truncated_only,
-        "truncated_count": truncated_count,
+    if filter == "relevant":
+        query = query.where(SectionTriageResult.decision == "relevant")
+    elif filter == "not_relevant":
+        query = query.where(SectionTriageResult.decision == "not_relevant")
+    elif filter == "uncertain":
+        query = query.where(SectionTriageResult.decision == "uncertain")
+    elif filter == "quality_fail":
+        query = query.where(SectionTriageResult.method == "quality_fail")
+
+    query = query.order_by(
+        Source.jurisdiction_code,
+        DocumentFamily.canonical_title,
+        NormalizedSourceRecord.ordinal,
+    )
+
+    rows = db.execute(query).all()
+
+    # Group by state → document → passages
+    from collections import OrderedDict
+    states_dict: dict[str, dict] = OrderedDict()
+
+    for row in rows:
+        triage = row[0]
+        section_path = row[1]
+        text_content = row[2]
+        dv_id = row[3]
+        doc_title = row[4] or "Untitled"
+        short_cite = row[5]
+        jur_code = row[6] or "??"
+        jur_name = row[7] or jur_code
+
+        if jur_code not in states_dict:
+            states_dict[jur_code] = {
+                "jurisdiction_code": jur_code,
+                "jurisdiction_name": jur_name,
+                "relevant": 0,
+                "not_relevant": 0,
+                "uncertain": 0,
+                "quality_fail": 0,
+                "documents": OrderedDict(),
+            }
+
+        state = states_dict[jur_code]
+        doc_key = f"{dv_id}:{doc_title}"
+        if doc_key not in state["documents"]:
+            state["documents"][doc_key] = {
+                "title": doc_title,
+                "short_cite": short_cite,
+                "relevant": 0,
+                "not_relevant": 0,
+                "uncertain": 0,
+                "passages": [],
+            }
+
+        doc = state["documents"][doc_key]
+
+        # Count
+        decision_val = triage.decision.value if hasattr(triage.decision, "value") else str(triage.decision)
+        method_val = triage.method.value if hasattr(triage.method, "value") else str(triage.method)
+
+        if method_val == "quality_fail":
+            state["quality_fail"] += 1
+        elif decision_val in ("relevant", "not_relevant", "uncertain"):
+            state[decision_val] += 1
+            doc[decision_val] += 1
+
+        # Preview: first 120 chars, full text for expansion
+        preview = (text_content or "")[:120].replace("\n", " ")
+        if len(text_content or "") > 120:
+            preview += "..."
+
+        doc["passages"].append({
+            "id": triage.id,
+            "decision": decision_val,
+            "method": method_val,
+            "section_path": section_path,
+            "text_preview": html_escape(preview),
+            "text_full": html_escape(text_content or ""),
+            "matched_keywords": triage.matched_keywords or [],
+            "orrick_terms_checked": triage.orrick_terms_checked or [],
+            "llm_reasoning": triage.llm_reasoning,
+            "ai_signals": triage.ai_signals,
+            "pdf_quality_score": triage.pdf_quality_score,
+            "quality_flags": triage.quality_flags or [],
+            "confidence": triage.confidence or 0.0,
+        })
+
+    # Convert OrderedDicts to lists for template
+    states = []
+    for state in states_dict.values():
+        state["documents"] = list(state["documents"].values())
+        states.append(state)
+
+    return _render(request, "triage.html", {
+        "states": states,
+        "totals": totals,
+        "filter": filter,
     })
 
 
@@ -231,11 +274,20 @@ def get_stats(db: Session = Depends(get_db)) -> HTMLResponse:
         else:
             eta_html = f'<span class="stat"><span class="stat-label">ETA</span> <span class="stat-value">{mins}m</span></span>'
 
+    pending_html = ""
+    if stats['pending_ingestion'] > 0:
+        pending_html = f"""
+    <span class="stat">
+      <span class="stat-value" style="color: var(--warning);">{stats['pending_ingestion']}</span>
+      <span class="stat-label">pending fetch</span>
+    </span>"""
+
     html = f"""
     <span class="stat">
       <span class="stat-label">Progress</span>
       <span class="stat-value">{progress.overall_percent}%</span>
     </span>
+    {pending_html}
     <span class="stat">
       <span class="stat-value">{stats['total_passages']}</span>
       <span class="stat-label">passages</span>
@@ -313,7 +365,6 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             """
 
     # ETA
-    eta_text = "Calculating..."
     if progress.estimated_remaining_seconds is not None:
         if progress.estimated_remaining_seconds == 0:
             eta_text = "Complete"
@@ -321,6 +372,12 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
             hrs = progress.estimated_remaining_seconds // 3600
             mins = (progress.estimated_remaining_seconds % 3600) // 60
             eta_text = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m remaining"
+    elif progress.overall_percent >= 100:
+        eta_text = "Complete"
+    elif progress.completed_items == 0:
+        eta_text = "Not started"
+    else:
+        eta_text = "Calculating..."
 
     rate_text = ""
     if progress.items_per_minute:
@@ -354,6 +411,270 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
         {rate_text}
         <div class="progress-steps-breakdown">
           {step_bars}
+        </div>
+      </div>
+    </div>
+    """
+    return HTMLResponse(html)
+
+
+@router.get("/api/triage-stats")
+def triage_stats(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return live triage summary stats as an HTML fragment."""
+    from src.db.models import SectionTriageResult
+
+    totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
+    try:
+        for row in db.execute(
+            text("SELECT decision, method, count(*) as cnt FROM section_triage_results GROUP BY decision, method")
+        ).all():
+            decision, method, cnt = row
+            totals["total"] += cnt
+            if method == "quality_fail":
+                totals["quality_fail"] += cnt
+            elif decision in totals:
+                totals[decision] += cnt
+    except Exception:
+        db.rollback()
+
+    return HTMLResponse(
+        f'<div class="triage-summary"'
+        f'     hx-get="/dashboard/api/triage-stats"'
+        f'     hx-trigger="every 5s"'
+        f'     hx-swap="outerHTML">'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value">{totals["relevant"]}</span>'
+        f'    <span class="triage-stat-label">Relevant</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-uncertain">{totals["uncertain"]}</span>'
+        f'    <span class="triage-stat-label">Uncertain</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-skipped">{totals["not_relevant"]}</span>'
+        f'    <span class="triage-stat-label">Skipped</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value triage-quality-fail">{totals["quality_fail"]}</span>'
+        f'    <span class="triage-stat-label">Quality Fail</span>'
+        f'  </div>'
+        f'  <div class="triage-stat">'
+        f'    <span class="triage-stat-value" style="color: var(--text-muted);">{totals["total"]}</span>'
+        f'    <span class="triage-stat-label">Total Passages</span>'
+        f'  </div>'
+        f'</div>'
+    )
+
+
+@router.get("/api/pipeline-tracker")
+def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return fetch/parse/triage stats as an HTML fragment."""
+    from src.db.models import SectionTriageResult
+
+    # --- Fetch stats ---
+    total_jobs = db.scalar(
+        select(func.count()).select_from(IngestionJob)
+    ) or 0
+
+    fetched = db.scalar(
+        select(func.count()).where(
+            IngestionJob.fetch_completed_at.isnot(None)
+        )
+    ) or 0
+
+    fetch_failed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.failed,
+            IngestionJob.fetch_completed_at.is_(None),
+        )
+    ) or 0
+
+    fetch_in_progress = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.fetching,
+        )
+    ) or 0
+
+    # --- Parse stats ---
+    parsed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.parse_completed_at.isnot(None)
+        )
+    ) or 0
+
+    parse_failed = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.failed,
+            IngestionJob.fetch_completed_at.isnot(None),
+            IngestionJob.parse_completed_at.is_(None),
+        )
+    ) or 0
+
+    parse_in_progress = db.scalar(
+        select(func.count()).where(
+            IngestionJob.status == IngestionStatus.parsing,
+        )
+    ) or 0
+
+    # --- Avg durations ---
+    avg_fetch_sec = db.scalar(
+        select(
+            func.avg(
+                func.extract("epoch", IngestionJob.fetch_completed_at)
+                - func.extract("epoch", IngestionJob.fetch_started_at)
+            )
+        ).where(
+            IngestionJob.fetch_started_at.isnot(None),
+            IngestionJob.fetch_completed_at.isnot(None),
+        )
+    )
+
+    avg_parse_sec = db.scalar(
+        select(
+            func.avg(
+                func.extract("epoch", IngestionJob.parse_completed_at)
+                - func.extract("epoch", IngestionJob.parse_started_at)
+            )
+        ).where(
+            IngestionJob.parse_started_at.isnot(None),
+            IngestionJob.parse_completed_at.isnot(None),
+        )
+    )
+
+    # --- Triage stats ---
+    triage_total = 0
+    triage_relevant = 0
+    triage_skipped = 0
+    triage_uncertain = 0
+    try:
+        triage_total = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+        if triage_total > 0:
+            triage_relevant = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "relevant")
+            ) or 0
+            triage_skipped = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "not_relevant")
+            ) or 0
+            triage_uncertain = db.scalar(
+                select(func.count()).where(SectionTriageResult.decision == "uncertain")
+            ) or 0
+    except Exception:
+        db.rollback()
+
+    # --- Extraction stats ---
+    # Count passages that have at least one extraction (= fully extracted)
+    extracted_passages = db.scalar(
+        select(func.count(func.distinct(Extraction.source_record_id)))
+        .select_from(Extraction)
+    ) or 0
+    # The denominator is triaged-relevant + uncertain passages
+    extractable_passages = triage_relevant + triage_uncertain
+
+    extraction_in_progress = db.scalar(
+        select(func.count()).where(ExtractionJob.status == "running")
+    ) or 0
+    extraction_failed = db.scalar(
+        select(func.count()).where(ExtractionJob.status == "failed")
+    ) or 0
+
+    # --- Format helpers ---
+    def fmt_duration(seconds):
+        if seconds is None:
+            return "—"
+        if seconds < 1:
+            return f"{seconds * 1000:.0f}ms"
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        mins = seconds / 60
+        return f"{mins:.1f}m"
+
+    def pct(n, total):
+        if total == 0:
+            return 0
+        return round(n / total * 100, 1)
+
+    total_passages = db.scalar(
+        select(func.count()).select_from(NormalizedSourceRecord)
+    ) or 0
+
+    fetch_pct = pct(fetched, total_jobs)
+    parse_pct = pct(parsed, total_jobs)
+    triage_pct = pct(triage_total, total_passages) if total_passages else 0
+    extract_pct = pct(extracted_passages, extractable_passages) if extractable_passages else 0
+
+    # Build status badges
+    def status_badge(in_prog, failed):
+        parts = []
+        if in_prog > 0:
+            parts.append(f'<span class="tracker-badge running">{in_prog} running</span>')
+        if failed > 0:
+            parts.append(f'<span class="tracker-badge failed">{failed} failed</span>')
+        return " ".join(parts)
+
+    html = f"""
+    <div class="tracker-grid">
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <span class="tracker-step-num">1</span> Fetched
+        </div>
+        <div class="tracker-value">{fetched}<span class="tracker-total">/{total_jobs}</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill" style="width:{fetch_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{fetch_pct}%</span>
+          {status_badge(fetch_in_progress, fetch_failed)}
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <span class="tracker-step-num">2</span> Parsed
+        </div>
+        <div class="tracker-value">{parsed}<span class="tracker-total">/{total_jobs}</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill parsed" style="width:{parse_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{parse_pct}%</span>
+          {status_badge(parse_in_progress, parse_failed)}
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <span class="tracker-step-num">3</span> Triaged
+        </div>
+        <div class="tracker-value">{triage_total}<span class="tracker-total">/{total_passages} passages</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill triaged" style="width:{triage_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-detail">{triage_relevant} relevant</span>
+          <span class="tracker-detail uncertain">{triage_uncertain} uncertain</span>
+          <span class="tracker-detail skipped">{triage_skipped} skipped</span>
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <span class="tracker-step-num">4</span> Extracted
+        </div>
+        <div class="tracker-value">{extracted_passages}<span class="tracker-total">/{extractable_passages} passages</span></div>
+        <div class="tracker-bar"><div class="tracker-bar-fill extracted" style="width:{extract_pct}%"></div></div>
+        <div class="tracker-footer">
+          <span class="tracker-pct">{extract_pct}%</span>
+          {status_badge(extraction_in_progress, extraction_failed)}
+        </div>
+      </div>
+
+      <div class="tracker-card">
+        <div class="tracker-header">Avg. Time</div>
+        <div class="tracker-timings">
+          <div class="tracker-timing-row">
+            <span class="tracker-timing-label">Fetch</span>
+            <span class="tracker-timing-value">{fmt_duration(avg_fetch_sec)}</span>
+          </div>
+          <div class="tracker-timing-row">
+            <span class="tracker-timing-label">Parse</span>
+            <span class="tracker-timing-value">{fmt_duration(avg_parse_sec)}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -575,38 +896,6 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     )
 
 
-def _tracker_csv_to_records() -> list[dict]:
-    """Convert ai_law_tracker.csv rows into the record format seed_from_tracker expects.
-
-    Returns list of dicts with keys:
-        state, state_code, ai_scope, law_name, law_url, bill_id,
-        effective_date, key_requirements, enforcement
-    """
-    from src.ingestion.pdf_tracker import STATE_CODES
-
-    tracker_rows = _read_tracker()
-    records = []
-    for row in tracker_rows:
-        state_name = row.get("State/Terr", "").strip()
-        state_code = STATE_CODES.get(state_name, "")
-        # Also handle if someone puts the 2-letter code directly
-        if not state_code and len(state_name) == 2:
-            state_code = state_name.upper()
-
-        records.append({
-            "state": state_name,
-            "state_code": state_code,
-            "ai_scope": row.get("AI Scope", ""),
-            "law_name": row.get("Relevant Law", ""),
-            "law_url": row.get("Source URL", ""),
-            "bill_id": row.get("Bill ID", ""),
-            "effective_date": row.get("Effective Date", ""),
-            "key_requirements": row.get("Key Requirements", ""),
-            "enforcement": row.get("Enforcements Penalties", ""),
-        })
-    return records
-
-
 @router.post("/api/run/pdf-discovery")
 def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     """Seed legislation from the ai_law_tracker.csv (primary discovery source)."""
@@ -800,51 +1089,600 @@ def cancel_fetch() -> HTMLResponse:
 
 @router.post("/api/run/fetch/reset")
 def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Reset non-approved ingestion jobs back to pending for re-fetching.
+    """Reset non-completed ingestion jobs for re-parsing.
 
-    Only resets failed, manual-review, and stale intermediate-state jobs.
-    Completed (approved) jobs are never touched.
+    Jobs that already have a raw artifact (file downloaded) are set to
+    'fetched' so the pipeline skips the download and only re-parses.
+    Jobs without a raw artifact are set to 'pending' for full re-fetch.
+    Completed jobs are never touched.
     """
     from sqlalchemy import update
 
     try:
-        result = db.execute(
-            update(IngestionJob)
-            .where(
-                IngestionJob.status.in_([
-                    IngestionStatus.failed,
-                    IngestionStatus.requires_manual_review,
-                    IngestionStatus.fetching,
-                    IngestionStatus.fetched,
-                    IngestionStatus.parsing,
-                ])
+        # Find jobs eligible for reset
+        resettable_statuses = [
+            IngestionStatus.failed,
+            IngestionStatus.requires_manual_review,
+            IngestionStatus.fetching,
+            IngestionStatus.fetched,
+            IngestionStatus.parsing,
+        ]
+
+        jobs = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.status.in_(resettable_statuses)
             )
-            .values(
-                status=IngestionStatus.pending,
-                error_message=None,
-                fetch_started_at=None,
-                fetch_completed_at=None,
-                parse_started_at=None,
-                parse_completed_at=None,
-            )
-        )
-        db.commit()
-        count = result.rowcount
-        if count == 0:
+        ).all()
+
+        if not jobs:
             return HTMLResponse(
                 '<div class="result-panel info">No jobs to reset — all are either pending or completed.</div>'
             )
+
+        # Check which jobs already have a raw artifact downloaded
+        reset_to_fetched = 0
+        reset_to_pending = 0
+        skipped_manual_review = 0
+
+        for job in jobs:
+            # Manual-review jobs had bad content (Discovery rejected it).
+            # Don't re-parse the same garbage — skip them unless user
+            # provides a new URL.
+            if job.status == IngestionStatus.requires_manual_review:
+                skipped_manual_review += 1
+                continue
+
+            has_artifact = db.scalar(
+                select(func.count()).where(
+                    RawArtifact.document_version_id == job.document_version_id
+                )
+            ) or 0
+
+            if has_artifact > 0:
+                # File already downloaded — only re-parse
+                job.status = IngestionStatus.fetched
+                job.error_message = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                job.parse_quality_score = None
+                reset_to_fetched += 1
+            else:
+                # No file yet — full re-fetch
+                job.status = IngestionStatus.pending
+                job.error_message = None
+                job.fetch_started_at = None
+                job.fetch_completed_at = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                reset_to_pending += 1
+
+        db.commit()
+
+        total = reset_to_fetched + reset_to_pending
+        if total == 0 and skipped_manual_review > 0:
+            return HTMLResponse(
+                f'<div class="result-panel info">'
+                f'No jobs to reset. {skipped_manual_review} manual-review jobs '
+                f'were skipped (bad content — update their URLs first).'
+                f'</div>'
+            )
+        parts = [f'Reset <strong>{total}</strong> jobs.']
+        if reset_to_fetched > 0:
+            parts.append(f'{reset_to_fetched} will re-parse only (files already downloaded).')
+        if reset_to_pending > 0:
+            parts.append(f'{reset_to_pending} will re-fetch and parse.')
+        if skipped_manual_review > 0:
+            parts.append(
+                f'<span style="color:var(--warning);">{skipped_manual_review} manual-review '
+                f'jobs skipped (bad content — update URLs first).</span>'
+            )
+
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Reset <strong>{count}</strong> non-approved jobs back to pending. '
-            f'Completed jobs were not affected. Ready to re-fetch.'
-            f'</div>'
+            f'{" ".join(parts)}'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
         )
     except Exception as e:
         db.rollback()
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/run/fetch/reset-all")
+def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Hard reset ALL ingestion jobs (including completed) for re-parsing.
+
+    Jobs that have a raw artifact are set to 'fetched' (re-parse only).
+    Jobs without an artifact are set to 'pending' (full re-fetch).
+    Also deletes downstream NormalizedSourceRecords so passages are rebuilt.
+    """
+    from sqlalchemy import delete
+    from src.db.models import SectionTriageResult
+
+    try:
+        jobs = db.scalars(
+            select(IngestionJob).where(
+                IngestionJob.status != IngestionStatus.pending,
+            )
+        ).all()
+
+        if not jobs:
+            return HTMLResponse(
+                '<div class="result-panel info">No jobs to reset — all are already pending.</div>'
+            )
+
+        # Delete downstream passages so parser regenerates them
+        completed_version_ids = [
+            j.document_version_id for j in jobs
+            if j.status == IngestionStatus.completed
+        ]
+        passages_deleted = 0
+        if completed_version_ids:
+            # Delete triage results for these passages first
+            passage_ids = db.scalars(
+                select(NormalizedSourceRecord.id).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            ).all()
+            if passage_ids:
+                db.execute(
+                    delete(SectionTriageResult).where(
+                        SectionTriageResult.source_record_id.in_(passage_ids)
+                    )
+                )
+            passages_deleted = db.scalar(
+                select(func.count()).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            ) or 0
+            db.execute(
+                delete(NormalizedSourceRecord).where(
+                    NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
+                )
+            )
+
+        reset_to_fetched = 0
+        reset_to_pending = 0
+
+        for job in jobs:
+            has_artifact = db.scalar(
+                select(func.count()).where(
+                    RawArtifact.document_version_id == job.document_version_id
+                )
+            ) or 0
+
+            if has_artifact > 0:
+                job.status = IngestionStatus.fetched
+                job.error_message = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                job.parse_quality_score = None
+                reset_to_fetched += 1
+            else:
+                job.status = IngestionStatus.pending
+                job.error_message = None
+                job.fetch_started_at = None
+                job.fetch_completed_at = None
+                job.parse_started_at = None
+                job.parse_completed_at = None
+                reset_to_pending += 1
+
+        db.commit()
+
+        total = reset_to_fetched + reset_to_pending
+        parts = [f'Hard reset <strong>{total}</strong> jobs (including completed).']
+        if reset_to_fetched > 0:
+            parts.append(f'{reset_to_fetched} will re-parse (files already downloaded).')
+        if reset_to_pending > 0:
+            parts.append(f'{reset_to_pending} will re-fetch and parse.')
+        if passages_deleted > 0:
+            parts.append(f'{passages_deleted} passages cleared for rebuilding.')
+
+        return HTMLResponse(
+            f'<div class="result-panel success">{" ".join(parts)}</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
+_triage_progress: dict | None = None
+_triage_lock = threading.Lock()
+
+
+@router.post("/api/run/triage")
+def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Run section triage on all untriaged passages, streaming progress."""
+    global _triage_progress
+
+    if _triage_progress is not None and _triage_progress.get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info">Triage is already running. '
+            'Check the Triage tab for live results.</div>'
+        )
+
+    try:
+        from src.ingestion.extractor import run_triage
+
+        _triage_progress = {"running": True, "relevant": 0, "uncertain": 0, "skipped": 0, "total": 0, "done": 0}
+
+        def _on_progress(msg: str):
+            pass  # Logged by run_triage internally
+
+        summary = run_triage(db, on_progress=_on_progress)
+
+        _triage_progress = {
+            "running": False,
+            **summary,
+        }
+
+        if summary["total"] == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No untriaged passages found. '
+                'All passages have already been triaged, or no documents have been parsed yet.</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Triaged <strong>{summary["total"]}</strong> passages: '
+            f'<span style="color:var(--success);">{summary["relevant"]} relevant</span>, '
+            f'<span style="color:var(--warning);">{summary["uncertain"]} uncertain</span>, '
+            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>. '
+            f'<a href="/dashboard/triage">View results &rarr;</a>'
+            f'</div>'
+        )
+    except Exception as e:
+        _triage_progress = None
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Triage error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/triage/reset")
+def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear uncertain and low-confidence triage results for re-triaging.
+
+    Only resets:
+    - 'uncertain' decisions (passthrough / unconfident LLM results)
+    - 'quality_fail' decisions
+    - Any result with confidence < 0.7
+
+    High-confidence 'relevant' and 'not_relevant' decisions are preserved,
+    as are manually overridden results.
+    """
+    from sqlalchemy import or_, delete
+    from src.db.models import SectionTriageResult, TriageDecision
+    from src.ingestion.extractor import _ensure_triage_table
+
+    try:
+        _ensure_triage_table(db)
+
+        # Count what will be reset
+        reset_filter = or_(
+            SectionTriageResult.decision == TriageDecision.uncertain,
+            SectionTriageResult.confidence < 0.7,
+        )
+
+        count = db.scalar(
+            select(func.count()).where(reset_filter)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No low-confidence or uncertain results to reset. '
+                'All triage decisions are confident.</div>'
+            )
+
+        db.execute(
+            delete(SectionTriageResult).where(reset_filter)
+        )
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> uncertain/low-confidence triage results. '
+            f'High-confidence and manually reviewed results preserved. '
+            f'Hit <strong>Triage Passages</strong> to re-triage with LLM.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/triage/reset-all")
+def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Hard reset: clear ALL triage results so every passage is re-triaged."""
+    from sqlalchemy import delete
+    from src.db.models import SectionTriageResult
+    from src.ingestion.extractor import _ensure_triage_table
+
+    try:
+        _ensure_triage_table(db)
+
+        count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No triage results to clear.</div>'
+            )
+
+        db.execute(delete(SectionTriageResult))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>all {count}</strong> triage results. '
+            f'Hit <strong>Triage Passages</strong> to re-triage everything with the updated triager.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/extract/reset")
+def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all extractions and extraction jobs so passages can be re-extracted.
+
+    Cascading deletes: review_queue → review_actions, extractions,
+    extraction_jobs. Triage results are preserved.
+    """
+    from sqlalchemy import delete
+
+    try:
+        # Count before clearing
+        ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
+        job_count = db.scalar(select(func.count()).select_from(ExtractionJob)) or 0
+
+        if ext_count == 0 and job_count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No extractions to clear.</div>'
+            )
+
+        # Delete in FK order: review_actions → review_queue → extractions → extraction_jobs
+        # Also clear downstream: applicability_conditions, obligation_dependencies
+        db.execute(delete(ApplicabilityCondition))
+        db.execute(delete(ObligationDependency))
+        db.execute(delete(ReviewAction))
+        db.execute(delete(ReviewQueueItem))
+        db.execute(delete(Extraction))
+        db.execute(delete(ExtractionJob))
+
+        # Clear cached bill_context so it can be rebuilt
+        db.execute(text(
+            "UPDATE document_versions SET metadata = metadata - 'bill_context' "
+            "WHERE metadata ? 'bill_context'"
+        ))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{ext_count}</strong> extractions and '
+            f'<strong>{job_count}</strong> extraction jobs. '
+            f'Also cleared dependency graph, applicability conditions, and review queue. '
+            f'Triage results preserved. Hit <strong>Extract</strong> to re-run.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/dependency-graph/reset")
+def reset_dependency_graph(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all obligation dependency edges."""
+    from sqlalchemy import delete
+
+    try:
+        count = db.scalar(
+            select(func.count()).select_from(ObligationDependency)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No dependency edges to clear.</div>'
+            )
+
+        db.execute(delete(ObligationDependency))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> dependency edges. '
+            f'Hit <strong>Build All Pending</strong> to rebuild.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/condition-parse/reset")
+def reset_applicability_conditions(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear all parsed applicability condition trees."""
+    from sqlalchemy import delete
+
+    try:
+        count = db.scalar(
+            select(func.count()).select_from(ApplicabilityCondition)
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No condition trees to clear.</div>'
+            )
+
+        db.execute(delete(ApplicabilityCondition))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared <strong>{count}</strong> condition nodes. '
+            f'Hit <strong>Parse All Pending</strong> to rebuild.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/review/reset")
+def reset_review(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Reset all review decisions back to pending.
+
+    Clears review actions (audit log) and resets all review queue items
+    and extraction review statuses to pending.
+    """
+    from sqlalchemy import delete, update
+
+    try:
+        action_count = db.scalar(
+            select(func.count()).select_from(ReviewAction)
+        ) or 0
+        reviewed_count = db.scalar(
+            select(func.count()).select_from(ReviewQueueItem).where(
+                ReviewQueueItem.status != ReviewStatus.pending
+            )
+        ) or 0
+
+        if action_count == 0 and reviewed_count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No review decisions to reset. All items are already pending.</div>'
+            )
+
+        # Clear review actions audit log
+        db.execute(delete(ReviewAction))
+
+        # Reset review queue statuses to pending
+        db.execute(
+            update(ReviewQueueItem).values(status=ReviewStatus.pending)
+        )
+
+        # Reset extraction review statuses to pending
+        db.execute(
+            update(Extraction).where(
+                Extraction.review_status != ReviewStatus.pending
+            ).values(review_status=ReviewStatus.pending)
+        )
+
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Reset <strong>{reviewed_count}</strong> review decisions to pending. '
+            f'Cleared <strong>{action_count}</strong> review actions. '
+            f'All extractions are now awaiting review.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/run/sync/reset")
+def reset_sync(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Clear synced_at timestamps so all approved extractions can be re-synced."""
+    try:
+        count = db.scalar(
+            text("SELECT count(*) FROM extractions WHERE metadata->>'synced_at' IS NOT NULL")
+        ) or 0
+
+        if count == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No synced extractions to reset.</div>'
+            )
+
+        db.execute(text(
+            "UPDATE extractions SET metadata = metadata - 'synced_at' "
+            "WHERE metadata ? 'synced_at'"
+        ))
+        db.commit()
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared sync status on <strong>{count}</strong> extractions. '
+            f'They will be included in the next sync run.'
+            f'</div>',
+            headers={"HX-Trigger": "pipelineReset"},
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Reset error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/triage/{triage_id}/override")
+def override_triage(
+    triage_id: int,
+    decision: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Manually override a triage decision."""
+    from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
+
+    valid = {"relevant", "not_relevant"}
+    if decision not in valid:
+        return HTMLResponse(
+            '<span class="triage-decision triage-decision-uncertain">invalid</span>'
+        )
+
+    triage = db.get(SectionTriageResult, triage_id)
+    if not triage:
+        return HTMLResponse('<span style="color:var(--danger);">not found</span>')
+
+    old_decision = triage.decision.value if hasattr(triage.decision, "value") else str(triage.decision)
+    triage.decision = TriageDecision(decision)
+    triage.confidence = 1.0
+    triage.llm_reasoning = f"Manual override: {old_decision} → {decision}"
+
+    # Add manual_review enum value to Postgres if needed, then set it
+    try:
+        triage.method = TriageMethod.manual_review
+    except Exception:
+        try:
+            db.execute(text(
+                "ALTER TYPE triagemethod ADD VALUE IF NOT EXISTS 'manual_review'"
+            ))
+            db.commit()
+            triage.method = TriageMethod.manual_review
+        except Exception:
+            pass  # Leave original method if enum update fails
+
+    db.commit()
+
+    label = "relevant" if decision == "relevant" else "not relevant"
+    css_class = f"triage-decision-{decision}"
+    return HTMLResponse(
+        f'<span class="triage-decision {css_class}">{label}</span>'
+    )
 
 
 @router.post("/api/retry-job/{job_id}")
@@ -874,6 +1712,203 @@ def retry_job(job_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     return HTMLResponse(
         f'<span style="color:var(--success);font-size:12px;">'
         f'Job #{job_id} reset to pending. Run Fetch to re-process.</span>'
+    )
+
+
+@router.get("/api/extraction-monitor")
+def get_extraction_monitor() -> HTMLResponse:
+    """Return live extraction health dashboard fragment (polled every 2s during runs).
+
+    Shows:
+      - Health gauges (failure rate, consecutive errors, confidence distribution)
+      - Per-agent performance bars
+      - Live event feed with color-coded severity
+      - Token burn rate
+    """
+    from src.core.extraction_monitor import get_monitor
+
+    monitor = get_monitor()
+    snap = monitor.snapshot(recent_count=30)
+    d = snap.to_dict()
+
+    if not d["is_running"] and d["passages_processed"] == 0:
+        return HTMLResponse(
+            '<div class="monitor-idle" style="color:var(--text-muted);font-size:13px;">'
+            "No extraction running. Start an extraction to see live monitoring.</div>"
+        )
+
+    # --- Health gauges ---
+    elapsed_min = d["elapsed_seconds"] / 60 if d["elapsed_seconds"] > 0 else 0
+    pct_done = (
+        round(d["passages_processed"] / d["passages_total"] * 100, 1)
+        if d["passages_total"] > 0
+        else 0
+    )
+
+    # Failure rate color
+    fr = d["failure_rate"]
+    fr_color = "var(--success)" if fr < 0.05 else "var(--warning)" if fr < 0.2 else "var(--danger)"
+    fr_label = f"{fr:.1%}"
+
+    # Consecutive errors color
+    ce = d["consecutive_errors"]
+    ce_color = "var(--success)" if ce == 0 else "var(--warning)" if ce < 3 else "var(--danger)"
+
+    status_label = "RUNNING" if d["is_running"] else "STOPPED"
+    status_color = "var(--success)" if d["is_running"] else "var(--text-muted)"
+
+    gauges_html = f"""
+    <div class="monitor-gauges" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{status_color};">{status_label}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Status</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['passages_processed']}/{d['passages_total']}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Passages ({pct_done}%)</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['extractions_created']}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Extractions</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{fr_color};">{fr_label}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Failure Rate</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;color:{ce_color};">{ce}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Consecutive Errors</div>
+      </div>
+      <div class="monitor-gauge" style="text-align:center;min-width:80px;">
+        <div style="font-size:22px;font-weight:700;">{d['total_tokens']:,}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Tokens ({d['tokens_per_minute']:,.0f}/min)</div>
+      </div>
+    </div>
+    """
+
+    # --- Confidence distribution bar ---
+    tiers = d["confidence_tiers"]
+    total_ext = sum(tiers.values()) or 1
+    tier_colors = {"A": "var(--success)", "B": "#3b82f6", "C": "var(--warning)", "D": "var(--danger)"}
+    tier_segments = ""
+    for tier in ["A", "B", "C", "D"]:
+        pct = tiers[tier] / total_ext * 100
+        if pct > 0:
+            tier_segments += (
+                f'<div style="width:{pct}%;background:{tier_colors[tier]};height:100%;'
+                f'display:inline-block;" title="Tier {tier}: {tiers[tier]}"></div>'
+            )
+    conf_html = f"""
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Confidence Distribution</div>
+      <div style="height:16px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;display:flex;">
+        {tier_segments}
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;margin-top:3px;color:var(--text-muted);">
+        {''.join(f'<span><span style="color:{tier_colors[t]};">&#9632;</span> {t}: {tiers[t]}</span>' for t in ["A","B","C","D"])}
+      </div>
+    </div>
+    """
+
+    # --- Per-agent stats ---
+    agent_html = ""
+    if d["agent_stats"]:
+        agent_rows = ""
+        for name, stats in sorted(d["agent_stats"].items()):
+            afr = stats["failure_rate"]
+            afr_color = "var(--success)" if afr < 0.05 else "var(--warning)" if afr < 0.2 else "var(--danger)"
+            agent_rows += f"""
+            <tr>
+              <td><code>{html_escape(name)}</code></td>
+              <td>{stats['calls']}</td>
+              <td style="color:var(--success);">{stats['successes']}</td>
+              <td>{stats['abstentions']}</td>
+              <td style="color:{'var(--danger)' if stats['errors'] > 0 else 'var(--text-muted)'};">{stats['errors']}</td>
+              <td style="color:{afr_color};">{afr:.0%}</td>
+              <td>{stats['tokens']:,}</td>
+            </tr>
+            """
+        agent_html = f"""
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Agent Performance</div>
+          <table class="data-table" style="font-size:12px;">
+            <thead><tr>
+              <th>Agent</th><th>Calls</th><th>OK</th><th>Abstain</th>
+              <th>Errors</th><th>Fail%</th><th>Tokens</th>
+            </tr></thead>
+            <tbody>{agent_rows}</tbody>
+          </table>
+        </div>
+        """
+
+    # --- Issue summary badges ---
+    issue_badges = ""
+    if d["criticals"] > 0:
+        issue_badges += f'<span class="badge badge-danger">{d["criticals"]} Critical</span> '
+    if d["errors_count"] > 0:
+        issue_badges += f'<span class="badge badge-warning">{d["errors_count"]} Errors</span> '
+    if d["warnings"] > 0:
+        issue_badges += f'<span class="badge badge-info">{d["warnings"]} Warnings</span> '
+    if not issue_badges:
+        issue_badges = '<span style="color:var(--success);font-size:12px;">No issues detected</span>'
+
+    issue_html = f"""
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Issues</div>
+      {issue_badges}
+    </div>
+    """
+
+    # --- Live event feed ---
+    event_colors = {
+        "critical": "var(--danger)",
+        "error": "#dc3545",
+        "warning": "#e67e22",
+        "success": "var(--success)",
+        "info": "var(--text-muted)",
+    }
+    event_icons = {
+        "critical": "&#9888;",
+        "error": "&#10007;",
+        "warning": "&#9888;",
+        "success": "&#10003;",
+        "info": "&#8226;",
+    }
+
+    feed_items = ""
+    for evt in d["recent_events"][:20]:
+        color = event_colors.get(evt["severity"], "var(--text-muted)")
+        icon = event_icons.get(evt["severity"], "&#8226;")
+        age = evt["age_seconds"]
+        age_label = f"{age:.0f}s ago" if age < 60 else f"{age / 60:.0f}m ago"
+        feed_items += (
+            f'<div style="padding:3px 0;font-size:12px;border-bottom:1px solid var(--border);'
+            f'display:flex;gap:6px;align-items:baseline;">'
+            f'<span style="color:{color};flex-shrink:0;width:14px;">{icon}</span>'
+            f'<span style="flex:1;">{html_escape(evt["message"])}</span>'
+            f'<span style="color:var(--text-muted);font-size:10px;flex-shrink:0;">{age_label}</span>'
+            f'</div>'
+        )
+
+    feed_html = f"""
+    <div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Live Feed</div>
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+        {feed_items if feed_items else '<div style="color:var(--text-muted);font-size:12px;padding:8px;">Waiting for events...</div>'}
+      </div>
+    </div>
+    """
+
+    # --- Current document ---
+    doc_html = ""
+    if d["current_document"]:
+        doc_html = (
+            f'<div style="font-size:12px;margin-bottom:8px;color:var(--text-muted);">'
+            f'Processing: <strong>{html_escape(d["current_document"])}</strong></div>'
+        )
+
+    return HTMLResponse(
+        f"{gauges_html}{doc_html}{conf_html}{agent_html}{issue_html}{feed_html}"
     )
 
 
@@ -1662,7 +2697,7 @@ def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
             pass
         if not iapp_records:
             try:
-                from src.ingestion.iapp_scraper import scrape_tracker
+                from src.ingestion.legacy.iapp_scraper import scrape_tracker
                 iapp_records = scrape_tracker()
             except Exception:
                 pass
@@ -1825,20 +2860,34 @@ async def resolve_discrepancy(
 
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
-    """List all failed and manual-review ingestion jobs with upload + edit forms."""
+    """List all failed, manual-review, and missing-URL ingestion jobs with upload + edit forms."""
+    from sqlalchemy import or_, and_
+
     jobs = db.scalars(
         select(IngestionJob)
-        .where(IngestionJob.status.in_([
-            IngestionStatus.failed,
-            IngestionStatus.requires_manual_review,
-        ]))
+        .where(
+            or_(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.requires_manual_review,
+                ]),
+                # Pending jobs with no URL — fetcher will skip these
+                and_(
+                    IngestionJob.status == IngestionStatus.pending,
+                    or_(
+                        IngestionJob.fetch_url.is_(None),
+                        IngestionJob.fetch_url == "",
+                    ),
+                ),
+            )
+        )
         .order_by(IngestionJob.updated_at.desc())
     ).all()
 
     if not jobs:
         return HTMLResponse(
             '<div class="result-panel success" style="margin-top:10px;">'
-            'No failed documents. All jobs completed successfully.'
+            'No failed or missing documents. All jobs completed successfully.'
             '</div>'
         )
 
@@ -1869,8 +2918,19 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
         # Ingestion status badge (small, secondary — not the main Status column)
-        ing_class = "danger" if job.status == IngestionStatus.failed else "warning"
-        ing_label = "Failed" if job.status == IngestionStatus.failed else "Needs Review"
+        is_missing_url = (
+            job.status == IngestionStatus.pending
+            and not job.fetch_url
+        )
+        if job.status == IngestionStatus.failed:
+            ing_class = "danger"
+            ing_label = "Failed"
+        elif is_missing_url:
+            ing_class = "warning"
+            ing_label = "No URL"
+        else:
+            ing_class = "warning"
+            ing_label = "Needs Review"
 
         # Bill Status: prefer raw IAPP status, fall back to normalized TemporalStatus
         bill_status_display = iapp_status or leg_status or "—"
@@ -1917,7 +2977,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             </form>
             <button class="btn btn-sm" onclick="toggleFailedEdit({jid})"
                     style="margin-left:4px;">Edit</button>
-            <button class="btn btn-sm"
+            {"" if is_missing_url else f'''<button class="btn btn-sm"
                     hx-post="/dashboard/api/retry-job/{jid}"
                     hx-target="#failed-result-{jid}"
                     hx-swap="innerHTML"
@@ -1925,7 +2985,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                     style="margin-left:4px;">
               <span class="btn-label">Re-fetch</span>
               <span class="htmx-indicator"><span class="spinner"></span></span>
-            </button>
+            </button>'''}
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
@@ -2003,7 +3063,8 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<tbody>{rows_html}</tbody>'
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">'
-        f'Upload the PDF/HTML manually, or click Edit to fix metadata/URL and retry.'
+        f'Upload the PDF/HTML manually, click Edit to add/fix the URL and re-fetch, '
+        f'or update metadata for laws with no source URL.'
         f'</div></div>'
         f'<script>'
         f'function toggleFailedEdit(id) {{'
@@ -2018,20 +3079,32 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
 
 @router.get("/api/export-failed-txt")
 def export_failed_txt(db: Session = Depends(get_db)):
-    """Export all failed documents as a plain .txt file for searching/printing."""
+    """Export all failed/missing-URL documents as a plain .txt file for searching/printing."""
     from fastapi.responses import PlainTextResponse
+    from sqlalchemy import or_, and_
 
     jobs = db.scalars(
         select(IngestionJob)
-        .where(IngestionJob.status.in_([
-            IngestionStatus.failed,
-            IngestionStatus.requires_manual_review,
-        ]))
+        .where(
+            or_(
+                IngestionJob.status.in_([
+                    IngestionStatus.failed,
+                    IngestionStatus.requires_manual_review,
+                ]),
+                and_(
+                    IngestionJob.status == IngestionStatus.pending,
+                    or_(
+                        IngestionJob.fetch_url.is_(None),
+                        IngestionJob.fetch_url == "",
+                    ),
+                ),
+            )
+        )
         .order_by(IngestionJob.updated_at.desc())
     ).all()
 
     lines = [
-        "FAILED DOCUMENT DOWNLOADS",
+        "FAILED / MISSING DOCUMENT DOWNLOADS",
         "=" * 60,
         f"Generated: {__import__('datetime').datetime.utcnow().isoformat()}Z",
         f"Total: {len(jobs)} documents",
@@ -2059,7 +3132,12 @@ def export_failed_txt(db: Session = Depends(get_db)):
         if dv and dv.temporal_status:
             leg_status = dv.temporal_status.value if hasattr(dv.temporal_status, "value") else str(dv.temporal_status)
 
-        status_label = "FAILED" if job.status == IngestionStatus.failed else "NEEDS REVIEW"
+        if job.status == IngestionStatus.failed:
+            status_label = "FAILED"
+        elif job.status == IngestionStatus.pending and not job.fetch_url:
+            status_label = "NO URL"
+        else:
+            status_label = "NEEDS REVIEW"
 
         lines.append(f"{i}. [{jurisdiction}] {label}")
         if bill_title and bill_title != label:
@@ -2081,6 +3159,7 @@ def export_failed_txt(db: Session = Depends(get_db)):
 
     lines.append("=" * 60)
     lines.append("Search tips:")
+    lines.append("  - For NO URL: search the state legislature site for the bill and add the URL or upload the PDF")
     lines.append("  - For 403 errors: try downloading the PDF in a browser")
     lines.append("  - For SSL errors: the site may need a different URL or mirror")
     lines.append("  - For 404 errors: search for the bill by name on the state legislature site")
@@ -2094,466 +3173,206 @@ def export_failed_txt(db: Session = Depends(get_db)):
     )
 
 
-@router.post("/api/review/{queue_id}/approve")
-def approve_item(queue_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
-    """Quick-approve a review queue item."""
-    return _review_action(db, queue_id, "approved")
-
-
-@router.post("/api/review/{queue_id}/reject")
-def reject_item(queue_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
-    """Quick-reject a review queue item."""
-    return _review_action(db, queue_id, "rejected")
-
-
-def _review_action(db: Session, queue_id: int, action: str) -> HTMLResponse:
-    """Apply a review action and return updated table row."""
-    from src.db.models import ReviewAction
-
-    item = db.get(ReviewQueueItem, queue_id)
-    if not item:
-        return HTMLResponse('<tr><td colspan="7">Item not found</td></tr>')
-
-    status = ReviewStatus(action)
-    db.add(ReviewAction(
-        queue_item_id=queue_id,
-        action=status,
-        reviewer="dashboard",
-    ))
-    item.status = status
-    item.extraction.review_status = status
-    db.commit()
-
-    color = "var(--success)" if action == "approved" else "var(--danger)"
-    return HTMLResponse(
-        f'<tr style="opacity: 0.5;">'
-        f'<td colspan="6" style="color: {color}; font-style: italic;">'
-        f'Item #{queue_id} {action}'
-        f'</td>'
-        f'<td></td></tr>'
-    )
-
-
 # ---------------------------------------------------------------------------
-# Helpers
+# Completeness Manifest — extraction coverage reporting (kept here for now)
+# _get_pipeline_stats, _get_export_files → _dashboard_helpers.py
+# review_page, approve_item, reject_item → review_routes.py
+# tracker_* → tracker_routes.py
 # ---------------------------------------------------------------------------
 
 
-def _get_pipeline_stats(db: Session) -> dict:
-    """Gather pipeline statistics for the dashboard."""
-    pending_ingestion = db.scalar(
-        select(func.count()).where(IngestionJob.status == IngestionStatus.pending)
-    ) or 0
-
-    total_passages = db.scalar(
-        select(func.count()).select_from(NormalizedSourceRecord)
-    ) or 0
-
-    total_extractions = db.scalar(
-        select(func.count()).select_from(Extraction)
-    ) or 0
-
-    # Unprocessed passages (no extractions yet)
-    extracted_ids = select(Extraction.source_record_id).distinct()
-    unprocessed_passages = db.scalar(
-        select(func.count()).where(
-            NormalizedSourceRecord.id.notin_(extracted_ids)
-        )
-    ) or 0
-
-    pending_review = db.scalar(
-        select(func.count()).where(ReviewQueueItem.status == ReviewStatus.pending)
-    ) or 0
-
-    approved_extractions = db.scalar(
-        select(func.count()).where(Extraction.review_status == ReviewStatus.approved)
-    ) or 0
-
-    # Review counts by tier
-    review_by_tier = {}
-    for tier in ["A", "B", "C", "D"]:
-        count = db.scalar(
-            select(func.count())
-            .select_from(ReviewQueueItem)
-            .join(Extraction)
-            .where(
-                ReviewQueueItem.status == ReviewStatus.pending,
-                Extraction.confidence_tier == tier,
-            )
-        ) or 0
-        review_by_tier[tier] = count
-
-    # Status summary — count document versions by temporal status
-    status_summary = {}
-    status_rows = db.execute(
-        select(
-            DocumentVersion.temporal_status,
-            func.count(),
-        ).group_by(DocumentVersion.temporal_status)
-    ).all()
-    for row in status_rows:
-        status_val = row[0].value if hasattr(row[0], "value") else str(row[0])
-        status_summary[status_val] = row[1]
-
-    # Dependency graph stats
-    try:
-        dependency_edges = db.scalar(
-            select(func.count()).select_from(ObligationDependency)
-        ) or 0
-    except Exception:
-        dependency_edges = 0
-        db.rollback()
-
-    # Applicability condition stats
-    try:
-        condition_nodes = db.scalar(
-            select(func.count()).select_from(ApplicabilityCondition)
-        ) or 0
-    except Exception:
-        condition_nodes = 0
-        db.rollback()
-
-    # Pending result files
-    pending_results = len(list(EXPORT_DIR.glob("batch_*_results.json"))) if EXPORT_DIR.exists() else 0
-
-    # Tracker CSV row count for the collapsible header
-    tracker_count = len(_read_tracker())
-
-    return {
-        "tracker_count": tracker_count,
-        "pending_ingestion": pending_ingestion,
-        "total_passages": total_passages,
-        "unprocessed_passages": unprocessed_passages,
-        "total_extractions": total_extractions,
-        "approved_extractions": approved_extractions,
-        "pending_review": pending_review,
-        "review_by_tier": review_by_tier,
-        "pending_results": pending_results,
-        "dependency_edges": dependency_edges,
-        "condition_nodes": condition_nodes,
-        "status_summary": status_summary,
-    }
-
-
-def _get_export_files() -> list[dict]:
-    """List export batch files and their result status."""
-    if not EXPORT_DIR.exists():
-        return []
-
-    files = []
-    for txt_file in sorted(EXPORT_DIR.glob("batch_*.txt")):
-        result_file = txt_file.with_name(txt_file.stem + "_results.json")
-        done_file = result_file.with_suffix(".json.done")
-        files.append({
-            "name": txt_file.name,
-            "path": str(txt_file),
-            "has_result": result_file.exists() or done_file.exists(),
-        })
-    return files
-
-
-# ---------------------------------------------------------------------------
-# Law Tracker (static/ai_law_tracker.csv) — ground truth for discovery
-# ---------------------------------------------------------------------------
-
-TRACKER_CSV = Path("static/ai_law_tracker.csv")
-TRACKER_FIELDS = [
-    "State/Terr", "AI Scope", "Relevant Law", "Bill ID",
-    "Effective Date", "Key Requirements", "Enforcements Penalties",
-    "Status", "Source URL",
-]
-
-
-def _read_tracker() -> list[dict]:
-    """Read the law tracker CSV and return rows as dicts."""
-    import csv
-
-    if not TRACKER_CSV.exists():
-        return []
-    with open(TRACKER_CSV, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
-
-
-def _write_tracker(rows: list[dict]) -> None:
-    """Write rows back to the law tracker CSV."""
-    import csv
-
-    with open(TRACKER_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=TRACKER_FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _tracker_row_html(i: int, row: dict, editing: bool = False) -> str:
-    """Render a single tracker row as HTML (display or edit mode)."""
-    state = html_escape(row.get("State/Terr", ""))
-    scope = html_escape(row.get("AI Scope", ""))
-    law = html_escape(row.get("Relevant Law", ""))
-    bill = html_escape(row.get("Bill ID", ""))
-    date = html_escape(row.get("Effective Date", ""))
-    key_reqs = row.get("Key Requirements", "")
-    enforce = row.get("Enforcements Penalties", "")
-    status = html_escape(row.get("Status", "Active"))
-    url = row.get("Source URL", "")
-    url_esc = html_escape(url)
-    url_short = html_escape(url[:45]) + ("..." if len(url) > 45 else "")
-
-    if editing:
-        return (
-            f'<tr id="tracker-row-{i}" class="tracker-editing"'
-            f'  style="background:var(--bg-secondary);">'
-            f'<td colspan="9" style="padding:8px;">'
-            f'<form hx-post="/dashboard/api/tracker/{i}/edit"'
-            f'      hx-target="#tracker-table-body"'
-            f'      hx-swap="innerHTML"'
-            f'      style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));'
-            f'      gap:6px;font-size:12px;">'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    State/Terr'
-            f'    <input type="text" name="State/Terr" value="{state}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    AI Scope'
-            f'    <input type="text" name="AI Scope" value="{scope}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    Relevant Law'
-            f'    <input type="text" name="Relevant Law" value="{law}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    Bill ID'
-            f'    <input type="text" name="Bill ID" value="{bill}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    Effective Date'
-            f'    <input type="text" name="Effective Date" value="{date}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;">'
-            f'    Status'
-            f'    <select name="Status" style="font-size:12px;padding:3px 5px;">'
-            f'      <option value="Active"{"selected" if status == "Active" else ""}>Active</option>'
-            f'      <option value="Enacted"{"selected" if status == "Enacted" else ""}>Enacted</option>'
-            f'      <option value="Pending"{"selected" if status == "Pending" else ""}>Pending</option>'
-            f'      <option value="Failed"{"selected" if status == "Failed" else ""}>Failed</option>'
-            f'      <option value="Repealed"{"selected" if status == "Repealed" else ""}>Repealed</option>'
-            f'    </select>'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:span 2;">'
-            f'    Source URL'
-            f'    <input type="url" name="Source URL" value="{url_esc}"'
-            f'           style="width:100%;font-size:12px;padding:3px 5px;">'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">'
-            f'    Key Requirements'
-            f'    <textarea name="Key Requirements" rows="2"'
-            f'              style="width:100%;font-size:12px;padding:3px 5px;"'
-            f'    >{html_escape(key_reqs)}</textarea>'
-            f'  </label>'
-            f'  <label style="display:flex;flex-direction:column;gap:2px;grid-column:1/-1;">'
-            f'    Enforcements/Penalties'
-            f'    <textarea name="Enforcements Penalties" rows="1"'
-            f'              style="width:100%;font-size:12px;padding:3px 5px;"'
-            f'    >{html_escape(enforce)}</textarea>'
-            f'  </label>'
-            f'  <div style="display:flex;gap:6px;align-items:end;">'
-            f'    <button type="submit" class="btn btn-sm btn-primary" hx-disabled-elt="this">'
-            f'      <span class="btn-label">Save</span>'
-            f'      <span class="htmx-indicator"><span class="spinner"></span></span>'
-            f'    </button>'
-            f'    <button type="button" class="btn btn-sm"'
-            f'            hx-get="/dashboard/api/tracker"'
-            f'            hx-target="#tracker-table-body"'
-            f'            hx-swap="innerHTML"'
-            f'            hx-params="none">Cancel</button>'
-            f'  </div>'
-            f'</form>'
-            f'</td></tr>'
-        )
-
-    # URL display
-    url_cell = "&mdash;"
-    if url:
-        url_cell = (
-            f'<a href="{url_esc}" target="_blank" rel="noopener"'
-            f'   style="font-size:11px;word-break:break-all;"'
-            f'   title="{url_esc}">{url_short}</a>'
-        )
-
-    # Status badge color
-    status_color = {
-        "Active": "var(--success)", "Enacted": "var(--info)",
-        "Pending": "var(--warning)", "Failed": "var(--danger)",
-        "Repealed": "var(--text-muted)",
-    }.get(status, "var(--text)")
-
-    return (
-        f'<tr id="tracker-row-{i}">'
-        f'<td><strong>{state}</strong></td>'
-        f'<td style="font-size:12px;">{scope}</td>'
-        f'<td style="font-size:12px;max-width:200px;overflow:hidden;'
-        f'    text-overflow:ellipsis;white-space:nowrap;"'
-        f'    title="{law}">{law}</td>'
-        f'<td style="font-size:12px;">{bill}</td>'
-        f'<td style="font-size:12px;">{date}</td>'
-        f'<td><span style="color:{status_color};font-size:12px;">{status}</span></td>'
-        f'<td style="max-width:160px;">{url_cell}</td>'
-        f'<td style="text-align:center;">'
-        f'  <button class="btn btn-sm"'
-        f'          hx-get="/dashboard/api/tracker/{i}/edit"'
-        f'          hx-target="#tracker-table-body"'
-        f'          hx-swap="innerHTML">Edit</button>'
-        f'  <button class="btn btn-sm"'
-        f'          hx-delete="/dashboard/api/tracker/{i}"'
-        f'          hx-target="#tracker-table-body"'
-        f'          hx-swap="innerHTML"'
-        f'          hx-confirm="Delete this row?">Del</button>'
-        f'</td>'
-        f'</tr>'
-    )
-
-
-def _tracker_table_body(rows: list[dict], edit_idx: int = -1) -> str:
-    """Render all tracker rows as a <tbody> innerHTML."""
-    if not rows:
-        return (
-            '<tr><td colspan="8" style="text-align:center;padding:20px;">'
-            'No records. Add a row or import a CSV.</td></tr>'
-        )
-    return "".join(
-        _tracker_row_html(i, r, editing=(i == edit_idx))
-        for i, r in enumerate(rows)
-    )
-
-
-@router.get("/api/tracker")
-def tracker_list(
-    q: str = Query("", alias="q"),
+@router.get("/api/completeness")
+def get_completeness_manifest(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Render the tracker table body (all rows)."""
-    rows = _read_tracker()
-    if q:
-        q_lower = q.lower()
-        rows_filtered = [
-            r for r in rows
-            if q_lower in (r.get("State/Terr", "") + r.get("Relevant Law", "")
-                           + r.get("Bill ID", "") + r.get("AI Scope", "")).lower()
-        ]
-    else:
-        rows_filtered = rows
-    return HTMLResponse(_tracker_table_body(rows_filtered))
+    """Return extraction completeness manifest as an HTML table.
 
+    Shows per-document extraction coverage: total passages, processed,
+    skipped, coverage %, and flags gaps where passages have no extractions.
+    """
+    from src.ingestion.extractor import compute_completeness_manifest
 
-@router.get("/api/tracker/{idx}/edit")
-def tracker_edit_form(idx: int) -> HTMLResponse:
-    """Return the table body with one row in edit mode."""
-    rows = _read_tracker()
-    if idx < 0 or idx >= len(rows):
-        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
-    return HTMLResponse(_tracker_table_body(rows, edit_idx=idx))
+    reports = compute_completeness_manifest(db, document_version_id)
 
-
-@router.post("/api/tracker/{idx}/edit")
-async def tracker_save_row(idx: int, request: Request) -> HTMLResponse:
-    """Save edits to a tracker row and return the refreshed table body."""
-    rows = _read_tracker()
-    if idx < 0 or idx >= len(rows):
-        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
-
-    form = await request.form()
-    for field in TRACKER_FIELDS:
-        val = form.get(field)
-        if val is not None:
-            rows[idx][field] = val.strip()
-
-    _write_tracker(rows)
-    return HTMLResponse(_tracker_table_body(rows))
-
-
-@router.delete("/api/tracker/{idx}")
-def tracker_delete_row(idx: int) -> HTMLResponse:
-    """Delete a tracker row and return the refreshed table body."""
-    rows = _read_tracker()
-    if idx < 0 or idx >= len(rows):
-        return HTMLResponse('<tr><td colspan="8">Row not found.</td></tr>')
-    rows.pop(idx)
-    _write_tracker(rows)
-    return HTMLResponse(_tracker_table_body(rows))
-
-
-@router.post("/api/tracker/add")
-async def tracker_add_row(request: Request) -> HTMLResponse:
-    """Add a new row to the tracker and return the refreshed table body."""
-    rows = _read_tracker()
-    form = await request.form()
-    new_row = {}
-    for field in TRACKER_FIELDS:
-        new_row[field] = (form.get(field) or "").strip()
-    if not new_row.get("State/Terr"):
-        new_row["State/Terr"] = "XX"
-    if not new_row.get("Status"):
-        new_row["Status"] = "Active"
-    rows.append(new_row)
-    _write_tracker(rows)
-    return HTMLResponse(_tracker_table_body(rows))
-
-
-@router.get("/api/tracker/export")
-def tracker_export() -> StreamingResponse:
-    """Download the tracker CSV."""
-    import io
-    import csv
-
-    rows = _read_tracker()
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=TRACKER_FIELDS)
-    writer.writeheader()
-    writer.writerows(rows)
-    buf.seek(0)
-    return StreamingResponse(
-        iter([buf.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=ai_law_tracker.csv"},
-    )
-
-
-@router.post("/api/tracker/import")
-async def tracker_import(file: UploadFile) -> HTMLResponse:
-    """Import a CSV to replace the tracker. Validates columns first."""
-    import csv
-    import io
-
-    content = (await file.read()).decode("utf-8", errors="replace")
-    reader = csv.DictReader(io.StringIO(content))
-
-    # Validate header
-    if not reader.fieldnames:
+    if not reports:
         return HTMLResponse(
-            '<div class="result-panel error">Empty or invalid CSV file.</div>'
+            '<div class="result-panel info">No documents with passages found. '
+            "Run fetch & extraction first.</div>"
         )
 
-    missing = set(TRACKER_FIELDS) - set(reader.fieldnames)
-    if missing:
+    # Summary stats
+    total_docs = len(reports)
+    complete_docs = sum(1 for r in reports if r.is_complete)
+    total_passages = sum(r.total_passages for r in reports)
+    total_processed = sum(r.passages_processed for r in reports)
+    total_gaps = sum(len(r.gaps) for r in reports)
+    overall_coverage = round(total_processed / total_passages * 100, 1) if total_passages else 0
+
+    summary_html = f"""
+    <div class="result-panel {'success' if total_gaps == 0 else 'warning'}"
+         style="margin-bottom:12px;">
+      <strong>Completeness Summary:</strong>
+      {complete_docs}/{total_docs} documents fully covered &middot;
+      {total_processed}/{total_passages} passages processed &middot;
+      {total_gaps} gap{"s" if total_gaps != 1 else ""} found &middot;
+      {overall_coverage}% overall coverage
+    </div>
+    """
+
+    # Per-document table
+    rows_html = ""
+    for report in sorted(reports, key=lambda r: r.coverage_percent):
+        coverage_class = (
+            "success" if report.coverage_percent >= 95
+            else "warning" if report.coverage_percent >= 80
+            else "danger"
+        )
+        gap_count = len(report.gaps)
+        status_icon = "&#10003;" if report.is_complete else f"&#9888; {gap_count} gaps"
+
+        rows_html += f"""
+        <tr>
+          <td><strong>{html_escape(report.document_label)}</strong></td>
+          <td>{html_escape(report.jurisdiction or '—')}</td>
+          <td>{report.total_passages}</td>
+          <td>{report.passages_processed}</td>
+          <td>{report.passages_skipped_short + report.passages_skipped_boilerplate}</td>
+          <td class="text-{coverage_class}">
+            <strong>{report.coverage_percent}%</strong>
+          </td>
+          <td class="text-{coverage_class}">{status_icon}</td>
+        </tr>
+        """
+
+        # Show gaps if any
+        if report.gaps:
+            for gap in report.gaps[:5]:  # Show max 5 gaps per doc
+                preview = html_escape(gap.get("text_preview", "")[:100])
+                rows_html += f"""
+                <tr style="background: var(--bg-warning-subtle, #fff3cd);">
+                  <td colspan="2" style="padding-left:2em; font-size:0.85em;">
+                    &#8627; {html_escape(gap.get('section_path') or 'Unknown section')}
+                  </td>
+                  <td colspan="3" style="font-size:0.85em;">{preview}...</td>
+                  <td colspan="2" style="font-size:0.85em;">
+                    Expected: {', '.join(gap.get('expected_agents', []))}
+                  </td>
+                </tr>
+                """
+            if len(report.gaps) > 5:
+                rows_html += f"""
+                <tr style="background: var(--bg-warning-subtle, #fff3cd);">
+                  <td colspan="7" style="padding-left:2em; font-size:0.85em; font-style:italic;">
+                    ... and {len(report.gaps) - 5} more gaps
+                  </td>
+                </tr>
+                """
+
+    table_html = f"""
+    {summary_html}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>Jurisdiction</th>
+          <th>Total</th>
+          <th>Processed</th>
+          <th>Skipped</th>
+          <th>Coverage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    """
+
+    return HTMLResponse(table_html)
+
+
+# ---------------------------------------------------------------------------
+# Verification Pipeline — post-extraction accuracy checks
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/verify", response_class=HTMLResponse)
+def run_verification(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Run post-extraction verification agents on completed extractions.
+
+    Three layers: cross-validation, gap detection, and citation verification.
+    Returns results as HTML for the dashboard.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import run_verification_pass
+
+    if not _acquire_pipeline_lock():
         return HTMLResponse(
-            f'<div class="result-panel error">'
-            f'Missing columns: {html_escape(", ".join(sorted(missing)))}. '
-            f'Expected: {html_escape(", ".join(TRACKER_FIELDS))}'
-            f'</div>'
+            '<div class="result-panel warning">Another pipeline operation is running.</div>'
         )
 
-    rows = []
-    for r in reader:
-        clean = {f: (r.get(f) or "").strip() for f in TRACKER_FIELDS}
-        if clean.get("State/Terr"):
-            rows.append(clean)
+    try:
+        results = run_verification_pass(db, document_version_id)
+    finally:
+        _pipeline_lock.release()
 
-    _write_tracker(rows)
-    return HTMLResponse(
-        f'<div class="result-panel success" style="margin-bottom:8px;">'
-        f'Imported <strong>{len(rows)}</strong> records.</div>'
-        + _tracker_table_body(rows)
-    )
+    if not results:
+        return HTMLResponse(
+            '<div class="result-panel info">No documents with extractions to verify.</div>'
+        )
+
+    # Summary
+    total_cv_flagged = sum(r.cross_validation_flagged for r in results)
+    total_gaps = sum(r.gaps_found for r in results)
+    total_cit_issues = sum(r.citations_unverified for r in results)
+    total_tokens = sum(r.total_tokens for r in results)
+
+    severity = "success" if (total_cv_flagged + total_gaps + total_cit_issues) == 0 else "warning"
+    summary_html = f"""
+    <div class="result-panel {severity}" style="margin-bottom:12px;">
+      <strong>Verification Complete</strong> ({len(results)} documents, {total_tokens:,} tokens)<br>
+      Cross-validation: {total_cv_flagged} flagged &middot;
+      Gap detection: {total_gaps} gaps &middot;
+      Citations: {total_cit_issues} unverified
+    </div>
+    """
+
+    rows_html = ""
+    for r in results:
+        doc_severity = (
+            "success" if (r.cross_validation_flagged + r.gaps_found + r.citations_unverified) == 0
+            else "warning" if r.cross_validation_avg_accuracy >= 0.8
+            else "danger"
+        )
+        rows_html += f"""
+        <tr>
+          <td><strong>{html_escape(r.document_label)}</strong></td>
+          <td class="text-{doc_severity}">{r.cross_validation_avg_accuracy:.1%}</td>
+          <td>{r.cross_validation_flagged}</td>
+          <td>{r.gaps_found} ({r.high_confidence_gaps} high)</td>
+          <td>{r.citations_verified}/{r.citations_checked}</td>
+          <td>{r.total_tokens:,}</td>
+        </tr>
+        """
+
+    table_html = f"""
+    {summary_html}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>CV Accuracy</th>
+          <th>CV Flagged</th>
+          <th>Gaps Found</th>
+          <th>Citations OK</th>
+          <th>Tokens</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    """
+
+    return HTMLResponse(table_html)

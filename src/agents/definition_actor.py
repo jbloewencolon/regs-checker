@@ -37,13 +37,23 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 If the passage defines MULTIPLE terms, include one object per definition.
 
 If the passage contains NO extractable definition, return:
-{"detected": false, "reason": "explanation"}
+{"detected": false, "reason": "<describe why no definitions were found>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
 - Use abstention (detected: false) rather than hallucinating definitions
 - Preserve the exact legal language of definitions — do not paraphrase
-- Capture the full definition, not a summary"""
+- Capture the full definition, not a summary
+
+EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
+- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
+- Do NOT paraphrase, summarize, or reword the text
+- Do NOT fix typos, grammar, or formatting in the quoted text
+
+EXAMPLE (for a passage containing "'Artificial intelligence system' means a machine-based system that generates outputs."):
+  CORRECT: {"field_name": "text", "text": "'Artificial intelligence system' means a machine-based system that generates outputs."}
+  WRONG:   {"field_name": "text", "text": "Artificial intelligence system: a machine-based system that generates outputs."}
+The second is wrong because it reformats the definition instead of quoting verbatim."""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all definitions, actor role mappings, and framework references from
@@ -66,6 +76,7 @@ PASSAGE:
                     f"\n\nKEY REQUIREMENTS (from Orrick AI Law Tracker — use as "
                     f"context to improve extraction accuracy):\n{context['key_requirements']}"
                 )
+        prompt = self._append_bill_context(prompt, context)
         return prompt
 
     def get_output_schema(self) -> type[BaseModel]:

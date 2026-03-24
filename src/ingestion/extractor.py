@@ -7,7 +7,11 @@ Shared logic used by both:
 Steps:
   1. Query NormalizedSourceRecords without extractions (or with pending ExtractionJob)
   2. Filter out tiny passages (<150 chars) and merge adjacent short fragments
-  3. Select agents per passage based on content signals (keyword pre-screening)
+  2b. TRIAGE: Run section-level AI-relevance filter (keyword + Orrick + LLM)
+      - Passages marked "not_relevant" skip the agent battery
+      - Passages marked "uncertain" proceed (conservative)
+      - All decisions stored in section_triage_results for review
+  3. Select agents per passage via negative screening (exclude only boilerplate)
   4. Run selected agents concurrently
   5. Validate output via Pydantic, verify evidence spans via string matching
   6. Compute confidence score and tier
@@ -24,7 +28,7 @@ Enhancements over initial implementation:
 Cost optimizations:
   - Skip passages under MIN_PASSAGE_LENGTH chars (boilerplate/stubs)
   - Merge consecutive short passages from same section into single API call
-  - Keyword-based agent selection skips irrelevant agents per passage
+  - Negative screening excludes agents only for definitively irrelevant passages
   - Orrick key_requirements injected as extraction context for higher accuracy
   - Batch API support via --batch flag (50% discount, 24h turnaround)
 """
@@ -32,6 +36,7 @@ Cost optimizations:
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -41,7 +46,7 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, inspect as sa_inspect, select
 
 from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
@@ -68,6 +73,9 @@ from src.db.models import (
     ObligationDependency,
     ReviewQueueItem,
     ReviewStatus,
+    SectionTriageResult,
+    TriageDecision,
+    TriageMethod,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
@@ -99,9 +107,68 @@ def clear_cancel() -> None:
 # Passages shorter than this are legislative boilerplate (headers, stubs, etc.)
 MIN_PASSAGE_LENGTH = 150
 
+# Set at module-load or first extraction run — True once migration adds column
+_payload_hash_available: bool | None = None
+
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
+
+def _ensure_triage_table(db, _log=None) -> None:
+    """Create the section_triage_results table if it doesn't exist.
+
+    Handles the case where the alembic migration hasn't been applied
+    to the local database. Creates enum types and the table idempotently.
+    """
+    from sqlalchemy import inspect as sa_inspect, text
+
+    bind = db.get_bind()
+    inspector = sa_inspect(bind)
+    if inspector.has_table("section_triage_results"):
+        return
+
+    if _log:
+        _log("Creating section_triage_results table (migration not applied)...")
+
+    with bind.begin() as conn:
+        conn.execute(text("""
+            DO $$ BEGIN
+                CREATE TYPE triagedecision AS ENUM ('relevant', 'not_relevant', 'uncertain');
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """))
+        conn.execute(text("""
+            DO $$ BEGIN
+                CREATE TYPE triagemethod AS ENUM ('keyword', 'orrick_cross_check', 'llm_generic', 'quality_fail', 'passthrough', 'manual_review');
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS section_triage_results (
+                id SERIAL PRIMARY KEY,
+                source_record_id INTEGER NOT NULL UNIQUE REFERENCES normalized_source_records(id),
+                decision triagedecision NOT NULL,
+                method triagemethod NOT NULL,
+                confidence FLOAT NOT NULL DEFAULT 0.0,
+                matched_keywords JSONB DEFAULT '[]'::jsonb,
+                orrick_terms_checked JSONB DEFAULT '[]'::jsonb,
+                llm_reasoning TEXT,
+                pdf_quality_score FLOAT,
+                quality_flags JSONB DEFAULT '[]'::jsonb,
+                model_id VARCHAR(100),
+                created_at TIMESTAMP DEFAULT now()
+            )
+        """))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_triage_source_record ON section_triage_results (source_record_id)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_triage_decision ON section_triage_results (decision)"
+        ))
+
+    if _log:
+        _log("Table created.")
+
 
 # Agent registry — 4 consolidated agents per Recommendation #1
 AGENTS: dict[str, BaseExtractionAgent] = {}
@@ -216,6 +283,55 @@ def _discriminate_extraction_type(
 # Keyword patterns for selective agent routing
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Negative screening: passages matching these patterns are EXCLUDED from
+# specific agents because they are definitively irrelevant.  All other
+# passages run ALL agents (recall-safe approach).
+#
+# Previous approach used positive keyword matching (require "shall|must" for
+# obligation agent, etc.) which silently missed obligations phrased in
+# non-standard ways ("developers are expected to", "it is the policy of",
+# "no person may").  For audit-grade work where false negatives are
+# unacceptable, we invert the logic: run everything by default, only skip
+# when we're confident the passage can't contain relevant content.
+# ---------------------------------------------------------------------------
+
+# Passages that are purely structural / procedural boilerplate.
+# These never contain substantive legal content for ANY agent.
+_BOILERPLATE_PATTERN = re.compile(
+    r"^\s*("
+    r"table\s+of\s+contents"
+    r"|chapter\s+\d+"
+    r"|part\s+\d+\s*[-—]\s*$"
+    r"|article\s+\d+\s*$"
+    r"|_{5,}"  # separator lines
+    r"|\.{5,}"  # dot leaders (TOC)
+    r"|page\s+\d+"
+    r")\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Enacting / procedural clauses that contain no obligations, definitions,
+# thresholds, rights, or compliance mechanisms.
+_ENACTING_CLAUSE_PATTERN = re.compile(
+    r"^\s*(be\s+it\s+enacted|the\s+people\s+of\s+the\s+state\s+of"
+    r"|this\s+act\s+(shall\s+be\s+known\s+as|may\s+be\s+cited\s+as)"
+    r"|approved\s+(by\s+the\s+governor|on)"
+    r"|signed\s+(by\s+the\s+governor|into\s+law)"
+    r"|effective\s+immediately)\b",
+    re.IGNORECASE,
+)
+
+# Passages that are purely definitional structure (section headers like
+# "DEFINITIONS" or "As used in this section:") — these are relevant ONLY
+# to the definition_actor agent, not to obligation/threshold/rights/compliance.
+_DEFINITIONS_SECTION_HEADER = re.compile(
+    r"^\s*(definitions|as\s+used\s+in\s+this\s+(act|section|chapter|article|part))\s*[:.]?\s*$",
+    re.IGNORECASE,
+)
+
+# Legacy positive-match patterns kept for optional "hint" mode and tests.
+# These are NO LONGER used for agent selection in the default pipeline.
 _OBLIGATION_PATTERN = re.compile(
     r"\b(shall|must|may\s+not|prohibited|required|require|obligat)"
     r"\b",
@@ -307,11 +423,19 @@ def _confidence_to_priority(tier: str) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}.get(tier, 1)
 
 
-def _build_context(db, record: NormalizedSourceRecord) -> dict:
+def _build_context(
+    db,
+    record: NormalizedSourceRecord,
+    bill_context: dict[str, Any] | None = None,
+) -> dict:
     """Build context dict for an extraction agent.
 
     Includes Orrick key_requirements and enforcement metadata when available,
     giving the model richer signal about what the passage is about.
+
+    If bill_context is provided (from bill_context.get_or_build_bill_context),
+    injects bill-level definitions, scope, structure, and defined terms so
+    agents can resolve cross-references and understand actor terminology.
     """
     dv = record.document_version
     df = dv.family if dv else None
@@ -363,6 +487,17 @@ def _build_context(db, record: NormalizedSourceRecord) -> dict:
         if iapp_topic:
             ctx["iapp_ai_topic"] = iapp_topic
 
+    # Inject bill-level context (definitions, scope, structure, defined terms)
+    if bill_context:
+        if bill_context.get("definitions"):
+            ctx["bill_definitions"] = bill_context["definitions"]
+        if bill_context.get("scope"):
+            ctx["bill_scope"] = bill_context["scope"]
+        if bill_context.get("structure"):
+            ctx["bill_structure"] = bill_context["structure"]
+        if bill_context.get("defined_terms"):
+            ctx["defined_terms"] = bill_context["defined_terms"]
+
     return ctx
 
 
@@ -410,40 +545,58 @@ def _content_hash(agent_name: str, text: str) -> str:
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
 
 
+def _payload_hash(payload: dict) -> str:
+    """Compute a stable SHA-256 hash of an extraction payload for dedup.
+
+    Strips internal meta keys (``_prompt_hash``, ``_model_id``, etc.) and
+    ``evidence_spans`` so that the hash reflects only the substantive content.
+    """
+    clean = {
+        k: v for k, v in sorted(payload.items())
+        if not k.startswith("_") and k != "evidence_spans"
+    }
+    return hashlib.sha256(
+        json.dumps(clean, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
 def _select_agents_for_passage(
     text: str, all_agents: dict[str, BaseExtractionAgent]
 ) -> dict[str, BaseExtractionAgent]:
-    """Select which agents to run based on passage content signals.
+    """Select which agents to run via negative screening (recall-safe).
 
-    Keyword pre-screening avoids wasting API calls on passages that
-    are unlikely to contain content relevant to a specific agent.
-    Ambiguity always runs (catches vague terms even in short passages).
+    Runs ALL agents by default.  Only excludes agents when the passage is
+    definitively irrelevant — boilerplate, enacting clauses, or structural
+    headers.  This prevents false negatives from obligations phrased in
+    non-standard ways (e.g., "developers are expected to", "it is the
+    policy of this state that", "no person may deploy").
+
+    For audit-grade work where missing an obligation is worse than a
+    false positive, this approach prioritises recall over cost savings.
+    The LLM agents will abstain (return detected: false) on irrelevant
+    passages, so false positives are handled downstream.
     """
-    selected: dict[str, BaseExtractionAgent] = {}
+    text_stripped = text.strip()
 
-    # Ambiguity always runs
-    if "ambiguity" in all_agents:
-        selected["ambiguity"] = all_agents["ambiguity"]
+    # If the entire passage is boilerplate (TOC, page numbers, separators),
+    # skip ALL agents — no substantive content to extract.
+    if _BOILERPLATE_PATTERN.fullmatch(text_stripped):
+        return {}
 
-    # Obligation: needs modal verbs
-    if "obligation" in all_agents and _OBLIGATION_PATTERN.search(text):
-        selected["obligation"] = all_agents["obligation"]
+    # If it's a pure enacting/signing clause, skip all agents.
+    # These are procedural and never contain obligations or definitions.
+    if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
+        return {}
 
-    # Threshold/exception: needs numbers, dates, or conditional language
-    if "threshold_exception" in all_agents and _THRESHOLD_EXCEPTION_PATTERN.search(text):
-        selected["threshold_exception"] = all_agents["threshold_exception"]
+    # Start with all agents selected (recall-safe default)
+    selected = dict(all_agents)
 
-    # Definition/actor: needs definitional language
-    if "definition_actor" in all_agents and _DEFINITION_ACTOR_PATTERN.search(text):
-        selected["definition_actor"] = all_agents["definition_actor"]
-
-    # Rights/protections: needs rights-granting language
-    if "rights_protection" in all_agents and _RIGHTS_PROTECTION_PATTERN.search(text):
-        selected["rights_protection"] = all_agents["rights_protection"]
-
-    # Compliance mechanisms: needs procedural/audit language
-    if "compliance_mechanism" in all_agents and _COMPLIANCE_MECHANISM_PATTERN.search(text):
-        selected["compliance_mechanism"] = all_agents["compliance_mechanism"]
+    # Definitions section headers ("DEFINITIONS", "As used in this act:")
+    # are only useful for the definition_actor agent.  Other agents won't
+    # find obligations, thresholds, rights, or compliance mechanisms in a
+    # bare header line.
+    if _DEFINITIONS_SECTION_HEADER.fullmatch(text_stripped):
+        return {k: v for k, v in selected.items() if k == "definition_actor"}
 
     return selected
 
@@ -512,6 +665,7 @@ def extract_single_record(
     token_usage: TokenUsageSummary | None = None,
     existing_hashes: set[str] | None = None,
     tracker: FailureTracker | None = None,
+    bill_context: dict[str, Any] | None = None,
 ) -> int:
     """Run selected agents against a passage.
 
@@ -527,9 +681,11 @@ def extract_single_record(
         tracker: Shared FailureTracker that monitors consecutive and total
             failure rates across the full extraction run.  Raises
             CircuitBreakerTripped when thresholds are exceeded.
+        bill_context: Pre-built bill-level context (definitions, scope,
+            structure, defined_terms) from bill_context.get_or_build_bill_context.
     """
     record = passage.primary_record
-    ctx = _build_context(db, record)
+    ctx = _build_context(db, record, bill_context=bill_context)
     extractions_created = 0
 
     # Jurisdiction cross-check: skip if document state doesn't match law state
@@ -576,6 +732,10 @@ def extract_single_record(
                 name, result = future.result()
                 agent_results.append((name, content_hash, result))
 
+    # Import monitor for live event emission
+    from src.core.extraction_monitor import get_monitor
+    monitor = get_monitor()
+
     # Process results (back on main thread for DB writes)
     for name, content_hash, result in agent_results:
         if isinstance(result, Exception):
@@ -590,6 +750,11 @@ def extract_single_record(
                 tracker.record_failure(
                     f"agent={name} record={record.id}: {result}"
                 )
+            monitor.record_agent_result(
+                agent_name=name,
+                record_id=record.id,
+                error=str(result),
+            )
             continue
 
         # Successful call — reset consecutive failure counter
@@ -613,6 +778,13 @@ def extract_single_record(
         )
 
         if result.abstention is not None:
+            monitor.record_agent_result(
+                agent_name=name,
+                record_id=record.id,
+                abstained=True,
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+            )
             continue
 
         # Mark hash as seen
@@ -628,6 +800,26 @@ def extract_single_record(
             for item in result.extractions:
                 try:
                     resolved_type = _discriminate_extraction_type(name, item)
+
+                    # --- Payload-level deduplication (indexed hash lookup) ---
+                    p_hash = _payload_hash(item)
+                    if _payload_hash_available:
+                        existing_dup = db.scalars(
+                            select(Extraction.id).where(
+                                Extraction.source_record_id == source_record.id,
+                                Extraction.extraction_type == resolved_type,
+                                Extraction.payload_hash == p_hash,
+                            ).limit(1)
+                        ).first()
+                        if existing_dup:
+                            logger.debug(
+                                "extraction_payload_duplicate_skipped",
+                                agent=name,
+                                record_id=source_record.id,
+                                extraction_type=resolved_type.value,
+                            )
+                            continue
+
                     evidence = item.get("evidence_spans", [])
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
@@ -642,8 +834,18 @@ def extract_single_record(
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.model_reasoning:
+                        extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
+                    extraction_meta["confidence_breakdown"] = {
+                        "schema_validity": confidence.schema_validity,
+                        "evidence_grounding": confidence.evidence_grounding,
+                        "completeness": confidence.completeness,
+                        "source_quality": confidence.source_quality,
+                        "orrick_alignment": confidence.orrick_alignment,
+                        "cross_validation": confidence.cross_validation,
+                    }
 
-                    extraction = Extraction(
+                    extraction_kwargs: dict[str, Any] = dict(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,
                         payload=item,
@@ -658,6 +860,9 @@ def extract_single_record(
                         extraction_job_id=extraction_job.id if extraction_job else None,
                         metadata_=extraction_meta if extraction_meta else {},
                     )
+                    if _payload_hash_available:
+                        extraction_kwargs["payload_hash"] = p_hash
+                    extraction = Extraction(**extraction_kwargs)
                     db.add(extraction)
                     db.flush()
 
@@ -681,7 +886,20 @@ def extract_single_record(
                         orrick_matched_tokens=confidence.orrick_matched_tokens[:5],
                     )
 
+                    # Emit to live monitor
+                    monitor.record_agent_result(
+                        agent_name=name,
+                        record_id=source_record.id,
+                        success=True,
+                        extraction_count=1,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        confidence_tier=confidence.tier,
+                        truncated=result.truncated,
+                    )
+
                 except Exception as e:
+                    db.rollback()
                     logger.error(
                         "extraction_record_failed",
                         agent=name,
@@ -689,7 +907,191 @@ def extract_single_record(
                         error=str(e),
                     )
 
+    # Record passage-level completion to monitor
+    monitor.record_passage_complete(
+        record_id=record.id,
+        section_path=record.section_path,
+        extraction_count=extractions_created,
+    )
+
     return extractions_created
+
+
+def _get_neighbor_texts(
+    record,
+    siblings: list,
+    window: int = 1,
+) -> list[str]:
+    """Return text from neighboring passages (before/after) in the same document.
+
+    Gives the triage model surrounding context so it can tell whether a generic
+    section lives inside an AI-specific part of the bill.
+    """
+    if not siblings or len(siblings) <= 1:
+        return []
+
+    # Find index of this record in the sibling list (ordered by ordinal)
+    idx = None
+    for j, r in enumerate(siblings):
+        if r.id == record.id:
+            idx = j
+            break
+    if idx is None:
+        return []
+
+    texts: list[str] = []
+    for offset in range(-window, window + 1):
+        if offset == 0:
+            continue
+        neighbor_idx = idx + offset
+        if 0 <= neighbor_idx < len(siblings):
+            txt = siblings[neighbor_idx].text_content or ""
+            if txt.strip():
+                texts.append(txt)
+    return texts
+
+
+def run_triage(
+    db,
+    on_progress: callable | None = None,
+) -> dict:
+    """Run section triage on all untriaged passages.
+
+    Triages passages from completed ingestion jobs that don't yet have
+    a SectionTriageResult. This is the same logic as the inline triage
+    in run_extraction(), extracted into a standalone function so it can
+    be triggered independently from the dashboard.
+
+    Returns:
+        Summary dict with relevant/uncertain/skipped/total counts.
+    """
+    from src.agents.section_triage import triage_passage
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Ensure section_triage_results table exists (may not if migration
+    # hasn't been applied to the local database yet).
+    _ensure_triage_table(db, _log)
+
+    # Find all passages from completed ingestion jobs that haven't been triaged
+    triaged_ids = select(SectionTriageResult.source_record_id)
+    records = db.scalars(
+        select(NormalizedSourceRecord)
+        .where(
+            NormalizedSourceRecord.id.notin_(triaged_ids),
+            NormalizedSourceRecord.document_version_id.in_(
+                select(IngestionJob.document_version_id).where(
+                    IngestionJob.status.in_(["completed", "fetched"])
+                )
+            ),
+        )
+    ).all()
+
+    # Filter out tiny passages
+    records = [r for r in records if len(r.text_content or "") >= MIN_PASSAGE_LENGTH]
+
+    summary = {
+        "total": len(records),
+        "relevant": 0,
+        "uncertain": 0,
+        "skipped": 0,
+    }
+
+    if not records:
+        _log("No untriaged passages found.")
+        return summary
+
+    # Get LLM provider for Layer 2/3 triage (keyword-only passages are free)
+    llm_provider = None
+    try:
+        from src.core.llm_provider import get_discovery_provider
+        llm_provider = get_discovery_provider()
+        _log(f"Triaging {len(records)} passages with LLM fallback ({llm_provider.model_id})...")
+    except Exception as e:
+        _log(f"Triaging {len(records)} passages (keyword-only, no LLM: {e})...")
+
+    # Pre-build bill-level context per document_version so every passage in
+    # the same bill shares definitions/scope/structure context.
+    from src.core.bill_context import get_or_build_bill_context
+    from itertools import groupby
+    from operator import attrgetter
+
+    # Group records by document_version_id so we build context once per bill
+    records_sorted = sorted(records, key=attrgetter("document_version_id", "ordinal"))
+    _bill_ctx_cache: dict[int, dict] = {}
+    _dv_records: dict[int, list] = {}
+    for dv_id, grp in groupby(records_sorted, key=attrgetter("document_version_id")):
+        _dv_records[dv_id] = list(grp)
+        try:
+            _bill_ctx_cache[dv_id] = get_or_build_bill_context(db, dv_id, records=_dv_records[dv_id])
+        except Exception:
+            logger.debug("bill_context_build_failed", dv_id=dv_id, exc_info=True)
+            _bill_ctx_cache[dv_id] = {}
+
+    for i, record in enumerate(records):
+        ctx = _build_context(db, record)
+        # Inject bill-level context (definitions, scope, structure)
+        bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
+        if bill_ctx:
+            if bill_ctx.get("definitions"):
+                ctx["bill_definitions"] = bill_ctx["definitions"]
+            if bill_ctx.get("scope"):
+                ctx["bill_scope"] = bill_ctx["scope"]
+            if bill_ctx.get("structure"):
+                ctx["bill_structure"] = bill_ctx["structure"]
+            if bill_ctx.get("defined_terms"):
+                ctx["defined_terms"] = bill_ctx["defined_terms"]
+
+        # Gather neighboring passage texts for surrounding context
+        siblings = _dv_records.get(record.document_version_id, [])
+        neighbors = _get_neighbor_texts(record, siblings)
+
+        result = triage_passage(
+            record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
+        )
+
+        triage_row = SectionTriageResult(
+            source_record_id=record.id,
+            decision=TriageDecision(result.decision),
+            method=TriageMethod(result.method),
+            confidence=result.confidence,
+            matched_keywords=result.matched_keywords,
+            orrick_terms_checked=result.orrick_terms_checked,
+            llm_reasoning=result.llm_reasoning,
+            ai_signals=result.ai_signals,
+            pdf_quality_score=result.pdf_quality_score,
+            quality_flags=result.quality_flags,
+            model_id=result.model_id,
+        )
+        db.add(triage_row)
+
+        if result.decision == "not_relevant":
+            summary["skipped"] += 1
+        elif result.decision == "relevant":
+            summary["relevant"] += 1
+        else:
+            summary["uncertain"] += 1
+
+        # Commit in batches of 100 for progress visibility
+        if (i + 1) % 100 == 0:
+            db.commit()
+            _log(
+                f"Triaged {i + 1}/{len(records)}: "
+                f"{summary['relevant']} relevant, "
+                f"{summary['uncertain']} uncertain, "
+                f"{summary['skipped']} skipped"
+            )
+
+    db.commit()
+    _log(
+        f"Triage complete: {summary['relevant']} relevant, "
+        f"{summary['uncertain']} uncertain, {summary['skipped']} skipped "
+        f"out of {summary['total']} passages"
+    )
+    return summary
 
 
 def run_extraction(
@@ -719,19 +1121,59 @@ def run_extraction(
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
-    # Build set of existing content hashes for deduplication
+    # Check whether payload_hash column exists (migration may not have run yet)
+    global _payload_hash_available
+    try:
+        _payload_hash_available = "payload_hash" in {
+            c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
+        }
+    except Exception:
+        _payload_hash_available = False
+
+    # Build set of existing content hashes for deduplication.
+    # Pre-populate from DB so re-runs don't re-call agents on passages that
+    # already have extractions (e.g. after an interrupted run or re-run).
     existing_hashes: set[str] = set()
+    _already_extracted = db.execute(
+        select(NormalizedSourceRecord.text_content)
+        .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .distinct()
+    ).all()
+    for (text_content,) in _already_extracted:
+        for agent_name in agents:
+            existing_hashes.add(_content_hash(agent_name, text_content))
+    if existing_hashes:
+        logger.info(
+            "dedup_hashes_loaded",
+            passages_with_extractions=len(_already_extracted),
+            total_hashes=len(existing_hashes),
+        )
+    del _already_extracted
 
     def _log(msg: str) -> None:
         if on_progress:
             on_progress(msg)
         logger.info(msg)
 
-    # Find passages without any extractions
+    # Find passages that:
+    #   1. Have no extractions yet, AND
+    #   2. Have been triaged as relevant or uncertain (not "not_relevant")
+    # If triage hasn't been run yet, passages without any triage result are
+    # also excluded — the user must run "Triage Passages" first.
+    triaged_relevant_ids = (
+        select(SectionTriageResult.source_record_id)
+        .where(SectionTriageResult.decision.in_([
+            TriageDecision.relevant,
+            TriageDecision.uncertain,
+        ]))
+    )
     query = (
         select(NormalizedSourceRecord)
         .outerjoin(Extraction)
-        .where(Extraction.id.is_(None))
+        .where(
+            Extraction.id.is_(None),
+            NormalizedSourceRecord.id.in_(triaged_relevant_ids),
+        )
     )
     if limit:
         query = query.limit(limit)
@@ -754,10 +1196,28 @@ def run_extraction(
     }
 
     if not records:
-        _log("No unprocessed passages found.")
+        # Distinguish between "everything already extracted" vs "triage not run"
+        total_passages = db.scalar(
+            select(func.count()).select_from(NormalizedSourceRecord)
+        ) or 0
+        total_triaged = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+        if total_passages > 0 and total_triaged == 0:
+            _log(
+                f"No triaged passages found ({total_passages} passages exist). "
+                f"Run 'Triage Passages' before extracting."
+            )
+        else:
+            _log("No unprocessed passages found — all triaged-relevant passages already extracted.")
         return summary
 
-    _log(f"Found {len(records)} passages to extract from")
+    _log(f"Found {len(records)} triaged-relevant passages to extract from")
+
+    # Start the live extraction monitor
+    from src.core.extraction_monitor import get_monitor
+    _monitor = get_monitor()
+    _monitor.start_run(total_passages=len(records))
 
     # Filter out tiny passages
     original_count = len(records)
@@ -818,6 +1278,19 @@ def run_extraction(
             f"\n[{label}] Processing {len(merged_passages)} passages "
             f"({len(dv_group)} records)..."
         )
+        _monitor.record_document_start(label, len(merged_passages))
+
+        # Build bill-level context (definitions, scope, structure) once per bill
+        from src.core.bill_context import get_or_build_bill_context
+
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=dv_group)
+        if bill_ctx.get("stats"):
+            stats = bill_ctx["stats"]
+            _log(
+                f"  Bill context: {stats.get('definition_passages', 0)} definition sections, "
+                f"{stats.get('scope_passages', 0)} scope sections, "
+                f"{stats.get('defined_terms_count', 0)} defined terms"
+            )
 
         job_extractions = 0
         job_failures = 0
@@ -831,12 +1304,14 @@ def run_extraction(
                 db.commit()
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
+                _monitor.stop_run(cancelled=True)
                 return summary
 
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
                     token_usage, existing_hashes, tracker,
+                    bill_context=bill_ctx,
                 )
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
@@ -856,6 +1331,8 @@ def run_extraction(
                 summary["circuit_breaker_tripped"] = True
                 summary["circuit_breaker_detail"] = str(cb)
                 _log(f"\n{cb}")
+                _monitor.record_circuit_breaker(str(cb))
+                _monitor.stop_run()
                 return summary
 
             except Exception as e:
@@ -874,6 +1351,7 @@ def run_extraction(
         db.commit()
 
         summary["total_extractions"] += job_extractions
+        _monitor.record_document_complete(label, job_extractions, job_failures)
         _log(
             f"  Done: {job_extractions} extractions from {len(merged_passages)} passages "
             f"({job_failures} failures)"
@@ -900,6 +1378,7 @@ def run_extraction(
         f"{token_usage.merged_passages} passages merged, "
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
+    _monitor.stop_run()
     return summary
 
 
@@ -1125,13 +1604,16 @@ def _run_batch_extraction(
         dv_records.setdefault(record.document_version_id, []).append(record)
 
     # Build batch requests
+    from src.core.bill_context import get_or_build_bill_context
+
     batch_requests = []
     for dv_id, dv_group in dv_records.items():
         merged_passages = _wrap_passages(dv_group)
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=dv_group)
 
         for passage in merged_passages:
             record = passage.primary_record
-            ctx = _build_context(db, record)
+            ctx = _build_context(db, record, bill_context=bill_ctx)
             selected = _select_agents_for_passage(passage.text, agents)
 
             for agent_name, agent in selected.items():
@@ -1295,6 +1777,8 @@ def run_recovery_extraction(
         _log(f"  {agent_name}: {count} passages missing")
 
     # Step 3: Re-run missing agents
+    from src.core.bill_context import get_or_build_bill_context
+
     total_extractions = 0
     errors = 0
     existing_hashes: set[str] = set()
@@ -1312,7 +1796,8 @@ def run_recovery_extraction(
             if not record:
                 continue
 
-            ctx = _build_context(db, record)
+            bill_ctx = get_or_build_bill_context(db, record.document_version_id)
+            ctx = _build_context(db, record, bill_context=bill_ctx)
             passage = MergedPassage(text=record.text_content, source_records=[record])
 
             # Only run the missing agents
@@ -1475,6 +1960,7 @@ def retrieve_batch_results(
     import json
 
     import anthropic
+    from src.core.bill_context import get_or_build_bill_context
 
     from src.agents.base import BaseExtractionAgent
 
@@ -1664,7 +2150,8 @@ def retrieve_batch_results(
         passage_text = "\n".join(r.text_content for r in source_records)
 
         # Build context for Orrick similarity validation
-        batch_ctx = _build_context(db, first_record)
+        bill_ctx = get_or_build_bill_context(db, first_record.document_version_id)
+        batch_ctx = _build_context(db, first_record, bill_context=bill_ctx)
 
         entry_failed = False
         for item in items:
@@ -1759,3 +2246,529 @@ def retrieve_batch_results(
         "extractions_created": total_extractions,
         "errors": errors,
     }
+
+
+# ---------------------------------------------------------------------------
+# Completeness Manifest — per-document extraction coverage reporting
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PassageCoverage:
+    """Extraction coverage for a single passage."""
+
+    record_id: int
+    section_path: str | None
+    text_length: int
+    skipped_short: bool
+    skipped_boilerplate: bool
+    agents_run: list[str]
+    agents_with_extractions: list[str]
+    agents_abstained: list[str]
+    extraction_count: int
+
+
+@dataclass
+class DocumentCompleteness:
+    """Completeness manifest for a single document version."""
+
+    document_version_id: int
+    document_label: str
+    jurisdiction: str | None
+    total_passages: int
+    passages_processed: int
+    passages_skipped_short: int
+    passages_skipped_boilerplate: int
+    passages_with_extractions: int
+    passages_with_no_results: int
+    coverage_percent: float
+    agent_coverage: dict[str, dict[str, int]]  # agent -> {run, extracted, abstained}
+    gaps: list[dict[str, Any]]  # passages with incomplete coverage
+    is_complete: bool
+
+
+def compute_completeness_manifest(
+    db,
+    document_version_id: int | None = None,
+) -> list[DocumentCompleteness]:
+    """Compute extraction completeness for documents.
+
+    For each document version, reports:
+    - Total passages vs. processed passages
+    - Which agents ran on each passage and which produced results
+    - Gaps where passages were skipped or agents didn't run
+    - Overall coverage percentage
+
+    This enables audit-grade completeness assurance: you can certify
+    that every passage in a law has been processed and flag laws where
+    extraction coverage is below 100%.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Compute for a single doc (None = all with passages)
+
+    Returns:
+        List of DocumentCompleteness reports.
+    """
+    from sqlalchemy import distinct
+
+    agents = _get_agents()
+    agent_names = sorted(agents.keys())
+
+    # Find document versions to check
+    dv_query = select(DocumentVersion.id)
+    if document_version_id:
+        dv_query = dv_query.where(DocumentVersion.id == document_version_id)
+    else:
+        # Only check documents that have at least one passage
+        dv_query = dv_query.where(
+            DocumentVersion.id.in_(
+                select(distinct(NormalizedSourceRecord.document_version_id))
+            )
+        )
+
+    dv_ids = db.scalars(dv_query).all()
+    results: list[DocumentCompleteness] = []
+
+    for dv_id in dv_ids:
+        dv = db.get(DocumentVersion, dv_id)
+        if not dv:
+            continue
+
+        # Build document label
+        label = "unknown"
+        jurisdiction = None
+        if dv.family:
+            if dv.family.source:
+                jurisdiction = dv.family.source.jurisdiction_code
+            label = f"{jurisdiction or '??'} - {dv.family.short_cite or dv.family.canonical_title}"
+
+        # Get all passages for this document
+        records = db.scalars(
+            select(NormalizedSourceRecord)
+            .where(NormalizedSourceRecord.document_version_id == dv_id)
+            .order_by(NormalizedSourceRecord.ordinal)
+        ).all()
+
+        if not records:
+            continue
+
+        # Get existing extractions grouped by source_record_id
+        extraction_rows = db.execute(
+            select(
+                Extraction.source_record_id,
+                Extraction.extraction_type,
+                Extraction.model_id,
+            ).where(
+                Extraction.source_record_id.in_([r.id for r in records])
+            )
+        ).all()
+
+        # Build lookup: record_id -> set of extraction types
+        extractions_by_record: dict[int, set[str]] = {}
+        for src_id, ext_type, _ in extraction_rows:
+            ext_val = ext_type.value if hasattr(ext_type, "value") else str(ext_type)
+            extractions_by_record.setdefault(src_id, set()).add(ext_val)
+
+        # Analyze each passage
+        total = len(records)
+        processed = 0
+        skipped_short = 0
+        skipped_boilerplate = 0
+        with_extractions = 0
+        no_results = 0
+        agent_stats: dict[str, dict[str, int]] = {
+            name: {"run": 0, "extracted": 0, "abstained": 0}
+            for name in agent_names
+        }
+        gaps: list[dict[str, Any]] = []
+
+        for record in records:
+            text = record.text_content
+            text_len = len(text)
+
+            # Check if passage was skipped as too short
+            if text_len < MIN_PASSAGE_LENGTH:
+                skipped_short += 1
+                continue
+
+            # Check if passage would be excluded by negative screening
+            text_stripped = text.strip()
+            if _BOILERPLATE_PATTERN.fullmatch(text_stripped):
+                skipped_boilerplate += 1
+                continue
+            if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
+                skipped_boilerplate += 1
+                continue
+
+            processed += 1
+
+            # Determine which agents should have run
+            selected = _select_agents_for_passage(text, agents)
+            selected_names = sorted(selected.keys())
+
+            # Check which agents produced extractions for this passage
+            record_extractions = extractions_by_record.get(record.id, set())
+            agents_with_results = []
+            agents_abstained_list = []
+
+            for agent_name in selected_names:
+                agent_types = AGENT_EXTRACTION_TYPES[agent_name]
+                type_vals = {t.value for t in agent_types}
+                if record_extractions & type_vals:
+                    agents_with_results.append(agent_name)
+                    agent_stats[agent_name]["extracted"] += 1
+                else:
+                    agents_abstained_list.append(agent_name)
+                    agent_stats[agent_name]["abstained"] += 1
+                agent_stats[agent_name]["run"] += 1
+
+            has_extractions = len(agents_with_results) > 0
+            if has_extractions:
+                with_extractions += 1
+            elif record_extractions:
+                # Has extractions but from agents not in selected set (edge case)
+                with_extractions += 1
+            else:
+                no_results += 1
+
+            # Flag as a gap if no extractions at all, or if passage hasn't been processed
+            if not record_extractions:
+                gaps.append({
+                    "record_id": record.id,
+                    "section_path": record.section_path,
+                    "text_preview": text[:150].replace("\n", " "),
+                    "text_length": text_len,
+                    "expected_agents": selected_names,
+                    "reason": "no_extractions",
+                })
+
+        # Compute coverage
+        coverage = 0.0
+        if processed > 0:
+            coverage = round((with_extractions / processed) * 100, 1)
+
+        results.append(DocumentCompleteness(
+            document_version_id=dv_id,
+            document_label=label,
+            jurisdiction=jurisdiction,
+            total_passages=total,
+            passages_processed=processed,
+            passages_skipped_short=skipped_short,
+            passages_skipped_boilerplate=skipped_boilerplate,
+            passages_with_extractions=with_extractions,
+            passages_with_no_results=no_results,
+            coverage_percent=coverage,
+            agent_coverage=agent_stats,
+            gaps=gaps,
+            is_complete=(len(gaps) == 0 and processed > 0),
+        ))
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Verification Pipeline — post-extraction accuracy layers
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class VerificationResult:
+    """Combined result from all verification agents for a document."""
+
+    document_version_id: int
+    document_label: str
+
+    # Cross-validation results
+    cross_validation_passages: int
+    cross_validation_valid: int
+    cross_validation_flagged: int
+    cross_validation_avg_accuracy: float
+    cross_validation_issues: list[dict[str, Any]]
+
+    # Gap detection results
+    gap_detection_passages: int
+    gaps_found: int
+    high_confidence_gaps: int
+    gap_candidates: list[dict[str, Any]]
+
+    # Citation verification results
+    citations_checked: int
+    citations_verified: int
+    citations_unverified: int
+    citation_issues: list[dict[str, Any]]
+
+    # Token usage
+    total_input_tokens: int
+    total_output_tokens: int
+
+    @property
+    def total_tokens(self) -> int:
+        return self.total_input_tokens + self.total_output_tokens
+
+
+def run_verification_pass(
+    db,
+    document_version_id: int | None = None,
+    skip_cross_validation: bool = False,
+    skip_gap_detection: bool = False,
+    skip_citation_verification: bool = False,
+    on_progress: callable | None = None,
+) -> list[VerificationResult]:
+    """Run post-extraction verification agents on completed extractions.
+
+    Three verification layers:
+      1. Cross-Validation: Second LLM (different model) reviews each extraction
+         against the source passage for hallucinations, contradictions, etc.
+      2. Gap Detection: Second-pass agent identifies obligations the primary
+         extraction missed.
+      3. Citation Verification: Validates section_reference and cross_reference
+         fields against the actual document structure.
+
+    All three are independent and can be run selectively.
+
+    Args:
+        db: SQLAlchemy session
+        document_version_id: Run on a single document (None = all with extractions)
+        skip_cross_validation: Skip the cross-validation layer
+        skip_gap_detection: Skip the gap detection layer
+        skip_citation_verification: Skip citation verification
+        on_progress: Optional callback for status messages
+
+    Returns:
+        List of VerificationResult, one per document version.
+    """
+    from sqlalchemy import distinct
+
+    from src.agents.citation_verifier import verify_citations
+    from src.agents.cross_validation import run_cross_validation
+    from src.agents.gap_detector import run_gap_detection
+    from src.core.bill_context import get_or_build_bill_context
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Find document versions to verify
+    dv_query = select(DocumentVersion.id)
+    if document_version_id:
+        dv_query = dv_query.where(DocumentVersion.id == document_version_id)
+    else:
+        dv_query = dv_query.where(
+            DocumentVersion.id.in_(
+                select(distinct(NormalizedSourceRecord.document_version_id))
+                .where(
+                    NormalizedSourceRecord.id.in_(
+                        select(distinct(Extraction.source_record_id))
+                    )
+                )
+            )
+        )
+
+    dv_ids = db.scalars(dv_query).all()
+    _log(f"Running verification on {len(dv_ids)} document version(s)...")
+
+    results: list[VerificationResult] = []
+
+    for dv_id in dv_ids:
+        if is_cancelled():
+            _log("Verification cancelled by user.")
+            break
+
+        dv = db.get(DocumentVersion, dv_id)
+        if not dv:
+            continue
+
+        label = "unknown"
+        if dv.family:
+            jur = dv.family.source.jurisdiction_code if dv.family.source else "??"
+            label = f"{jur} - {dv.family.short_cite or dv.family.canonical_title}"
+
+        _log(f"\n[{label}] Starting verification pass...")
+
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        # Get all passages + extractions for this document
+        records = db.scalars(
+            select(NormalizedSourceRecord)
+            .where(NormalizedSourceRecord.document_version_id == dv_id)
+            .order_by(NormalizedSourceRecord.ordinal)
+        ).all()
+
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=records)
+
+        # --- Layer 1: Cross-Validation ---
+        cv_passages = 0
+        cv_valid = 0
+        cv_flagged = 0
+        cv_accuracy_sum = 0.0
+        cv_issues: list[dict[str, Any]] = []
+
+        if not skip_cross_validation:
+            _log(f"  [1/3] Cross-validation...")
+            for record in records:
+                if len(record.text_content) < MIN_PASSAGE_LENGTH:
+                    continue
+
+                extractions = db.scalars(
+                    select(Extraction).where(
+                        Extraction.source_record_id == record.id
+                    )
+                ).all()
+
+                if not extractions:
+                    continue
+
+                ext_payloads = [e.payload for e in extractions]
+                ext_ids = [e.id for e in extractions]
+                ctx = _build_context(db, record, bill_context=bill_ctx)
+
+                cv_result = run_cross_validation(
+                    passage_text=record.text_content,
+                    extractions=ext_payloads,
+                    passage_record_id=record.id,
+                    extraction_ids=ext_ids,
+                    context=ctx,
+                )
+
+                cv_passages += 1
+                cv_valid += cv_result.extractions_valid
+                cv_flagged += cv_result.extractions_flagged
+                cv_accuracy_sum += cv_result.avg_accuracy_score
+                total_input_tokens += cv_result.input_tokens
+                total_output_tokens += cv_result.output_tokens
+
+                # Store flagged issues
+                for r in cv_result.results:
+                    if not r.get("is_valid", True):
+                        cv_issues.append({
+                            "record_id": record.id,
+                            "section_path": record.section_path,
+                            **r,
+                        })
+
+                        # Update extraction metadata with cross-validation flag
+                        ext_id = r.get("extraction_id")
+                        if ext_id:
+                            extraction = db.get(Extraction, ext_id)
+                            if extraction:
+                                meta = dict(extraction.metadata_ or {})
+                                meta["cross_validation"] = {
+                                    "is_valid": r.get("is_valid", True),
+                                    "accuracy_score": r.get("accuracy_score", 1.0),
+                                    "issues": r.get("issues", []),
+                                }
+                                extraction.metadata_ = meta
+
+            cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
+            _log(
+                f"    {cv_passages} passages checked, {cv_valid} valid, "
+                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}"
+            )
+        else:
+            cv_avg = 1.0
+
+        # --- Layer 2: Gap Detection ---
+        gd_passages = 0
+        gd_gaps = 0
+        gd_high = 0
+        gd_candidates: list[dict[str, Any]] = []
+
+        if not skip_gap_detection:
+            _log(f"  [2/3] Gap detection...")
+            for record in records:
+                if len(record.text_content) < MIN_PASSAGE_LENGTH:
+                    continue
+
+                extractions = db.scalars(
+                    select(Extraction).where(
+                        Extraction.source_record_id == record.id
+                    )
+                ).all()
+
+                ext_payloads = [e.payload for e in extractions]
+                ctx = _build_context(db, record, bill_context=bill_ctx)
+
+                gd_result = run_gap_detection(
+                    passage_text=record.text_content,
+                    existing_extractions=ext_payloads,
+                    passage_record_id=record.id,
+                    context=ctx,
+                )
+
+                gd_passages += 1
+                gd_gaps += gd_result.gaps_found
+                gd_high += gd_result.high_confidence_gaps
+                total_input_tokens += gd_result.input_tokens
+                total_output_tokens += gd_result.output_tokens
+
+                for candidate in gd_result.candidates:
+                    gd_candidates.append({
+                        "record_id": record.id,
+                        "section_path": record.section_path,
+                        **candidate,
+                    })
+
+            _log(
+                f"    {gd_passages} passages checked, "
+                f"{gd_gaps} gaps found ({gd_high} high confidence)"
+            )
+
+        # --- Layer 3: Citation Verification ---
+        cit_checked = 0
+        cit_verified = 0
+        cit_unverified = 0
+        cit_issues: list[dict[str, Any]] = []
+
+        if not skip_citation_verification:
+            _log(f"  [3/3] Citation verification...")
+            cit_result = verify_citations(db, dv_id)
+            cit_checked = cit_result.total_citations_checked
+            cit_verified = cit_result.citations_verified
+            cit_unverified = cit_result.citations_unverified
+            cit_issues = [
+                {
+                    "extraction_id": issue.extraction_id,
+                    "field_name": issue.field_name,
+                    "cited_value": issue.cited_value,
+                    "issue_type": issue.issue_type,
+                    "closest_match": issue.closest_match,
+                }
+                for issue in cit_result.issues
+            ]
+            _log(
+                f"    {cit_checked} citations checked, "
+                f"{cit_verified} verified, {cit_unverified} unverified"
+            )
+
+        db.commit()
+
+        results.append(VerificationResult(
+            document_version_id=dv_id,
+            document_label=label,
+            cross_validation_passages=cv_passages,
+            cross_validation_valid=cv_valid,
+            cross_validation_flagged=cv_flagged,
+            cross_validation_avg_accuracy=round(cv_avg, 4),
+            cross_validation_issues=cv_issues,
+            gap_detection_passages=gd_passages,
+            gaps_found=gd_gaps,
+            high_confidence_gaps=gd_high,
+            gap_candidates=gd_candidates,
+            citations_checked=cit_checked,
+            citations_verified=cit_verified,
+            citations_unverified=cit_unverified,
+            citation_issues=cit_issues,
+            total_input_tokens=total_input_tokens,
+            total_output_tokens=total_output_tokens,
+        ))
+
+        _log(
+            f"  Verification complete for [{label}]: "
+            f"{total_input_tokens + total_output_tokens:,} tokens used"
+        )
+
+    _log(f"\nVerification pass complete: {len(results)} documents processed")
+    return results

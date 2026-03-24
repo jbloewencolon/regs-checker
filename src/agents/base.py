@@ -44,13 +44,14 @@ class ExtractionResult:
     model_id: str
     template_version: str | None
     truncated: bool = False  # True when finish_reason=length (output cut off)
+    model_reasoning: str | None = None  # Chain-of-thought from <think> blocks
 
 
 class BaseExtractionAgent(ABC):
     """Base class for all extraction agents."""
 
     agent_name: str = "base"
-    max_retries: int = 1
+    max_retries: int = 2
     model_override: str | None = None
     reasoning_effort: str | None = None
 
@@ -85,6 +86,47 @@ class BaseExtractionAgent(ABC):
             return render_prompt(self._template["extraction_prompt"], render_ctx)
         return self.get_extraction_prompt(passage, context)
 
+    @staticmethod
+    def _append_bill_context(prompt: str, context: dict | None) -> str:
+        """Append bill-level context (definitions, scope, defined terms) to a prompt.
+
+        Called by each agent's get_extraction_prompt() after building its
+        agent-specific context block.  Adds the bill's definitions and scope
+        sections so the model can resolve cross-references and understand
+        actor terminology used elsewhere in the bill.
+        """
+        if not context:
+            return prompt
+
+        parts: list[str] = []
+
+        defined_terms = context.get("defined_terms")
+        if defined_terms:
+            parts.append(
+                f"DEFINED TERMS IN THIS BILL: {', '.join(defined_terms)}"
+            )
+
+        bill_defs = context.get("bill_definitions")
+        if bill_defs:
+            parts.append(
+                "BILL DEFINITIONS (verbatim from the bill's definitions section — "
+                "use to resolve terms referenced in the passage above):\n"
+                f"{bill_defs}"
+            )
+
+        bill_scope = context.get("bill_scope")
+        if bill_scope:
+            parts.append(
+                "BILL SCOPE & APPLICABILITY (verbatim from the bill — "
+                "use to understand what entities and systems this bill covers):\n"
+                f"{bill_scope}"
+            )
+
+        if parts:
+            prompt += "\n\n" + "\n\n".join(parts)
+
+        return prompt
+
     def extract(
         self, passage: str, context: dict | None = None
     ) -> ExtractionResult:
@@ -109,7 +151,9 @@ class BaseExtractionAgent(ABC):
                     raw_output_preview=raw_output[:300],
                 )
                 cleaned = self._strip_code_fences(raw_output)
+                model_reasoning = self._extract_think_blocks(cleaned)
                 cleaned = self._strip_think_blocks(cleaned)
+                cleaned = self._repair_json(cleaned)
                 parsed = json.loads(cleaned)
 
                 was_truncated = stop_reason == "length"
@@ -125,6 +169,7 @@ class BaseExtractionAgent(ABC):
                         model_id=response_model_id,
                         template_version=template_version,
                         truncated=was_truncated,
+                        model_reasoning=model_reasoning,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -165,6 +210,7 @@ class BaseExtractionAgent(ABC):
                     model_id=response_model_id,
                     template_version=template_version,
                     truncated=was_truncated,
+                    model_reasoning=model_reasoning,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
@@ -174,6 +220,7 @@ class BaseExtractionAgent(ABC):
                     attempt=attempt,
                     error=str(e),
                 )
+                self._last_error = str(e)
                 attempt += 1
                 if attempt > self.max_retries:
                     raise
@@ -192,6 +239,17 @@ class BaseExtractionAgent(ABC):
         return text
 
     @staticmethod
+    def _extract_think_blocks(text: str) -> str | None:
+        """Extract reasoning text from <think>...</think> blocks.
+
+        Returns the concatenated reasoning content, or None if no blocks found.
+        """
+        blocks = re.findall(r"<think>(.*?)</think>", text, flags=re.DOTALL)
+        if not blocks:
+            return None
+        return "\n".join(b.strip() for b in blocks if b.strip()) or None
+
+    @staticmethod
     def _strip_think_blocks(text: str) -> str:
         """Remove <think>...</think> blocks from model output.
 
@@ -200,6 +258,113 @@ class BaseExtractionAgent(ABC):
         blocks must be stripped before JSON parsing.
         """
         return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+    @staticmethod
+    def _repair_json(text: str) -> str:
+        """Attempt to repair common JSON issues from local LLMs.
+
+        Handles three patterns that gpt-oss-20b and similar models produce:
+
+        1. **Extra data after first object**: Model outputs two JSON objects
+           concatenated (e.g., ``{"a":1}{"b":2}``).  We extract just the
+           first valid top-level object/array.
+
+        2. **Stringified objects in arrays**: Model wraps inner objects in
+           quotes instead of embedding them directly, producing arrays like
+           ``[{...}, "{...}", "{...}"]``.  We parse the escaped strings
+           back into proper objects.
+
+        3. **Trailing commas**: ``[1, 2, 3,]`` → ``[1, 2, 3]``
+        """
+        text = text.strip()
+        if not text:
+            return text
+
+        # --- Fix 1: Extract first complete JSON object/array ---
+        # If json.loads fails on the full text, try to find the first
+        # complete top-level structure by bracket matching.
+        initial_valid = False
+        try:
+            json.loads(text)
+            initial_valid = True
+        except json.JSONDecodeError:
+            pass
+
+        # Try to extract the first complete JSON structure (only if invalid)
+        if not initial_valid and text[0] in "{[":
+            depth = 0
+            in_string = False
+            escape_next = False
+
+            for i, ch in enumerate(text):
+                if escape_next:
+                    escape_next = False
+                    continue
+                if ch == "\\":
+                    escape_next = True
+                    continue
+                if ch == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch in "{[":
+                    depth += 1
+                elif ch in "}]":
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[: i + 1]
+                        try:
+                            json.loads(candidate)
+                            if candidate != text:
+                                logger.debug(
+                                    "json_repair_extracted_first_object",
+                                    original_len=len(text),
+                                    extracted_len=len(candidate),
+                                )
+                            text = candidate
+                            break
+                        except json.JSONDecodeError:
+                            pass
+
+        # --- Fix 2: Trailing commas ---
+        if not initial_valid:
+            text = re.sub(r",\s*([}\]])", r"\1", text)
+
+        # --- Fix 3: Stringified objects in arrays ---
+        # Pattern: the "extractions" array contains string elements that
+        # are actually JSON objects (double-encoded).  This can happen even
+        # when the outer JSON is syntactically valid.
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            return text  # Give up, let the caller handle it
+
+        if isinstance(parsed, dict) and "extractions" in parsed:
+            items = parsed["extractions"]
+            if isinstance(items, list):
+                repaired = []
+                did_repair = False
+                for item in items:
+                    if isinstance(item, str):
+                        try:
+                            repaired.append(json.loads(item))
+                            did_repair = True
+                        except json.JSONDecodeError:
+                            repaired.append(item)
+                    else:
+                        repaired.append(item)
+                if did_repair:
+                    parsed["extractions"] = repaired
+                    logger.debug(
+                        "json_repair_unescaped_strings",
+                        repaired_count=sum(
+                            1 for i in items if isinstance(i, str)
+                        ),
+                    )
+                    return json.dumps(parsed)
+
+        return text
 
     def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any, str]:
         """Make a single LLM API call via the provider abstraction.
@@ -223,7 +388,7 @@ class BaseExtractionAgent(ABC):
         effective_model = self.model_override or ""
         is_reasoning = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
         )
         if is_reasoning:
             system_prompt += (
@@ -232,9 +397,14 @@ class BaseExtractionAgent(ABC):
                 "Identify the key findings quickly, then produce the JSON output."
             )
         if attempt > 0:
+            last_err = getattr(self, "_last_error", "unknown error")
             system_prompt += (
                 "\n\nPREVIOUS ATTEMPT FAILED VALIDATION. "
-                "Ensure your output is valid JSON matching the required schema exactly. "
+                f"Error: {last_err[:200]}\n"
+                "CRITICAL: Your output MUST be a single valid JSON object. "
+                "Do NOT output multiple JSON objects. "
+                "Do NOT wrap objects in string quotes inside arrays. "
+                "Ensure all braces and brackets are properly closed. "
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
@@ -255,32 +425,32 @@ class BaseExtractionAgent(ABC):
         try:
             response = self._provider.call(**call_kwargs)
         except Exception as exc:
-            if self.model_override is not None:
-                fallback_model = self._provider.model_id
-                logger.warning(
-                    "extraction_model_fallback",
+            # Retry the SAME model once after a brief pause.  The previous
+            # fallback strategy tried a different model (local_extraction_model),
+            # but LM Studio can only hold one model in VRAM — so the fallback
+            # model was always unloaded, causing a cascade failure.  Retrying
+            # the same model is more reliable: the timeout was likely transient
+            # (GPU busy with another group's requests).
+            import time
+
+            logger.warning(
+                "extraction_retry_same_model",
+                agent=self.agent_name,
+                model=self.model_override or self._provider.model_id,
+                error=str(exc)[:300],
+            )
+            time.sleep(2)
+            try:
+                response = self._provider.call(**call_kwargs)
+            except Exception as retry_exc:
+                logger.error(
+                    "extraction_retry_failed",
                     agent=self.agent_name,
-                    failed_model=self.model_override,
-                    fallback_model=fallback_model,
-                    error=str(exc)[:300],
+                    model=self.model_override or self._provider.model_id,
+                    original_error=str(exc)[:200],
+                    retry_error=str(retry_exc)[:200],
                 )
-                call_kwargs["model_override"] = None
-                call_kwargs["reasoning_effort"] = None
-                try:
-                    response = self._provider.call(**call_kwargs)
-                except Exception as fallback_exc:
-                    logger.error(
-                        "extraction_fallback_also_failed",
-                        agent=self.agent_name,
-                        failed_model=self.model_override,
-                        fallback_model=fallback_model,
-                        original_error=str(exc)[:200],
-                        fallback_error=str(fallback_exc)[:200],
-                    )
-                    # Raise the original error — more informative
-                    raise exc from fallback_exc
-            else:
-                raise
+                raise exc from retry_exc
 
         logger.debug(
             "llm_raw_response",

@@ -9,7 +9,7 @@
 <!-- ================================================================== -->
 <section class="section" id="progress-section"
          hx-get="/dashboard/api/progress"
-         hx-trigger="load, every 10s"
+         hx-trigger="load, every 10s, pipelineReset from:body"
          hx-swap="innerHTML">
   <div class="progress-loading">
     <span class="spinner"></span> Loading progress...
@@ -181,10 +181,22 @@
       <div class="step-body">
         <div class="step-description">
           Downloads bill PDFs/HTML, extracts text, splits into passages.
-          {% if stats.total_passages > 0 %}
-          <strong>{{ stats.total_passages }}</strong> passages in database.
+          {% if stats.pending_ingestion > 0 %}
+          <span style="color: var(--warning); font-weight: 600;">{{ stats.pending_ingestion }} documents pending fetch.</span>
+          {% endif %}
+          {% if stats.total_passages_raw > 0 %}
+          <strong>{{ stats.total_passages_raw }}</strong> passages in database.
           {% endif %}
         </div>
+
+        <!-- Pipeline Tracker -->
+        <div id="pipeline-tracker"
+             hx-get="/dashboard/api/pipeline-tracker"
+             hx-trigger="load, every 10s"
+             hx-swap="innerHTML">
+          <span class="spinner"></span> Loading tracker...
+        </div>
+
         <div class="step-actions">
           <button class="btn btn-primary"
                   hx-post="/dashboard/api/run/fetch"
@@ -212,8 +224,38 @@
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset all failed and review-pending jobs back to pending? Completed jobs will not be affected.">
-            Reset
+                  hx-confirm="Reset failed jobs for re-parsing? Already-downloaded files will NOT be re-fetched. Completed jobs will not be affected.">
+            Reset (Re-parse)
+          </button>
+          <button class="btn btn-danger"
+                  hx-post="/dashboard/api/run/fetch/reset-all"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="HARD RESET: Re-parse ALL documents including completed ones? Existing passages will be deleted and rebuilt from scratch. Downloaded files will NOT be re-fetched.">
+            Reset All (Re-parse All)
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/triage"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  style="border-color: var(--info); color: var(--info);">
+            <span class="btn-label">Triage Passages</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Triaging...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/triage/reset"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="Clear uncertain and low-confidence triage results? High-confidence and manually reviewed decisions will be preserved.">
+            Reset Triage
+          </button>
+          <button class="btn btn-danger"
+                  hx-post="/dashboard/api/run/triage/reset-all"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="HARD RESET: Clear ALL triage results? Every passage will need to be re-triaged from scratch.">
+            Reset All Triage
           </button>
         </div>
         <div id="fetch-cancel-status"></div>
@@ -275,9 +317,14 @@
       <div class="step-body">
         <div class="step-description">
           Run extraction agents on unprocessed passages. Choose a method below.
-          {% if stats.unprocessed_passages > 0 %}
-          <strong>{{ stats.unprocessed_passages }}</strong> passages waiting.
-          {% endif %}
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.passages_with_extractions }}</strong> / {{ stats.total_passages }} passages extracted{% if stats.unprocessed_passages > 0 %},
+            <strong>{{ stats.unprocessed_passages }}</strong> pending{% endif %}.
+            <strong>{{ stats.total_extractions }}</strong> extractions total.
+            {% if stats.triage_skipped > 0 %}
+            <span style="color: var(--text-muted);">({{ stats.triage_skipped }} skipped by triage{% if stats.untriaged > 0 %}, {{ stats.untriaged }} not yet triaged{% endif %})</span>
+            {% endif %}
+          </div>
         </div>
 
         <!-- Extraction method tabs -->
@@ -442,10 +489,33 @@
                   hx-swap="innerHTML">
             Terminate
           </button>
+          <button class="btn btn-sm"
+                  style="margin-left: 8px;"
+                  hx-post="/dashboard/api/run/extract/reset"
+                  hx-target="#extract-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear ALL extractions, dependency graph, conditions, and review queue? Triage results will be preserved. This cannot be undone.">
+            Reset Extractions
+          </button>
         </div>
 
         <div id="extract-cancel-status"></div>
         <div class="step-result" id="extract-result"></div>
+
+        <!-- Live Extraction Monitor -->
+        <div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="margin:0;font-size:14px;">Live Extraction Monitor</h4>
+            <span style="font-size:10px;color:var(--text-muted);">Auto-refresh every 2s during runs</span>
+          </div>
+          <div id="extraction-monitor"
+               hx-get="/dashboard/api/extraction-monitor"
+               hx-trigger="load, every 2s"
+               hx-swap="innerHTML">
+            <div style="color:var(--text-muted);font-size:13px;">Loading monitor...</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -463,6 +533,9 @@
           Identifies relationships between extractions within each document:
           definition references, exceptions, enforcement links, cross-references.
           Uses <strong>GPT (gpt-oss-20b, 131k context)</strong> to analyze all extractions per document.
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.dependency_edges }}</strong> dependency edges.
+          </div>
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -473,6 +546,14 @@
                   hx-confirm="Build dependency graphs for all pending documents? This sends all extractions per document to GPT.">
             <span class="btn-label">Build All Pending</span>
             <span class="htmx-indicator"><span class="spinner"></span> Analyzing relationships...</span>
+          </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/dependency-graph/reset"
+                  hx-target="#depgraph-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear all dependency graph edges? You can rebuild them afterwards.">
+            Reset
           </button>
         </div>
         <div class="step-result" id="depgraph-result"></div>
@@ -492,6 +573,9 @@
         <div class="step-description">
           Parses condition fields from obligations, thresholds, exceptions, and rights
           into structured AND/OR/NOT/LEAF expression trees. Rule-based — no LLM needed.
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.condition_nodes }}</strong> condition nodes.
+          </div>
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
@@ -501,6 +585,14 @@
                   hx-disabled-elt="this">
             <span class="btn-label">Parse All Pending</span>
             <span class="htmx-indicator"><span class="spinner"></span> Parsing conditions...</span>
+          </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/condition-parse/reset"
+                  hx-target="#condparse-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear all parsed applicability condition trees? You can re-parse afterwards.">
+            Reset
           </button>
         </div>
         <div class="step-result" id="condparse-result"></div>
@@ -519,6 +611,10 @@
       <div class="step-body">
         <div class="step-description">
           Approve/reject extractions. Focus on Tier C and D items.
+          <div style="margin-top:4px;font-size:13px;">
+            <strong>{{ stats.approved_extractions }}</strong> / {{ stats.total_extractions }} extractions approved.
+            <strong>{{ stats.passages_with_extractions }}</strong> / {{ stats.total_passages }} passages extracted.
+          </div>
         </div>
         {% if stats.pending_review > 0 %}
         <div class="review-summary">
@@ -536,7 +632,16 @@
         {% endif %}
         <div class="step-actions">
           <a href="/dashboard/review" class="btn btn-primary">Open Review Queue</a>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/review/reset"
+                  hx-target="#review-reset-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Reset all review decisions back to pending? This clears the review audit log.">
+            Reset Reviews
+          </button>
         </div>
+        <div class="step-result" id="review-reset-result"></div>
       </div>
     </div>
 
@@ -588,6 +693,14 @@
             <span class="btn-label">Check Bridge Gaps</span>
             <span class="htmx-indicator"><span class="spinner"></span></span>
           </button>
+          <button class="btn btn-sm"
+                  hx-post="/dashboard/api/run/sync/reset"
+                  hx-target="#step7-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Clear sync status on all extractions? They will be re-synced on the next run.">
+            Reset Sync
+          </button>
         </div>
         <div class="step-result" id="step7-result">
           {% if stats.total_extractions > 0 %}
@@ -619,6 +732,31 @@ document.querySelectorAll('.law-tracker-details').forEach(function(d) {
   d.addEventListener('toggle', function() {
     var chevron = d.querySelector('.tracker-chevron');
     if (chevron) chevron.style.transform = d.open ? 'rotate(90deg)' : '';
+  });
+});
+
+/* Reload page after a pipeline reset so stats update */
+document.body.addEventListener('pipelineReset', function() {
+  setTimeout(function() { location.reload(); }, 1500);
+});
+
+/* Auto-dismiss result panels after 8 seconds; click to dismiss immediately */
+document.body.addEventListener('htmx:afterSettle', function(evt) {
+  var panels = evt.target.querySelectorAll
+    ? evt.target.querySelectorAll('.result-panel')
+    : [];
+  if (evt.target.classList && evt.target.classList.contains('result-panel')) {
+    panels = [evt.target];
+  }
+  panels.forEach(function(panel) {
+    panel.style.cursor = 'pointer';
+    panel.title = 'Click to dismiss';
+    panel.addEventListener('click', function() { panel.remove(); });
+    setTimeout(function() {
+      panel.style.transition = 'opacity 0.5s';
+      panel.style.opacity = '0';
+      setTimeout(function() { panel.remove(); }, 500);
+    }, 8000);
   });
 });
 </script>

@@ -57,7 +57,9 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date
+from pathlib import Path
 
+import yaml
 import structlog
 
 from src.db.engine import SessionLocal
@@ -341,91 +343,76 @@ def run_import_csv(db, input_path: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Known bad URL corrections — keyed by ingestion_job.id or (state_code, short_cite)
+# Known bad URL corrections — loaded from config/url_fixes.yaml
 # These are jobs where the Orrick tracker seeded the wrong URL or the original
 # source is permanently dead and we have a known-good replacement.
 # ---------------------------------------------------------------------------
-_URL_FIXES: dict[str, str] = {
-    # -----------------------------------------------------------------------
-    # Category B: legiscan.com 403s — replaced with direct state legislature URLs
-    # -----------------------------------------------------------------------
-    # NH — gencourt.state.nh.us
-    "100": "https://gencourt.state.nh.us/rsa/html/LXIII/664/664-14-c.htm",  # AI Political Advertising
-    "101": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1432",  # Deepfake Act
-    "103": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1688",  # State Agency AI Bill
-    # MD — mgaleg.maryland.gov
-    "76": "https://mgaleg.maryland.gov/2024RS/bills/sb/sb0818e.pdf",  # AI Governance Act 2024
-    # RI — rilegislature.gov
-    "138": "https://webserver.rilegislature.gov/BillText/BillText24/SenateText24/S2500A.pdf",  # RI Data Privacy Act
-    # TX — capitol.texas.gov
-    "154": "https://capitol.texas.gov/tlodocs/88R/billtext/html/SB01361E.htm",  # Deepfake Explicit Videos
-    # WI — docs.legis.wisconsin.gov
-    "178": "https://docs.legis.wisconsin.gov/2023/proposals/reg/sen/bill/sb314",  # WI CSAM Amendment
-    # -----------------------------------------------------------------------
-    # Category B: ncleg.gov 403s — direct PDF links
-    # -----------------------------------------------------------------------
-    "123": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC CSAM Laws (same bill)
-    "124": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf",  # NC Intimate Images (same bill)
-    # -----------------------------------------------------------------------
-    # Category B: NV leg.state.nv.us 403
-    # -----------------------------------------------------------------------
-    "99": "https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10280/Text",  # NV AI Political Advertising (AB468)
-    # -----------------------------------------------------------------------
-    # Category C: NJ connection refused — use www subdomain
-    # -----------------------------------------------------------------------
-    "105": "https://www.njleg.state.nj.us/Bills/2024/A4000/3540_R3.PDF",  # Criminal Penalties Deepfakes
-    "106": "https://www.njleg.state.nj.us/Bills/2022/PL23/266_.PDF",  # NJ Data Privacy Act
-    # -----------------------------------------------------------------------
-    # Category C: MD casetext 410 → mgaleg.maryland.gov
-    # (also handled by _ALTERNATIVE_URL_RULES in connector.py, but explicit fix
-    # ensures the stored URL is correct for future retries)
-    # -----------------------------------------------------------------------
-    "75": "https://mgaleg.maryland.gov/2024RS/bills/hb/hb0033E.pdf",  # Amendment to MD CSAM Statute
-    # -----------------------------------------------------------------------
-    # Category C: MS SSL — billstatus.ls.state.ms.us (SSL bypass in connector.py)
-    # Job #85 should resolve with SSL bypass on retry; no URL change needed.
-    # -----------------------------------------------------------------------
-    # -----------------------------------------------------------------------
-    # Bug: Job #116 — NY law with wrong CT URL (handled separately in fix_known_bad_urls)
-    # The correct URL needs to be found at legislation.nysenate.gov for the
-    # NY Algorithmic Pricing Disclosure Act.
-    # -----------------------------------------------------------------------
-}
+_URL_FIXES_PATH = Path(__file__).resolve().parents[2] / "config" / "url_fixes.yaml"
+
+
+def _load_url_fixes() -> dict[str, str]:
+    """Load URL fix map from config/url_fixes.yaml."""
+    with open(_URL_FIXES_PATH) as f:
+        data = yaml.safe_load(f)
+    fixes: dict[str, str] = {}
+    for k, v in (data.get("url_fixes") or {}).items():
+        if v is not None:
+            fixes[str(k)] = v
+    return fixes
+
+
+def _load_job_patches() -> dict[str, dict]:
+    """Load job-specific patches from config/url_fixes.yaml."""
+    with open(_URL_FIXES_PATH) as f:
+        data = yaml.safe_load(f)
+    return {str(k): v for k, v in (data.get("job_patches") or {}).items()}
+
+
+_URL_FIXES: dict[str, str] = _load_url_fixes()
 
 
 def fix_known_bad_urls(db) -> int:
     """Update ingestion job URLs using the _URL_FIXES map and fix known data bugs.
 
-    Also handles:
-      - Job #116: NY Algorithmic Pricing Disclosure Act had a CT URL (wrong state)
+    URL fixes and job patches are loaded from config/url_fixes.yaml.
     """
     from src.db.models import DocumentFamily
 
     fixed = 0
 
-    # --- Fix Job #116: wrong URL (CT URL for NY law) ---
-    job_116 = db.query(IngestionJob).filter_by(id=116).first()
-    if job_116 and job_116.fetch_url and "cga.ct.gov" in job_116.fetch_url:
-        # This job is for NY Algorithmic Pricing Disclosure Act but was seeded
-        # with a CT URL. Mark it as needing manual URL replacement.
-        dv = job_116.document_version
-        if dv and dv.family:
-            label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+    # --- Apply job-specific patches from config ---
+    for job_id_str, patch in _load_job_patches().items():
+        job = db.query(IngestionJob).filter_by(id=int(job_id_str)).first()
+        if not job:
+            continue
+        field = patch.get("field", "fetch_url")
+        value = patch.get("value")
+        reason = patch.get("reason", "")
+
+        if value is not None:
+            # Patch a specific field value
+            if getattr(job, field, None) != value:
+                setattr(job, field, value)
+                logger.info("job_patched", job_id=job.id, field=field, value=value)
+                fixed += 1
         else:
-            label = f"Job #{job_116.id}"
-        logger.warning(
-            "job_116_wrong_url",
-            job_id=116,
-            label=label,
-            current_url=job_116.fetch_url,
-            action="marked_failed_wrong_url",
-        )
-        job_116.status = IngestionStatus.failed
-        job_116.error_message = (
-            "DATA BUG: Orrick seeded CT URL for NY law. "
-            "Needs manual URL update to correct NY legislature link."
-        )
-        fixed += 1
+            # Null value → mark as failed with reason
+            dv = job.document_version
+            if dv and dv.family:
+                label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+            else:
+                label = f"Job #{job.id}"
+            logger.warning(
+                "job_patch_marked_failed",
+                job_id=job.id,
+                label=label,
+                current_value=getattr(job, field, None),
+                reason=reason,
+                action="marked_failed",
+            )
+            job.status = IngestionStatus.failed
+            job.error_message = f"DATA BUG: {reason}"
+            fixed += 1
 
     # --- Apply _URL_FIXES map ---
     for key, new_url in _URL_FIXES.items():

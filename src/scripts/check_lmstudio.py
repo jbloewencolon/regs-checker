@@ -68,17 +68,18 @@ def main():
     print()
     for model_id in model_ids:
         lower = model_id.lower()
-        if "qwen" in lower:
-            print(f'  Obligation agent:          model_override = "{model_id}"')
-        elif "deepseek" in lower:
-            print(f'  Ambiguity agent:           model_override = "{model_id}"')
-            print(f'  Rights Protection agent:   model_override = "{model_id}"')
+        if "deepseek" in lower:
+            print(f'  Ambiguity agent (reasoning): model_override = "{model_id}"')
+        elif "qwen" in lower:
+            print(f'  (Qwen available but not assigned — no thinking mode toggle)')
         elif "gpt" in lower or "oss" in lower:
-            print(f'  Definition/Actor agent:    model_override = "{model_id}"')
-            print(f'  Threshold/Exception agent: model_override = "{model_id}"')
-            print(f'  Compliance Mechanism agent: model_override = "{model_id}"')
+            print(f'  Obligation agent:            model_override = "{model_id}"')
+            print(f'  Compliance Mechanism agent:   model_override = "{model_id}"')
+            print(f'  Definition/Actor agent:       model_override = "{model_id}"')
+            print(f'  Rights Protection agent:      model_override = "{model_id}"')
+            print(f'  Threshold/Exception agent:    model_override = "{model_id}"')
         else:
-            print(f'  Unknown model type:        "{model_id}"')
+            print(f'  Unknown model type:          "{model_id}"')
     print()
     print("IMPORTANT: In LM Studio, set Context Length to at least 8192")
     print("(32768 recommended). Currently your models have n_ctx=4096")

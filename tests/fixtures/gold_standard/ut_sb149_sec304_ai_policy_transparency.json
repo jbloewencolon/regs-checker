@@ -1,0 +1,44 @@
+{
+    "passage_id": "ut_sb149_sec304_ai_policy_transparency",
+    "source_document": "Utah SB 149 (Artificial Intelligence Policy Act)",
+    "jurisdiction": "UT",
+    "section_path": "Section 304 - Generative AI Disclosure Requirements",
+    "passage_text": "A person who operates generative artificial intelligence to interact with another person in a regulated industry is responsible for ensuring clear disclosure that the other person is interacting with generative artificial intelligence. The disclosure described in Subsection (1) is not required if it would be obvious to a reasonable person that the person is interacting with generative artificial intelligence.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A person who operates generative artificial intelligence to interact with another person in a regulated industry",
+            "subject_normalized": "operator",
+            "modality": "must",
+            "action": "ensuring clear disclosure that the other person is interacting with generative artificial intelligence",
+            "object": "generative artificial intelligence interaction",
+            "condition": "when operating generative AI to interact with another person in a regulated industry",
+            "jurisdiction": "UT",
+            "section_reference": "Section 304",
+            "timeline": null,
+            "enforcement": null
+        },
+        "definition": null,
+        "threshold_exception": {
+            "threshold_type": null,
+            "threshold_value": null,
+            "threshold_condition": null,
+            "exceptions": [
+                {
+                    "exception_type": "exemption",
+                    "description": "Disclosure not required if it would be obvious to a reasonable person that they are interacting with generative AI",
+                    "conditions": "obvious to a reasonable person",
+                    "scope": "generative AI disclosure requirement"
+                }
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "obvious to a reasonable person",
+            "ambiguity_type": "vague_term",
+            "severity": "high",
+            "affected_obligations": ["Section 304 - generative AI disclosure requirement"],
+            "interpretation_notes": "The 'reasonable person' standard for determining when AI interaction is 'obvious' is undefined. It is unclear whether a chatbot interface, automated voice system, or AI-generated email would meet this threshold without explicit disclosure.",
+            "suggested_clarification": "Define specific criteria or examples of when AI interaction is considered obvious, such as presence of UI indicators, voice synthesis artifacts, or standardized AI interaction markers"
+        },
+        "notes": "Tests non-standard obligation phrasing: 'is responsible for ensuring' instead of 'shall' or 'must'. Previous keyword screening would miss this."
+    }
+}

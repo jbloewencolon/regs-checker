@@ -284,7 +284,7 @@ def _scrape_iapp_index() -> IAPPScrapeResult:
     # Strategy 2: Fall back to web scraping
     if records is None:
         try:
-            from src.ingestion.iapp_scraper import scrape_tracker
+            from src.ingestion.legacy.iapp_scraper import scrape_tracker
             records = scrape_tracker()
         except Exception as e:
             logger.warning("iapp_scrape_failed", error=str(e))

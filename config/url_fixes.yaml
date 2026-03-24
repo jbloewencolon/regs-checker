@@ -1,0 +1,54 @@
+# Known bad URLs — used by seed_pipeline.py to fix ingestion jobs.
+# Format: job_id → corrected URL (or null to skip)
+#
+# Categories:
+#   B — legiscan.com 403s replaced with direct state legislature URLs
+#   C — other broken links (connection refused, 410s, SSL issues)
+
+url_fixes:
+  # ---------------------------------------------------------------------------
+  # Category B: legiscan.com 403s — replaced with direct state legislature URLs
+  # ---------------------------------------------------------------------------
+  # NH — gencourt.state.nh.us
+  "100": "https://gencourt.state.nh.us/rsa/html/LXIII/664/664-14-c.htm"          # AI Political Advertising
+  "101": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1432"  # Deepfake Act
+  "103": "https://www.gencourt.state.nh.us/bill_status/pdf.aspx?id=2024-HB1688"  # State Agency AI Bill
+  # MD — mgaleg.maryland.gov
+  "76": "https://mgaleg.maryland.gov/2024RS/bills/sb/sb0818e.pdf"                 # AI Governance Act 2024
+  # RI — rilegislature.gov
+  "138": "https://webserver.rilegislature.gov/BillText/BillText24/SenateText24/S2500A.pdf"  # RI Data Privacy Act
+  # TX — capitol.texas.gov
+  "154": "https://capitol.texas.gov/tlodocs/88R/billtext/html/SB01361E.htm"       # Deepfake Explicit Videos
+  # WI — docs.legis.wisconsin.gov
+  "178": "https://docs.legis.wisconsin.gov/2023/proposals/reg/sen/bill/sb314"     # WI CSAM Amendment
+
+  # ---------------------------------------------------------------------------
+  # Category B: ncleg.gov 403s — direct PDF links
+  # ---------------------------------------------------------------------------
+  "123": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf"         # NC CSAM Laws (same bill)
+  "124": "https://www.ncleg.gov/Sessions/2023/Bills/House/PDF/H591v5.pdf"         # NC Intimate Images (same bill)
+
+  # ---------------------------------------------------------------------------
+  # Category B: NV leg.state.nv.us 403
+  # ---------------------------------------------------------------------------
+  "99": "https://www.leg.state.nv.us/App/NELIS/REL/82nd2023/Bill/10280/Text"      # NV AI Political Advertising (AB468)
+
+  # ---------------------------------------------------------------------------
+  # Category C: NJ connection refused — use www subdomain
+  # ---------------------------------------------------------------------------
+  "105": "https://www.njleg.state.nj.us/Bills/2024/A4000/3540_R3.PDF"             # Criminal Penalties Deepfakes
+  "106": "https://www.njleg.state.nj.us/Bills/2022/PL23/266_.PDF"                 # NJ Data Privacy Act
+
+  # ---------------------------------------------------------------------------
+  # Category C: MD casetext 410 → mgaleg.maryland.gov
+  # ---------------------------------------------------------------------------
+  "75": "https://mgaleg.maryland.gov/2024RS/bills/hb/hb0033E.pdf"                 # Amendment to MD CSAM Statute
+
+# ---------------------------------------------------------------------------
+# Job-specific patches (e.g., wrong URL entirely)
+# ---------------------------------------------------------------------------
+job_patches:
+  "116":
+    field: fetch_url
+    value: null
+    reason: "Was pointing to CT legislature (cga.ct.gov) instead of NY. Needs manual URL update to correct NY legislature link for NY Algorithmic Pricing Disclosure Act."
