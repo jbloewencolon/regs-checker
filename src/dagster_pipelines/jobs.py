@@ -7,7 +7,7 @@ import dagster
 import structlog
 
 from src.db.engine import SessionLocal
-from src.ingestion.pdf_tracker import STATE_CODES, seed_from_tracker
+from src.ingestion._archived.pdf_tracker import STATE_CODES, seed_from_tracker
 
 logger = structlog.get_logger()
 
@@ -57,7 +57,7 @@ def parse_and_seed_pdf(context: dagster.OpExecutionContext) -> int:
         if records:
             context.log.info(f"Loaded {len(records)} rows from tracker CSV")
         else:
-            from src.ingestion.pdf_tracker import parse_tracker_pdf
+            from src.ingestion._archived.pdf_tracker import parse_tracker_pdf
             records = parse_tracker_pdf()
             context.log.info(f"Parsed {len(records)} rows from PDF tracker (fallback)")
 
