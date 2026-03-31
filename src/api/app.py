@@ -93,7 +93,10 @@ def _recover_stale_jobs() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    _recover_stale_jobs()
+    try:
+        _recover_stale_jobs()
+    except Exception:
+        logger.warning("Skipping stale job recovery (DB may be unavailable)")
     yield
 
 
