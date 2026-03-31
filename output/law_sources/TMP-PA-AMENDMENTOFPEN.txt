@@ -1,0 +1,1455 @@
+Title: 2023-0-SB1213P1946.PDF
+
+URL Source: http://www.legis.state.pa.us/CFDOCS/Legis/PN/Public/btCheck.cfm?txtType=PDF&sessYr=2023&sessInd=0&billBody=S&billTyp=B&billNbr=1213&pn=1946
+
+Number of Pages: 13
+
+Markdown Content:
+HOUSE AMENDED 
+
+PRIOR PRINTER'S NOS. 1644, 1679, 1942 PRINTER'S NO. 1946 
+
+THE GENERAL ASSEMBLY OF PENNSYLVANIA 
+
+# SENATE BILL 
+
+# No. 1213 Session of 
+
+## 2024 
+
+INTRODUCED BY PENNYCUICK, DILLON, BOSCOLA, KANE, TARTAGLIONE, 
+
+BREWSTER, LANGERHOLC, PHILLIPS-HILL, HAYWOOD, BROWN, SCHWANK, 
+
+SANTARSIERO, VOGEL, ROBINSON, MILLER, BARTOLOTTA, DUSH, 
+
+AUMENT AND LAUGHLIN, MAY 29, 2024 
+
+AS REPORTED FROM COMMITTEE ON APPROPRIATIONS, HOUSE OF 
+
+REPRESENTATIVES, AS AMENDED, OCTOBER 8, 2024 
+
+AN ACT 
+
+Amending Title TITLES 18 (Crimes and Offenses) AND 61 (PRISONS 
+
+AND PAROLE) of the Pennsylvania Consolidated Statutes, in 
+
+sexual offenses, further providing for the offense of 
+
+unlawful dissemination of intimate image; and, in minors, 
+
+further providing for the offense of sexual abuse of children 
+
+and for the offense of transmission of sexually explicit 
+
+images by minor .; AND MAKING EDITORIAL CHANGES TO REPLACE 
+
+REFERENCES TO THE TERM "CHILD PORNOGRAPHY" WITH REFERENCES TO 
+
+THE TERM "CHILD SEXUAL ABUSE MATERIAL." 
+
+The General Assembly of the Commonwealth of Pennsylvania 
+
+hereby enacts as follows: 
+
+Section 1. Section 3131(a) and (c) of Title 18 of the 
+
+Pennsylvania Consolidated Statutes are amended and subsection 
+
+(g) is amended by adding definitions to read: 
+
+SECTION 1. SECTION 3051(K) OF TITLE 18 OF THE PENNSYLVANIA 
+
+CONSOLIDATED STATUTES IS AMENDED TO READ: 
+
+§ 3051. CIVIL CAUSES OF ACTION. 
+
+* * *
+
+(K) DEFINITIONS.--THE FOLLOWING WORDS AND PHRASES WHEN USED 
+
+<--
+
+<--
+
+<--
+
+<--
+
+<--1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 IN THIS SECTION SHALL HAVE THE MEANINGS GIVEN TO THEM IN THIS 
+
+SUBSECTION UNLESS THE CONTEXT CLEARLY INDICATES OTHERWISE: 
+
+"SEX TRADE." AN ACT, WHICH IF PROVEN BEYOND A REASONABLE 
+
+DOUBT, COULD SUPPORT A CONVICTION FOR VIOLATION OR ATTEMPTED 
+
+VIOLATION OF CHAPTER 59 (RELATING TO PUBLIC INDECENCY) OR 
+
+SECTION 6312 (RELATING TO SEXUAL ABUSE OF CHILDREN). 
+
+"VICTIM OF THE SEX TRADE." AN INDIVIDUAL WHO HAS: 
+
+(1) BEEN THE OBJECT OF A SOLICITATION FOR PROSTITUTION; 
+
+(2) BEEN THE OBJECT OF A TRANSACTION IN A SEX ACT; 
+
+(3) BEEN INTENDED OR COMPELLED TO ENGAGE IN AN ACT OF 
+
+PROSTITUTION; 
+
+(4) BEEN INTENDED OR COMPELLED TO ENGAGE IN A SEX ACT; 
+
+(5) BEEN DESCRIBED OR DEPICTED IN MATERIAL THAT 
+
+ADVERTISES AN INTENT OR COMPULSION TO ENGAGE IN SEX ACTS; OR 
+
+(6) IN THE CASE OF OBSCENITY OR CHILD [ PORNOGRAPHY HAS ]
+
+SEXUAL ABUSE MATERIAL , APPEARED IN OR BEEN DESCRIBED OR 
+
+DEPICTED IN THE OFFENDING CONDUCT OR MATERIAL. 
+
+SECTION 2. SECTION 3131(A) AND (C) OF TITLE 18 ARE AMENDED 
+
+AND SUBSECTION (G) IS AMENDED BY ADDING DEFINITIONS TO READ: 
+
+§ 3131. Unlawful dissemination of intimate image. 
+
+(a) Offense defined.--Except as provided in sections 5903 
+
+(relating to obscene and other sexual materials and 
+
+performances), 6312 (relating to sexual abuse of children) and 
+
+6321 (relating to transmission of sexually explicit images by 
+
+minor), a person commits the offense of unlawful dissemination 
+
+of intimate image if, with intent to harass, annoy or alarm [a
+
+current or former sexual or intimate partner ] another , the 
+
+person disseminates [ a visual depiction of the current or former 
+
+sexual or intimate partner in a state of nudity or engaged in 
+
+sexual conduct. ]:
+
+20240SB1213PN1946 - 2 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 (1) A visual depiction of the current or former sexual 
+
+or intimate partner in a state of nudity or engaged in sexual 
+
+conduct. 
+
+(2) An artificially generated sexual depiction of an 
+
+individual. 
+
+* * *
+
+(c) Grading.--[ An offense under subsection (a) shall be: ]
+
+(1) An offense under subsection (a)(1) shall be: 
+
+[(1) ] (i) A misdemeanor of the first degree, when the 
+
+person depicted is a minor. 
+
+[(2) ] (ii) A misdemeanor of the second degree, when the 
+
+person depicted is not a minor. 
+
+(2) An offense under subsection (a)(2) shall be: 
+
+(i) A misdemeanor of the first degree, when the 
+
+person depicted is a minor. 
+
+(ii) A misdemeanor of the second degree, when the 
+
+person depicted is not a minor. 
+
+* * *
+
+(g) Definitions.--As used in this section, the following 
+
+words and phrases shall have the meanings given to them in this 
+
+subsection unless the context clearly indicates otherwise: 
+
+"Artificial intelligence." 
+
+(1) A machine-based system that can, for a given set of 
+
+human-defined objectives, make predictions, recommendations 
+
+or decisions influencing real or virtual environments, 
+
+including the ability to: 
+
+(i) perceive real and virtual environments; 
+
+(ii) abstract perceptions made under paragraph (1) 
+
+into models through analysis in an automated manner; and 
+
+(iii) use model inference to formulate options for 
+
+20240SB1213PN1946 - 3 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 information or action based on outcomes under 
+
+subparagraphs (i) and (ii). 
+
+(2) The term includes generative artificial 
+
+intelligence. 
+
+"Artificially generated sexual depiction." A visual 
+
+depiction: 
+
+(1) that appears to authentically depict an individual 
+
+in a state of nudity or engaged in sexual conduct that did 
+
+not occur in reality; and 
+
+(2) the production of which was substantially dependent 
+
+upon technical means, including artificial intelligence or 
+
+photo editing software, rather than the ability of another 
+
+person to physically impersonate the other person. 
+
+"Generative artificial intelligence." The class of models 
+
+that emulate the structure and characteristics of input data in 
+
+order to generate derived synthetic content, including 
+
+information such as images, videos, audio clips or text, that 
+
+has been significantly modified or generated by algorithms, 
+
+including by artificial intelligence. 
+
+* * *
+
+"Photo editing software." A software used primarily for 
+
+editing photographs, videos or computer depictions that contains 
+
+a variety of filters, effects or tools that can be used to 
+
+manipulate photographs, videos or computer depictions. 
+
+* * *
+
+Section 2 3. Section 6312(c), (d), (f)(3) and (g) of Title 
+
+18 are amended AND SUBSECTION (F) IS AMENDED BY ADDING A 
+
+PARAGRAPH to read: 
+
+§ 6312. Sexual abuse of children. 
+
+* * *
+
+20240SB1213PN1946 - 4 -
+
+> <--
+> <--
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 (c) Dissemination of photographs, videotapes, computer 
+
+depictions and films.--Any person who knowingly sells, 
+
+distributes, delivers, disseminates, transfers, displays or 
+
+exhibits to others, or who possesses for the purpose of sale, 
+
+distribution, delivery, dissemination, transfer, display or 
+
+exhibition to others, any [book, magazine, pamphlet, slide, 
+
+photograph, film, videotape, computer depiction or other 
+
+material depicting a child under the age of 18 years engaging in 
+
+a prohibited sexual act or in the simulation of such act ] child 
+
+sexual abuse material or artificially generated child sexual 
+
+abuse material commits an offense. 
+
+(d) Child [pornography ] sexual abuse material .--Any person 
+
+who intentionally views or knowingly possesses or controls any 
+
+[book, magazine, pamphlet, slide, photograph, film, videotape, 
+
+computer depiction or other material depicting a child under the 
+
+age of 18 years engaging in a prohibited sexual act or in the 
+
+simulation of such act ] child sexual abuse material or 
+
+artificially generated child sexual abuse material commits an 
+
+offense. 
+
+* * *
+
+(f) Exceptions.--This section does not apply to any of the 
+
+following: 
+
+* * * 
+
+(3) An individual under 18 years of age who knowingly 
+
+views, photographs, videotapes, depicts on a computer or 
+
+films or possesses or intentionally views a visual depiction 
+
+or an artificially generated depiction as defined in section 
+
+6321 of himself alone in a state of nudity as defined in 
+
+section 6321. 
+
+(4) AN ARTIFICIAL INTELLIGENCE DEVELOPER OR ITS 
+
+20240SB1213PN1946 - 5 -
+
+> <--
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 AUTHORIZED EMPLOYEE OR CONTRACTOR, WHO, UPON OBTAINING ACTUAL 
+
+KNOWLEDGE OF THE EXISTENCE OF ARTIFICIALLY GENERATED CHILD 
+
+SEXUAL ABUSE MATERIAL, IMMEDIATELY AS SOON AS REASONABLY 
+
+POSSIBLE REPORTS THE ARTIFICIALLY GENERATED CHILD SEXUAL 
+
+ABUSE MATERIAL TO A LAW ENFORCEMENT AGENCY. THE NATIONAL 
+
+CENTER FOR MISSING AND EXPLOITED CHILDREN, OR ANY SUCCESSOR 
+
+ENTITY, IN COMPLIANCE WITH 18 U.S.C. § 2258A (RELATING TO 
+
+REPORTING REQUIREMENTS OF PROVIDERS) AND 18 U.S.C. § 2258B 
+
+(RELATING TO LIMITED LIABILITY FOR THE REPORTING, STORAGE, 
+
+AND HANDLING OF CERTAIN VISUAL DEPICTIONS OF APPARENT CHILD 
+
+PORNOGRAPHY TO THE NATIONAL CENTER FOR MISSING & EXPLOITED 
+
+CHILDREN). 
+
+* * *
+
+(g) Definitions.--As used in this section, the following 
+
+words and phrases shall have the meanings given to them in this 
+
+subsection: 
+
+"Artificial intelligence." As defined in section 3131 
+
+(relating to unlawful dissemination of intimate image). 
+
+"ARTIFICIAL INTELLIGENCE DEVELOPER." A PERSON THAT DESIGNS, 
+
+CODES OR PRODUCES AN ARTIFICIAL INTELLIGENCE SYSTEM AND MAKES 
+
+THE SYSTEM COMMERCIALLY AVAILABLE WHETHER FOR PAYMENT OR FREE OF 
+
+CHARGE. 
+
+"Artificially generated child sexual abuse material ." A
+
+book, magazine, pamphlet, slide, photograph, videotape, film ,
+
+computer depiction or other material :
+
+(1) that appears to authentically depict a child under 
+
+18 years of age engaging in a prohibited sexual act or in the 
+
+simulation of such act that did not occur in reality; and 
+
+(2) the production of which was substantially dependent 
+
+upon technical means, including artificial intelligence or 
+
+20240SB1213PN1946 - 6 -
+
+> <--
+> <--
+> <--
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 photo editing software, rather than the ability of another 
+
+person to physically impersonate the child. 
+
+"Child sexual abuse material." A book, magazine, pamphlet, 
+
+slide, photograph, film, videotape, computer depiction or other 
+
+material depicting a child under 18 years of age engaging in a 
+
+prohibited sexual act or in the simulation of a prohibited 
+
+sexual act. 
+
+"Intentionally views." The deliberate, purposeful, voluntary 
+
+viewing of material containing an artificially generated 
+
+depiction or depicting a child under 18 years of age engaging in 
+
+a prohibited sexual act or in the simulation of such act. The 
+
+term shall not include the accidental or inadvertent viewing of 
+
+such material. 
+
+"Photo editing software." As defined in section 3131. 
+
+"Prohibited sexual act." Sexual intercourse as defined in 
+
+section 3101 (relating to definitions), masturbation, sadism, 
+
+masochism, bestiality, fellatio, cunnilingus, lewd exhibition of 
+
+the genitals or nudity if such nudity is depicted for the 
+
+purpose of sexual stimulation or gratification of any person who 
+
+might view such depiction. 
+
+Section 3 4. The definition of "sexually explicit image" in 
+
+section 6321(g) of Title 18 is amended and the subsection is 
+
+amended by adding definitions to read: 
+
+§ 6321. Transmission of sexually explicit images by minor. 
+
+* * *
+
+(g) Definitions.--As used in this section, the following 
+
+words and phrases shall have the meanings given to them in this 
+
+subsection unless the context clearly indicates otherwise: 
+
+"Artificial intelligence." As defined in section 3131 
+
+(relating to unlawful dissemination of intimate image). 
+
+20240SB1213PN1946 - 7 -
+
+> <--
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 "Artificially generated depiction." Any visual depiction: 
+
+(1) that appears to authentically depict a child under 
+
+18 years of age engaged in conduct or an action or state of 
+
+nudity that did not occur in reality; and 
+
+(2) the production of which was substantially dependent 
+
+upon technical means, including artificial intelligence and 
+
+photo editing software, rather than the ability of another 
+
+person to physically impersonate the child. 
+
+* * *
+
+"Photo editing software." As defined in section 3131. 
+
+* * *
+
+"Sexually explicit image." A lewd or lascivious visual 
+
+depiction or artificially generated depiction of a minor's 
+
+genitals, pubic area, breast or buttocks or nudity, if such 
+
+nudity is depicted for the purpose of sexual stimulation or 
+
+gratification of any person who might view such nudity. 
+
+* * *
+
+SECTION 5. SUBCHAPTER C HEADING OF CHAPTER 76 OF TITLE 18 IS 
+
+AMENDED TO READ: 
+
+SUBCHAPTER C 
+
+INTERNET CHILD [ PORNOGRAPHY ] SEXUAL ABUSE MATERIAL 
+
+SECTION 6. THE DEFINITION OF "CHILD PORNOGRAPHY" IN SECTION 
+
+7621 OF TITLE 18 IS AMENDED AND THE SECTION IS AMENDED BY ADDING 
+
+A DEFINITION TO READ: 
+
+§ 7621. DEFINITIONS. 
+
+THE FOLLOWING WORDS AND PHRASES WHEN USED IN THIS SUBCHAPTER 
+
+SHALL HAVE THE MEANINGS GIVEN TO THEM IN THIS SECTION UNLESS THE 
+
+CONTEXT CLEARLY INDICATES OTHERWISE: 
+
+"CHILD PORNOGRAPHY." [AS DESCRIBED IN SECTION 6312 (RELATING 
+
+TO SEXUAL ABUSE OF CHILDREN). ] THE TERM SHALL HAVE THE SAME 
+
+20240SB1213PN1946 - 8 -
+
+> <--
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 MEANING AS CHILD SEXUAL ABUSE MATERIAL. 
+
+"CHILD SEXUAL ABUSE MATERIAL." AS DESCRIBED IN SECTION 
+
+6312(D) (RELATING TO SEXUAL ABUSE OF CHILDREN). 
+
+* * *
+
+SECTION 7. SECTIONS 7622 AND 7626(2) OF TITLE 18 ARE AMENDED 
+
+TO READ: 
+
+§ 7622. DUTY OF INTERNET SERVICE PROVIDER. 
+
+AN INTERNET SERVICE PROVIDER SHALL REMOVE OR DISABLE ACCESS 
+
+TO CHILD [ PORNOGRAPHY ] SEXUAL ABUSE MATERIAL ITEMS RESIDING ON 
+
+OR ACCESSIBLE THROUGH ITS SERVICE IN A MANNER ACCESSIBLE TO 
+
+PERSONS LOCATED WITHIN THIS COMMONWEALTH WITHIN FIVE BUSINESS 
+
+DAYS OF WHEN THE INTERNET SERVICE PROVIDER IS NOTIFIED BY THE 
+
+ATTORNEY GENERAL PURSUANT TO SECTION 7628 (RELATING TO 
+
+NOTIFICATION PROCEDURE) THAT CHILD [ PORNOGRAPHY ] SEXUAL ABUSE 
+
+MATERIAL ITEMS RESIDE ON OR ARE ACCESSIBLE THROUGH ITS SERVICE. 
+
+§ 7626. APPLICATION FOR ORDER TO REMOVE OR DISABLE ITEMS. 
+
+AN APPLICATION FOR AN ORDER OF AUTHORIZATION TO REMOVE OR 
+
+DISABLE ITEMS RESIDING ON OR ACCESSIBLE THROUGH AN INTERNET 
+
+SERVICE PROVIDER'S SERVICE SHALL BE MADE TO THE COURT OF COMMON 
+
+PLEAS HAVING JURISDICTION IN WRITING UPON THE PERSONAL OATH OR 
+
+AFFIRMATION OF THE ATTORNEY GENERAL OR A DISTRICT ATTORNEY OF 
+
+THE COUNTY WHEREIN THE ITEMS HAVE BEEN DISCOVERED AND, IF 
+
+AVAILABLE, SHALL CONTAIN ALL OF THE FOLLOWING INFORMATION: 
+
+* * * 
+
+(2) A STATEMENT OF THE IDENTITY OF THE INVESTIGATIVE OR 
+
+LAW ENFORCEMENT OFFICER THAT HAS, IN THE OFFICIAL SCOPE OF 
+
+THAT OFFICER'S DUTIES, DISCOVERED THE CHILD [ PORNOGRAPHY ]
+
+SEXUAL ABUSE MATERIAL ITEMS. 
+
+* * * 
+
+SECTION 8. PARAGRAPH (4) OF THE DEFINITION OF "ELIGIBLE 
+
+20240SB1213PN1946 - 9 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 PERSON" IN SECTION 4503 OF TITLE 61 IS AMENDED TO READ: 
+
+§ 4503. DEFINITIONS. 
+
+THE FOLLOWING WORDS AND PHRASES WHEN USED IN THIS CHAPTER 
+
+SHALL HAVE THE MEANINGS GIVEN TO THEM IN THIS SECTION UNLESS THE 
+
+CONTEXT CLEARLY INDICATES OTHERWISE: 
+
+* * *
+
+"ELIGIBLE PERSON ." A DEFENDANT OR INMATE CONVICTED OF A 
+
+CRIMINAL OFFENSE WHO WILL BE COMMITTED TO THE CUSTODY OF THE 
+
+DEPARTMENT AND WHO MEETS ALL OF THE FOLLOWING ELIGIBILITY 
+
+REQUIREMENTS: 
+
+* * * 
+
+(4) HAS NOT BEEN FOUND GUILTY OR PREVIOUSLY CONVICTED OR 
+
+ADJUDICATED DELINQUENT FOR VIOLATING ANY OF THE FOLLOWING 
+
+PROVISIONS OR AN EQUIVALENT OFFENSE UNDER THE LAWS OF THE 
+
+UNITED STATES OR ONE OF ITS TERRITORIES OR POSSESSIONS, 
+
+ANOTHER STATE, THE DISTRICT OF COLUMBIA, THE COMMONWEALTH OF 
+
+PUERTO RICO OR A FOREIGN NATION OR CRIMINAL ATTEMPT, CRIMINAL 
+
+SOLICITATION OR CRIMINAL CONSPIRACY TO COMMIT ANY OF THESE 
+
+OFFENSES :
+
+18 PA.C.S. § 4302(A) (RELATING TO INCEST). 
+
+18 PA.C.S. § 5901 (RELATING TO OPEN LEWDNESS). 
+
+18 PA.C.S. CH. 76 SUBCH. C (RELATING TO INTERNET 
+
+CHILD [ PORNOGRAPHY ] SEXUAL ABUSE MATERIAL ). 
+
+RECEIVED A CRIMINAL SENTENCE PURSUANT TO 42 PA.C.S. §
+
+9712.1 (RELATING TO SENTENCES FOR CERTAIN DRUG OFFENSES 
+
+COMMITTED WITH FIREARMS). 
+
+ANY OFFENSE LISTED UNDER 42 PA.C.S. CH. 97 SUBCH. H 
+
+(RELATING TO REGISTRATION OF SEXUAL OFFENDERS) OR I 
+
+(RELATING TO CONTINUED REGISTRATION OF SEXUAL OFFENDERS) .
+
+DRUG TRAFFICKING AS DEFINED IN SECTION 4103 (RELATING 
+
+20240SB1213PN1946 - 10 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 TO DEFINITIONS). 
+
+* * * 
+
+SECTION 9. PARAGRAPH (4) OF THE DEFINITION OF "ELIGIBLE 
+
+OFFENDER" IN SECTION 4601 OF TITLE 61 IS AMENDED TO READ: 
+
+§ 4601. DEFINITIONS. 
+
+THE FOLLOWING WORDS AND PHRASES WHEN USED IN THIS CHAPTER 
+
+SHALL HAVE THE MEANINGS GIVEN TO THEM IN THIS SECTION UNLESS THE 
+
+CONTEXT CLEARLY INDICATES OTHERWISE: 
+
+"ELIGIBLE OFFENDER." A DEFENDANT OR INMATE CONVICTED OF A 
+
+CRIMINAL OFFENSE WHO WILL BE COMMITTED TO THE CUSTODY OF THE 
+
+COUNTY AND WHO MEETS ALL OF THE FOLLOWING ELIGIBILITY 
+
+REQUIREMENTS: 
+
+* * * 
+
+(4) HAS NOT BEEN FOUND GUILTY OR PREVIOUSLY CONVICTED OR 
+
+ADJUDICATED DELINQUENT FOR VIOLATING ANY OF THE FOLLOWING 
+
+PROVISIONS OR AN EQUIVALENT OFFENSE UNDER THE LAWS OF THE 
+
+UNITED STATES OR ONE OF ITS TERRITORIES OR POSSESSIONS, 
+
+ANOTHER STATE, THE DISTRICT OF COLUMBIA, THE COMMONWEALTH OF 
+
+PUERTO RICO OR A FOREIGN NATION: 
+
+18 PA.C.S. § 4302(A) (RELATING TO INCEST). 
+
+18 PA.C.S. § 5901 (RELATING TO OPEN LEWDNESS). 
+
+18 PA.C.S. CH. 76 SUBCH. C (RELATING TO INTERNET 
+
+CHILD [ PORNOGRAPHY ] SEXUAL ABUSE MATERIAL ). 
+
+RECEIVED A CRIMINAL SENTENCE PURSUANT TO 42 PA.C.S. §
+
+9712.1 (RELATING TO SENTENCES FOR CERTAIN DRUG OFFENSES 
+
+COMMITTED WITH FIREARMS). 
+
+ANY OFFENSE FOR WHICH REGISTRATION IS REQUIRED UNDER 
+
+42 PA.C.S. CH. 97 SUBCH. H (RELATING TO REGISTRATION OF 
+
+SEXUAL OFFENDERS). 
+
+* * * 
+
+20240SB1213PN1946 - 11 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 SECTION 10. SECTION 6137.1(A)(4) OF TITLE 61 IS AMENDED TO 
+
+READ: 
+
+§ 6137.1. SHORT SENTENCE PAROLE. 
+
+(A) GENERAL RULE.--THIS SECTION APPLIES TO PERSONS COMMITTED 
+
+TO THE DEPARTMENT WITH AN AGGREGATE MINIMUM SENTENCE OF 
+
+CONFINEMENT UNDER 42 PA.C.S. § 9756(B) (RELATING TO SENTENCE OF 
+
+TOTAL CONFINEMENT) OF TWO YEARS OR LESS OR A RECIDIVISM RISK 
+
+REDUCTION INCENTIVE MINIMUM SENTENCE UNDER 42 PA.C.S. § 
+
+9756(B.1) OF TWO YEARS OR LESS, WHICHEVER IS SHORTER. REGARDLESS 
+
+OF SENTENCE IMPOSED, THIS SECTION DOES NOT APPLY TO: 
+
+* * * 
+
+(4) PERSONS COMMITTED FOR OR WITH AN AGGREGATE SENTENCE 
+
+CONTAINING A VIOLATION OF ANY OF THE FOLLOWING PROVISIONS OR 
+
+AN EQUIVALENT OFFENSE UNDER THE LAWS OF THE UNITED STATES OR 
+
+ONE OF ITS TERRITORIES OR POSSESSIONS, ANOTHER STATE, THE 
+
+DISTRICT OF COLUMBIA, THE COMMONWEALTH OF PUERTO RICO OR A 
+
+FOREIGN NATION, INCLUDING A CRIMINAL ATTEMPT, CRIMINAL 
+
+SOLICITATION OR CRIMINAL CONSPIRACY TO COMMIT THE OFFENSE: 
+
+18 PA.C.S. § 4302(A) (RELATING TO INCEST). 
+
+18 PA.C.S. § 5901 (RELATING TO OPEN LEWDNESS). 
+
+18 PA.C.S. CH. 76 SUBCH. C (RELATING TO INTERNET 
+
+CHILD [ PORNOGRAPHY ] SEXUAL ABUSE MATERIAL ). 
+
+A CRIMINAL SENTENCE PURSUANT TO 42 PA.C.S. § 9712.1 
+
+(RELATING TO SENTENCES FOR CERTAIN DRUG OFFENSES 
+
+COMMITTED WITH FIREARMS). 
+
+AN OFFENSE LISTED UNDER 42 PA.C.S. CH. 97 SUBCH. H 
+
+(RELATING TO REGISTRATION OF SEXUAL OFFENDERS). 
+
+AN OFFENSE LISTED UNDER 42 PA.C.S. CH. 97 SUBCH. I 
+
+(RELATING TO CONTINUED REGISTRATION OF SEXUAL OFFENDERS). 
+
+* * * 
+
+20240SB1213PN1946 - 12 -
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 Section 4 11 . This act shall take effect in 60 days. 
+
+20240SB1213PN1946 - 13 -
+
+> <--
+
+1

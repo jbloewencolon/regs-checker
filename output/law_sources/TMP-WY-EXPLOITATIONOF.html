@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+	<title>Rocket NXT</title>
+	<link rel="stylesheet" type="text/css" href="/NXT/gateway.dll?f=stylesheets$fn=main.css$vid=Publish%3A10.1048%2FEnu$3.0"/>
+	<link rel="stylesheet" type="text/css" href="/NXT/gateway.dll?f=stylesheets$fn=controls.css$vid=Publish%3A10.1048%2FEnu$3.0"/>
+	<link rel="stylesheet" type="text/css" href="/NXT/gateway.dll?f=stylesheets$fn=facet.css$vid=Publish%3A10.1048%2FEnu$3.0"/>
+	<link rel="stylesheet" type="text/css" href="/NXT/gateway.dll?f=stylesheets$fn=iscroll.css$vid=Publish%3A10.1048%2FEnu$3.0"/>
+    <link rel="stylesheet" type="text/css" href="/NXT/gateway.dll?f=stylesheets$fn=jquery-ui-1.10.4.custom.css$vid=Publish%3A10.1048%2FEnu$3.0"/>
+
+	<link rel="apple-touch-icon" href="/NXT/gateway.dll?f=images$fn=nxt-icon.png$vid=Publish%3A10.1048%2FEnu$3.0"/>
+	<link rel="shortcut icon" href="/NXT/gateway.dll?f=images$fn=favicon.ico$vid=Publish%3A10.1048%2FEnu$3.0" />
+	<meta name="apple-mobile-web-app-capable" content="yes"/>
+	<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
+
+	<meta name="HandheldFriendly" content="True" />
+
+	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=jquery-1.10.2.min.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=jquery-ui-1.10.4.custom.min.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=common.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=core.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=iscroll.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=view.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=doc.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=controlbar.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=named-search.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=nxturl.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=xhitlist.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+    <script type="text/javascript" src="/NXT/gateway.dll?f=templates$fn=facetedsearch.js$vid=Publish%3A10.1048%2FEnu$3.0"></script>
+
+
+<script type="text/javascript">
+// -----------------------------------------------------------------------------
+// Options that are available via UI
+// tocForceAutoSync controls the "Automatically synchronize table of contents" TOC option.
+// Set it to true to force TOC auto synchronization and to forbid option's value modification.
+var tocForceAutoSync = false;
+
+// Default options values.
+var optTocHitCountsShowDefault = "left";
+var optTocHitCountsMaxDefault = 0;
+var optTocHideZeroHitsDefault = false;
+var optTocAutoSyncDefault = true; // can be overwritten by global parameter top.tocForceAutoSync
+var optTocTypeDefault = "full";
+var optUIViewModeDefault = "auto";
+var optShareEmailSubjectDefault = "Link to a document from the " + window.document.title + " site";
+var optShareTwitterViaDefault = "";
+var optPhoneKwicValueDefault = 10;  // Medium
+var optTabletKwicValueDefault = 25; // Long
+
+// -----------------------------------------------------------------------------
+
+// if screen width less than tabletScreenWidth, phone mode will be used if UIViewMode = 'auto'
+var tabletScreenWidth = 800;
+
+// -----------------------------------------------------------------------------
+/* PDF Highlighting Control Variables - If these variables are not set, NXT will apply defaults */
+// PDF Highlight Method to use.
+//  pdfhlm= xml|search
+//  This parameter controls whether #xml or #search is used when generating links to Adobe PDF documents.
+var pdfHighlightMethod = "";
+
+// PDF Highlight Host
+//	pdfhh= [proto://]hostname:port
+//	PDF Highlight Host Specifies host and port where external xml with highlight data can be found.
+var pdfHighlightHost = "";
+
+// PDF Searching Control Variables - Only applicable when pdfhlm=search and only the #search Adobe Open Parameter is affected.
+//	#pdftermlist= result|client|merged
+//  result will generate the term list using the actual hit results found within the PDF document being requested. This is the recommended setting as it allows for highlighting of terms for synonym, stemming, and thesaurus searches.
+//  client will use the terms specified by the user, i.e. input in the search form.
+//  merged will merge actual hit results with hyphenated terms specified by the user.
+var pdfSearchTermListMode = "";
+
+// PDF Hyphen merge mode
+// pdfhyphen= expand|retain|remove or any combination of all three.
+// Controls how hyphenated terms are handled in the generation of the Adobe Reader #search Open Parameter. This parameter is only applied when pdftermlist=merged.
+//  expand specifies to expand hyphenated terms into two words: "on-line" expands to "on line"
+//	retain specifies to preserve hyphenated terms: "on-line" is preserved as "on-line"
+//	remove specifies to remove hyphens from the terms: "on-line" becomes "online"
+//
+//  Example:  Searching for "on-line" with "pdfhyphen=retain;remove" will produce "#search=on-line online".
+//            The same result can be reached by using numeric constants: PDF_HYPHEN_RETAIN | PDF_HYPHEN_REMOVE
+var PDF_HYPHEN_EXPAND = 1;
+var PDF_HYPHEN_RETAIN = 2;
+var PDF_HYPHEN_REMOVE = 4;
+var pdfSearchHyphenMerge = "";
+var ALWAYS_SHOW_FACETS = true;
+
+// If the above variables are not set NXT will apply defaults:
+//  #search term list mode = result
+//  Hyphen merge mode = expand
+
+// Timeout to auto-hide "Loading..." animation.
+// Useful when binary file is opened and browser suggests to download it.
+var loadingTimeout = 10000;
+
+// Debug Mode
+var dmurl = new nxt.url.Url(window.location.href);
+if (dmurl.param("debugmode") != null)
+    nxt.misc.Utils.setDebugmode(dmurl.param("debugmode") == "true");
+
+// Code below handles redirection to specific page
+// For example, the following URL
+// http://localhost/NXT/gateway.dll/np/020Build/BuildDeployOverview.htm?f=templates&fn=default.htm&vid=publish:ipad
+// is replaced by 
+// http://localhost/NXT/gateway.dll?f=templates&fn=default.htm&vid=publish:ipad
+// and document path np/020Build/BuildDeployOverview.htm is stored to cookie and redirection occurs.
+// After site reloading, core.js will use cookie value as initial document path
+if (window.location.pathname != "/NXT/gateway.dll")
+{
+    var redirecturl = new nxt.url.NxtUrl(window.location.href);
+    nxt.misc.cookie.setSessionCookie("doc", decodeURIComponent(redirecturl.docPath()));
+    redirecturl.docPath("");
+	window.location.assign(redirecturl);
+}
+
+</script>
+</head>
+
+<body onload="onLoad()">
+	<div id="idMainHeader" class="default" style="-webkit-transform:translate3d(1,1,1)">
+		<!-- JS will place buttons here -->
+	</div>
+
+	<div id="idSearchHeader" class="default">
+		<div id="searchform_selector" class="searchbar_selector">
+			<select name="searchform_list" id="searchform_list" onchange="nxt.comp.bar.search.selectForm(this.options[this.selectedIndex].value); nxt.misc.browser.setSelectedIndex(this, 0);">
+				<option value="#NoSelection">Simple Search</option>
+				<OPTION Value="contents:10.1048%2FAdvancedSearch">Advanced Search</OPTION>
+<OPTION Value="contents:10.1048%2FBooleanSearch">Boolean Search</OPTION>
+<OPTION Value="contents:10.1048%2FMetadataSearch">Document Summary Search</OPTION>
+<OPTION Value="contents:10.1048%2FFacetedSearchForm">Faceted Search</OPTION>
+<OPTION Value="contents:10.1048%2FFolioAdvancedQuerySearchForm">Folio Advanced Query Search</OPTION>
+<OPTION Value="contents:10.1048%2FNXT4%2FQuickFactsExampleSearchForm">Country Quick Facts Search</OPTION>
+
+			</select>
+			<label for="searchform_list" accesskey="f" style="display:none;">Search Forms - Hello</label>
+		</div>
+
+		<!-- Named search -->
+		<div id="named_search_selector" class="searchbar_selector">
+			<select name="named_search_list" id="named_search_list" onchange="nxt.comp.bar.search.selectNamedSearch(this.options[this.selectedIndex].value); nxt.misc.browser.setSelectedIndex(this, 0);">
+				<option value="#NotInitialized">&lt;Not initialized yet&gt;</option>
+			</select>
+			<!-- Hidden form for submiting request -->
+			<form name="named_search_request_form" action="/NXT/gateway.dll" method="get" target="main">
+				<input type="hidden" name="f" value="xhitlist">
+				<input type="hidden" name="xhitlist_q" value="">
+				<input type="hidden" name="xhitlist_x"	value="">
+				<input type="hidden" name="xhitlist_s"	value="">
+				<input type="hidden" name="xhitlist_hc" value="">
+				<input type="hidden" name="xhitlist_d" value="">
+				<input type="hidden" name="xhitlist_xsl" value="">
+				<input type="hidden" name="xhitlist_vpc" value="first"/>
+				<input type="hidden" name="xhitlist_vps" value="20"/>
+				<input type="hidden" name="xhitlist_sel" value="">
+			</form>
+		</div>
+
+		<form name="main_form" id="main_form" action="/NXT/gateway.dll" target="main" method="get"
+			onsubmit="this.xhitlist_q.blur(); return nxt.comp.bar.search.simpleSearchSubmit();">
+
+			<input type="text" size="25" name="xhitlist_q" id="main_form_field" class="main_form_field" placeholder="Search..." accesskey="S"/>
+			<label for="main_form_field" accesskey="s" style="display:none;">Simple search</label>
+			<input type="hidden" name="f" value="xhitlist" />
+			<input type="hidden" name="xhitlist_x" value="Simple" />
+			<input type="hidden" name="xhitlist_s" value="relevance-weight" />
+			<input type="hidden" name="xhitlist_d" value="" />
+			<input type="hidden" name="xhitlist_hc" value="" />
+			<input type="hidden" name="xhitlist_xsl" value="xhitlist.xsl" />
+			<input type="hidden" name="xhitlist_vpc" value="first" />
+			<input type="hidden" name="xhitlist_vps" value="20"/>
+			<input type="hidden" name="xhitlist_sel" value="title;path;relevance-weight;content-type;home-title;item-bookmark;title-path" />
+		</form>
+
+        <div id="idSearchRightButtons">
+            <div role="button" tabindex="-1" class="buttondivsearch" data-table="" data-leftbox="" data-search="" onclick="nxt.comp.bar.search.simpleSearch(event)">
+                <img src="/NXT/gateway.dll?f=images$fn=search-icon.png$vid=Publish%3A10.1048%2FEnu$3.0" style="vertical-align:middle;" alt="Search"/>
+                <span class="buttondivsearchText"><a href="#" target="_blank" class="buttondivsearchText" onclick="nxt.comp.bar.search.simpleSearch(event); return false;">Search</a></span>
+            </div>
+            <div role="button" tabindex="-1" class="buttondivsearch" data-table="" data-rightbox="" data-clear="" onclick="nxt.comp.bar.search.clearSearch(event)">
+                <span class="buttondivsearchText"><a href="#" target="_blank" class="buttondivsearchText" onclick="nxt.comp.bar.search.clearSearch(event); return false;">Clear</a></span>
+            </div>
+        </div>
+
+		<!-- find similar form. This functionality disabled by default. -->
+		<form name="filter_form" method="post" target="main" action="/NXT/gateway.dll">
+			<input type="hidden" name="f" value="xhitlist" /> <input type="hidden" name="xhitlist_pcd" value="" />
+			<input type="hidden" name="xhitlist_ncd" value="" /> <input type="hidden" name="xhitlist_vpc" value="first" />
+			<input type="hidden" name="xhitlist_xsl" value="xhitlist.xsl" /> <input type="hidden" name="xhitlist_d" value="" />
+			<input type="hidden" name="xhitlist_s" value="relevance-weight" /> <input type="hidden" name="xhitlist_hc" value="" />
+			<input type="hidden" name="xhitlist_sel" value="title;path;relevance-weight;content-type;home-title;item-bookmark" />
+		</form>
+	</div>
+
+	<div id="idLeft" class="default">
+		<div id="idNav">
+			<iframe id="toc-frame" name="toc-frame" src="/NXT/gateway.dll?f=templates$fn=contents-frame-js.htm$vid=Publish%3A10.1048%2FEnu$3.0&amp;cp=&amp;sel=0&amp;tf=main&amp;tt=document-frameset.htm&amp;t=contents-frame-js.htm&amp;och=onClick" onload="loadTOC()"></iframe>
+		</div>
+	</div>
+
+	<div id="idRight" class="default">
+		<div id="idToolbar">
+		</div>
+		<div id="idDocument">
+			<div id="idDocumentWrapper">
+				<iframe id="document-frameset" name="main" onreadystatechange="nxt.comp.doc.docLoadTrigger(this)"></iframe>
+			</div>
+		</div>
+		<div id="idStatusBar">
+			<div id="idStatusWrapper">
+			</div>
+		</div>
+	</div>
+
+<script type="text/javascript">
+
+// namespacing
+var nxt = window.nxt || {};
+
+var core = null;
+
+function initPage()
+{
+	if (!nxt.misc.cookie.checkCookies())
+	{
+		alert("Cookies are not enabled.\nPlease enable cookies for use with NXT.");
+	}
+
+	// setup PDF hits highlighting
+	// if pdfHighlightMethod not set
+	if (pdfHighlightMethod == null || pdfHighlightMethod.length == 0)
+	{
+		var reader = new nxt.misc.AdobeReaderInfo();
+		if (reader.version.major > 0 && reader.version.major < 10)
+		{
+			pdfHighlightMethod = "xml";
+		}
+		else if (reader.version.major >= 10)
+		{
+			pdfHighlightMethod = "search";
+		}
+		else // default
+		{
+			pdfHighlightMethod = "";
+		}
+
+        nxt.misc.cookie.setSessionCookie("adobeReaderVersion", reader.version.major);
+	}
+
+	var options = new nxt.misc.Options({
+		"TocHitCountsShow": optTocHitCountsShowDefault,
+		"TocHitCountsMax": optTocHitCountsMaxDefault,
+		"TocHideZeroHits": optTocHideZeroHitsDefault,
+		"TocAutoSync": optTocAutoSyncDefault,
+		"TocType": optTocTypeDefault,
+		"UIViewMode": optUIViewModeDefault,
+		"ShareEmailSubject": optShareEmailSubjectDefault,
+		"ShareTwitterVia": optShareTwitterViaDefault,
+        "PhoneKwicValue": optPhoneKwicValueDefault,
+        "TabletKwicValue": optTabletKwicValueDefault,
+        "CurrentKwicValue": nxt.misc.browser.isMobile() ? optPhoneKwicValueDefault : optTabletKwicValueDefault
+	},
+	{
+		"TocAutoSync": (typeof (tocForceAutoSync) != 'undefined' && tocForceAutoSync == true ? true : undefined)
+	})
+
+	var settings = {
+		"boundaryWidth": tabletScreenWidth,
+		"loadingTimeout": loadingTimeout,
+		"headerLayout": {
+			"tablet": getTabletHeaderLayout,
+			"phone": getPhoneHeaderLayout
+		},
+		"toolbarLayout": {
+			"tablet": getTabletToolbarLayout,
+			"phone": getPhoneToolbarLayout
+		},
+		"pdf": {
+			"highlightMethod": pdfHighlightMethod,
+			"highlightHost": pdfHighlightHost,
+			"searchTermListMode": pdfSearchTermListMode,
+			"searchHyphenMerge": pdfSearchHyphenMerge
+		}
+	};
+
+	// workaround Android screen.height and soft keyboard issues
+	nxt.misc.browser.setWindowHeight(screen.availHeight);
+	nxt.misc.browser.setWindowWidth(screen.availWidth);
+
+	setTimeout(function ()
+	{
+		core = new nxt.core.Core(options, settings);
+
+		var orientationEvent = "resize";
+		if ("onorientationchange" in window)
+		{
+			orientationEvent = "orientationchange";
+		}
+
+        var resizeHandler = function (e)
+        {
+            // for Android need a time delay to get valid width and height
+            if (nxt.misc.browser.isAndroid())
+            {
+                setTimeout(function ()
+                {
+                    nxt.misc.browser.setWindowHeight(screen.availHeight);
+                    nxt.misc.browser.setWindowWidth(screen.availWidth);
+                    core.publish("reset");
+                // NXT-1353: Originally it was 1000ms (slow rotation animation?), but I didn't found problems with 100ms
+                }, 100);
+            }
+            else
+            {
+                core.publish("reset");
+            }
+        };
+		nxt.misc.browser.addEvent(window, orientationEvent, resizeHandler);
+        if (orientationEvent === 'orientationchange')
+        {
+            // NXT-1353, subscribe on resize too
+            nxt.misc.browser.addEvent(window, 'resize', resizeHandler);
+        }
+
+		// run filling named search list
+		core.publish("named_search_need_update");
+	}, 100);
+}
+
+function onLoad()
+{
+	// fix Chrome issue with select.style.background-image
+	if (nxt.misc.browser.isChrome())
+	{
+		fixSearchBarSelectInChrome("searchform_list");
+		fixSearchBarSelectInChrome("named_search_list");
+
+		// need to correct -webkit-transition-property under Chrome
+		// can't specify html.style.overflow="hidden" in css because in breaks everything under Android
+		var htmlElement = document.getElementsByTagName("HTML")[0];
+		htmlElement.style.overflow = "hidden";
+	}
+
+
+	if (nxt.misc.browser.isAndroid() && !nxt.misc.browser.isAndroid4())
+	{
+		androidFix(initPage);
+	}
+	else
+	{
+		setTimeout(function ()
+		{
+			//			window.scrollTo(0, 0);
+			initPage();
+		}, 100);
+	}
+
+    if(!nxt.misc.browser.supportsPlaceholders)
+    {
+        //placeholder polyfill for old browsers
+        var simpsearch = document.getElementById("main_form_field");
+        simpsearch.value = "Search...";
+        simpsearch.onfocus = function(){ if(this.value=='Search...') { this.value=''; } };
+        simpsearch.onblur = function(){ if(this.value=='') { this.value='Search...'; } };
+    }
+
+    nxt.misc.AjaxRequest.ajaxSetup();
+}
+
+function fixSearchBarSelectInChrome(name)
+{
+	var node = document.getElementById(name);
+	if (node)
+	{
+		node.style.backgroundImage = "none";
+		node.style.backgroundColor = "#d7dbe3";
+	}
+}
+
+function androidFix(initPage)
+{
+	// workaround Android screen.height and soft keyborad issues
+	var array = [];
+	for (var i = 0; i < 100; i++)
+	{
+		var node = document.createElement("HR");
+		array.push(node);
+		document.body.appendChild(node);
+
+	}
+
+	setTimeout(function ()
+	{
+		window.scrollTo(0, 1);
+		setTimeout(function ()
+		{
+			window.scrollTo(0, 0);
+			setTimeout(function ()
+			{
+				nxt.misc.browser.setWindowHeight(screen.availHeight);
+				nxt.misc.browser.setWindowWidth(screen.availWidth);
+
+				for (var i = 0; i < array.length; i++)
+				{
+					document.body.removeChild(array[i]);
+				}
+
+				initPage();
+			}, 500);
+
+		}, 500);
+
+	}, 500);
+}
+
+function loadTOC()
+{
+    if (parent.core && parent.core.publish)
+    {
+		parent.core.publish("toc_ready");
+    }
+}
+
+/* Functions format UI - tabs and buttons */
+
+/* UI elements for tablet mode */
+function getTabletHeaderLayout()
+{
+	var nScrollBarLayout = new Array();
+	var yScrollBarLayout = new Array();
+
+	/* setup button layout and add it */
+	var button = {
+			name  : "contents",
+			form  :	{
+					width          : null,         /* button-button width. Default is used if null */
+					//background     : "#C6CEDA",    /* backgroud when button-button is selected */
+					image          : "/NXT/gateway.dll?f=images$fn=icon-view.png$vid=Publish%3A10.1048%2FEnu$3.0", /* associated image */
+					title          : "Navigation",   /* button-button title */
+					alttext        : "Navigation",   /* image alt text */
+					type           : "data-large", /* size/type of the button */
+					titleClassName : "tabButtonText",   /* style classname for title */
+					imageClassName : "tabImageLarge"    /* style classname for image */
+				},
+			behavior : {
+					selectable  : false,                           /* is button-button selectable? */
+					onclick     : nxt.comp.bar.header.contents,    /* onclick handler */
+					catchEvents	: true                            /* tell iScroll to catch events from element */
+					}
+		};
+
+	nScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "document";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-document.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Document";
+	button.form.alttext = "Document";
+	button.form.background = "#94abc9";
+	button.behavior.selectable = false;
+	button.behavior.onclick = nxt.comp.bar.header.document;
+	button.behavior.catchEvents = true;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "searchform";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-search.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Search";
+	button.form.alttext = "Search";
+	button.form.background = "#9ab1d0";
+	button.behavior.onclick = nxt.comp.bar.header.search;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "results";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-results.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Results";
+	button.form.alttext = "Results";
+	button.form.background = "#9cb4d2";
+	button.behavior.onclick = nxt.comp.bar.header.results;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "bookmarks";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-show-bookmarks.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Bookmarks";
+	button.form.alttext = "Bookmarks";
+	button.form.background = "#a5bddc";
+	button.behavior.onclick = nxt.comp.bar.header.bookmarks;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "add_bookmark";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-add-bookmark.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Add BM";
+	button.form.alttext = "Add Bookmark";
+	button.form.background = "#a5bddc";
+	button.behavior.onclick = nxt.comp.bar.header.bookmark;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "share_email";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-email.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Email it";
+	button.form.alttext = "Email it";
+	button.form.background = "#a5bddc";
+	button.behavior.onclick = nxt.comp.bar.header.email;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "share_twitter";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-twitter.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Tweet it";
+	button.form.alttext = "Tweet it";
+	button.form.background = "#a5bddc";
+	button.behavior.onclick = nxt.comp.bar.header.tweet;
+	button.behavior.catchEvents = false; /* click on element will not be handled by iScroll. i.e. it is not possible to scroll area using this button, but event call chain is not broken and iOS popup blocker don't block popups from handler */
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "options";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-settings.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Settings";
+	button.form.alttext = "Settings";
+	button.form.background = "#adc5e4";
+	button.behavior.onclick = nxt.comp.bar.header.settings;
+	button.behavior.catchEvents = true;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "credits";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-credits.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Credits";
+	button.form.alttext = "Credits";
+	button.form.background = "#859bba";
+	button.behavior.onclick = nxt.comp.bar.header.credits;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "help";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-help.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Help";
+	button.form.alttext = "Help";
+	button.form.background = "#91a8c7";
+	button.behavior.onclick = nxt.comp.bar.header.help;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	return { nscroll: nScrollBarLayout, yscroll: yScrollBarLayout };
+}
+
+/* UI elements for phone mode */
+/* Small Tabs (button-buttons) */
+function getPhoneHeaderLayout()
+{
+	var nScrollBarLayout = new Array();
+	var yScrollBarLayout = new Array();
+
+	/* setup button layout and add it */
+	var button = { 
+				name  : "contents",
+				form  :	{
+						width          : null,         /* button-button width. Default is used if null */
+						//backgroundImage: "/NXT/gateway.dll?f=images$fn=top-bg-sel.png$vid=Publish%3A10.1048%2FEnu$3.0",    /* backgroud image when button-button is selected. Image has more priority than background clolor */
+						//background     : "rgb(0, 0, 91)",    /* backgroud when button-button is selected */
+
+						image          : "/NXT/gateway.dll?f=images$fn=icon-view.png$vid=Publish%3A10.1048%2FEnu$3.0", /* associated image */
+						title          : "Navigation",   /* button-button title */
+						alttext        : "Navigation",   /* image alt text */
+						type           : "data-small", /* size/type of the button */
+						titleClassName : "tabButtonText",   /* style classname for title */
+						imageClassName : "tabImageSmall"    /* style classname for image */
+					},
+				behavior : {
+						selectable  : true,                         /* is button-button selectable? */
+						frame       : "contents-frame",             /* target frame for button */
+						onclick     : nxt.comp.bar.header.contents, /* onclick handler */
+						catchEvents : true                         /* tell iScroll to catch events from element */
+					   }
+			};
+
+	nScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "document";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-document.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Document";
+	button.form.alttext = "Document";
+	button.behavior.selectable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.document;
+	button.behavior.catchEvents = true;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "searchform;searchform-phone"; /* main and alternate button names. button will be active when any name (main or alternative) is set */
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-search.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Search";
+	button.form.alttext = "Search";
+	button.behavior.selectable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.search;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "results";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-results.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Results";
+	button.form.alttext = "Results";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "results-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.results;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "bookmarks";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-show-bookmarks.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Bookmarks";
+	button.form.title = "Bookmarks";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.bookmarks;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "add_bookmark";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-add-bookmark.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Add BM";
+	button.form.alttext = "Add Bookmark";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.bookmark;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "share_email";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-email.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Email it";
+	button.form.alttext = "Email it";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.email;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "share_twitter";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-twitter.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Tweet it";
+	button.form.alttext = "Tweet it";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.tweet;
+	button.behavior.catchEvents = false; /* click on element will not be handled by iScroll. i.e. it is not possible to scroll area using this button, but event call chain is not broken and iOS popup blocker don't block popups from handler */
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "options";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-settings.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Settings";
+	button.form.alttext = "Settings";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.settings;
+	button.behavior.catchEvents = true;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "credits";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-credits.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Credits";
+	button.form.alttext = "Credits";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.credits;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it */
+	button.name = "help";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=icon-help.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Help";
+	button.form.alttext = "Help";
+	button.behavior.selectable = false;
+	button.behavior.switchable = false;
+	button.behavior.frame = "document-frameset";
+	button.behavior.onclick = nxt.comp.bar.header.help;
+
+	yScrollBarLayout.push(nxt.clone(button));
+
+	return { nscroll: nScrollBarLayout, yscroll: yScrollBarLayout };
+}
+
+/* Toolbar representation */
+function getTabletToolbarLayout()
+{
+	var barLayout = new Array();
+
+	/* setup button layout and add it to toolbar */
+	var button = { 
+				name  : "sync",
+				form  :	{
+						width          : null,         /* button width. Default is used if null */
+						//background     : "#C6CEDA",    /* backgroud when button is selected */
+						image          : "/NXT/gateway.dll?f=images$fn=ui-sync.png$vid=Publish%3A10.1048%2FEnu$3.0", /* associated image */
+						title          : "Sync",       /* button-button title */
+						alttext        : "Sync",       /* image alt text */
+						type           : "data-small", /* size/type of the button */
+						titleClassName : "toolbarText",     /* style classname for title */
+						imageClassName : "tabImage"         /* style classname for image */
+					},
+				behavior : {
+						selectable  : false,                    /* is button selectable? */
+						onclick     : nxt.comp.bar.tool.sync,   /* onclick handler */
+						catchEvents : true                      /* tell iScroll to catch events from element */
+					   }
+			};
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "prev_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-prev-doc.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Prev Doc";
+	button.form.alttext = "Prev Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.prevDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next-doc.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Next Doc";
+	button.form.alttext = "Next Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.nextDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "prev_hit";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-prev.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Prev Match";
+	button.form.alttext = "Prev Match";
+	button.behavior.onclick = nxt.comp.bar.tool.prevMatch;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_hit";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Next Match";
+	button.form.alttext = "Next Match";
+	button.behavior.onclick = nxt.comp.bar.tool.nextMatch;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "clear_highlights";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-clear.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Highlights";
+	button.form.alttext = "Highlights";
+	button.behavior.onclick = nxt.comp.bar.tool.clearHighlights;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "prev_hit_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-prev-hit.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Prev Hit Doc";
+	button.form.alttext = "Prev Hit Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.prevHitDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_hit_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next-hit.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.title = "Next Hit Doc";
+	button.form.alttext = "Next Hit Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.nextHitDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	return barLayout;
+}
+
+function getPhoneToolbarLayout()
+{
+	var barLayout = new Array();
+	/* setup button layout and add it to toolbar */
+	var button = { 
+				name  : "prev_doc",
+				form  :	{
+						width          : "50px",         /* button width */
+						//background     : "#C6CEDA",      /* backgroud when button is selected */
+						image          : "/NXT/gateway.dll?f=images$fn=ui-prev-doc.png$vid=Publish%3A10.1048%2FEnu$3.0", /* associated image */
+						title          : "",             /* button-button title */
+						alttext	       : "Prev Doc",     /* image alt text */
+						type           : "data-small",   /* size/type of the button */
+						titleClassName : "toolbarText",  /* style classname for title */
+						imageClassName : "tabImage"      /* style classname for image */
+					},
+				behavior : {
+						selectable  : false,                      /* is button selectable? */
+						onclick     : nxt.comp.bar.tool.prevDoc,  /* onclick handler */
+						catchEvents : true                        /* tell iScroll to catch events from element */
+					   }
+			};
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next-doc.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.alttext = "Next Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.nextDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "prev_hit";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-prev.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.alttext = "Prev Match";
+	button.behavior.onclick = nxt.comp.bar.tool.prevMatch;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_hit";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.alttext = "Next Match";
+	button.behavior.onclick = nxt.comp.bar.tool.nextMatch;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "prev_hit_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-prev-hit.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.alttext = "Prev Hit Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.prevHitDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	/* setup button layout and add it to toolbar */
+	button.name = "next_hit_doc";
+	button.form.image = "/NXT/gateway.dll?f=images$fn=ui-next-hit.png$vid=Publish%3A10.1048%2FEnu$3.0";
+	button.form.alttext = "Next Hit Doc";
+	button.behavior.onclick = nxt.comp.bar.tool.nextHitDoc;
+
+	barLayout.push(nxt.clone(button));
+
+	return barLayout;
+}
+</script>
+</body>
+</html>

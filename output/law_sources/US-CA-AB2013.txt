@@ -1,0 +1,102 @@
+Title: California AB2013 | 2025-2026 | Regular Session
+
+URL Source: http://legiscan.com/CA/text/AB2013
+
+Markdown Content:
+Bill Text: CA AB2013 | 2025-2026 | Regular Session | Introduced
+---------------------------------------------------------------
+
+*   [Introduced](https://legiscan.com/CA/text/AB2013/id/3365548 "Read the full text of the Introduced draft for CA AB2013")
+
+* * *
+
+**Bill Title:** Fire risk areas: water suppliers: emergency preparedness plan.
+
+**Spectrum:** Partisan Bill (Democrat 8)
+
+**Status:**_(Introduced)_ 2026-02-18 - From printer. May be heard in committee March 20. [[AB2013 Detail]](https://legiscan.com/CA/bill/AB2013/2025 "California CA AB2013 legislative tracking detail and summary")
+
+**Download:**[California-2025-AB2013-Introduced.html](https://legiscan.com/CA/text/AB2013/id/3365548/California-2025-AB2013-Introduced.html "Download this draft of the California AB2013 bill text")
+
+* * *
+
+CALIFORNIA LEGISLATURE— 2025–2026 REGULAR SESSION
+
+**Assembly Bill**
+
+**No. 2013**
+
+* * *
+
+Introduced by Assembly Member Bennett
+
+(Coauthors: Assembly Members Ahrens, Alvarez, Bauer-Kahan, Connolly, Harabedian, and Hart)
+
+(Coauthor: Senator Stern)
+February 17,2026
+
+* * *
+
+An act to add Part 2.25 (commencing with Section 10555) to Division 6 of the Water Code, relating to water resources.
+
+LEGISLATIVE COUNSEL'S DIGEST
+----------------------------
+
+AB 2013, as introduced, Bennett. Fire risk areas: water suppliers: emergency preparedness plan.
+
+Existing law requires the State Fire Marshal to identify areas in the state as moderate, high, and very high fire hazard severity zones based on consistent statewide criteria and based on the severity of fire hazard that is expected to prevail in those areas. Existing law requires a local agency to designate, by ordinance, moderate, high, and very high fire hazard severity zones in its jurisdiction within 120 days of receiving recommendations from the State Fire Marshal, as provided.
+
+This bill would require a water supplier that services more than 100 customers that are located in a moderate, high, or very high fire hazard severity zone, as specified, to establish an emergency preparedness plan for response to red flag warnings, extreme weather events, and other major power outages or emergencies that pose a potential threat to providing adequate water service. The bill would require the plan to contain several things, including, among others, an assessment that identifies the minimum number of and type of water pumps that are necessary to maintain water service for customers while providing an adequate water supply for fire fighting activities.
+
+Digest Key
+----------
+
+ Vote: MAJORITY Appropriation: NO Fiscal Committee: YES Local Program: NO
+
+* * *
+
+Bill Text
+---------
+
+The people of the State of California do enact as follows:
+----------------------------------------------------------
+
+### SECTION 1.
+
+Part 2.25 (commencing with Section 10555) is added to Division 6 of the Water Code, to read:
+
+#### PART 2.25.Emergency Preparedness Planning
+
+###### 10555.
+
+(a)For purposes of this part, “plan” means an emergency preparedness plan developed pursuant to subdivision (b).
+
+(b)A water supplier that services more than 100 customers that are located in a moderate, high, or very high fire hazard severity zone as designated by the State Fire Marshal pursuant to Section 51178 of the Government Code, or a local agency pursuant to Section 51179 of the Government Code, shall establish an emergency preparedness plan for response to red flag warnings, extreme weather events, and other major power outages or emergencies that pose a potential threat to providing adequate water service to the moderate, high, or very high fire hazard severity zone.
+
+(c)A water supplier is encouraged to develop a plan in coordination with the county board of supervisors, or a county agency or department if one is designated an authority to coordinate with the water supplier by the county board of supervisors.
+
+(d)A plan shall be submitted to the county board of supervisors or a county agency or department designated by the county board of supervisors pursuant to subdivision (c).
+
+(e)(1)A water supplier shall review the plan at least once every three years and shall update the plan as necessary.
+
+(2)Updates to the plan shall be submitted to the county board of supervisors or a county agency or department designated by the county board of supervisors pursuant to subdivision (c).
+
+###### 10556.
+
+The plan shall include, but not be limited to, all of the following:
+
+(a)(1)An assessment of the minimum water tank levels necessary to maintain water service for customers while providing an adequate water supply for fire fighting activities during an extreme weather event or red flag warning.
+
+(2)The assessment shall take into consideration water quality standards and actions necessary to maintain water quality.
+
+(b)(1)An assessment that identifies the minimum number of and type of water pumps that are necessary to maintain water service for customers while providing an adequate water supply for fire fighting activities.
+
+(2)The assessment shall identify water pumps that are equipped with emergency backup energy sources and identify water pumps that require the installation of emergency backup energy sources.
+
+(c)An identification of alternative water sources that can be used during an extreme weather event or loss of power, if any.
+
+(d)A detailed accounting of the pipelines, water pumps, water tanks, backup power generation facilities, and related infrastructure needs that are necessary to maintain water service for customers and provide adequate water supply for fire fighting activities during an extreme weather event and a designation for which of these pipelines, water pumps, water tanks, and backup power generation facilities are, or are required to be, fire hardened.
+
+###### 10557.
+
+A water supplier or water system that is required to prepare and submit an emergency response plan to the Public Utilities Commission shall include the emergency preparedness plan required by this part in that submission.

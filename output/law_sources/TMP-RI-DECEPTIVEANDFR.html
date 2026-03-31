@@ -1,0 +1,1284 @@
+﻿
+	<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+	
+	<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	    <meta name="robots" content="noimageindex">
+	    <meta charset="iso-8859-1">
+	    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+	    	    <title>Code of Laws - Title 40 - Chapter 57- - PROFESSIONS AND OCCUPATIONS</title>
+	    <link rel="SHORTCUT ICON" href="/images/stateflagsmall.ico" />
+		<link rel="icon" href="/images/stateflagsmall.ico" type="image/ico" />
+		<link rel="SHORTCUT ICON" href="/images/South-Carolina-Flag2.ico" />
+
+		<link type="text/css" rel="stylesheet" href="/css/main.css" media="all" />
+				
+		<!--[if lte IE 7]>
+		<link type="text/css" rel="stylesheet" href="/css/ie7main.css" media="all" />
+		<![endif]-->
+		<!--[if gte IE 7]>
+		<link type="text/css" rel="stylesheet" href="/css/iemain.css" media="all" />
+		<![endif]-->
+		<link type="text/css" rel="stylesheet" href="/css/print.css" media="print" />
+		<link type="text/css" rel="stylesheet" href="/css/supplement.css" media="screen" />
+		<!--<link type="text/css" rel="stylesheet" href="/css/zipsearch.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/vote.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/contact.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/navwrap.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/linkbar.css" media="screen" />-->
+	
+		<!--<script type="text/javascript" src="/js/jquery-1.10.1.min.js"></script>
+		<script type="text/javascript" src="/js/jquery-1.12.4.min.js"></script>-->
+		<script type="text/javascript" src="/js/jquery-3.5.1.min.js"></script>
+				<script type="text/javascript" src="/js/main_linux.js"></script>
+		
+
+		
+
+
+
+		<!--<script type="text/javascript" src="/js/common.js"></script>
+		<script type="text/javascript" src="/js/utils.js"></script>
+		<script type="text/javascript" src="/js/date.js"></script>
+		<script type="text/javascript" src="/js/lightbox.js"></script>
+		<script type="text/javascript" src="/js/legislation.js"></script>
+		<script type="text/javascript" src="/js/logon_lits.js"></script>
+		<script type="text/javascript" src="/js/message.js"></script>
+		<script type="text/javascript" src="/js/comm_meeting.js"></script>-->
+		<script type="text/vbscript" src="/vbs/comm_meeting.vbs"></script>
+		<!--<script type="text/javascript" src="/js/regs.js"></script>-->
+				
+	   	<script type="text/javascript">
+	    //document.onclick = function () { document.getElementById('transbox').style.display= 'none' };
+	    	var xmlhttp=false;
+			xmlhttp = create_xml_object();
+	
+			function getElement(ele)
+			{
+				var theobj = false;
+				if(typeof ele == 'string')
+					theobj = (document.getElementById)?document.getElementById(ele):document.all[ele];
+				else
+					theobj = ele;
+			
+				return theobj;
+			}
+		
+			function checkreader(friendlyalert)
+			{
+			 	/*friendlyalert=friendlyalert||false;
+			 	
+			 	var browser_info = perform_acrobat_detection();
+				if (!browser_info.acrobat)
+				{
+				 	loadadobebox('adobebox', '/adobe.php');
+					return false;
+				}
+				else if (friendlyalert)
+				{
+			 		alert(friendlyalert);
+				}*/
+				return true;
+			}
+				
+			function loadadobebox(boxname, url)
+			{
+				var response = false;
+	
+				doRequest(xmlhttp, "GET", url, false, null, null);
+				if (xmlhttp.status == 200)
+				{
+		         	response = xmlhttp.responseText;
+				}
+	
+				if(response)
+				{
+			 		var ele = document.getElementById(boxname);
+				 	if (ele)
+				 	{
+				 		ele.style.visibility = 'hidden';
+		 				ele.style.display = 'block';
+	
+		 				positionElement(ele, 'center', 'center', true);
+	
+						ele.innerHTML = response;
+					    ele.style.visibility = 'visible';
+					    ele.style.display = 'block';
+	//				    ele.scrollIntoView(true);
+					}
+				}
+				return response;
+			}
+	
+	
+			function init()
+			{
+		 		var ld=document.getElementById("loading");
+				if(ld)
+				{
+					ld.style.display = 'none';
+				}
+			}
+			
+			function openmore()
+			{
+			 	var id = document.getElementById('quicksearch');
+			 	if (id)
+			 	{
+				 	var pos = findPos(id);
+				 	id.style.zIndex = 10;
+		//		 	id.style.left = pos[0]+'px';
+		//		  	id.style.top = pos[1]+'px';
+				  	id.style.height = '295px';
+				  	id.style.position = 'absolute';
+				  	id.style.backgroundColor = '#f7f4ec';
+				  	var id2 = document.getElementById('searchmore');
+				  	if (id2)
+				  	{
+				  	 	id2.style.display = 'none';
+				  	}
+				  	var id3 = document.getElementById('contactlegislatordiv');
+				  	if (id3)
+				  	{
+				  	 	id3.style.display = 'none';
+				  	}
+				}
+			}
+		
+			function closemore()
+			{
+			 	var id = document.getElementById('quicksearch');
+			 	if (id)
+			 	{
+				  	id.style.height = '135px';
+				  	id.style.position = '';
+				  	id.style.backgroundColor = 'transparent';
+				  	var id2 = document.getElementById('searchmore');
+				  	if (id2)
+				  	{
+				  	 	id2.style.display = 'block';
+				  	}
+				  	var id3 = document.getElementById('contactlegislatordiv');
+				  	if (id3)
+				  	{
+				  	 	id3.style.display = '';
+				  	}
+				}		 	
+			}
+		
+		<!-- This script and many more are available free online at -->
+		<!-- The JavaScript Source!! http://javascript.internet.com -->
+		
+		<!-- Begin
+		function right(e) {
+		var msg = "Use of this image is strictly prohibited unless express written permission is given to the user by South Carolina Legislative Services Agency.";
+		if (navigator.appName == 'Netscape' && e.which == 3) {
+		alert(msg);
+		return false;
+		stopEvent(e);
+		}
+		if (navigator.appName == 'Microsoft Internet Explorer' && event.button==2) {
+		alert(msg);
+		return false;
+			stopEvent(event);
+		}
+		else return true;
+		}
+		
+	function trap() 
+	{
+		if(document.images)
+		{
+			for(i=0;i<document.images.length;i++)
+			{
+				if(document.images[i].className == 'allowcontextmenu')
+				{
+					// this should have no scripting
+				}
+				else
+				{
+				 	document.images[i].onmousedown = right;
+					document.images[i].oncontextmenu = function(){ return false; };
+					//document.images[i].onmouseup = right;
+				}
+			}
+		}
+	}
+
+	function findfwtext(texttofind) 
+	{
+	 	var fwtextele = document.getElementById('fwtext');
+		if(fwtextele)
+		{
+			fwtextele.value = texttofind;
+		}
+	}	
+		// End -->
+		</script>
+
+		<!-- ADDED FOR V4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LJY6FMNQKH"></script>
+
+
+<script type="text/javascript">
+
+//ADDED FOR V4
+//Google tag (gtag.js) 
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-LJY6FMNQKH');
+
+ 
+ /* COMMENTING OUT UPGRADING TO V4 -A
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-36207109-1']);
+  _gaq.push(['_setDomainName', 'scstatehouse.gov']);
+  _gaq.push(['_setAllowLinker', true]);
+  _gaq.push(['_trackPageview']);
+ 
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+*/
+  
+      $(document).ready(function(){
+        // COMMENTING THIS OUT NO LONGER BEING ACTIVELY USED TO MONITOR FOR TRAFFIC TO SPECIFIC LINKS - A
+        /*
+          var anchors = $('div#contentsection a');
+
+          //console.log('anchors...'+anchors.length);
+          if(anchors.length > 0){
+            //console.log('setting up event handler...');
+            anchors.click(function(){
+              var a = $(this).attr('href');
+              if(_gaq && (a.substr(-3) == 'htm' || a.substr(-4) == 'html' || a.substr(-3) == 'doc' || a.substr(-4) == 'docx' || a.substr(-3) == 'pdf' || a.substr(-3) == 'xls' || a.substr(-4) == 'xlsx')) {
+                //console.log(a);
+                _gaq.push(['_trackPageview', $(this).attr('href')]);
+              }
+              
+              var aText = $(this).text().toLowerCase();
+              if (a.indexOf('getfile.php') > -1 && aText === 'word'){
+                    _gaq.push(['_trackEvent', 'Word Doc', 'Download', ('from page: ' + document.location + ' - href: ' + a)]);
+              }
+
+            });
+          }
+          */
+      });
+
+</script>
+	</head>
+	
+		
+	<body class="home"  onload="init(); trap();">
+	<noscript>Your browser does not support JavaScript!  This page will not render correctly.</noscript> 
+
+
+	
+	<div id="adobebox" style="position:absolute; width:400px; height:150px; border:2px solid #555555; background-color:#cccccc; display:none;"></div>
+	<div id="container" >	
+				<div id="header" class="nodisplay" style="text-align:center; height:100px;" >
+									<img id="headerimg" class="nodisplay" alt="South Carolina Legislature" title="South Carolina Legislature" src="/images/header8.png" />
+								
+							<!--	<div class="award"><span style="color:#831224; font-weight:bold; font-size:1.5em;">*</span> Recipient of<br>the Notable State Documents Award<br>by the<br>South Carolina<br>State Library.</div>-->
+				
+				
+			</div>
+			<div class="printdisplay"><img border="0" src="/images/titleprint.jpg" alt="South Carolina Legislature" title="South Carolina Legislature" alt="South Carolina Legislature" title="South Carolina State Legislature" /><br /><hr /><br /></div>
+	
+			<div id="pagebody" >
+	
+	
+<!--<div id="topmessage">
+<br style="display:block; margin-top:10px;">
+Searches and data queries will be unavailable beginning Friday, August 19, 2016, from 8:00 PM until Saturday, August 20th at 8:00 AM<br>due to scheduled maintenance.</div>-->
+				<!-- Prompt IE 8/7/6 users to upgrade to a newer browser. -->
+				<!--[if lte IE 8]>
+				<div class="oldframe">In order to improve your experience using this website, please <a href="http://browsehappy.com/">upgrade your browser</a>.</div>
+				<![endif]-->
+			
+			
+			
+			<div id="menu" class="nodisplay">
+				<ul class="nodisplay">
+				<li><a href="/index.php">Home</a></li>
+<li><a href="/senate.php">Senate</a></li>
+<li><a href="/house.php">House</a></li>
+<li><a href="/committeeinfo.php">Committee&nbsp;Postings&nbsp;and&nbsp;Reports</a></li>
+<li><a href="/council.php">Legislative Council</a></li>
+<li><a href="/citizens.php">Citizens&#39; Interest</a></li>
+<li><a href="/publications.php">Publications</a></li>
+		    	</ul>
+			</div>
+			<div id="search" class="nodisplay" style="height: 28px;"><div class="nodisplay" style="float:right; margin:6px 20px 0px 0;">
+							<!--<a style="color:#f7f4ec; height:15px;" href="#" onClick="rsswindow();"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>-->
+<!--				<a style="color:#f7f4ec; height:15px;" href="/splashpage/splashpage.html"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a> -->
+				<a style="color:#f7f4ec; height:15px;" href="/onlineservices/index.php"><img border="0" src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>
+			<!--	<a style="color:#f7f4ec; height:15px;" href="/maintenance_portal.php"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>-->
+						</div></div>
+			
+	
+					<div id="sidebar" class="nodisplay">
+	<div id="vidlinks" style="height: 50px;">
+						<!--<img src="/images/videobutton12d.png">-->
+											<ul id="vidsidemenu">
+	<li id="vidinnermenu" style="font-size:16px; margin: 0 0 5px 0;">Chamber Video</li>
+<li id="sbroadcast" style="float: left; width:50%;">
+<a id="liveS" style="width: 100%; text-decoration:underline;" href="javascript:void(0);" onClick="live_stream('S', false, false, '0')">Senate</a><br><a id="liveaudioS" style="margin:-3px 0 0 0; text-decoration:underline; width: 100%; font-size: 8px;" href="javascript:void(0);" onClick="live_stream('S', false, false, '1');">(Audio Only)</a>
+</li>
+<li id="hbroadcast" style="float: left; width:50%;">
+<a id="liveH" style="width: 100%; text-decoration:underline;" href="javascript:void(0);" onClick="live_stream('H', false, false, '0')">House</a><br><a id="liveaudioH" style="margin:-3px 0 0 0; text-decoration:underline; width: 100%; font-size: 8px;" href="javascript:void(0);" onClick="live_stream('H', false, false, '1');">(Audio Only)</a>
+</li>
+						</ul>
+					</div>
+					<div id="commvidlinks"><a href="/video/schedule.php">Video&nbsp;Schedule</a><a style="border-top:1px solid #fff; padding-top:12px;" href="/video/archives.php">Video Archives</a></div>
+										<div id="sidemenu">
+						<ul id="innermenu">
+		
+							<li><a href="/howdoi.php">How do I...</a></li>
+										
+							
+								<li class="nolink" onMouseOver="var ele=document.getElementById('sidesearch'); if(ele){ele.style.display='block'; document.sidesearchform.searchtext.focus();}" onMouseOut="var ele=document.getElementById('sidesearch'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">Quick Search</div>
+								<div id="sidesearch" class="sidesubmenu">
+									<form id="sidesearchform" name="sidesearchform" method="POST" action="/search.php">
+									<input type="hidden" name="search" value="side" />
+									<div class="topelement"><label for="searchtext"><span class="label">Search for:</span></label><input id="searchtext" name="searchtext" type="text"/><a id="searchlink2" href="javascript:void(0);" onClick="document.sidesearchform.submit();"><img id="searchicon" src="/images/searchbutton.png" alt="Search" title="Search"/></a></div>
+			<!--						<div><input type="checkbox" id="searchchoice_all" name="searchchoice_all" value="all" /><label for="searchchoice_all">All</label></div>-->
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_fullsite" name="category" value="FULLSITE" /><label for="searchchoice_fullsite">&nbsp;Full Site Search</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_billnumber" name="category" value="BILL" /><label for="searchchoice_billnumber">&nbsp;Bill Number</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_legislation" name="category" value="LEGISLATION" CHECKED /><label for="searchchoice_legislation">&nbsp;Legislation</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_budget" name="category" value="BUDGET" /><label for="searchchoice_budget">&nbsp;Budget</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_codeoflaws" name="category" value="CODEOFLAWS" /><label for="searchchoice_codeoflaws">&nbsp;Code of Laws</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_codeofregs" name="category" value="CODEOFREGS" /><label for="searchchoice_codeofregs">&nbsp;Code of Regulations</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_constitution" name="category" value="CONSTITUTION" /><label for="searchchoice_constitution">&nbsp;Constitution</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_housejournals" name="category" value="HOUSEJOURNALS" /><label for="searchchoice_housejournals">&nbsp;House Journals</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_senatejournals" name="category" value="SENATEJOURNALS" /><label for="searchchoice_senatejournals">&nbsp;Senate Journals</label></div>
+									<div class="bottomelement" style="padding-left:20px;"><input type="radio" id="searchchoice_billsummary" name="category" value="SUMMARY" /><label for="searchchoice_billsummary">&nbsp;LSA Bill Summary</label></div>
+								</form>
+									
+								</div>
+							</li>
+							<li><a href="/legislatorssearch.php">Find Your Legislators</a></li>
+							<li id="contactLegislatorLink"><a href="/email.php?chamber=B">Contact Your Legislator</a></li>
+									
+							<li><a href="/legislation.php">Legislation</a></li>
+							<li><a href="/listtracking/main.php" target="LTS">Track Legislation</a></li>
+							<li><a href="/multicriteria2/search.php" target="MCS">Multi-Criteria Search</a></li>
+									<!--<li><a href="#" onclick="multisearchwindow('INTROBOTH');">Multi-Criteria Search</a></li>-->
+									<!--<li><a href="#" onclick="multisearchwindow('INTROMANUAL');">Multi-Criteria Search</a></li>-->
+									<li><a href="/research.php">Research</a></li>
+	
+								<li class="nolink" onMouseOver="var ele=document.getElementById('law'); if(ele){ele.style.display='block';}" onMouseOut="var ele=document.getElementById('law'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">South Carolina Law</div> 
+								<div id="law" class="sidesubmenu">
+									<div class="sidediv topelement"><a href="/newlaws.php">Ratifications &amp; Acts</a></div>
+									<div class="sidediv"><a href="/code/statmast.php">Code of Laws</a></div>
+									<div class="sidediv"><a href="/coderegs/statmast.php">Code of Regulations</a></div>
+									<div class="sidediv"><a href="/scconstitution/scconst.php">Constitution</a></div>
+									<div class="sidediv bottomelement"><a href="/state_register.php">State Register</a></div>
+								</div>
+							</li>
+										<li class="nolink" onMouseOver="var ele=document.getElementById('manual'); if(ele){ele.style.display='block';}" onMouseOut="var ele=document.getElementById('manual'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">Legislative Manual</div>
+								<div id="manual" class="sidesubmenu">
+								
+<!--									<div class="sidediv topelement"><a href="https://web.sc.gov/LSAShoppingcart/Default.aspx" target="_blank">Purchase Manual</a></div>-->
+								
+<!--									<div class="sidediv topelement"><a href="https://secure.scstatehouse.gov/cgi-bin/webstore.exe" target="_blank">Purchase Manual</a></div>-->
+									<div class="sidediv topelement"><a href="javascript:#" onClick="alert('We are sorry, but we are unable to process online transactions at this time.\n\nIf you would still like to make a purchase, please contact us directly at (803) 212-4490 during normal business hours (8:30am - 5:00pm EST).');">Purchase Manual</a></div>
+									<div class="sidediv bottomelement"><a href="/man25/manual25.php">View Manual Online</a></div>
+								</div>
+							</li>
+							<li><a href="http://www.studentconnection.scstatehouse.gov">Student Connection</a></li>
+							<li><a href="/visit.php">Visiting the State House</a></li>
+							<li><a href="/archives.php">Archives</a></li>
+							<li><a href="http://www.sc.gov/Agency-Listing" target="_blank">State Agency Websites</a></li>
+							<!--<li><a href="/stateagencysites.php">State Agency Websites</a></li>-->
+							<li><a href="/citizensinterestpage/media.php">Media Links</a></li>
+				 		</ul>
+			    	</div>
+	
+					<div id="side_ad">
+						<A href="http://www.sc.gov/" target="_blank"><img border=0 src="/images/scgov3.jpg" alt="SC.gov" title="SC.gov" /></a>
+													<A href="http://www.statelibrary.sc.gov" target="_blank"><img border=0 src="/images/scsl_logo_rgb_web.png" alt="StateLibrary.SC.gov" title="StateLibrary.SC.gov" /></a>
+											</div>	    	
+			</div>
+
+	
+	<script type="text/javascript"> 
+		if ( '' === '1'){
+		 	
+			var link = document.getElementById('contactLegislatorLink');
+			if (link != 'undefined' && link != null){
+				link.style.display = 'none'; 
+				link.style.visibility = 'hidden';
+			}
+		}
+		if ( '' === '1'){
+		 	setTimeout(function(){
+				var link2 = document.getElementById('sendMsgLink');
+				if (link2 != 'undefined' && link2 != null){
+					link2.style.display = 'none'; 
+					link2.style.visibility = 'hidden';
+				};
+			}, 20);
+			
+		}  
+	</script>
+<div class="mainwidepanel">
+
+				<div id="breadcrumbs">
+						South Carolina Law &gt; <a href="/code/statmast.php">Code of Laws</a> &gt; <a href="/code/title40.php">Title 40</a>
+				</div>
+
+					<h2 class="barheader">South Carolina Code of Laws<br />
+									Unannotated<br />
+					</h2>
+
+				<div id="contentsection">
+<div style="font-weight: bold; text-align: center;">Title 40 - PROFESSIONS AND OCCUPATIONS</div>
+<br />
+
+<div style="text-align: center;">CHAPTER 57</div>
+<div style="text-align: center;">Real Estate Brokers, Brokers-in-Charge, Associates, and Property Managers</div><br />
+<div style="text-align: center;">ARTICLE 1</div>
+<div style="text-align: center;">General Provisions</div><br />
+<span style="font-weight: bold;"> SECTION 40-57-5.</span> Applicability of chapter; conflicts of laws.<br /><br />
+	Unless otherwise provided in this chapter, the provisions of Article 1, Chapter 1 apply to real estate brokers, associates, and property managers. The provisions of this chapter control when they conflict with the provisions of Article 1, Chapter 1.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in the first sentence, substituted &quot;associates&quot; for &quot;salespersons&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-10.</span> South Carolina Real Estate Commission created; purpose.<br /><br />
+	There is created the South Carolina Real Estate Commission under the administration of the Department of Labor, Licensing and Regulation. The purpose of this commission is to regulate the real estate industry so as to protect the public&#39;s interest when involved in real estate transactions.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, reenacted the section with no change.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-20.</span> Valid Licensure Requirement for Real Estate Brokers, Salespersons, and Property Managers.<br /><br />
+	It is unlawful for an individual to act as a real estate broker, real estate associate, or real estate property manager or to advertise or provide services as such without an active, valid license issued by the commission.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1957 (50) 56, 220; 1958 (50) 1870; 1962 Code SECTION 56-1545; 1967 (55) 652; 1986 Act No. 353, SECTION 2; 1991 Act No. 12, SECTION 4; 1994 Act No. 385, SECTION 2.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, substituted &quot;salesperson&quot; for &quot;salesman&quot;, inserted &quot;or provide services&quot; and &quot;an active,&quot;, and substituted &quot;commission&quot; for &quot;department&quot;.<br /><br />
+	2024 Act No. 204, SECTION 3, substituted &quot;associate&quot; for &quot;salesperson&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-30.</span> Definitions.<br /><br />
+	For purposes of this chapter:<br /><br />
+	(1) &quot;Active license&quot; means a license that has been issued for the current period and authorizes the licensee to practice in this State.<br /><br />
+	(2) &quot;Agency relationship&quot; means a legally binding relationship created in writing between a real estate brokerage firm and its client.<br /><br />
+	(3) &quot;Agent&quot; means one authorized and empowered by a written agency agreement to perform actions for a client. A real estate brokerage firm is the agent of a buyer, seller, landlord, or tenant, and the real estate brokerage firm&#39;s &quot;supervised licensees&quot; are its subagents.<br /><br />
+	(4) &quot;Alternative name&quot; means a first name, other than the licensee&#39;s legal first name, that is registered with the commission and used by the licensee for marketing purposes.<br /><br />
+	(5) &quot;Associate&quot; means a supervised licensee who:<br /><br />
+	(a) meets experience and education requirements;<br /><br />
+	(b) passes both the state and national portions of the examination for an associate license; and<br /><br />
+	(c) engages in or participates in an activity included in the definition of &quot;broker&quot; for a fee, salary, commission, or other valuable consideration, or with the intent or expectation of receiving compensation.<br /><br />
+	(6) &quot;Broker&quot; means a supervised licensee who has met the experience and education requirements and has passed both the state and national portions of the examination for a broker license and who, for a fee, salary, commission, referral fee, or other valuable consideration, or who, with the intent or expectation of receiving compensation:<br /><br />
+	(a) negotiates or attempts to negotiate the listing, sale, purchase, exchange, lease, or other disposition of real estate or the improvements to the real estate;<br /><br />
+	(b) auctions or offers to auction real estate in accordance with Section 40-6-250;<br /><br />
+	(c) for a fee or valuable consideration solicits a referral;<br /><br />
+	(d) offers services as a real estate consultant, counselor, or transaction manager;<br /><br />
+	(e) offers to act as a subagent of a real estate brokerage firm representing a client in a real estate transaction; or<br /><br />
+	(f) advertises or otherwise represents to the public as being engaged in any of the foregoing activities.<br /><br />
+	(7) &quot;Broker-in-charge&quot; means the sole broker designated by the commission to have responsibility over the actions of all supervised licensees. A broker-in-charge is responsible for:<br /><br />
+	(a) the day-to-day management of the brokerage firm;<br /><br />
+	(b) the control and liability for a real estate trust account; and<br /><br />
+	(c) ensuring compliance with all applicable laws and regulations.<br /><br />
+	The authority granted to the broker-in-charge cannot be assigned or designated to another licensee.<br /><br />
+	(8) &quot;Buyer agency&quot; means a form of agency in which a real estate brokerage firm represents the buyer in an agency capacity as defined in this chapter.<br /><br />
+	(9) &quot;Canceled license&quot; means a license that is invalidated, can no longer be reinstated or renewed, and requires an individual seeking to be licensed again after cancellation of his prior license to reapply and meet current licensure requirements.<br /><br />
+	(10) &quot;Client&quot; means a person who enters a written agreement establishing an agency relationship with a real estate brokerage firm through its broker-in-charge, a property manager-in-charge, or a supervised licensee.<br /><br />
+	(11) &quot;Commission&quot; means the South Carolina Real Estate Commission and its members, who are charged by law with the responsibility of licensing or otherwise regulating the practice of real estate in the State of South Carolina.<br /><br />
+	(12) &quot;Conversion&quot; means to use trust funds for a purpose other than the purpose for which they are held. Conversion is a breach of trust and is a crime as provided by law.<br /><br />
+	(13) &quot;Customer&quot; means a buyer, seller, landlord, or tenant who uses the services of a real estate licensee but does not establish an agency relationship through a written agency agreement with the licensee&#39;s real estate brokerage firm.<br /><br />
+	(14) &quot;Department&quot; means the Department of Labor, Licensing and Regulation.<br /><br />
+	(15) &quot;Designated agency&quot; means a form of agency in which two clients represented by a real estate brokerage firm in the same transaction may be given almost equivalent treatment as a single agency.<br /><br />
+	(16) &quot;Dual agency&quot; means a form of agency in which a real estate brokerage firm with two clients in the same transaction gives limited agency services.<br /><br />
+	(17) &quot;Email&quot; means a system for sending and receiving a message electronically over a computer network and a message sent or received by the system.<br /><br />
+	(18) &quot;Formal complaint&quot; means a formal written complaint charging misconduct by a licensee in violation of this chapter, regulations promulgated under this chapter, Chapter 1, Title 40, or any other provision of law.<br /><br />
+	(19) &quot;Inactive license&quot; means the official temporary cessation of a licensee&#39;s authorization to practice real estate upon the licensee providing notice to the commission that the person does not intend to practice real estate brokerage, is no longer supervised by a South Carolina-licensed broker-in-charge or property manager-in-charge, or has stepped down as the broker-in-charge or property manager-in-charge from a brokerage or property management office.<br /><br />
+	(20) &quot;Incompetency&quot; means the failure of a licensee to demonstrate and apply the knowledge, skill, and care that is ordinarily possessed and exercised by other licensees of the same licensure status and required by the generally accepted standards of the profession. Charges of incompetence may be based upon a single act of incompetence or upon a course of conduct or series of acts or omissions that extend over a period of time and that, taken as a whole, demonstrate incompetence.<br /><br />
+	(21) &quot;Lapsed license&quot; means the termination of a person&#39;s authorization to practice under this chapter due to the person&#39;s failure to renew his license within the renewal period but before the license is canceled.<br /><br />
+	(22) &quot;Letter of caution&quot; means a written caution or warning about past or future conduct issued when it is determined that only minor misconduct not warranting discipline has been committed. The issuance of a letter of caution is not a form of discipline and does not constitute a finding of misconduct unless the letter of caution specifically states that misconduct has been committed. While nondisciplinary, the fact that a letter of caution has been issued may be considered in a subsequent disciplinary proceeding.<br /><br />
+	(23) &quot;Licensee&quot; means an individual currently licensed under this chapter.<br /><br />
+	(24) &quot;Limited-function referral office&quot; means a brokerage where the office policy allows only the placement of referrals through the broker-in-charge.<br /><br />
+	(25) &quot;Material adverse fact&quot; means:<br /><br />
+	(a) a condition or occurrence that is generally recognized as:<br /><br />
+	(i) significantly and adversely affecting the value of the real estate;<br /><br />
+	(ii) significantly reducing the structural integrity of improvements to real estate; or<br /><br />
+	(iii) presenting a significant health risk to occupants of the real estate; or<br /><br />
+	(b) information that indicates that a party to a transaction is not able to or does not intend to meet an obligation under a contract or agreement made concerning the transaction.<br /><br />
+	(26) &quot;Ministerial act&quot; means an act performed by a licensee not involving an exercise of discretion or judgment of a licensee on behalf of a person who is not a client and that assists the nonclient to consummate a real estate transaction.<br /><br />
+	(27) &quot;Office&quot; means the office location where a broker-in-charge or a property manager-in-charge is licensed to conduct real estate business.<br /><br />
+	(28) &quot;Personal trust account&quot; means an escrow account or demand deposit bank account properly designated and titled to include the words &quot;trust&quot; or &quot;escrow&quot; that is established and maintained by a licensee to safeguard funds belonging to parties to a real estate transaction when the transaction involves the licensee&#39;s personal real estate and the real estate is not managed or listed through a real estate brokerage firm.<br /><br />
+	(29) &quot;Property manager&quot; means a supervised licensee who meets educational requirements and passes the examination for a property manager license, and who will for a fee, salary, commission, other valuable consideration or with the intent or expectation of receiving compensation:<br /><br />
+	(a) negotiate or attempt to negotiate the rental or leasing of real estate or improvements to the real estate;<br /><br />
+	(b) list or offer to list and provide a service in connection with the leasing or rental of real estate or improvements to the real estate; or<br /><br />
+	(c) advertise or otherwise represent to the public as being engaged in an activity in subitems (a) and (b).<br /><br />
+	(30) &quot;Property manager-in-charge&quot; means a property manager who is designated as having the responsibility over the actions of supervised licensees and also the responsibility and control over and liability for real estate trust accounts. A property manager-in-charge is responsible for the day-to-day management of the office for which the property manager-in-charge is registered with the commission and is responsible for ensuring compliance with all applicable laws and regulations.<br /><br />
+	(31) &quot;Real estate&quot; means land, buildings, and other appurtenances, including all interests in land, whether corporeal, incorporeal, freehold, or nonfreehold, whether the real estate is within or outside of the boundaries of this State.<br /><br />
+	(32) &quot;Real estate brokerage&quot; means the aspect of the real estate business that involves activities relative to property management or a real estate sale, exchange, purchase, lease, or other disposition.<br /><br />
+	(33) &quot;Real estate brokerage firm&quot; means a real estate company engaged in the business of real estate brokerage.<br /><br />
+	(34) &quot;Real estate transaction&quot; means an activity involving the sale, purchase, exchange, lease, or other disposition of real estate.<br /><br />
+	(35) &quot;Residential real estate&quot; means real estate which is used primarily for personal, family, or household purposes and is improved by one to four dwelling units.<br /><br />
+	(36) &quot;Seller agency&quot; means a form of agency in which a real estate brokerage firm represents the seller in an agency capacity as defined in this chapter.<br /><br />
+	(37) &quot;Subagent&quot; means an agent of an agent. A &quot;supervised licensee&quot; is a subagent of the real estate brokerage firm if the firm is an agent of a buyer, seller, landlord, or tenant.<br /><br />
+	(38) &quot;Substantive contact&quot; means contact in which a discussion or dialogue between the consumer and the supervised licensee or broker-in-charge moves from casual introductory talk to a meaningful conversation regarding the selling or buying motives or objectives of the seller or buyer, financial qualifications, and other confidential information that if disclosed could harm the consumer&#39;s bargaining position.<br /><br />
+	(39) &quot;Supervised licensee&quot; means a licensee affiliated with and under the supervision of a broker-in-charge or property manager-in-charge.<br /><br />
+	(40) &quot;Team&quot; means two or more supervised licensees working together as a single unit within an office established with the commission and supervised by a broker-in-charge.<br /><br />
+	(41) &quot;Trust account&quot; means an escrow account or properly designated demand deposit bank account that is:<br /><br />
+	(a) properly designated and titled to include the word &quot;trust&quot; or &quot;escrow&quot;; and<br /><br />
+	(b) established and maintained by a broker-in-charge or a property manager-in-charge to safeguard funds belonging to parties to a real estate transaction.<br /><br />
+	(42) &quot;Trust funds&quot; means funds received on behalf of another person by a licensee in the course of performing a real estate activity.<br /><br />
+	(43) &quot;Transaction broker&quot; means a real estate brokerage firm that provides customer service to a buyer, a seller, or both in a real estate transaction. A transaction broker may be a single agent of a party in a transaction giving the other party customer service. A transaction broker also may facilitate a transaction without representing either party.<br /><br />
+	(44) &quot;Wholesaling&quot; means having a contractual interest in purchasing residential real estate from a property owner, then marketing the property for sale to a different buyer prior to taking legal ownership of the property. Advertising or marketing real estate owned by another individual or entity with the expectation of compensation falls under the definition of &quot;broker&quot; and requires licensure. &quot;Wholesaling&quot; does not refer to the assigning or offering to assign a contractual right to purchase residential real estate.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1962 Code SECTION 56-1545.1:1; 1967 (55) 652; 1986 Act No. 353, SECTION 1; 1991 Act No. 12, SECTION 3; 1976 Code SECTION 40-57-10.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-40.</span> Commissioners.<br /><br />
+	(A) The South Carolina Real Estate Commission consists of ten commissioners elected or appointed as follows:<br /><br />
+	(1) seven commissioners who are professionally engaged in the active practice of real estate, one elected from each congressional district by a majority of house members and senators representing the house and senate districts located within each congressional district;<br /><br />
+	(2) two commissioners representing the public who are not professionally engaged in the practice of real estate, each appointed by the Governor with the advice and consent of the Senate;<br /><br />
+	(3) the elected and appointed commissioners shall elect from the State at large one additional commissioner who must be in the active practice of real estate.<br /><br />
+	(B) A commissioner serves a term of four years and until his successor is elected or appointed and qualifies. A vacancy on the commission must be filled in the manner of the original election or appointment for the remainder of the unexpired term.<br /><br />
+	(C) Before discharging of the duties of his office, a commissioner&#39;s election or appointment must be certified by the Secretary of State, and the member shall, in writing, take an oath to perform the duties of the office as a member of the commission and to uphold the constitutions of this State and the United States.<br /><br />
+	(D) The term of a commissioner commences on the date on which his election or appointment is certified by the Secretary of State.<br /><br />
+	(E) A commissioner may be removed from office in accordance with Section 1-3-240.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2012 Act No. 279, SECTION 10, eff June 26, 2012; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1960 (51) 1727; 1962 Code SECTION 56-1545.4; 1972 (57) 2649; 1978 Act No. 534, SECTION 2; 1994 Act No. 38; 1976 Code SECTION 40-57-50.<br /><br />
+	2012 Act No. 279, SECTION 33, provides as follows:<br /><br />
+	&quot;Due to the congressional redistricting, any person elected or appointed to serve, or serving, as a member of any board, commission, or committee to represent a congressional district, whose residency is transferred to another district by a change in the composition of the district, may serve, or continue to serve, the term of office for which he was elected or appointed; however, the appointing or electing authority shall appoint or elect an additional member on that board, commission, or committee from the district which loses a resident member as a result of the transfer to serve until the term of the transferred member expires. When a vacancy occurs in the district to which a member has been transferred, the vacancy must not be filled until the full term of the transferred member expires. Further, the inability to hold an election or to make an appointment due to judicial review of the congressional districts does not constitute a vacancy.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	The 2012 amendment substituted &quot;seven&quot; for &quot;Six&quot; throughout subsection (A)(1); substituted &quot;the nine&quot; for &quot;The eight&quot; in subsection (A)(3); and, made other, nonsubstantive, changes.<br /><br />
+	2016 Act No. 170, SECTION 1, reenacted the section with nonsubstantive changes.<br /><br />
+	2024 Act No. 204, SECTION 3, substituted &quot;commissioners&quot; and &quot;commissioner&quot; for &quot;members&quot; and &quot;member&quot; throughout the section, and in (B), substituted &quot;commissioner&quot; for &quot;commission member&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-50.</span> Election of officers; seal; rules and procedures.<br /><br />
+	The commission annually shall elect from its total membership a chair, vice chair, and other officers the commission determines necessary at the first meeting in the fiscal year of the State. The commission may adopt an official seal and shall adopt rules and procedures reasonably necessary for the performance of its duties and the governance of its operations and proceedings.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, inserted &quot;at the first meeting in the fiscal year of the State&quot;, and made gender neutral changes.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-60.</span> Powers and duties of commission.<br /><br />
+	(A) The commission shall administer and enforce this chapter and regulations promulgated under this chapter. In addition to powers contained in Section 40-1-70, the powers and duties include, but are not limited to:<br /><br />
+	(1) determining the standards for the qualifications and eligibility of applicants for licensure, the qualifications of education providers and instructors, and the conditions for initial license issuance and license renewal;<br /><br />
+	(2) conducting disciplinary hearings on alleged violations of this chapter and regulations promulgated under this chapter and deciding disciplinary actions as provided in this chapter for those found to be in violation;<br /><br />
+	(3) recommending changes in legislation and promulgating regulations governing the real estate industry relative to the protection, safety, and welfare of the public; and<br /><br />
+	(4) establishing a fee schedule.<br /><br />
+	(B) The commission may not be involved in a resolution of disputes between licensees over the payment or division of a commission or fee.<br /><br />
+	(C) The commission staff shall conduct periodic inspections of the offices of licensees to assist with and ensure compliance with this chapter.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTION 27; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in (A)(1), inserted &quot;initial license issuance and&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-65.</span> Annual report.<br /><br />
+	The commission shall submit an annual report in accordance with established guidelines to the department and the Chairs of the Senate Labor, Commerce and Industry Committee and House Labor, Commerce and Industry Committee.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-70.</span> Application and license fees; allocation of fees; annual report.<br /><br />
+	(A) Fees relevant to the licensure and regulation of real estate brokers, associates, and property managers must be established in accordance with Section 40-1-50(D) and promulgated by regulation prior to implementation.<br /><br />
+	(B) Application and license fees must be paid to the commission in advance and must accompany an examination application or a license application. An application fee is nonrefundable.<br /><br />
+	(C)(1) The department may allocate up to ten dollars of each license renewal fee to the South Carolina Real Estate Commission Education and Research Fund which is established as a separate and distinct account within the Office of the State Treasurer. The funds collected must be deposited in this account and used exclusively for the advancement and dissemination of education, tools, and research:<br /><br />
+	(a) for the benefit, safety, and protection of those licensed under this chapter and the public; or<br /><br />
+	(b) for the improvement and increased efficiency of the real estate industry in this State through analysis and evaluation of factors which affect the real estate industry in this State.<br /><br />
+	(2) The commission annually by August first shall submit a report on how the funds were expended for the preceding fiscal year to the Chairs of the Senate Labor, Commerce and Industry Committee and House Labor, Commerce and Industry Committee.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTION 26; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, in (A), substituted &quot;Fees relevant&quot; for &quot;All fees relevant&quot;; deleted former (B), related to reinstatement penalty, and redesignated former (C) and (D) as (B) and (C); in (B) substituted &quot;commission&quot; for &quot;department&quot;; in (C)(1), substituted &quot;is established&quot; for &quot;must be established&quot;; and made nonsubstantive and gender neutral changes throughout.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-80.</span> Reserved.<br /><br />
+HISTORY: Former Section, titled Qualifications for licensure, had the following history: 1997 Act No. 24, SECTION 1. Reserved by 2016 Act No. 170, SECTION 1, eff January 1, 2017. See now, Code 1976 SECTION 40-57-310.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-90.</span> Application for examination or licensure; form and fees.<br /><br />
+	An application for examination or licensure must be made on a form prescribed by the commission and must be accompanied by all applicable fees.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 1999 Act No. 18, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1962 Code SECTION 56-1545.9; 1972 (57) 2649; 1976 Act No. 519; 1981 Act No. 136, SECTION 1; 1986 Act No. 353, SECTION 6; 1991 Act No. 12, SECTION 7; 1994 Act No. 385, SECTION 6; 1976 Code SECTION 40-57-100.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, substituted &quot;commission&quot; for &quot;department&quot;.<br /><br />
+	2024 Act No. 204, SECTION 3, deleted &quot;in writing&quot; following &quot;must be made&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-100.</span> Reserved.<br /><br />
+HISTORY: Former Section, titled Educational requirements conditional to application for licensure, had the following history: 1956 (49) 2046; 1962 Code SECTION 56-1545.9; 1972 (57) 2649; 1976 Act No. 519; 1981 Act No. 136, SECTION 1; 1986 Act No. 353, SECTION 6; 1991 Act No. 12, SECTION 7; 1994 Act No. 385, SECTION 6; 1976 Code SECTION 40-57-100; 1997 Act No. 24, SECTION 1; 1999 Act No. 18, SECTION 1. Reserved by 2016 Act No. 170, SECTION 1, eff January 1, 2017. See now, Code 1976 SECTION 40-57-320.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-110.</span> Issuance and classification of license; inactive status; renewal; lapse.<br /><br />
+	(A) The commission shall issue licenses in the classifications of broker, broker-in-charge, or associate, to individuals who qualify under and comply with the requirements of this chapter; provided the commission may deny a license to an applicant it finds to have engaged in misconduct as provided in Section 40-57-710 or otherwise. No individual may be licensed in more than one classification at the same time. The license must be in the form and size as the commission prescribes and is not transferable. A licensee seeking to change his license classification shall adhere to the procedures provided by the commission in regulations.<br /><br />
+	(B) A licensee may place a license on inactive status by informing the commission in writing. To maintain an inactive license status, the license must be renewed in the same manner as provided for active license renewals. Upon proper compliance with the renewal requirements, a license may remain on inactive status for an indefinite period of time. An individual seeking to reactivate a license shall apply for the same license classification which was placed on inactive status, pay the appropriate fee, and meet the continuing education requirements as prescribed.<br /><br />
+	(1) Inactive licensees are prohibited from practicing real estate brokerage as defined in this chapter and regulations.<br /><br />
+	(2) The status of an associate, broker, or property manager license can be verified on the commission&#39;s website or by contacting commission staff.<br /><br />
+	(3) Licensees seeking to change their license classification shall adhere to the procedures provided by the commission in regulations.<br /><br />
+	(4) An individual seeking to reactivate an inactive license shall meet the reactivation requirements as prescribed in regulations.<br /><br />
+	(C) A license only may be renewed in accordance with procedures established by the commission pursuant to Section 40-1-50(D). A licensee is responsible for renewing his license whether or not he receives notice.<br /><br />
+	(D) A license that is not renewed before its expiration date lapses. Further practice may be sanctioned as unlicensed practice and subject to disciplinary action by the commission pursuant to Sections 40-57-710, 40-57-720, and 40-57-725.<br /><br />
+	(E) A license that has lapsed and is not reinstated by the last day of the twenty-fourth month following expiration is canceled.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1957 (50) 555; 1962 Code SECTIONS 56-1545.11, 56-1545.15; 1967 (55) 652; 1986 Act No. 353, SECTION 8; 1994 Act No. 385, SECTION 9; 1976 Code SECTIONS 40-57-120, 40-57-160.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section, deleting former (B) through (F) and redesignating former (G) through (J) as (B) through (E).<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-115.</span> Criminal background checks required for initial applicants and licensure renewals.<br /><br />
+	In addition to other requirements established by law and for the purpose of determining an applicant&#39;s eligibility for licensure as an associate, broker, broker-in-charge, property manager, and property manager-in-charge, the commission shall require initial applicants and applicants for licensure renewal to submit to a state fingerprint-based criminal records check, to be conducted by the State Law Enforcement Division (SLED); a national criminal records check, supported by fingerprints, by the FBI; and a social-security-number-based criminal records check from a source approved by the commission. Costs of conducting a criminal records check must be borne by the applicant. The commission shall keep information received pursuant to this section confidential, except that information relied upon in denying licensure may be disclosed as necessary to support the administrative action.<br /><br />
+HISTORY: 2014 Act No. 258 (S.75), SECTION 1, eff June 9, 2014; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2017 Act No. 60 (H.3041), SECTION 1, eff July 1, 2020; 2021 Act No. 25 (H.3664), SECTION 1, eff April 26, 2021; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	2020 Act No. 127, SECTION 1, provides as follows:<br /><br />
+	&quot;SECTION 1. SECTION 5 of Act 60 of 2017 is amended to read:<br /><br />
+	&quot;This act takes effect on July 1, 2020, and with respect to license renewals is only applicable to renewals initially due after June 30, 2020.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, substituted &quot;salesperson&quot; for &quot;salesman&quot;.<br /><br />
+	2017 Act No. 60, SECTION 1, amended the section, requiring background checks for licensure renewals and requiring the background checks to be fingerprint-based.<br /><br />
+	2021 Act No. 25, SECTION 1, in the first sentence, substituted &quot;; a national criminal records check, supported by fingerprints, by the FBI; and a social security number-based criminal records check from a source approved by the commission&quot; for &quot;, and a national criminal records check, supported by fingerprints, by the FBI&quot;.<br /><br />
+	2024 Act No. 204, SECTION 3, in the first sentence, substituted &quot;an associate&quot; for &quot;a salesman&quot;, and made a nonsubstantive change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-120.</span> Nonresident licensees; change in residency; referral fees by resident licensees.<br /><br />
+	(A) The commission may recognize applicants who have a license on active status from other jurisdictions only if the other jurisdiction recognizes South Carolina real estate licenses on active status and the other jurisdiction&#39;s real estate regulatory authority has entered into a reciprocity agreement with the commission. The commission may enter into reciprocal agreements with real estate regulatory authorities of other jurisdictions that provide for waivers of education requirements, experience requirements, or examinations if the commission considers the education, experience, and examination requirements of another jurisdiction to be substantially equivalent to the requirements of this chapter.<br /><br />
+	(B) A nonresident licensee, acknowledged by the commission, is not required to maintain a place of business in this State if the nonresident maintains an active place of business in the state of residence. A nonresident applicant shall file an irrevocable consent that suits and actions may be commenced against him in the proper court in a judicial circuit of the state in which a cause of action may arise or in which the plaintiff may reside.<br /><br />
+	(C)(1) A resident licensee who becomes a nonresident must notify the commission in writing, within thirty days, of the change in residency and comply with nonresident requirements or place his license on inactive status to avoid cancellation of the license.<br /><br />
+	(2) A nonresident licensee who becomes a resident of South Carolina must notify the commission in writing, within thirty days, of the change in residency and comply with the requirements of this chapter or place his license on inactive status to avoid cancellation of the license.<br /><br />
+	(3) Failure to timely notify the commission of a change in residency or failure to comply with the requirements of this subsection are violations of this chapter subject to penalties provided in Section 40-57-710.<br /><br />
+	(D) A nonresident applicant or licensee must comply with all requirements of commission regulations and of this chapter. The commission may adopt regulations necessary for the regulation of nonresident licensees.<br /><br />
+	(E) A resident licensee may pay a part of his commission as a referral fee on a cooperative basis to a brokerage of another state or jurisdiction if that brokerage&#39;s license does not conduct, in this State, a real estate brokerage service for which a fee, compensation, or commission is paid.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 1999 Act No. 18, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2017 Act No. 77 (H.3861), SECTION 1, eff May 19, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1957 (50) 193; 1960 (51) 1727; 1962 Code SECTION 56-1545.13; 1972 (57) 2649; 1988 Act No. 609, SECTION 2; 1994 Act No. 385, SECTION 10; 1976 Code SECTION 40-57-140.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section, deleting former (A) and (B), relating to reciprocity, redesignating former (C) through (F) as (A) through (D), and adding (G).<br /><br />
+	2017 Act No. 77, SECTION 1, in (A), added the third sentence, providing that the commission may enter into reciprocal agreements with real estate regulatory authorities of other jurisdictions.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote (A); and in (C)(3), substituted &quot;or failure&quot; for &quot;and compliance&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-135.</span> Duties of broker-in-charge and property manager-in-charge; supervised licensees; office locations; policies and recordkeeping; management agreements; unlicensed employees.<br /><br />
+	(A) A broker-in-charge or property manager-in-charge shall:<br /><br />
+	(1) adequately supervise employees or supervised licensees to ensure their compliance with this chapter;<br /><br />
+	(2) review and approve all forms of listing agreements, agency agreements, offers, sale contracts, purchase contracts, leases, options, contract addenda, or other contractual or disclosure documents routinely used by the real estate brokerage firm;<br /><br />
+	(3) maintain adequate, reasonable, and regular contact with supervised licensees engaged in real estate transactions so as to prevent or curtail practices by a licensee which would violate any provision of this chapter, Chapter 1, Title 40, the Interstate Land Sales Practices Act, or the Vacation Time Sharing Plans Act;<br /><br />
+	(4) be available to the public during business hours in order to discuss or resolve complaints and disputes that arise during the course of real estate transactions in which the broker-in-charge or property manager-in-charge or a supervised licensee is involved;<br /><br />
+	(5) establish and maintain a written office policy in accordance with Sections 40-57-135(I)(2)(a) and 40-57-360 and any requirements promulgated in regulations and make that policy readily accessible to supervised licensees;<br /><br />
+	(6) ensure that all supervised licensees have an active real estate license;<br /><br />
+	(7) establish and maintain control of and responsibility for an active trust account when in possession of trust funds belonging to others resulting from a real estate transaction; and<br /><br />
+	(8) notify the commission by mail within ten days of any change of office name, address, email address, or telephone number.<br /><br />
+	(B) A supervised licensee may not receive compensation from an activity requiring a real estate license from an entity or person other than the one for which the license is issued. A supervised licensee may form a business entity allowing the licensee&#39;s broker-in-charge or property manager-in-charge to pay fees or commissions to that entity if the principals in that entity hold an active real estate license.<br /><br />
+	(C)(1) A licensed broker-in-charge or property manager-in-charge shall establish and maintain a specific office location which must be accessible by the public, investigators, and inspectors during reasonable business hours.<br /><br />
+	(2) A broker-in-charge or property manager-in-charge may maintain one or more offices at different locations. Each office must be managed by a broker-in-charge or property manager-in-charge who is licensed for that real estate brokerage firm&#39;s location. The same person may request to be licensed as broker-in-charge or property manager-in-charge of more than one office if the broker-in-charge or property manager-in-charge making the request acknowledges in writing that the applicant understands the duties and can fully assume the responsibility to ensure compliance with this chapter.<br /><br />
+	(3) A licensee may not conduct real estate business under another name or at an address other than the one for which his license is issued. Alternative names may be utilized following confirmation of registration of the name with the commission.<br /><br />
+	(4) In the event of the medical incapacitation of a broker-in-charge or property manager-in-charge which precludes him from carrying out the duties of a broker-in-charge or property manager-in-charge as required in this chapter, or in the event of the death of a broker-in-charge or a property manager-in-charge, the department may permit a supervised licensee to act as broker-in-charge or property manager-in-charge for up to six months.<br /><br />
+	(D)(1) A broker-in-charge or property manager-in-charge shall for a minimum of five years maintain and furnish to the commission upon request a written copy, when applicable, of a:<br /><br />
+	(a) lease;<br /><br />
+	(b) contract of sale and any addenda;<br /><br />
+	(c) listing contract or buyer agency agreement;<br /><br />
+	(d) transaction broker agreement;<br /><br />
+	(e) option contract;<br /><br />
+	(f) property management agreement; and<br /><br />
+	(g) residential property disclosure form.<br /><br />
+	(2) These records may be maintained electronically as long as a backup copy is stored in a separate, off-site location including, but not limited to, electronic and Internet, cloud-based storage systems.<br /><br />
+	(E)(1) A licensee may not advertise, market, or offer to conduct a real estate transaction involving real estate owned, in whole or in part, by another person without first obtaining a written listing agreement between the property owner and the real estate brokerage firm with whom the licensee is associated. However, the signature of the owner of real estate is not required for a sublease agreement involving real estate if the lease allows for subletting. Licensees not associated with the listing brokerage firm may advertise real estate owned, in whole or in part, by another person only if they have written authorization from the listing brokerage firm and acknowledge the listing brokerage firm in the advertisement in a clear and conspicuous way. Authorization may be contained and obtained from the owner through the listing agreement.<br /><br />
+	The advertising and marketing of real property is to be distinguished from the advertising and marketing of a contractual position in a sales agreement to purchase real estate. An advertisement that markets a contractual position to acquire real property from a person with either equitable or legal title and does not imply, suggest, or purport to sell, advertise, or market the underlying real property is permissible under this section.<br /><br />
+	(2) When advertising his real estate services or marketing real estate owned, in whole or in part, by another person in any medium, a licensee clearly must:<br /><br />
+	(a) Identify the full name of the real estate brokerage firm with which the licensee is employed and supervised in accordance with regulations.<br /><br />
+	(b) If advertising on the Internet or in another electronic media, the above requirements may be met by including a link from the advertisement to the homepage of the brokerage firm or property management company.<br /><br />
+	(3) If a real estate brokerage firm operates under a trade or franchise name, the identity of the franchisee or holder of the trade name clearly must be revealed.<br /><br />
+	(F)(1) A licensee clearly shall reveal his license status in a personal transaction involving the purchase, sale, exchange, rental, lease, or auction of real estate:<br /><br />
+	(a) at first substantive contact with a consumer;<br /><br />
+	(b) in advertising or marketing in any media; and<br /><br />
+	(c) in bold, underlined, capital letters on the first page of a contract for the purchase, sale, exchange, rental, or lease of real property.<br /><br />
+	(2) Trust funds received in a licensee&#39;s personal rental or transaction must be deposited in the licensee&#39;s personal trust account and may not be deposited in the real estate brokerage firm&#39;s trust account unless the real property is managed, listed, or owned by the real estate brokerage firm.<br /><br />
+	(G) No licensee, either directly or indirectly, may buy for his own account or for a corporation or another business in which he holds an interest or for a close relative, real estate listed with him or real estate for which he has been approached by the seller or prospective buyer to act as agent, without first making his true position clearly known in writing to all parties involved. Upon request of the department, the licensee shall provide evidence of having made this disclosure.<br /><br />
+	(H) With regard to offers to purchase real estate, a licensee shall:<br /><br />
+	(1) upon receipt, prepare all offers in writing and promptly present them to the seller;<br /><br />
+	(2) upon obtaining a written acceptance of an offer, promptly deliver true, executed copies to all parties;<br /><br />
+	(3) ensure that all of the terms and conditions of the transaction are included in the offer to purchase; and<br /><br />
+	(4) ensure that changes or modifications made during negotiations are in writing and initialed and dated by both parties before proceeding with the transaction.<br /><br />
+	(I)(1) A licensee shall properly complete an agency agreement, transaction broker agreement, offer, and counteroffer.<br /><br />
+	(2) A listing or buyer&#39;s representation agreement must be in writing and must set forth all material terms of the parties&#39; agency relationship including, but not limited to:<br /><br />
+	(a) a description of the agent&#39;s duties or services to be performed for the client including, but not limited to, an explanation of the office policy regarding dual agency, designated agency, and transaction brokerage if offered by the real estate brokerage firm;<br /><br />
+	(b) the amount of compensation to be paid if a flat fee or the method to be used in calculating the amount of compensation to be paid;<br /><br />
+	(c) an explanation of how and when compensation is earned;<br /><br />
+	(d) an explanation of how compensation will be divided among participating or cooperating brokers, if applicable;<br /><br />
+	(e) the amount of retainer fees, deposits, or any other money collected before the agent&#39;s performance of a service on behalf of the client and an explanation of conditions, if any, in which such monies are refundable or payable to or on behalf of the client;<br /><br />
+	(f) the duration of the agency relationship, setting forth specific dates for the beginning and ending of the relationship;<br /><br />
+	(g) the signatures of all parties;<br /><br />
+	(h) a listing agreement or buyer&#39;s representation agreement clearly must state that it terminates on the definite expiration date unless a written extension is signed;<br /><br />
+	(i) a listing agreement or buyer&#39;s representation agreement clearly must state, if applicable, that it is either an &quot;exclusive agency&quot; listing or buyer&#39;s representation agreement or &quot;exclusive right to represent&quot; listing contract or &quot;exclusive right to represent&quot; buyer&#39;s representation contract;<br /><br />
+	(j) a listing agreement or buyer&#39;s representation agreement must clearly specify an exception or variation in an amount of commission to be paid and circumstances that would apply;<br /><br />
+	(k) a copy of the listing or buyer&#39;s representation agreement must be given to the seller or buyer at the time of, or directly following, signing; and<br /><br />
+	(l) a buyer&#39;s representation agreement must provide an adequate property description of the type of property of interest to the buyer and a price or price range for property of interest to the buyer. A listing agreement must have a legal description of the listed property or a description sufficient to identify the listed property and state the price of the listed property.<br /><br />
+	(3) If there are no clients involved in the transaction, a real estate brokerage firm acting as a transaction broker shall complete a compensation agreement to be signed by the agent and the compensating party. This agreement must contain the amount of the compensation and identify the party responsible for payment.<br /><br />
+	(4) The broker-in-charge shall ensure that supervised licensees prepare all offers and counteroffers in writing, have them dated and signed by the offerors, and promptly present them to the offerees or the offerees&#39; representative and ensure that:<br /><br />
+	(a) changes or modifications made during negotiations are in writing and initialed and dated by both parties before proceeding with the transaction;<br /><br />
+	(b) all of the terms and conditions of the transaction are included in the offer to purchase; and<br /><br />
+	(c) if supervised licensees obtain a written acceptance of an offer or counteroffer, true, executed copies will be promptly delivered to all parties.<br /><br />
+	(5) If an offer is rejected without counter, an offer rejection form, promulgated by the commission, signed by the licensee affirming presentation of the offer must be provided to the offeror by the licensee within forty-eight hours of rejection, whether the agent of the buyer, the seller, or if acting as a transaction broker.<br /><br />
+	(6) An offer and counteroffer may be communicated by use of a fax or other secure electronic means including, but not limited to, the Internet, and the signatures, initials, and handwritten or typewritten modifications to the foregoing documents are considered valid and binding upon the parties as if the original signatures, initials, and handwritten, or typewritten modifications were present on the documents in the handwriting of each party.<br /><br />
+	(7) If a licensee wishes to purchase real estate listed with his brokerage firm, the broker-in-charge shall ensure that the licensee shall first make his true position clearly known in writing to all parties involved. Upon request of the commission, the broker-in-charge shall provide evidence of the licensee having made this disclosure, including:<br /><br />
+	(a) purchases made directly or indirectly by the licensee;<br /><br />
+	(b) purchases made for the licensee&#39;s own account or for a corporation or another business in which the licensee holds an interest or purchases made for a close relative; and<br /><br />
+	(c) real estate for which the licensee has been approached by the seller or prospective buyer to act as agent.<br /><br />
+	(8) In order for a real estate brokerage firm to claim a fee for the sale of a listed property to a supervised licensee, a separate written agreement signed by the seller client must acknowledge the purchaser as a licensee affiliated with the real estate brokerage firm and recognize the right of the seller to not pay the brokerage fee.<br /><br />
+	(9) An agreement regarding residential real estate that is to be in effect for greater than one year and either expressly or impliedly purports to do any of the following is unenforceable and is considered to be done in bad faith, and a licensee involved in such an agreement is subject to disciplinary action by the commission:<br /><br />
+	(a) the agreement runs with the land or binds future owners or heirs of the residential real estate;<br /><br />
+	(b) the agreement allows for assignment of the right to provide service without notice to and consent of the owner of residential real estate; or<br /><br />
+	(c) the agreement creates a lien, encumbrance, or other real property security interest, or is otherwise recorded.<br /><br />
+	(10) The following are not prohibited by subsection (9) and remain enforceable:<br /><br />
+	(a) a home warranty or other type of similar product that covers the cost of maintenance of a major housing system, such as plumbing or electrical wiring, for a fixed period;<br /><br />
+	(b) an insurance contract;<br /><br />
+	(c) an option or right of refusal to purchase the residential real estate;<br /><br />
+	(d) a declaration created in the formation of a homeowners association or similar organization;<br /><br />
+	(e) a maintenance or repair agreement entered by a homeowners association or similar organization;<br /><br />
+	(f) a mortgage loan or a commitment to make or receive a mortgage loan;<br /><br />
+	(g) a security agreement under the Uniform Commercial Code relating to the sale or rental of personal property or fixtures; or<br /><br />
+	(h) water, sewer, electrical, telephone, cable, or other regulated utility service providers.<br /><br />
+	(J) A real estate brokerage firm shall manage residential and commercial real estate under a written management agreement that shall set forth, at a minimum:<br /><br />
+	(1) the names and signatures of authorized parties to the agreement;<br /><br />
+	(2) the property identification;<br /><br />
+	(3) the method of compensation to the licensee;<br /><br />
+	(4) that a management agreement may not contain an automatic renewal clause or provision unless the management agreement also contains a clause or provision that allows either party to cancel the management agreement for any cause or no cause with thirty days&#39; notice after the original definite expiration date;<br /><br />
+	(5) compensation for a future lease renewal by tenants, and if included, the contract must contain a clause in underlined capital letters on the first page providing for such future compensation; and<br /><br />
+	(6) terms and conditions of tenant rental or lease arrangements. However, a management agreement may not contain a provision binding the property under a future listing agreement if the property is to be sold in the future, in which case a separate listing agreement is required.<br /><br />
+	(K) For all types of real estate transactions, including leases and sales, an unlicensed employee of the owner or an unlicensed individual working under the supervision of a broker-in-charge or a property manager-in-charge may not:<br /><br />
+	(1) discuss, negotiate, or explain a contract, listing agreement, buyer agency agreement, lease, agreement, property management agreement, or other real estate document;<br /><br />
+	(2) vary or deviate from the rental price or other terms and conditions previously established by the owner or licensee when supplying relevant information concerning the rental of property;<br /><br />
+	(3) approve applications or leases or settle or arrange the terms and conditions of a lease;<br /><br />
+	(4) indicate to the public that the unlicensed individual is in a position of authority which has the managerial responsibility of the rental property;<br /><br />
+	(5) conduct or host an open house or manage an on-site sales or leasing office;<br /><br />
+	(6) show real property for sale other than vacant units in a multifamily building;<br /><br />
+	(7) answer questions regarding company listings, title, financing, and closing issues, except for information that is otherwise publicly available;<br /><br />
+	(8) be paid solely on the basis of real estate activity including, but not limited to, a percentage of commission or an amount based on the listing or sales compensation or commission;<br /><br />
+	(9) negotiate or agree to compensation or commission including, but not limited to, commission splits, management fees, or referral fees on behalf of a licensee; or<br /><br />
+	(10) engage in an activity requiring a real estate license as required and defined by this chapter.<br /><br />
+	(L) A licensee is not required to maintain records of communications that are not designated to be retained or to create a permanent record such as text messages, instant messaging system-formatted messages, voicemail, voice recordings, or social media posts.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2000 Act No. 285, SECTIONS 1 to 3; 2004 Act No. 218, SECTIONS 1 to 12; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	2024 Act No. 204, SECTION 5, provides as follows:<br /><br />
+	&quot;SECTION 5. Section 40-57-135(E)(2) takes effect twelve months after the date of ratification of the act. Section 40-57-360 takes effect thirty-six months after the date of ratification of the act.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-136.</span> Trust accounts; disputes; records.<br /><br />
+	(A)(1) A broker-in-charge or a property manager-in-charge, when taking possession of trust funds, shall establish and maintain control of and responsibility for an active real estate trust account which must be a demand deposit account designated and titled to include the word &quot;trust&quot; or the word &quot;escrow&quot; in the name of the real estate brokerage firm for which the respective broker-in-charge&#39;s or property manager-in-charge&#39;s license is issued; provided, however, that one central trust account may be used by real estate brokerage firms with multiple offices managed by:<br /><br />
+	(a) one broker-in-charge or one property manager-in-charge; and<br /><br />
+	(b) separate brokers-in-charge or separate property managers-in-charge.<br /><br />
+	(2) A broker-in-charge and a property manager-in-charge shall maintain records which reflect the transactions in his office.<br /><br />
+	(3) A trust account maintained by a broker-in-charge or property manager-in-charge must be a demand deposit account located in an insured financial institution authorized to conduct business in South Carolina.<br /><br />
+	(4) A broker-in-charge or property manager-in-charge shall instruct employees and supervised licensees on the proper handling of trust funds.<br /><br />
+	(5) A check or statement issued in connection with a real estate trust account must reflect the title and designation of the account as provided in item (1).<br /><br />
+	(B)(1) A broker-in-charge or property manager-in-charge shall ensure that accurate and complete records, as required by this chapter, are maintained for real estate trust accounts.<br /><br />
+	(2) A broker-in-charge or property manager-in-charge shall ensure that backup copies are maintained for computerized real estate trust accounts. A backup copy must be maintained on a data storage medium that is stored in a separate off-site location.<br /><br />
+	(3) A broker-in-charge or property manager-in-charge may not commingle trust funds of the client with his own money, except that he may maintain a clearly identified amount of the company&#39;s funds in the trust account to cover bank service charges or in order to avoid the closing of the account when no client&#39;s trust funds are on deposit.<br /><br />
+	(4) Trust funds received by a licensee in connection with a real estate transaction in which the licensee is engaged for the broker-in-charge or property manager-in-charge must be delivered to the broker-in-charge or property manager-in-charge no later than the following business day.<br /><br />
+	(5) A broker-in-charge or property manager-in-charge who disburses trust funds contrary to the terms of the contract or fails to disburse trust funds not in dispute is considered to have demonstrated incompetence to act as a broker-in-charge or property manager-in-charge.<br /><br />
+	(C)(1)(a) Except as provided in subitem (b), trust funds received by a broker-in-charge or property manager-in-charge in a real estate rental or lease transaction must be deposited as follows in a real estate trust account as follows:<br /><br />
+	(i) cash or certified funds must be deposited within forty-eight hours of receipt, excluding Saturday, Sunday, and bank holidays; and<br /><br />
+	(ii) checks must be deposited within forty-eight hours after a lease or rental agreement is signed by the parties to the transaction, excluding Saturday, Sunday, and bank holidays.<br /><br />
+	(b) Rent received by a licensee who is directly employed by the owner of rental property may be deposited in an operating or other similar account, but otherwise must be properly accounted for as provided in this section. However, an advance rental deposit is a trust fund and must be treated as such.<br /><br />
+	(2) Trust funds received by a broker-in-charge or property manager-in-charge in connection with a real estate rental or lease including, but not limited to, security deposits, pet deposits, damage deposits, and advance rentals, except earned rental proceeds, and deposited in the trust account must remain in the trust account until the lease or rental transaction expires or is terminated, at which time undisputed trust funds must be disbursed pursuant to the contract which directs the broker-in-charge or property manager-in-charge to hold the trust funds, and a full accounting must be made to the landlord or tenant as appropriate. Earned rental proceeds must be disbursed to the landlord within a reasonable time after clearance of the deposit by the bank.<br /><br />
+	(D)(1)(a) Trust funds received by a broker-in-charge in a real estate sales or exchange transaction must be deposited as follows in a separate real estate trust account:<br /><br />
+	(i) cash or certified funds must be deposited within forty-eight hours of receipt, excluding Saturday, Sunday, and bank holidays; and<br /><br />
+	(ii) checks must be deposited within forty-eight hours after written acceptance of an offer by the parties to the transaction, excluding Saturday, Sunday, and bank holidays.<br /><br />
+	(b) Trust funds received by a broker-in-charge in connection with a real estate sales or exchange transaction and deposited in the real estate trust account shall remain in the trust account until consummation or termination of the transaction, at which time the undisputed trust funds must be disbursed in accordance with the contract which directs the broker-in-charge to hold the trust funds, and a full accounting must be made to the parties.<br /><br />
+	(2) A broker-in-charge or property manager-in-charge who disburses trust funds from a designated trust account under the following circumstances is considered to have properly fulfilled the duty to the account:<br /><br />
+	(a) upon rejection of an offer to buy, sell, rent, lease, exchange, or option real estate;<br /><br />
+	(b) upon the withdrawal of an offer not yet accepted by the offeree; or<br /><br />
+	(c) at the closing of the transaction.<br /><br />
+	(E) If a dispute concerning the entitlement to, and disposition of, trust funds arises between a buyer and a seller, and the dispute is not resolved by reasonable interpretation of the contract by the parties to the contract, the deposit must be held in the trust account until the dispute is resolved by:<br /><br />
+	(1) a written agreement which:<br /><br />
+	(a) directs the disposition of monies signed by all parties claiming an interest in the trust monies; and<br /><br />
+	(b) must be separate from the contract which directs the broker-in-charge or property manager-in-charge to hold the monies;<br /><br />
+	(2) filing an interpleader action in a court of competent jurisdiction;<br /><br />
+	(3) an order of a court of competent jurisdiction; or<br /><br />
+	(4) voluntary mediation.<br /><br />
+	(F)(1) Records required by this chapter must be maintained for a minimum of five years and the broker-in-charge or property manager-in-charge shall furnish a copy of the records to a representative of the commission upon request. Accounting records that may be requested include, but are not limited to, journals, ledgers, folios, client subaccounts, tenant accounts, canceled checks, deposit slips, and bank statements.<br /><br />
+	(2) Brokers-in-charge or property managers-in-charge, when required by this chapter to establish and maintain a real estate trust account, also shall maintain, in their designated principal place of business, a record-keeping system consisting of:<br /><br />
+	(a) a journal or an accounting system that records the chronological sequence in which funds are received and disbursed for real estate sales. For funds received, the journal or accounting system must include the date of receipt, the name of the party from whom the money was received, the name of the principal, identification of the property, the date of deposit, the depository, the payee, the check numbers, dates, and amounts. A running balance must be maintained for each entry of a receipt or disbursement. The journal or accounting system must provide a means of reconciling the accounts;<br /><br />
+	(b) a journal or an accounting system containing, for property management, the same information as stated in subitem (a) except that the required running balance may be determined at the time of reconciliation;<br /><br />
+	(c) a separate record for each tenant identifying the unit, the unit owner, amount of rent, due date, security deposit, and all receipts with dates when managing property. An owner&#39;s ledger also must be maintained for all properties owned by each owner showing receipts and disbursements applicable to each property managed. A disbursement must be documented by a bid, contract, invoice, or other appropriate written memoranda;<br /><br />
+	(d) a trust account deposit document must identify the buyer or tenant unless other appropriate written memoranda are maintained;<br /><br />
+	(e) a general ledger identifying security deposits;<br /><br />
+	(f) a monthly reconciliation of each separate account except when no deposit or disbursement is made during that month. The reconciliation must include a written worksheet comparing the reconciled bank balance with the journal balance and with the ledger total to ensure agreement.<br /><br />
+	(G) Trust funds received by a broker-in-charge or property manager-in-charge which must be deposited in a trust account may be deposited in an interest-bearing account. Interest earned on these trust funds may be retained by the broker-in-charge or property manager-in-charge if:<br /><br />
+	(1) the depositors or owners of the trust funds have been informed of their right to ownership of the interest but relinquish the right of ownership to the broker-in-charge or property manager-in-charge by written agreement; and<br /><br />
+	(2) the agreement, if part of a preprinted form, uses conspicuous language.<br /><br />
+	(H) If trust funds are held outside a licensee&#39;s brokerage firm, the licensee remains obligated to ensure that the trust funds are timely and properly delivered to the trust fund agent as stated in the contract.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2024 Act No. 204, SECTION 3, in (A)(4), substituted &quot;supervised licensees&quot; for &quot;associated licensees&quot;; added (H); and made nonsubstantive changes.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-240.</span> Applicability of chapter.<br /><br />
+	This chapter does not apply to:<br /><br />
+	(1) the sale, lease, or rental of real estate by an unlicensed owner of real estate who owns any interest in the real estate if the interest being sold, leased, or rented is identical to the owner&#39;s legal interest;<br /><br />
+	(2) an attorney at law acting within the scope of his duties involved in the legal representation of a client/owner;<br /><br />
+	(3) agencies and instrumentalities of the state or federal government and their employees acting within the scope of their official duties;<br /><br />
+	(4) foresters registered under Chapter 27, Title 48, if the sale of any land is merely incidental to the sale of timber on the land; or<br /><br />
+	(5) court-appointed receivers and trustees while acting within the scope of their appointment.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, in (2), substituted &quot;a client/owner&quot; for &quot;his client/owner&quot;, and in (4) added &quot;or&quot; at the end.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent changes.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-250.</span> Omitted.<br /><br />
+HISTORY: Former Section, titled Severability, had the following history: 1997 Act No. 24, SECTION 1. Omitted by 2016 Act No. 170, SECTION 1, eff January 1, 2017. See now, Code 1976 SECTION 40-57-810.<br /><br />
+<div style="text-align: center;">ARTICLE 3</div>
+<div style="text-align: center;">Real Estate Brokers, Brokers-in-Charge, and Associates</div><br />
+<span style="font-weight: bold;"> SECTION 40-57-310.</span> Qualifications for licensure.<br /><br />
+	To be eligible for licensure as a real estate broker, broker-in-charge, or associate, an applicant must:<br /><br />
+	(1) attain the age of twenty-one if applying for a license as a broker or broker-in-charge;<br /><br />
+	(2) attain the age of eighteen if applying for a license as an associate;<br /><br />
+	(3) provide a physical address at which the licensee can be contacted in the course of an investigation. A licensee shall maintain on file with the commission his current contact information for his residential address, mailing address, email address, and telephone number. Failure to update this contact information within thirty days after a change may result in an administrative suspension of the property manager, associate, broker, or broker-in-charge pursuant to Section 40-57-710;<br /><br />
+	(4) graduate from high school or hold a certificate of equivalency recognized by the State Department of Education;<br /><br />
+	(5) submit proof of completion of education to the commission and, if applicable, experience requirements as specified in this chapter;<br /><br />
+	(6) if applicable, submit experience requirements as specified in this chapter;<br /><br />
+	(7) submit to a criminal background check as provided in Section 40-57-115 for initial application; and<br /><br />
+	(8) pass the state and national portions of the applicable examination.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-80; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in the first undesignated paragraph, substituted &quot;associate&quot; for &quot;salesperson&quot;; in (2), substituted &quot;an associate&quot; for &quot;a salesperson&quot;; in (3), in the third sentence, substituted &quot;associate&quot; for &quot;salesperson&quot;; inserted (6) and redesignated former (6) and (7) as (7) and (8); in (7), substituted &quot;submit to a&quot; for &quot;submit&quot;; and in (8), inserted &quot;state and national portions of the&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-320.</span> Conditions for license application; education; examination; fees.<br /><br />
+	(A) As a condition for and before applying to the commission for licensure, an applicant for an associate, broker, or broker-in-charge license shall provide proof to the commission of having met the following educational requirements, in addition to the other requirements of this chapter:<br /><br />
+	(1) for an associate license:<br /><br />
+	(a) completion of sixty hours of classroom instruction in fundamentals of real estate principles and practices and thirty hours of classroom instruction in advanced real estate principles within five years before the application, provided an applicant may take the license examination before completing the required thirty hours of advanced instruction; or<br /><br />
+	(b) evidence of holding a juris doctor degree, a bachelor of law degree, a baccalaureate degree or a master&#39;s degree with a major in real estate from an accredited college or university, or completion of another course of study approved by the commission; and<br /><br />
+	(2) for a broker license:<br /><br />
+	(a) completion of sixty hours of commission-approved real estate classroom instruction, to include completion of the thirty hour Unit III A Broker Management and of the thirty-hour Unit III B Brokerage Principles courses in advanced real estate principles and practices and five years active associate licensure within the past seven years; or<br /><br />
+	(b) evidence of holding a juris doctor degree, a bachelor of law degree, a baccalaureate degree or a master&#39;s degree with a major in real estate from an accredited college or university.<br /><br />
+	(B)(1) As a condition of licensure, an applicant shall submit to an examination which must be conducted by the commission or a designated test provider at a time and place specified by the commission.<br /><br />
+	(2) The applicant must receive a passing grade on both the state and national portions of the examination, in accordance with a cut-score determination or a raw-score determination established by the commission.<br /><br />
+	(3) An applicant who applies to take the examination is granted a twelve-month eligibility period to complete successfully all portions of the examination. An applicant who fails to complete successfully both the state and national portions of the examination may reapply to become eligible for the examination if applicable qualifying courses were completed fewer than three years before applying for the examination.<br /><br />
+	(4) An applicant who passes both the state and national portions of the examination must apply for a license within one year, or the applicant must reapply and retake all portions of the examination.<br /><br />
+	(5) An applicant who is denied licensure by the commission may not reapply for licensure for a period of twenty-four months from the date of denial unless he prevails in appealing the denial pursuant to the Administrative Procedures Act.<br /><br />
+	(6) An individual who, at the time of application, holds an active real estate license in another state or jurisdiction or whose real estate license in another state or jurisdiction expired not more than six months before he makes his application only is required to pass the state portion of the examination to qualify for licensure. This does not exempt the individual from satisfying the educational requirements of this chapter.<br /><br />
+	(C) The commission or test provider may collect and retain reasonable examination fees. An applicant for an examination to be conducted by a test provider shall pay the fee directly to the test provider.<br /><br />
+HISTORY: 1956 (49) 2046; 1962 Code SECTION 56-1545.9; 1972 (57) 2649; 1976 Act No. 519; 1981 Act No. 136, SECTION 1; 1986 Act No. 353, SECTION 6; 1991 Act No. 12, SECTION 7; 1994 Act No. 385, SECTION 6; 1997 Act No. 24, SECTION 1; 1999 Act No. 18, SECTION 1; formerly 1976 Code SECTION 40-57-100; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-330.</span> Broker-in-charge license requirements; active broker or associate must be licensed under broker-in-charge.<br /><br />
+	(A) A broker-in-charge license may not be issued to or renewed for an applicant unless the applicant:<br /><br />
+	(1) has an ownership interest in the applicant&#39;s company; or<br /><br />
+	(2) is actively engaged in the operation and management of the company.<br /><br />
+	(B) An individual holding an active broker or associate license must be licensed under a broker-in-charge who is licensed by the commission and may not be licensed during the same period with more than one broker-in-charge. When a licensee becomes disassociated with a broker-in-charge, he immediately shall notify the commission by completion of the proper form. The licensee must furnish a new business address to the commission, the authorization of the new broker-in-charge, and proof of notification to the former broker-in-charge.<br /><br />
+	(C) When a designated broker-in-charge becomes disassociated with the office registered with the commission, the broker-in-charge shall notify the commission within five days. The broker-in-charge designation will be removed and the licensee&#39;s license will be deactivated.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2024 Act No. 204, SECTION 3, in (B), in the first sentence, substituted &quot;associate&quot; for &quot;salesperson&quot;; and added (C).<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-340.</span> Conditions for license renewal; background checks.<br /><br />
+	(A) As a condition of active license renewal:<br /><br />
+	(1) A broker or associate shall submit to a criminal background check upon every third renewal as required for initial applicants pursuant to Section 40-57-115 and shall provide proof of satisfactory completion biennially of ten hours of continuing education in courses. The ten hours must include a minimum of four hours of instruction in mandated topics.<br /><br />
+	(2) A broker-in-charge shall submit to a criminal background check upon every third renewal as required for initial applicants pursuant to Section 40-57-115 and shall provide proof of satisfactory completion biennially of ten hours of continuing education in courses approved by the commission. The ten hours must include a minimum of four hours of instruction in mandated topics for a broker or associate license and four hours of continuing education must be in advanced real estate topics designed for brokers-in-charge.<br /><br />
+	(3) A license must be renewed biennially coinciding with the licensees&#39; continuing education deadline. Approximately one-half of the licensees must renew in even-numbered years and the remainder in odd-numbered years.<br /><br />
+	(B)(1) Exempt from the biennial continuing education required by subsection (A) are:<br /><br />
+	(a) an associate who successfully completes a post-licensing course or takes a broker course is exempt for the renewal period during which the course was taken;<br /><br />
+	(b) a licensee while on inactive status;<br /><br />
+	(c) a broker or associate with twenty-five years or more of licensure in South Carolina who is sixty-five years of age or more may apply for an age and experience-based full continuing education waiver, and upon granting of the waiver, is exempt from the continuing education requirements of this chapter;<br /><br />
+	(d) a broker or associate with a minimum of twenty-five years of licensure in South Carolina who may apply to be granted an experience-based partial continuing education waiver, and upon granting of the waiver, is required to complete only a mandatory four-hour core course biennially to maintain active licensure; or<br /><br />
+	(e) a nonresident broker or a nonresident associate who has successfully satisfied the continuing education requirements of their jurisdiction of residence may be exempt with approval of the commission.<br /><br />
+	(2) A broker-in-charge who has been granted a partial continuing education waiver is required to take a four-hour core course and the mandated four-hour broker-in-charge course biennially.<br /><br />
+	(3) A licensee who previously has been granted a full continuing education waiver by the commission is exempt from the continuing education requirements of this chapter.<br /><br />
+	(C) A broker or associate who takes more than the required number of hours during a two-year period may carry forward up to four hours of elective courses to another renewal period.<br /><br />
+	(D) A broker or associate who fails to submit to criminal background check requirements of this section or complete the continuing education requirements of this section by the date of license renewal may renew by submitting applicable fees but immediately must be placed on inactive status. The license may be reactivated upon proof of completion of required continuing education and payment of applicable fees or submission to a criminal background check and payment of applicable fees, whichever remedies the deficiency that caused the licensee to be placed on inactive status.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-130; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2017 Act No. 60 (H.3041), SECTION 2, eff July 1, 2020; 2022 Act No. 167 (S.158), SECTION 1, eff May 16, 2022; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024; 2025 Act No. 27 (H.3947), SECTION 1, eff May 8, 2025.<br /><br />
+Editor&#39;s Note<br /><br />
+	2020 Act No. 127, SECTION 1, provides as follows:<br /><br />
+	&quot;SECTION 1. SECTION 5 of Act 60 of 2017 is amended to read:<br /><br />
+	&quot;This act takes effect on July 1, 2020, and with respect to license renewals is only applicable to renewals initially due after June 30, 2020.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2017 Act No. 60, SECTION 2, in (A)(1) and (A)(2), inserted &quot;submit to a criminal background check upon every third renewal as required for initial applicants pursuant to Section 40-57-115 and shall&quot;; and in (D), inserted &quot;submit to criminal background check requirements of this section or&quot; and &quot;or submission to a criminal background check and payment of applicable fees, whichever remedies the deficiency that caused the licensee to be placed on inactive status&quot;.<br /><br />
+	2022 Act No. 167, SECTION 1, rewrote (B).<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+	2025 Act No. 27, SECTION 1, in (B)(1), added (e), and made nonsubstantive changes.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-345.</span> Renewal of expired licenses; individuals sixty-five years of age.<br /><br />
+	An individual with an expired license who, at the time of expiration, was in good standing, has twenty-five years or more of licensure in South Carolina, and who is sixty-five years of age, may apply to the Real Estate Commission for a renewal of the expired license. The applicant must pay the renewal fee as provided by law. Upon renewal, the licensee is exempt from continuing education requirements as provided by law.<br /><br />
+HISTORY: 2025 Act No. 27 (H.3947), SECTION 2, eff May 8, 2025.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-350.</span> Real estate brokerage firm duties to client; agency relationship; applicability of common law.<br /><br />
+	(A) A real estate brokerage firm that provides services through an agency agreement for a client is bound by the duties of loyalty, obedience, disclosure, confidentiality, reasonable care, diligence, and accounting as set forth in this chapter. Pursuant to the aforementioned duties owed to a client, a real estate brokerage firm and its subagents are prohibited from engaging in, representing others in, or assisting others in the practice of wholesaling. The following are the permissible brokerage relationships a real estate brokerage firm may establish:<br /><br />
+	(1) seller agency;<br /><br />
+	(2) buyer agency;<br /><br />
+	(3) disclosed dual agency;<br /><br />
+	(4) designated agency; or<br /><br />
+	(5) transaction brokerage.<br /><br />
+	(B) The broker-in-charge of a real estate brokerage firm shall adopt a written company policy that identifies and describes the types of real estate brokerage relationships in which supervised licensees may engage, including teams and limited function referral offices. The written policy must include:<br /><br />
+	(1) the real estate brokerage firm&#39;s policy regarding cooperation with transaction brokers, or both buyer agents, and transaction brokers, and whether the broker offers compensation to these licensees;<br /><br />
+	(2) the scope of services provided to the real estate brokerage firm&#39;s clients;<br /><br />
+	(3) the scope of services provided to the real estate brokerage firm&#39;s customers;<br /><br />
+	(4) when and how supervised licensees shall explain and disclose their brokerage relationships with an interested party to a potential transaction. The explanation and disclosure shall always comply with the minimum requirements set forth in this chapter;<br /><br />
+	(5) when and how a supervised licensee shall explain the potential for the licensee to later act as a disclosed dual agent, designated agent, or transaction broker in specific transactions, as permitted by this chapter; and<br /><br />
+	(6) the real estate brokerage firm&#39;s policy on compliance with state and federal fair housing laws.<br /><br />
+	(C)(1) On reaching a written agency agreement to provide brokerage services for a seller of real estate, a seller&#39;s agent shall:<br /><br />
+	(a) perform the terms of the written brokerage agreement made with the seller;<br /><br />
+	(b) pursuant to subsection (A), promote the interest of the seller by performing agency duties which include:<br /><br />
+	(i) seeking a sale at the price and terms stated in the brokerage agreement or at a price and terms acceptable to the seller, except that the real estate brokerage firm is not obligated to seek additional offers to purchase unless the brokerage agreement provides otherwise while the property is subject to a contract of sale;<br /><br />
+	(ii) presenting in a timely manner all written offers and counteroffers to and from the seller, even when the property is subject to a contract of sale;<br /><br />
+	(iii) disclosing to the seller all material adverse facts concerning the transaction which are actually known to the seller&#39;s agent except as directed otherwise in this section;<br /><br />
+	(iv) advising the seller to obtain expert advice on matters that are beyond the expertise of the licensee; and<br /><br />
+	(v) accounting in a timely manner, as required by this chapter, for all money and property received in which the seller has or may have an interest;<br /><br />
+	(c) exercise reasonable skill and care in discharging the licensee&#39;s agency duties;<br /><br />
+	(d) comply with all provisions of this chapter and with regulations adopted by the commission;<br /><br />
+	(e) comply with all applicable federal, state, or local laws, rules, regulations, and ordinances related to real estate brokerage, including laws which relate to fair housing and civil rights;<br /><br />
+	(f) preserve confidential information provided by the seller during the course of and following the agency relationship that might have a negative impact on the seller&#39;s real estate activity unless:<br /><br />
+	(i) the seller to whom the confidential information pertains grants written consent to disclose the information;<br /><br />
+	(ii) disclosure is required by law; or<br /><br />
+	(iii) disclosure is necessary to defend the licensee against an accusation of wrongful conduct; or<br /><br />
+	(iv) the information becomes public from a source other than the broker.<br /><br />
+	(2) No cause of action may arise against a licensee for disclosing confidential information in compliance with item (1)(f).<br /><br />
+	(D) A licensee acting as a seller&#39;s agent may offer alternative properties to prospective buyers. A licensee acting as a seller&#39;s agent also may list for sale competing properties.<br /><br />
+	(E)(1) On reaching a written agency agreement to provide brokerage services to a potential buyer of real estate, a buyer&#39;s agent shall:<br /><br />
+	(a) perform the terms of the written brokerage agreement made with the buyer;<br /><br />
+	(b) in accordance with subsection (A), promote the interest of the buyer by performing the buyer&#39;s agent&#39;s duties which include:<br /><br />
+	(i) seeking the type of property at the price and terms stated in the brokerage agreement or at a price and terms acceptable to the buyer, except that the licensee is not obligated to seek additional properties unless the brokerage agreement provides otherwise for a buyer once the buyer becomes a party to a contract of sale;<br /><br />
+	(ii) presenting in a timely manner all written offers and counteroffers to and from the buyer;<br /><br />
+	(iii) disclosing to the buyer all material adverse facts concerning the transaction which are actually known to the licensee except as directed otherwise in this section. Nothing in this chapter may limit a buyer&#39;s obligation to inspect the physical condition of the property which the buyer may purchase;<br /><br />
+	(iv) advising the buyer to obtain expert advice on material matters that are beyond the expertise of the licensee; and<br /><br />
+	(v) accounting in a timely manner, as required by this chapter, for all money and property received in which the buyer has or may have an interest;<br /><br />
+	(c) exercising reasonable skill and care in discharging the buyer&#39;s agent&#39;s agency duties;<br /><br />
+	(d) complying with all provisions of this chapter and with regulations promulgated by the commission;<br /><br />
+	(e) complying with all applicable federal, state, or local laws, rules, regulations, and ordinances related to real estate brokerage, including laws which relate to fair housing and civil rights;<br /><br />
+	(f) preserving confidential information provided by the buyer during the course of or following the agency relationship that might have a negative impact on the buyer&#39;s real estate activity unless:<br /><br />
+	(i) the buyer to whom the confidential information pertains, grants written consent to disclose the information;<br /><br />
+	(ii) disclosure is required by law;<br /><br />
+	(iii) disclosure is necessary to defend the licensee against an accusation of wrongful conduct in a proceeding before the commission or before a professional association or professional standards committee; or<br /><br />
+	(iv) the information becomes public from a source other than the licensee.<br /><br />
+	(2) No cause of action may arise against a licensee for disclosing confidential information in compliance with item (1)(f).<br /><br />
+	(F) A licensee acting as a buyer&#39;s agent may offer properties which interest his buyer client to other potential buyers. However, if the licensee has two competing buyer clients in a single real estate transaction, the agent will give written notice to each buyer client that neither will receive the confidential information of the other.<br /><br />
+	(G)(1) A licensee shall treat all parties honestly and may not knowingly give them false or misleading information about the condition of the property which is known to the licensee. A licensee is not obligated to discover latent defects or to advise parties on matters outside the scope of the licensee&#39;s real estate expertise. Notwithstanding another provision of law, no cause of action may be brought against a licensee who has truthfully disclosed to a buyer a known material defect.<br /><br />
+	(2) No cause of action may be brought against a real estate brokerage firm or licensee by a party for information contained in reports or opinions prepared by an engineer, land surveyor, geologist, wood destroying organism control expert, termite inspector, mortgage broker, home inspector, or other home inspection expert, or other similar reports.<br /><br />
+	(3) A licensee, the real estate brokerage firm, and the broker-in-charge are not liable to a party for providing the party with false or misleading information if that information was provided to the licensee by the client or customer and the licensee did not know the information was false or incomplete.<br /><br />
+	(H) Nothing in this chapter limits the obligation of the buyer to inspect the physical condition of the property.<br /><br />
+	(I)(1) A real estate brokerage firm may act as a disclosed dual agent only with the prior informed and written consent of all parties. Consent is presumed to be informed if a party signs a completed copy of a dual agency agreement, promulgated by the commission. At the latest, the form must be signed by the buyer before writing an offer and by the seller before signing the sales contract. The agreement must specify the transaction, and must name the parties to the dual agency consent agreement, and must state that:<br /><br />
+	(a) in acting as a dual agent, the real estate brokerage firm represents clients whose interests may be adverse and that agency duties are limited;<br /><br />
+	(b) the supervised licensees of the real estate brokerage firm may disclose information gained from one party to another party if the information is relevant to the transaction, except if the information concerns:<br /><br />
+	(i) the willingness or ability of a seller to accept less than the asking price;<br /><br />
+	(ii) the willingness or ability of a buyer to pay more than the offered price;<br /><br />
+	(iii) any confidential negotiating strategy not disclosed in an offer as terms of a sale; or<br /><br />
+	(iv) the motivation of a seller for selling property or the motivation of a buyer for buying property;<br /><br />
+	(c) that the clients may choose to consent to the disclosed dual agency or may reject it; and<br /><br />
+	(d) that the clients have read and understood the dual agency agreement and acknowledge that their consent to dual agency is voluntary.<br /><br />
+	(2) A broker-in-charge and supervised licensees in one office of a real estate brokerage firm may conduct business with a client of another office of the real estate brokerage firm as a customer or client without creating a dual agency relationship, so long as the branch offices each have a separate broker-in-charge and do not share the same supervised licensees.<br /><br />
+	(J)(1) A broker-in-charge may assign, through the adoption of a company policy, different licensees affiliated with the broker-in-charge as designated agents to exclusively represent different clients in the same transaction. A company policy adopted to fulfill the requirements of this subsection must contain provisions reasonably calculated to ensure each client is represented in accordance with the requirements of this chapter.<br /><br />
+	(2) A broker-in-charge may personally, or through the broker&#39;s duly authorized real estate-licensed representative, specifically designate one or more supervised licensees who will be acting as agent of the buyer client or seller client to the exclusion of all other supervised licensees. Buyers and sellers shall give informed consent to enter into designated agency relationships. The informed consent must be evidenced by a designated agency agreement promulgated by the commission, and must be signed by the buyer before writing the offer and by the seller before signing the sales agreement. The designated agency agreement must include language informing the buyer and seller of the obligations of the broker-in-charge and supervised licensees under this section.<br /><br />
+	(3) If a buyer client of a real estate brokerage firm wants to view a property that was personally listed by the broker-in-charge, the real estate brokerage firm shall act as a dual agent with the written consent of the buyer and seller, as required by subsection (I). If a seller client of a real estate brokerage firm wants to sell a property to a buyer client of the real estate brokerage firm that is personally represented by the broker-in-charge, the real estate brokerage firm shall act as a dual agent with the written consent of the buyer and seller, as required by subsection (I).<br /><br />
+	(4) A designated agent of a seller client has the duties and obligations set forth in subsections (C) through (E). A designated agent of a buyer client has the duties and obligations set forth in subsections (E), (G), and (H).<br /><br />
+	(5) In a transaction where both buyer and seller are represented by designated agents, the broker-in-charge shall act as a dual agent pursuant to subsection (I). The broker-in-charge is not required to complete a dual agency agreement under this provision. Consent must be contained in the designated agency agreement.<br /><br />
+	(6) A designated agent may disclose to the designated agent&#39;s broker-in-charge, or the licensed representative appointed by the broker-in-charge, confidential information of a client for the purpose of seeking advice or assistance for the benefit of the client in regard to a transaction.<br /><br />
+	(7) If a buyer client of a real estate brokerage firm wants to view and make an offer to purchase a property owned by a seller client being represented by the same supervised licensee, the real estate brokerage firm must act as a dual agent with the written consent of the buyer and seller, as required by subsection (I).<br /><br />
+	(8) If a broker-in-charge appoints different supervised licensees as designated agents in accordance with subsection (J)(1), the broker-in-charge, all remaining affiliated licensees, and the real estate brokerage firm must be considered to be dual agents.<br /><br />
+	(9) There may be no imputation of knowledge or information between and among the broker-in-charge, agents, and the clients. Designated agents may not disclose, except to the designated agent&#39;s broker-in-charge or appointed representative, information made confidential by written request or instruction of the client whom the designated agent is representing, except information allowed to be disclosed by this section or required to be disclosed by this section. Unless required to be disclosed by law, the broker-in-charge of a designated agent may not reveal confidential information received from either the designated agent or the client with whom the designated agent is working. For the purposes of this section, confidential information is information the disclosure of which has not been consented to by the client and that could harm the negotiating position of the client.<br /><br />
+	(10) The designation of one or more of a broker-in-charge&#39;s supervised licensees as designated agents does not permit the disclosure by the broker-in-charge or supervised licensees of information made confidential by an express written request or instruction by a party before or after the creation of the designated agency. The broker-in-charge and supervised licensees shall continue to maintain this confidential information unless the party from whom the confidential information was obtained permits its disclosure by written agreement or disclosure is required by law. No liability is created as a result of a broker-in-charge&#39;s and supervised licensee&#39;s compliance with this subsection.<br /><br />
+	(K) A licensee who represents one party to a real estate transaction may provide assistance to other parties to the transaction by performing ministerial acts such as writing and conveying offers, and providing information and aid concerning other professional services not related to the real estate brokerage services being performed for a client. Performing ministerial acts does not create an agency relationship.<br /><br />
+	(L)(1) A real estate brokerage firm may offer transaction brokerage to potential buyers and sellers. A transaction broker may be a single agent of a party in a transaction, giving the other party customer service or the transaction broker may facilitate the transaction without representing either party.<br /><br />
+	(2) Licensees operating as transaction brokers are required to disclose to buyers and sellers their role and duties in offering customer services to the consumer that shall include the following:<br /><br />
+	(a) honesty and fair dealing;<br /><br />
+	(b) accounting for all funds;<br /><br />
+	(c) using skill, care, and diligence in the transaction;<br /><br />
+	(d) disclosing material adverse facts that affect the transaction, or the value or condition of the real property and that are not readily ascertainable;<br /><br />
+	(e) promptly presenting all written offers and counteroffers;<br /><br />
+	(f) limited confidentiality, unless waived in writing by a party. This limited confidentiality prohibits disclosing:<br /><br />
+	(i) information concerning a buyer&#39;s motivation to buy or the buyer&#39;s willingness to make a higher offer than the price submitted in a written offer;<br /><br />
+	(ii) factors motivating a seller to sell or the seller&#39;s willingness to accept an offer less than the list price;<br /><br />
+	(iii) that a seller or buyer will agree to financing terms other than those offered; and<br /><br />
+	(iv) information requested by a party to remain confidential, except information required by law to be disclosed;<br /><br />
+	(g) additional duties that are entered into by separate agreement.<br /><br />
+	(3) Prospective buyers and sellers who do not choose to establish an agency relationship with a real estate brokerage firm but who use the services of the firm are considered customers. A licensee may offer the following services to a customer as a single agent or as a transaction broker including, but not limited to:<br /><br />
+	(a) identifying and showing property for sale, lease, or exchange;<br /><br />
+	(b) providing real estate statistics and information on property;<br /><br />
+	(c) providing preprinted real estate forms, contracts, leases, and related exhibits and addenda;<br /><br />
+	(d) acting as a scribe in the preparation of real estate forms, contracts, leases, and related exhibits and addenda;<br /><br />
+	(e) providing a list of architects, engineers, surveyors, inspectors, lenders, insurance agents, attorneys, and other professionals; and<br /><br />
+	(f) identifying schools, shopping facilities, places of worship, and other similar facilities on behalf of the parties in a real estate transaction.<br /><br />
+	(4) A licensee offering services to a customer shall:<br /><br />
+	(a) timely present all written offers to and from the parties involving the sale, lease, and exchange of property, even when the property is subject to a contract of sale;<br /><br />
+	(b) timely account for all money and property received by the broker on behalf of a party in a real estate transaction;<br /><br />
+	(c) provide a meaningful explanation of brokerage relationships in real estate transactions;<br /><br />
+	(d) provide an explanation of the scope of services to be provided by the licensee;<br /><br />
+	(e) be fair and honest and provide accurate information in all dealings;<br /><br />
+	(f) keep information confidential as requested in writing by the customer; and<br /><br />
+	(g) disclose known material facts regarding the property or the transaction.<br /><br />
+	(5) Pursuant to the aforementioned duties owed to a customer, a real estate brokerage firm and its subagents are prohibited from engaging in, representing others in, or assisting others in the practice of wholesaling.<br /><br />
+	(M) The provisions of this section which are inconsistent with applicable principles of common law supersede the common law, and the common law may be used to aid in interpreting or clarifying the duties described in this section. Except as otherwise stated, nothing in the section precludes an injured party from bringing a cause of action against licensees, their companies, or their brokers-in-charge.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTIONS 13 to 17; formerly 1976 Code SECTION 40-57-137; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in (A), inserted the second sentence; substituted &quot;supervised&quot; for &quot;associated&quot; throughout the section; in (L), added (5); and made nonsubstantive changes.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-360.</span> Broker-in-charge responsible for team supervision.<br /><br />
+	Section effective until May 15, 2027. See, also, Section 40-57-360 effective May 15, 2027.<br /><br />
+	(A) The broker-in-charge must be responsible for supervising the team and all licensed members of the team. The broker-in-charge may not delegate supervisory responsibilities to the team members or team leader. Written office policy of the broker-in-charge shall address team relationships in which associated licensees may engage.<br /><br />
+	(B) The team may act as disclosed dual agents only and with the prior informed and written consent of all parties and as addressed in the broker-in-charge&#39;s written office policy.<br /><br />
+	(C) Team members must conduct all real estate brokerage activities from their commission-established office under the supervision of a broker-in-charge.<br /><br />
+	(D) Team advertising must contain the team name and the full name of the real estate brokerage firm displayed in a conspicuous way.<br /><br />
+	(E) No team may imply that the team is a separate entity from the brokerage firm of its employment. Team names may not include the terms &quot;realty&quot;, &quot;real estate&quot;, &quot;realtors&quot;, or similar terms suggesting a brokerage.<br /><br />
+	(F) The team, and any and all team members, must display and promote that they are directly connected to the brokerage firm under which the team works. The brokerage firm name under which the team works is to be displayed prominently and visibly in a meaningful and conspicuous way on all methods of advertising.<br /><br />
+	(G) The commission may promulgate regulations regarding the creation and operation of real estate teams.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-360.</span> Broker-in-charge responsible for team supervision.<br /><br />
+	Section effective May 15, 2027. See, also, Section 40-57-360 effective until May 15, 2027.<br /><br />
+	(A) The broker-in-charge must be responsible for supervising the team and all licensed members of the team. The broker-in-charge may not delegate supervisory responsibilities to the team members or team leader. Written office policy of the broker-in-charge shall address team relationships in which supervised licensees may engage.<br /><br />
+	(B) The team may act as disclosed dual agents only and with the prior informed and written consent of all parties and as addressed in the broker-in-charge&#39;s written office policy.<br /><br />
+	(C) Team members must conduct all real estate brokerage activities from their commission-established office under the supervision of a broker-in-charge.<br /><br />
+	(D) All team advertising and marketing must contain the full name of the real estate brokerage firm and all team members must display and promote that they are directly connected to the brokerage firm under which the team works. In all team advertising and marketing, the team name may not be more than twice the size, prominence, or frequency of the full name of the brokerage firm.<br /><br />
+	(E) No team may imply that the team is a separate entity from the brokerage firm of its employment. Team names must end in &quot;[team name] team at [name of real estate brokerage firm]&quot;.<br /><br />
+	(F) The commission may promulgate regulations regarding the creation and operation of real estate teams, including requiring the registration of team names on a form prescribed by the commission.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 15, 2027.<br /><br />
+Editor&#39;s Note<br /><br />
+	2024 Act No. 204, SECTION 5, provides as follows:<br /><br />
+	&quot;SECTION 5. Section 40-57-135(E)(2) takes effect twelve months after the date of ratification of the act. Section 40-57-360 takes effect thirty-six months after the date of ratification of the act.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-370.</span> Duty of licensee to provide disclosure of brokerage relationships; exceptions.<br /><br />
+	(A) A licensee shall provide at the first practical opportunity to all potential buyers and sellers of real estate with whom the licensee has substantive contact:<br /><br />
+	(1) a meaningful explanation of brokerage relationships in real estate transactions that are offered by that real estate brokerage firm, including an explanation of customer and client services;<br /><br />
+	(2) Disclosure of Brokerage Relationships form prescribed by the commission.<br /><br />
+	(B) An &quot;Acknowledgement of Receipt of the Disclosure of Brokerage Relationships&quot; form must be included in an agency agreement and in a sales contract. In addition, each sales contract must require the buyer and the seller to acknowledge whether they received customer or client service in that real estate transaction.<br /><br />
+	(C) At the time of first substantive contact, it is presumed that the potential buyer or seller is to be a customer of the real estate brokerage firm and that the real estate brokerage firm will be acting as a transaction broker as defined by this chapter and that the real estate brokerage firm shall offer services to a customer as defined by Section 40-57-350(L) only until the potential buyer or seller signs an agency representation agreement.<br /><br />
+	(D) If first substantive contact occurs over the telephone or other electronic means, including the Internet and electronic mail, an &quot;Acknowledgement of Receipt of the Disclosure of Brokerage Relationships&quot; form may be sent by electronic means, including the Internet and electronic mail.<br /><br />
+	(E) For all real estate transactions, no agency relationship between a buyer, seller, landlord, or tenant and a real estate brokerage firm exists unless the buyer, seller, landlord, or tenant and the brokerage company agree, in writing, to the agency relationship. No type of agency relationship may be assumed by a buyer, seller, landlord, tenant, or licensee or created orally or by implication. A real estate brokerage firm may not be considered to have an agency relationship with a party or have agency obligations to a party but is responsible only for exercising reasonable care in the discharge of the real estate brokerage firm&#39;s specified duties, as provided in this chapter, and, in the case of a client, as specified in the agency agreement.<br /><br />
+	(F) The payment or promise of payment of compensation to a real estate brokerage firm by a seller, buyer, landlord, or tenant does not determine whether an agency relationship has been created between a real estate licensee and a seller, buyer, landlord, or tenant.<br /><br />
+	(G) The brokerage relationship disclosure requirements of this section do not apply if the:<br /><br />
+	(1) transaction is regarding the rental or lease of property; or<br /><br />
+	(2) communication from the licensee is a solicitation of business.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTION 18; formerly 1976 Code SECTION 40-57-139; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in (E), in the first sentence, deleted &quot;and its associated licensees&quot; following &quot;brokerage firm&quot; and &quot;brokerage company&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-380.</span> Effect of termination, expiration, completion or performance of agency agreements; accounting and confidentiality.<br /><br />
+	A real estate broker and all supervised licensees owe no duty or obligation to a client following termination, expiration, completion, or performance of an agency agreement or closing of the real property transaction, whichever occurs first, except the duties of:<br /><br />
+	(1) accounting in a timely manner for all money and property related to and received during the relationship; and<br /><br />
+	(2) keeping confidential all information received during the course of the engagement which was made confidential by request or instructions from the client, except as provided for in Section 40-57-350(C)(1)(f) and Section 40-57-350(E)(1)(f) unless the:<br /><br />
+	(a) client permits the disclosure by written agreement;<br /><br />
+	(b) disclosure is required by law;<br /><br />
+	(c) disclosure is necessary to defend the licensee against an accusation of wrongful conduct in a proceeding before the commission or before a professional association or professional standards committee; or<br /><br />
+	(d) the information becomes public from a source other than the broker.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTION 19; formerly 1976 Code SECTION 40-57-140; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, in the first undesignated paragraph, substituted &quot;supervised&quot; for &quot;associated&quot;.<br /><br />
+<div style="text-align: center;">ARTICLE 5</div>
+<div style="text-align: center;">Property Managers</div><br />
+<span style="font-weight: bold;"> SECTION 40-57-510.</span> Manager or property manager-in-charge license.<br /><br />
+	(A) To be eligible for licensure as a property manager or property manager-in-charge, an applicant must:<br /><br />
+	(1) attain the age of twenty-one if applying for a property manager-in-charge;<br /><br />
+	(2) attain the age of eighteen if applying for a license as a property manager;<br /><br />
+	(3) provide a physical address at which the licensee can be contacted in the course of an investigation. A licensee shall maintain on file with the commission his current contact information for his residential address, mailing address, email address, and telephone number. Failure to update this contact information within thirty days after a change may result in an administrative suspension of the property manager, associate, broker, or broker-in-charge pursuant to Section 40-57-710;<br /><br />
+	(4) graduate from high school or hold a certificate of equivalency that is recognized by the South Carolina Department of Education;<br /><br />
+	(5) submit proof of completion of education to the commission and, if applicable, experience requirements as specified in this chapter;<br /><br />
+	(6) submit to criminal background check as provided in Section 40-57-115 for initial application; and<br /><br />
+	(7) pass the applicable examination.<br /><br />
+	(B) An application for examination or licensure must be made in writing on a form prescribed by the commission and must be accompanied by all applicable fees.<br /><br />
+	(C) As a condition for and before applying to the commission for licensure, an applicant for a property manager or property manager-in-charge license shall provide proof to the commission of having met the following educational requirements, in addition to the other requirements of this chapter:<br /><br />
+	(1) for a property manager license:<br /><br />
+	(a) completion of thirty hours of classroom instruction in property management principles and practices; or<br /><br />
+	(b) evidence of holding a juris doctor degree, a bachelor of law degree, a baccalaureate degree or a master&#39;s degree with a major in real estate or housing from an accredited college or university, or completion of another course of study approved by the commission; and<br /><br />
+	(2) for a property manager-in-charge license:<br /><br />
+	(a) an active property manager license; and<br /><br />
+	(b) completion of seven hours of instruction in property management accounting and record-keeping approved by the commission.<br /><br />
+	(D) The commission shall issue licenses in the classifications of property manager or property manager-in-charge to individuals who qualify under and comply with the requirements of this chapter. An individual may not be licensed in more than one classification at the same time. The license must be in the form and size as the commission prescribes and is not transferable.<br /><br />
+	(E) An individual holding an active property manager license must be licensed under a property manager-in-charge or broker-in-charge who is licensed by the commission or must be designated as a property manager-in-charge. A property manager may not be licensed during the same period with more than one property manager-in-charge or broker-in-charge. When a licensee becomes disassociated with a broker-in-charge or property manager-in-charge, the licensee immediately shall notify the commission by completion of the proper form. The licensee must furnish a new business address to the commission, the authorization of the new broker-in-charge or new property manager-in-charge, and proof of notification to the former broker-in-charge or property manager-in-charge.<br /><br />
+	(F) As a condition for and before applying to the commission for licensure renewal, a property manager or property manager-in-charge shall submit to a criminal background check upon every third renewal as required for initial applicants pursuant to Section 40-57-115.<br /><br />
+	(G) A property manager or property manager-in-charge who fails to submit to criminal background check requirements of this section by the date of license renewal may renew by submitting applicable fees but immediately must be placed on inactive status. The license may be reactivated upon proof of submission to a criminal background check.<br /><br />
+	(H) When a designated property manager-in-charge becomes disassociated with the office registered with the commission, the property manager-in-charge shall immediately notify the commission. The property manager-in-charge designation will be removed and the licensee&#39;s license will be inactivated.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2017 Act No. 60 (H.3041), SECTION 4, eff July 1, 2020; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	2020 Act No. 127, SECTION 1, provides as follows:<br /><br />
+	&quot;SECTION 1. SECTION 5 of Act 60 of 2017 is amended to read:<br /><br />
+	&quot;This act takes effect on July 1, 2020, and with respect to license renewals is only applicable to renewals initially due after June 30, 2020.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2017 Act No. 60, SECTION 4, added (F) and (G), relating to the requirement of a criminal background check upon every third licensure renewal and consequences for failing to submit to the requirement.<br /><br />
+	2024 Act No. 204, SECTION 3, in (A)(3), in the third sentence, substituted &quot;associate&quot; for &quot;salesperson&quot;; added (H); and made a nonsubstantive change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-520.</span> Management of residential multiunit rental locations.<br /><br />
+	(A) The management of each residential multiunit rental location must be provided by an on-site licensee or an off-site licensee if there is no on-site staff.<br /><br />
+	(B) The commission may permit multiple multiunit rental property locations to be managed by one licensee.<br /><br />
+	(C) An unlicensed employee of the owner of a multiunit rental property or an unlicensed individual who works under the supervision of a licensee is permitted to perform only the following duties:<br /><br />
+	(1) maintenance;<br /><br />
+	(2) clerical or administrative support;<br /><br />
+	(3) collection of rents that are made payable to the owner or real estate company;<br /><br />
+	(4) showing rental units to prospective tenants;<br /><br />
+	(5) furnishing published information;<br /><br />
+	(6) providing applications and lease forms; and<br /><br />
+	(7) receiving applications and leases for submission to the owner or the licensee for approval.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<div style="text-align: center;">ARTICLE 7</div>
+<div style="text-align: center;">Misconduct and Redress</div><br />
+<span style="font-weight: bold;"> SECTION 40-57-710.</span> Grounds for denial of issuance of license or for disciplinary action against licensee.<br /><br />
+	(A) In addition to Section 40-1-110, the commission may deny issuance of a license to an applicant or may take disciplinary action against a licensee who:<br /><br />
+	(1) makes a substantial misrepresentation on an application for a real estate license;<br /><br />
+	(2) makes a substantial misrepresentation involving a real estate transaction;<br /><br />
+	(3) makes false promises likely to influence, persuade, or induce;<br /><br />
+	(4) pursues a continued and flagrant course of misrepresentation or makes false and misleading promises through any medium of advertising or otherwise;<br /><br />
+	(5) in the practice of real estate, demonstrates bad faith, dishonesty, untrustworthiness, or incompetency in a manner as to endanger the interest of the public;<br /><br />
+	(6) represents a real estate broker other than the broker-in-charge or property manager-in-charge with whom they are licensed;<br /><br />
+	(7) guarantees or authorizes and permits a supervised licensee to guarantee future profits from the resale of real estate;<br /><br />
+	(8) makes a dual set of contracts, written or otherwise, by stating a sales price other than the actual sales price;<br /><br />
+	(9) is convicted of violating the federal and state fair housing laws, forgery, embezzlement, breach of trust, larceny, obtaining money or property under false pretense, extortion, fraud, conspiracy to defraud, or any other crime involving the theft or taking of the property belonging to another, or has been convicted of a felony sex-related, felony drug-related, felony real estate-related, felony financial, or felony violent offense, or pleading guilty or nolo contendere to such an offense in a court of competent jurisdiction of this State, another state, or a federal court;<br /><br />
+	(10) fails to report to the commission in writing by certified mail, within ten days, notice of conviction of a crime provided in item (9);<br /><br />
+	(11) fails, within a reasonable time, to account for or to remit trust funds coming into his possession which belong to others;<br /><br />
+	(12) pays a commission or compensation to an unlicensed individual for activities requiring a license under this chapter. Notwithstanding this section, a licensee may not pay or offer to pay a referral fee or finder&#39;s fee to an unlicensed individual who is not a party in the real estate sales or rental transaction;<br /><br />
+	(13) violates a provision of law relating to the freedom of a buyer or seller to choose an attorney, insurance agent, title insurance agent, or another service provider to facilitate the real estate transaction;<br /><br />
+	(14) fails to disclose in accordance with Section 40-57-370 the party or parties for whom the licensee will be acting as an agent in a real estate transaction, if any;<br /><br />
+	(15) receives compensation in a real estate transaction or directly resulting from a real estate transaction from more than one party except with the full knowledge and written disclosure to all parties;<br /><br />
+	(16) represents more than one party in a real estate transaction without the full written knowledge and consent of all parties;<br /><br />
+	(17) acts as an undisclosed principal in a real estate transaction;<br /><br />
+	(18) accepts deposit money which is to be delivered to the licensee&#39;s principal in a real estate transaction without informing the payor and having the payor acknowledge in writing who will hold the money received by the licensee;<br /><br />
+	(19) issues a check in connection with his real estate business which is returned for insufficient funds or closed account;<br /><br />
+	(20) fails to disclose in accordance with Section 40-57-350 a known material fact concerning a real estate transaction;<br /><br />
+	(21) violates a provision of this chapter or a regulation promulgated under this chapter;<br /><br />
+	(22) violates a rule or order of the commission;<br /><br />
+	(23) knowingly gives false information to an investigator or inspector;<br /><br />
+	(24) engages in a practice or takes action inconsistent with the agency relationship that other real estate licensees have established with their clients;<br /><br />
+	(25) fails to make all records required to be maintained under this chapter available to the commission for inspection and copying by the commission upon request of an investigator or inspector of the commission, fails to appear for an interview with an investigator or inspector of the commission without due cause, or provides false information upon direct inquiry by the investigator or inspector;<br /><br />
+	(26) fails to promptly submit all offers and counteroffers in a real estate sales transaction;<br /><br />
+	(27) fails to provide current contact information to the commission;<br /><br />
+	(28) allows or creates an unreasonable delay in the closing of a transaction or act in a manner which causes failure or termination of a transaction due solely to a dispute among participating licensees concerning the division of a commission; or<br /><br />
+	(29) fails to disclose civil judgments brought on grounds of fraud, misrepresentation, or deceit.<br /><br />
+	(B) If after an investigation, charges of a violation are brought against a licensee, the broker-in-charge or property manager-in-charge must be notified of the charges. In the event a supervised licensee is noticed for a formal complaint hearing or otherwise appears before the commission to resolve the charges, the broker-in-charge or property manager-in-charge of record during the events in question must also attend the hearing. Unless the broker-in-charge or property manager-in-charge can show good cause as to why he failed to appear, the absence may result in the broker-in-charge or property manager-in-charge facing disciplinary action at the discretion of the commission.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTIONS 20, 21; 2006 Act No. 352, SECTION 1; 2014 Act No. 258 (S.75), SECTION 3, eff June 9, 2014; formerly 1976 Code SECTION 40-57-145; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2017 Act No. 60 (H.3041), SECTION 3, eff July 1, 2020; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1969 (56) 762; 1972 (57) 2649; 1962 Code SECTION 56-1545.16; 1983 Act No. 94 SECTION 2; 1986 Act No. 353, SECTION 11; 1991 Act No. 12, SECTION 10; 1993 Act No. 181, SECTION 931; 1994 Act No. 385, SECTION 13; 1994 Act No. 451, SECTIONS 2, 3; 1976 Code SECTION 40-57-170.<br /><br />
+	2020 Act No. 127, SECTION 1, provides as follows:<br /><br />
+	&quot;SECTION 1. SECTION 5 of Act 60 of 2017 is amended to read:<br /><br />
+	&quot;This act takes effect on July 1, 2020, and with respect to license renewals is only applicable to renewals initially due after June 30, 2020.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	2014 Act No. 258, SECTION 3, rewrote subsection (A)(8).<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2017 Act No. 60, SECTION 3, in (A), added (29), relating to failure to disclose civil judgments brought on grounds of fraud, misrepresentation, or deceit.<br /><br />
+	2024 Act No. 204, SECTION 3, in (A), in (7), substituted &quot;a supervised&quot; for &quot;an associated&quot;, in (9), inserted &quot;or any other crime involving the theft or taking of the property belonging to another,&quot;, and in (25), inserted &quot;or inspector&quot; in two places; and in (B), added the second and third sentence.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-720.</span> Investigations; restraining orders; surrender of license; disciplinary action; report to be posted.<br /><br />
+	(A) An investigation must be conducted in accordance with Section 40-1-80 and must be performed by investigators who have completed one hundred hours of training in programs that are approved by the commission and provide instruction on real estate principles, state statutory and regulatory law, and investigative techniques.<br /><br />
+	(B) A cease and desist order, restraining order, or an action seeking injunctive relief must be obtained in accordance with Sections 40-1-100 and 40-1-210.<br /><br />
+	(C)(1) The department shall conclude its investigation within one hundred fifty days from receipt of the complaint or seek a waiver of this period from the commission upon a showing of due diligence and extenuating circumstances.<br /><br />
+	(2) A hearing on the charges must be at the time and place designated by the commission and must be conducted in accordance with the Administrative Procedures Act.<br /><br />
+	(3) The commission shall render a decision and shall serve, within ninety days, notice, in writing, of the commission&#39;s decision to the licensee charged. The commission also shall state in the notice the date upon which the ruling or decision becomes effective.<br /><br />
+	(4) The department shall maintain a public docket or other permanent record in which must be recorded all orders, consent orders, or stipulated settlements.<br /><br />
+	(D) A licensee may voluntarily surrender his license in accordance with Section 40-1-150.<br /><br />
+	(E)(1) The commission may impose disciplinary action in accordance with Section 40-1-120.<br /><br />
+	(2) Upon determination by the commission that one or more of the grounds for discipline exists, the commission may impose a fine of not more than ten thousand dollars for each violation and as provided in Section 40-1-120. The commission may recover the costs of the investigation and the prosecution as provided in Section 40-1-170.<br /><br />
+	(3) Nothing in this section prevents a licensee from voluntarily entering into a consent order with the commission wherein violations are not contested and sanctions are accepted.<br /><br />
+	(F) The department annually shall post a report that provides the data for the number of complaints received, the number of investigations initiated, the average length of investigations, and the number of investigations that exceeded one hundred fifty days.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTIONS 22 and 23; 2014 Act No. 258 (S.75), SECTION 2, eff June 9, 2014; formerly 1976 Code SECTION 40-57-150; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1962 Code SECTION 56-1545.17; 1983 Act No. 94 SECTION 3; 1986 Act No. 353, SECTION 12; 1994 Act No. 385, SECTION 14; 1976 Code SECTION 40-57-180.<br /><br />
+Effect of Amendment<br /><br />
+	2014 Act No. 258, SECTION 2, rewrote subsection (A); added subsection (C)(2), and redesignated the subsections accordingly; and added subsection (F).<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote (B); and in (E)(2), substituted &quot;not more than ten thousand dollars&quot; for &quot;not less than five hundred or more than five thousand dollars&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-725.</span> Penalties.<br /><br />
+	(A) The department may refer any reports of violations of this chapter and Article 1, Chapter 1 of this title or any reports of violations of regulations promulgated under this chapter directly to the commission or may issue administrative citations and cease and desist orders in person or by certified mail and may assess administrative penalties against any individual or entity, including unlicensed individuals, for violations of this chapter as specified by the commission.<br /><br />
+	(B) Administrative penalties authorized under this section are separate from and in addition to all other remedies, either civil or criminal.<br /><br />
+	(C) Administrative penalties assessed pursuant to this section may not exceed the following limits:<br /><br />
+	(1) for a first violation of a particular provision of this chapter or Article 1, Chapter 1 of this title, or any commission regulation, not more than a five-hundred-dollar penalty;<br /><br />
+	(2) for the second of two violations of the same or substantially similar provision in a five-year period, not more than a one-thousand-dollar penalty; and<br /><br />
+	(3) for the third or subsequent violation of the same or substantially similar provision in a five-year period, not more than a ten-thousand-dollar penalty.<br /><br />
+	(D) An individual or entity assessed administrative penalties may appeal those penalties to the commission within ten days of receipt of the citation. If an appeal is filed, the department shall schedule a hearing before the commission, which shall make a determination in the matter. If no appeal is filed, the citation is deemed a final order and the administrative penalties must be paid within thirty days of receipt of the citation.<br /><br />
+HISTORY: 2024 Act No. 204 (H.4754), SECTION 2, eff May 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-730.</span> Licensure after revocation.<br /><br />
+	(A) Unless the revocation is expressly made permanent as provided for in Section 40-1-120, after revocation of a license, a person may not reapply for three years from the date of revocation.<br /><br />
+	(B) An individual seeking licensure after revocation shall:<br /><br />
+	(1) appear before the commission in order for the commission to evaluate the individual&#39;s competency and fitness to transact the business of a real estate licensee; and<br /><br />
+	(2) meet all applicable educational examination and experience requirements that apply to individuals applying for a license who have never been licensed.<br /><br />
+HISTORY: 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2024 Act No. 204, SECTION 3, rewrote the section.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-740.</span> Actions against owners and agents.<br /><br />
+	(A) No cause of action may arise against an owner of real estate or licensed real estate agent of a party to a transaction for failure to disclose in a transaction:<br /><br />
+	(1) that the subject real estate is or was occupied by an individual who was infected with a virus or another disease which has been determined by medical evidence as being highly unlikely to be transmitted through occupancy of a dwelling place either presently or previously occupied by the infected individual;<br /><br />
+	(2) that the death of an occupant of a property has occurred or the manner of the death;<br /><br />
+	(3) any off-site condition or hazard that does not directly impact the property being transferred; or<br /><br />
+	(4) any psychological impact that has no material impact on the physical condition of the property being transferred.<br /><br />
+	(B) Nothing in subsection (A) precludes an action against an owner of real estate or agent of the owner who makes intentional misrepresentations in response to direct inquiry from a buyer or prospective buyer with regard to psychological impacts, offsite conditions, or stigmas associated with the real estate.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; 2004 Act No. 218, SECTIONS 24, 25; 2005 Act No. 141, SECTION 10; 2008 Act No. 412, SECTION 3; formerly 1976 Code SECTION 40-57-180; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, deleted (C) to (I), which related to education standards, education providers, and instructors.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-750.</span> Costs of investigation and prosecution of violations.<br /><br />
+	Payment and collection of costs associated with investigations and prosecution of violations under this chapter must comply with Section 40-1-170.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-190; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, reenacted this section with no changes.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-760.</span> Imposition of costs; collection.<br /><br />
+	Imposition and collection of all costs and fines imposed pursuant to this chapter must comply with Section 40-1-180.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-200; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, reenacted this section with no changes.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-770.</span> Confidentiality and privileged communications.<br /><br />
+	An investigation conducted pursuant to this chapter is confidential. The supervising broker-in-charge or property manager-in-charge of record with whom the supervised licensee is affiliated with at the time the licensee is sent the information as required pursuant to Section 40-1-80(B) shall also receive a copy of the same information the supervised licensee is sent pursuant to Section 40-1-80(B). Related communications are privileged as provided in Section 40-1-190.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-210; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, inserted the second sentence.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-780.</span> Failure to renew or register license; penalties.<br /><br />
+	A real estate broker, associate, or property manager who fails to renew or register a license and continues to engage in the business permitted pursuant to the license is guilty of a misdemeanor and, upon conviction, must be fined not more than five hundred dollars or imprisoned not more than six months, or both.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-220; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Editor&#39;s Note<br /><br />
+	Prior Laws:1956 (49) 2046; 1962 Code SECTION 56-1545.23; 1986 Act No. 353, SECTION 13; 1991 Act No. 12, SECTION 11; 1976 Code SECTION 40-57-240.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, substituted &quot;associate&quot; for &quot;salesperson&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-790.</span> Civil actions.<br /><br />
+	A civil action may be brought for violations of this chapter as provided for violations of Article 1, Chapter 1, in accordance with Section 40-1-210.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-230; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, substituted &quot;Article 1, Chapter 1,&quot; for &quot;Title 40, Chapter 1, Article 1&quot;.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-800.</span> Service of notice; continuance.<br /><br />
+	(A) Service of a notice provided for by law upon a nonresident licensed under this chapter or upon a resident who, having been licensed, subsequently becomes a nonresident or after due diligence cannot be found at his usual abode or place of business in this State, may be made by providing a copy of the notice, and accompanying documents. A copy of the notice, accompanying documentation, and a certified copy of the service on the administrator must be mailed to the licensee at his last known address, return receipt requested. The administrator shall keep a record of the day of the service of the notice and the return receipt must be attached to and made part of the return of service of the notice by the commission.<br /><br />
+	(B) A continuance may be given in a hearing under this chapter for which notice is given pursuant to this section so as to afford the licensee a reasonable opportunity to appear and be heard.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-170; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, in (A), substituted &quot;providing&quot; for &quot;leaving with the Director of the Department of Labor, Licensing and Regulation&quot;, substituted &quot;accompanying documentation&quot; for &quot;any accompanying documents&quot;, and twice substituted &quot;administrator&quot; for &quot;director&quot;.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-810.</span> Severability.<br /><br />
+	If any section, subsection, paragraph, subparagraph, sentence, clause, phrase, or word of this act is for any reason held to be unconstitutional or invalid, such holding shall not affect the constitutionality or validity of the remaining portions of this act, the General Assembly hereby declaring that it would have passed this act, and each and every section, subsection, paragraph, subparagraph, sentence, clause, phrase, and word thereof, irrespective of the fact that any one or more other sections, subsections, paragraphs, subparagraphs, sentences, clauses, phrases, or words hereof may be declared to be unconstitutional, invalid, or otherwise ineffective.<br /><br />
+HISTORY: 1997 Act No. 24, SECTION 1; formerly 1976 Code SECTION 40-57-250; 2016 Act No. 170 (S.1013), SECTION 1, eff January 1, 2017; 2024 Act No. 204 (H.4754), SECTION 3, eff May 21, 2024.<br /><br />
+Effect of Amendment<br /><br />
+	2016 Act No. 170, SECTION 1, rewrote the section.<br /><br />
+	2024 Act No. 204, SECTION 3, reenacted the section with no apparent change.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-820.</span> Work product.<br /><br />
+	A licensee under this chapter is responsible for any and all work product produced by him or with the assistance of artificial intelligence, machine learning, or similar programs. A violation of this chapter that is committed through the use of these programs will be treated as if the violation was committed directly by the licensee.<br /><br />
+HISTORY: 2024 Act No. 204 (H.4754), SECTION 4, eff May 21, 2024.<br /><br />
+<div style="text-align: center;">ARTICLE 9</div>
+<div style="text-align: center;">Education</div><br />
+<span style="font-weight: bold;"> SECTION 40-57-910.</span> Regulations; continuing education courses.<br /><br />
+	(A) The commission may promulgate regulations standards and qualification requirements for prelicensing and continuing education providers, instructors, and courses.<br /><br />
+	(B) Prelicensing and continuing education courses are eligible for distance learning if the provider has attained certification by the Association of Real Estate License Law Officials (ARELLO), its subsidiary, the International Distance Education Certification Center (IDECC), or other national certifying entities as approved by the commission.<br /><br />
+	(C) The commission may review, approve, and regulate education courses required by this chapter and providers and instructors of these courses including, but not limited to, accredited colleges, universities, private business entities, organizations, schools, associations, and institutions.<br /><br />
+	(1) The commission shall qualify for continuing education credit designation and certification programs of nationally recognized real estate organizations and associations. The commission may qualify for continuing education credit other than courses currently approved for continuing credit including, but not limited to, courses offered by the South Carolina Bar Association, the South Carolina Forestry Board, and the South Carolina Appraisers Board.<br /><br />
+	(2) Notwithstanding another provision of law, the commission shall qualify for continuing education credit courses that are related to real estate technology, professional development, and business ethics.<br /><br />
+	(3) An approved course must be taught by an approved instructor who is qualified and has demonstrated knowledge of the subject matter to be taught as well as the ability to teach.<br /><br />
+	(D) In accordance with regulations, providers electronically shall transmit to the commission student continuing education and qualifying course records. The commission shall maintain an accurate and secure database of student records.<br /><br />
+HISTORY: 2024 Act No. 204 (H.4754), SECTION 1, eff May 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-920.</span> Approval of education providers and instructors.<br /><br />
+	(A) All providers and instructors seeking approval by the commission must submit an application and applicable fee to the commission on prescribed forms. To attain approval, applicants must meet qualification requirements as provided in regulations. Approval from the commission must be attained prior to commencement of instruction. If the commission approves an application, a notification must be issued by the commission.<br /><br />
+	(B) The commission may deny, reprimand, fine, suspend, or revoke the approval of an education provider or instructor if the commission finds violations of statutory or regulatory requirements. If an application for a provider, instructor, or course is not approved, the reason must be detailed and provided to the provider or instructor.<br /><br />
+HISTORY: 2024 Act No. 204 (H.4754), SECTION 1, eff May 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 40-57-930.</span> Renewal of licenses.<br /><br />
+	(A) Providers and instructors shall renew their licenses with the commission biennially. The commission may audit providers offering distance education courses to ensure the certification from ARELLO, IDECC, or other national certifying entities as approved by the commission, is maintained. Failure to maintain certification will result in withdrawal of commission approval.<br /><br />
+	(B) As a condition of renewal, instructors shall attend instructor development workshops sponsored by the commission or provide evidence of equivalent hours of continuing education that increases their knowledge of the subject content in their area of expertise of their teaching techniques.<br /><br />
+HISTORY: 2024 Act No. 204 (H.4754), SECTION 1, eff May 21, 2024.<br /><br />
+
+</div>
+
+
+					</div>		 <!-- mainwidepanel -->
+					
+				</div>		 <!-- pagebody -->
+				
+				<div id="footer" class="nodisplay" style="height: 30px;" onContextMenu="return false;">
+			<div id="footerdiv" style="margin:0;">
+				South Carolina Legislative Services Agency * 223 Blatt Building * 1105 Pendleton Street * Columbia, SC 29201<!-- * 803-212-4420--><br>
+				
+								<a href="/disclaimer.php">Disclaimer</a> * <a href="/policies.php">Policies</a> * <a href="/credits.php">Photo Credits</a> * <a href="/contact.php">Contact Us</a>
+							</div>
+		</div>
+		<div id="printfooter" class="printdisplay serifNormal" align=center style="font-size: 8pt;">
+			<br>
+			<br>
+			<hr>
+			Legislative Services Agency
+			<br>
+			h t t p : / / w w w . s c s t a t e h o u s e . g o v
+		</div>
+	
+		</div>	<!-- container or main in mobile page-->
+</body>
+</html>
+

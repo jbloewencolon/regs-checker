@@ -1,0 +1,195 @@
+Title: Arkansas SB258 | 2025 | 95th General Assembly
+
+URL Source: http://legiscan.com/AR/bill/SB258
+
+Markdown Content:
+AR SB258 | 2025 | 95th General Assembly | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/AR/bill/SB258#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+AR SB258 | 2025 | 95th General Assembly
+=======================================
+
+[](http://legiscan.com/AR/bill/SB258 "Share on Facebook")[](http://legiscan.com/AR/bill/SB258 "Share on Bluesky")[](http://legiscan.com/AR/bill/SB258 "Share on X")[](http://legiscan.com/AR/bill/SB258 "Share on LinkedIn")[](http://legiscan.com/AR/bill/SB258 "Share on reddit")[](http://legiscan.com/AR/bill/SB258 "Share on email")
+
+[Arkansas](http://legiscan.com/AR "View the Arkansas Legislative dashboard") Senate Bill 258 _**([Prior Session Legislation](http://legiscan.com/AR/research/SB258/2025 "Right number, wrong year? View Arkansas SB258 from current and past sessions"))**_
+===========================================================================================================================================================================================================================================================
+
+[AR State Legislature page for SB258](https://arkleg.state.ar.us/Bills/Detail?id=sb258&ddBienniumSession=2025%2F2025R "Arkansas State Legislature source page for SB258")
+
+* * *
+
+*   [Summary](http://legiscan.com/AR/bill/SB258/2025 "View Legislative Detail for Arkansas SB258")
+*   [Sponsors](http://legiscan.com/AR/sponsors/SB258/2025 "View Sponsors of Arkansas SB258")
+*   [Texts](http://legiscan.com/AR/drafts/SB258/2025 "View Bill Text Drafts for Arkansas SB258")
+*   [Votes](http://legiscan.com/AR/votes/SB258/2025 "View Roll Call Votes on Arkansas SB258")
+*   [Research](http://legiscan.com/AR/research/SB258/2025 "View Legislation Research Information on Arkansas SB258")
+*   [Comments](http://legiscan.com/AR/comments/SB258/2025 "View Social & PolitiCorps Commentary on Arkansas SB258")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Arkansas SB258 and other AR legislation")
+
+Status
+------
+
+**Completed Legislative Action**
+
+Spectrum: Partisan Bill (Republican 2)
+
+Status: Failed on May 5 2025 - 100% progression
+
+Action: 2025-05-05 - Died on Senate Calendar at Sine Die adjournment.
+
+Text: [Latest bill text (Draft #1) [PDF]](http://legiscan.com/AR/text/SB258/2025 "View latest bill text for Arkansas SB258")
+
+Summary
+-------
+
+To Create The Arkansas Digital Responsibility, Safety, And Trust Act.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Arkansas SB258 and other AR legislation") or view this same bill number from [multiple sessions](http://legiscan.com/AR/research/SB258/2025 "Research for AR SB258 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Arkansas and national legislation").
+
+Title
+-----
+
+To Create The Arkansas Digital Responsibility, Safety, And Trust Act.
+
+Sponsors
+--------
+
+[Sen. Clint Penzo](http://legiscan.com/AR/people/clint-penzo/id/18685 "View other legislation sponsored by Arkansas Senator Clint Penzo")[R][Rep. Stephen Meeks](http://legiscan.com/AR/people/stephen-meeks/id/10667 "View other legislation sponsored by Arkansas Representative Stephen Meeks")[R]
+
+Roll Calls
+----------
+
+2025-04-10 - _Senate_ - [Third Reading](http://legiscan.com/AR/rollcall/SB258/id/1543906 "View roll call details for SB258 vote Third Reading") (Y: 17 N: 11 NV: 7 Abs: 0) [FAIL]
+
+2025-04-08 - _Senate_ - [Third Reading](http://legiscan.com/AR/rollcall/SB258/id/1540238 "View roll call details for SB258 vote Third Reading") (Y: 11 N: 3 NV: 21 Abs: 0) [FAIL]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-05-05 | Senate | Died on Senate Calendar at Sine Die adjournment. |
+| 2025-04-10 | Senate | Read the third time and failed. |
+| 2025-04-10 | Senate | Rules suspended. |
+| 2025-04-08 | Senate | Read the third time and failed. |
+| 2025-04-07 | Senate | REPORTED CORRECTLY ENGROSSED |
+| 2025-04-07 | Senate | Amendment # 3 read the first time, rules suspended, read the second time and adopted, ordered engrossed. |
+| 2025-04-07 | Senate | Placed on second reading for purpose of amendment. |
+| 2025-04-02 | Senate | Returned by the Committee with the recommendation that it Do Pass as amended, Amendment # 3 |
+| 2025-03-13 | Senate | Re-referred to TRANSPORTATION, TECHNOLOGY & LEGISLATIVE AFFAIRS - SENATE |
+| 2025-03-13 | Senate | REPORTED CORRECTLY ENGROSSED |
+| 2025-03-13 | Senate | Amendment # 2 read the first time, rules suspended, read the second time and adopted, ordered engrossed. |
+| 2025-03-13 | Senate | Withdrawn from Committee and placed on 2nd reading for purpose of amendment # 2 |
+| 2025-03-13 | Senate | Rules suspended. |
+| 2025-02-27 | Senate | Re-referred to TRANSPORTATION, TECHNOLOGY & LEGISLATIVE AFFAIRS - SENATE |
+| 2025-02-27 | Senate | REPORTED CORRECTLY ENGROSSED |
+| 2025-02-27 | Senate | Amendment # 1 read the first time, rules suspended, read the second time and adopted, ordered engrossed. |
+| 2025-02-27 | Senate | Withdrawn from Committee and placed on 2nd reading for purpose of amendment # 1 |
+| 2025-02-27 | Senate | Rules suspended. |
+| 2025-02-19 | Senate | Read first time, rules suspended, read second time, referred to TRANSPORTATION, TECHNOLOGY & LEGISLATIVE AFFAIRS - SENATE |
+| 2025-02-19 | Senate | Filed |
+
+Arkansas State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://arkleg.state.ar.us/Bills/Detail?id=sb258&ddBienniumSession=2025%2F2025R](https://arkleg.state.ar.us/Bills/Detail?id=sb258&ddBienniumSession=2025%2F2025R) |
+| Text | [https://arkleg.state.ar.us/Home/FTPDocument?path=%2FBills%2F2025R%2FPublic%2FSB258.pdf](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FBills%2F2025R%2FPublic%2FSB258.pdf) |
+| Amendment | [https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S1.pdf](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S1.pdf) |
+| Amendment | [https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S2.pdf](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S2.pdf) |
+| Amendment | [https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S3.pdf](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FAMEND%2F2025R%2FPublic%2FSB258-S3.pdf) |
+| Roll Call | [https://arkleg.state.ar.us/Bills/Votes?id=SB258&rcs=960&chamber=Senate&ddBienniumSession=2025%2F2025R](https://arkleg.state.ar.us/Bills/Votes?id=SB258&rcs=960&chamber=Senate&ddBienniumSession=2025%2F2025R) |
+| Roll Call | [https://arkleg.state.ar.us/Bills/Votes?id=SB258&rcs=1145&chamber=Senate&ddBienniumSession=2025%2F2025R](https://arkleg.state.ar.us/Bills/Votes?id=SB258&rcs=1145&chamber=Senate&ddBienniumSession=2025%2F2025R) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)
