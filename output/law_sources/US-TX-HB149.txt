@@ -1,0 +1,333 @@
+Title: Texas HB149 | 2025-2026 | 89th Legislature
+
+URL Source: http://legiscan.com/TX/bill/HB149
+
+Markdown Content:
+TX HB149 | 2025-2026 | 89th Legislature | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/TX/bill/HB149#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+TX HB149 | 2025-2026 | 89th Legislature
+=======================================
+
+[](http://legiscan.com/TX/bill/HB149 "Share on Facebook")[](http://legiscan.com/TX/bill/HB149 "Share on Bluesky")[](http://legiscan.com/TX/bill/HB149 "Share on X")[](http://legiscan.com/TX/bill/HB149 "Share on LinkedIn")[](http://legiscan.com/TX/bill/HB149 "Share on reddit")[](http://legiscan.com/TX/bill/HB149 "Share on email")
+
+[Texas](http://legiscan.com/TX "View the Texas Legislative dashboard") House Bill 149
+=====================================================================================
+
+[TX State Legislature page for HB149](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB149 "Texas State Legislature source page for HB149")
+
+* * *
+
+*   [Summary](http://legiscan.com/TX/bill/HB149/2025 "View Legislative Detail for Texas HB149")
+*   [Sponsors](http://legiscan.com/TX/sponsors/HB149/2025 "View Sponsors of Texas HB149")
+*   [Texts](http://legiscan.com/TX/drafts/HB149/2025 "View Bill Text Drafts for Texas HB149")
+*   [Votes](http://legiscan.com/TX/votes/HB149/2025 "View Roll Call Votes on Texas HB149")
+*   [Research](http://legiscan.com/TX/research/HB149/2025 "View Legislation Research Information on Texas HB149")
+*   [Comments](http://legiscan.com/TX/comments/HB149/2025 "View Social & PolitiCorps Commentary on Texas HB149")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas HB149 and other TX legislation")
+
+Status
+------
+
+**Completed Legislative Action**
+
+Spectrum: Slight Partisan Bill (Republican 8-4)
+
+Status: Passed on June 22 2025 - 100% progression
+
+Action: 2025-06-22 - Effective on 1/1/26
+
+Text: [Latest bill text (Enrolled) [HTML]](http://legiscan.com/TX/text/HB149/2025 "View latest bill text for Texas HB149")
+
+Summary
+-------
+
+Relating to regulation of the use of artificial intelligence systems in this state; providing civil penalties.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas HB149 and other TX legislation") or view this same bill number from [multiple sessions](http://legiscan.com/TX/research/HB149 "Research for TX HB149 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Texas and national legislation").
+
+Title
+-----
+
+Relating to regulation of the use of artificial intelligence systems in this state; providing civil penalties.
+
+Sponsors
+--------
+
+[Rep. Giovanni Capriglione](http://legiscan.com/TX/people/giovanni-capriglione/id/14785 "View other legislation sponsored by Texas Representative Giovanni Capriglione")[R][Rep. Angie Button](http://legiscan.com/TX/people/angie-button/id/5862 "View other legislation sponsored by Texas Representative Angie Button")[R][Rep. Greg Bonnen](http://legiscan.com/TX/people/greg-bonnen/id/14784 "View other legislation sponsored by Texas Representative Greg Bonnen")[R][Rep. Angelia Orr](http://legiscan.com/TX/people/angelia-orr/id/24091 "View other legislation sponsored by Texas Representative Angelia Orr")[R]
+[Rep. Salman Bhojani](http://legiscan.com/TX/people/salman-bhojani/id/24075 "View other legislation sponsored by Texas Representative Salman Bhojani")[D][Rep. Cody Harris](http://legiscan.com/TX/people/cody-harris/id/20237 "View other legislation sponsored by Texas Representative Cody Harris")[R][Rep. Suleman Lalani](http://legiscan.com/TX/people/suleman-lalani/id/24089 "View other legislation sponsored by Texas Representative Suleman Lalani")[D][Rep. John Lujan](http://legiscan.com/TX/people/john-lujan/id/23106 "View other legislation sponsored by Texas Representative John Lujan")[R]
+[Rep. William Metcalf](http://legiscan.com/TX/people/william-metcalf/id/16346 "View other legislation sponsored by Texas Representative William Metcalf")[R][Rep. Mihaela Plesa](http://legiscan.com/TX/people/mihaela-plesa/id/23184 "View other legislation sponsored by Texas Representative Mihaela Plesa")[D][Sen. Charles Schwertner](http://legiscan.com/TX/people/charles-schwertner/id/11015 "View other legislation sponsored by Texas Senator Charles Schwertner")[R][Sen. Royce West](http://legiscan.com/TX/people/royce-west/id/6029 "View other legislation sponsored by Texas Senator Royce West")[D]
+
+Roll Calls
+----------
+
+2025-05-30 - _House_ - [House concurs in Senate amendment(s) RV#4059](http://legiscan.com/TX/rollcall/HB149/id/1582090 "View roll call details for HB149 vote House concurs in Senate amendment(s) RV#4059") (Y: 121 N: 17 NV: 2 Abs: 10) [PASS]
+
+2025-05-23 - _Senate_ - [Read 3rd time](http://legiscan.com/TX/rollcall/HB149/id/1587684 "View roll call details for HB149 vote Read 3rd time") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+2025-05-23 - _Senate_ - [Three day rule suspended](http://legiscan.com/TX/rollcall/HB149/id/1587683 "View roll call details for HB149 vote Three day rule suspended") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+2025-05-23 - _Senate_ - [Read 3rd time](http://legiscan.com/TX/rollcall/HB149/id/1578147 "View roll call details for HB149 vote Read 3rd time") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+2025-05-23 - _Senate_ - [Three day rule suspended](http://legiscan.com/TX/rollcall/HB149/id/1578146 "View roll call details for HB149 vote Three day rule suspended") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+2025-04-23 - _House_ - [Statement(s) of vote recorded in Journal RV#376](http://legiscan.com/TX/rollcall/HB149/id/1555124 "View roll call details for HB149 vote Statement(s) of vote recorded in Journal RV#376") (Y: 146 N: 3 NV: 1 Abs: 0) [PASS]
+
+2025-04-23 - _House_ - [RV#375](http://legiscan.com/TX/rollcall/HB149/id/1555123 "View roll call details for HB149 vote RV#375") (Y: 147 N: 0 NV: 1 Abs: 2) [PASS]
+
+2025-04-22 - _House_ - [Statement(s) of vote recorded in Journal RV#322](http://legiscan.com/TX/rollcall/HB149/id/1553683 "View roll call details for HB149 vote Statement(s) of vote recorded in Journal RV#322") (Y: 137 N: 10 NV: 1 Abs: 2) [PASS]
+
+2025-04-22 - _House_ - [RV#321](http://legiscan.com/TX/rollcall/HB149/id/1553682 "View roll call details for HB149 vote RV#321") (Y: 147 N: 0 NV: 1 Abs: 2) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-06-22 |  | Effective on 1/1/26 |
+| 2025-06-22 |  | Signed by the Governor |
+| 2025-06-02 |  | Sent to the Governor |
+| 2025-06-01 | Senate | Signed in the Senate |
+| 2025-06-01 | House | Signed in the House |
+| 2025-05-31 | House | Reported enrolled |
+| 2025-05-30 | Senate | House concurs in Senate amendment(s)-reported |
+| 2025-05-30 | House | Text of Senate Amendment(s) |
+| 2025-05-30 | House | Statement(s) of vote recorded in Journal |
+| 2025-05-30 | House | Record vote RV#4059 |
+| 2025-05-30 | House | House concurs in Senate amendment(s) |
+| 2025-05-26 | House | Senate Amendments Analysis distributed |
+| 2025-05-26 | House | Senate Amendments distributed |
+| 2025-05-24 | House | Senate passage as amended reported |
+| 2025-05-23 | Senate | Record vote |
+| 2025-05-23 | Senate | Passed |
+| 2025-05-23 | Senate | Read 3rd time |
+| 2025-05-23 | Senate | Record vote |
+| 2025-05-23 | Senate | Three day rule suspended |
+| 2025-05-23 | Senate | Vote recorded in Journal |
+| 2025-05-23 | Senate | Passed to 3rd reading as amended |
+| 2025-05-23 | Senate | Vote recorded in Journal |
+| 2025-05-23 | Senate | Amended |
+| 2025-05-23 | Senate | Amendment(s) offered FA3 Schwertner |
+| 2025-05-23 | Senate | Vote recorded in Journal |
+| 2025-05-23 | Senate | Amended |
+| 2025-05-23 | Senate | Amendment(s) offered FA2 Schwertner |
+| 2025-05-23 | Senate | Vote recorded in Journal |
+| 2025-05-23 | Senate | Amended |
+| 2025-05-23 | Senate | Amendment(s) offered FA1 Schwertner |
+| 2025-05-23 | Senate | Read 2nd time |
+| 2025-05-23 | Senate | Rules suspended-Regular order of business |
+| 2025-05-23 | Senate | Motion withdrawn |
+| 2025-05-23 | Senate | Motion to suspend regular order of business |
+| 2025-05-23 | Senate | Placed on intent calendar |
+| 2025-05-23 | Senate | Co-sponsor authorized |
+| 2025-05-21 | Senate | Committee report printed and distributed |
+| 2025-05-21 | Senate | Recommended for local & uncontested calendar |
+| 2025-05-21 | Senate | Reported favorably as substituted |
+| 2025-05-20 | Senate | Vote taken in committee |
+| 2025-05-20 | Senate | Considered in public hearing |
+| 2025-05-01 | Senate | Left pending in committee |
+| 2025-05-01 | Senate | Testimony taken in committee |
+| 2025-05-01 | Senate | Considered in public hearing |
+| 2025-05-01 | Senate | Scheduled for public hearing on . . . |
+| 2025-04-24 | Senate | Referred to Business & Commerce |
+| 2025-04-24 | Senate | Read first time |
+| 2025-04-24 | Senate | Received from the House |
+| 2025-04-23 | House | Reported engrossed |
+| 2025-04-23 | House | Record vote RV#376 |
+| 2025-04-23 | House | Passed as amended |
+| 2025-04-23 | House | Statement(s) of vote recorded in Journal |
+| 2025-04-23 | House | Record vote RV#375 |
+| 2025-04-23 | House | Amended 1-Capriglione |
+| 2025-04-23 | House | Read 3rd time |
+| 2025-04-22 | House | Record vote RV#322 |
+| 2025-04-22 | House | Passed to engrossment as amended |
+| 2025-04-22 | House | Statement(s) of vote recorded in Journal |
+| 2025-04-22 | House | Record vote RV#321 |
+| 2025-04-22 | House | Amended 1-Capriglione |
+| 2025-04-22 | House | Read 2nd time |
+| 2025-04-22 | House | Placed on General State Calendar |
+| 2025-04-17 | House | Considered in Calendars |
+| 2025-04-11 | House | Committee report sent to Calendars |
+| 2025-04-10 | House | Committee report distributed |
+| 2025-04-10 | House | Comte report filed with Committee Coordinator |
+| 2025-04-02 | House | Reported favorably as substituted |
+| 2025-04-02 | House | Committee substitute considered in committee |
+| 2025-04-02 | House | Considered in public hearing |
+| 2025-03-26 | House | Left pending in committee |
+| 2025-03-26 | House | Testimony taken/registration(s) recorded in committee |
+| 2025-03-26 | House | Considered in public hearing |
+| 2025-03-26 | House | Scheduled for public hearing on . . . |
+| 2025-03-14 | House | Referred to Delivery of Government Efficiency |
+| 2025-03-14 | House | Read first time |
+| 2025-03-14 | House | Filed |
+
+Subjects
+--------
+
+[ARTIFICIAL INTELLIGENCE](http://legiscan.com/gaits/subject/383508 "View other legislative instruments with the ARTIFICIAL INTELLIGENCE subject")
+
+[ARTIFICIAL INTELLIGENCE COUNCIL, TEXAS](http://legiscan.com/gaits/subject/399115 "View other legislative instruments with the ARTIFICIAL INTELLIGENCE COUNCIL, TEXAS subject")
+
+[ATTORNEY GENERAL](http://legiscan.com/gaits/subject/5514 "View other legislative instruments with the ATTORNEY GENERAL subject")
+
+[BIOMETRIC IDENTIFIERS & VOICEPRINTS](http://legiscan.com/gaits/subject/6571 "View other legislative instruments with the BIOMETRIC IDENTIFIERS & VOICEPRINTS subject")
+
+[Business & Commerce](http://legiscan.com/gaits/subject/5271 "View other legislative instruments with the Business & Commerce subject")
+
+[Business & Commerce--Trade Practices](http://legiscan.com/gaits/subject/6335 "View other legislative instruments with the Business & Commerce--Trade Practices subject")
+
+[COMPUTERS & SOFTWARE](http://legiscan.com/gaits/subject/5421 "View other legislative instruments with the COMPUTERS & SOFTWARE subject")
+
+[Consumer Protection](http://legiscan.com/gaits/subject/5350 "View other legislative instruments with the Consumer Protection subject")
+
+[DISCRIMINATION](http://legiscan.com/gaits/subject/5615 "View other legislative instruments with the DISCRIMINATION subject")
+
+[Electronic Information Systems](http://legiscan.com/gaits/subject/5345 "View other legislative instruments with the Electronic Information Systems subject")
+
+[Governor](http://legiscan.com/gaits/subject/5760 "View other legislative instruments with the Governor subject")
+
+[Health Care Providers](http://legiscan.com/gaits/subject/5389 "View other legislative instruments with the Health Care Providers subject")
+
+[Human Relations](http://legiscan.com/gaits/subject/5604 "View other legislative instruments with the Human Relations subject")
+
+[INFORMATION RESOURCES, DEPARTMENT OF](http://legiscan.com/gaits/subject/5810 "View other legislative instruments with the INFORMATION RESOURCES, DEPARTMENT OF subject")
+
+[INTERNET](http://legiscan.com/gaits/subject/5331 "View other legislative instruments with the INTERNET subject")
+
+[LIEUTENANT GOVERNOR](http://legiscan.com/gaits/subject/10354 "View other legislative instruments with the LIEUTENANT GOVERNOR subject")
+
+[Protection of Personal Information](http://legiscan.com/gaits/subject/5617 "View other legislative instruments with the Protection of Personal Information subject")
+
+[SPEAKER OF THE HOUSE](http://legiscan.com/gaits/subject/6663 "View other legislative instruments with the SPEAKER OF THE HOUSE subject")
+
+[STAFF DEVELOPMENT & TRAINING](http://legiscan.com/gaits/subject/5639 "View other legislative instruments with the STAFF DEVELOPMENT & TRAINING subject")
+
+[State Agencies, Boards & Commissions](http://legiscan.com/gaits/subject/5280 "View other legislative instruments with the State Agencies, Boards & Commissions subject")
+
+[State Agencies, Boards & Commissions--Newly Proposed](http://legiscan.com/gaits/subject/5501 "View other legislative instruments with the State Agencies, Boards & Commissions--Newly Proposed subject")
+
+[TEXAS RESPONSIBLE ARTIFICIAL INTELLIGENCE GOVERNANCE ACT](http://legiscan.com/gaits/subject/383599 "View other legislative instruments with the TEXAS RESPONSIBLE ARTIFICIAL INTELLIGENCE GOVERNANCE ACT subject")
+
+Texas State Sources
+-------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB149](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB149) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149I.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149I.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149H.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149H.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149E.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149E.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149S.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149S.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149F.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00149F.htm) |
+| Amendment | [https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149H21.HTM](https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149H21.HTM) |
+| Amendment | [https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149H31.HTM](https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149H31.HTM) |
+| Amendment | [https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F1.HTM](https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F1.HTM) |
+| Amendment | [https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F2.HTM](https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F2.HTM) |
+| Amendment | [https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F3.HTM](https://capitol.texas.gov/tlodocs/89R/amendments/html/HB00149S2F3.HTM) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149I.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149I.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149H.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149H.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149H.htm](https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149H.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149E.htm](https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149E.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149E.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149E.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149S.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149S.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149S.htm](https://capitol.texas.gov/tlodocs/89R/analysis/html/HB00149S.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149A.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149A.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149F.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/HB00149F.htm) |
+| Roll Call | [https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=321&Ch=H&Dt=04/22/2025](https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=321&Ch=H&Dt=04/22/2025) |
+| Roll Call | [https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=322&Ch=H&Dt=04/22/2025](https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=322&Ch=H&Dt=04/22/2025) |
+| Roll Call | [https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=375&Ch=H&Dt=04/23/2025](https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=375&Ch=H&Dt=04/23/2025) |
+| Roll Call | [https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=376&Ch=H&Dt=04/23/2025](https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=376&Ch=H&Dt=04/23/2025) |
+| Roll Call | [https://journals.senate.texas.gov/sjrnl/89r/pdf/89RSJ05-23-F.PDF#page=13](https://journals.senate.texas.gov/sjrnl/89r/pdf/89RSJ05-23-F.PDF#page=13) |
+| Roll Call | [https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=4059&Ch=H&Dt=05/30/2025](https://capitol.texas.gov/BillLookup/RecordVote.aspx?LegSess=89R&Bill=HB149&RcdVtNo=4059&Ch=H&Dt=05/30/2025) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

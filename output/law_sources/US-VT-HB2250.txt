@@ -1,0 +1,151 @@
+Title: |  |
+
+URL Source: http://legiscan.com/VT/bill/HB2250
+
+Warning: Target URL returned error 404: Not Found
+
+Markdown Content:
+Page Not Found | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/VT/bill/HB2250#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Page Not Found
+==============
+
+ Well this is untoward, but we cannot seem to find the page you requested. Possible reasons include:
+*   The page moved and was not redirected
+*   We never had that page to begin with
+*   Ninjas!!!
+
+If you are seeing this message then we were also unable to guesstimate where you were going and avoid all this 404 nonsense. We encourage you to send us [Feedback](http://legiscan.com/feedback?reason=404) about the issue as well so we can investigate.
+
+Since LegiScan deals with state and national legislation in the United States, there are some likely solutions for you...
+
+1.   Visit the [LegiScan Homepage](http://legiscan.com/)
+2.   Go to the [Oregon dashboard](http://legiscan.com/OR)
+3.   Or, use the [Legislative Search](http://legiscan.com/gaits/search)
+
+State:  
+
+Target national or local state search.
+
+Bill Number:  
+
+Search for an exact bill number (Optional).
+
+Full Text Search:  
+
+Search engine query for full text search. [[**search help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)
+
+Page Not Found | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/VT/bill/HB2250#main-menu)
+
+[![Image 3: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Page Not Found
+==============
+
+[](http://legiscan.com/VT/bill/HB2250 "Share on Facebook")[](http://legiscan.com/VT/bill/HB2250 "Share on Bluesky")[](http://legiscan.com/VT/bill/HB2250 "Share on X")[](http://legiscan.com/VT/bill/HB2250 "Share on LinkedIn")[](http://legiscan.com/VT/bill/HB2250 "Share on reddit")[](http://legiscan.com/VT/bill/HB2250 "Share on email")
+
+[](http://legiscan.com/ "View the  Legislative dashboard")_**([Prior Session Legislation](http://legiscan.com/ "Right number, wrong year? View   from current and past sessions"))**_
+=====================================================================================================================================================================================
+
+[State Legislature page for](http://legiscan.com/VT/bill/HB2250 " State Legislature source page for ")
+
+* * *
+
+*   [Summary](http://legiscan.com/0 "View Legislative Detail for  ")
+*   [Sponsors](http://legiscan.com/0 "View Sponsors of  ")
+*   [Texts](http://legiscan.com/0 "View Bill Text Drafts for  ")
+*   [Votes](http://legiscan.com/0 "View Roll Call Votes on  ")
+*   [Research](http://legiscan.com/0 "View Legislation Research Information on  ")
+*   [Comments](http://legiscan.com/0 "View Social & PolitiCorps Commentary on  ")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for   and other  legislation")
+
+Status
+------
+
+Spectrum: Unknown
+
+Status: - 0% progression
+
+Action: No history available
+
+Text: [Latest bill text (Introduced) [HTML]](http://legiscan.com/0 "View latest bill text for  ")
+
+Summary
+-------
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for   and other  legislation") or view this same bill number from [multiple sessions](http://legiscan.com/0 "Research for   across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for  and national legislation").
+
+Title
+-----
+
+Sponsors
+--------
+
+No sponsor information available at this time.
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| No history available at this time. |
+
+State Sources
+-------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [](http://legiscan.com/VT/bill/HB2250) |
+| Text | [http://www.legis.state.pa.us/cfdocs/legis/PN/Public/btCheck.cfm?txtType=HTM&sessYr=2011&sessInd=0&billBody=H&billTyp=B&billNbr=0077&pn=0039](http://www.legis.state.pa.us/cfdocs/legis/PN/Public/btCheck.cfm?txtType=HTM&sessYr=2011&sessInd=0&billBody=H&billTyp=B&billNbr=0077&pn=0039) |
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 4: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

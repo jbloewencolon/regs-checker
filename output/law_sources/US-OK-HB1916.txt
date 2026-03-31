@@ -1,0 +1,174 @@
+Title: Oklahoma HB1916 | 2026 | Regular Session
+
+URL Source: http://legiscan.com/OK/bill/HB1916
+
+Markdown Content:
+OK HB1916 | 2026 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/OK/bill/HB1916#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+OK HB1916 | 2026 | Regular Session
+==================================
+
+[](http://legiscan.com/OK/bill/HB1916 "Share on Facebook")[](http://legiscan.com/OK/bill/HB1916 "Share on Bluesky")[](http://legiscan.com/OK/bill/HB1916 "Share on X")[](http://legiscan.com/OK/bill/HB1916 "Share on LinkedIn")[](http://legiscan.com/OK/bill/HB1916 "Share on reddit")[](http://legiscan.com/OK/bill/HB1916 "Share on email")
+
+[Oklahoma](http://legiscan.com/OK "View the Oklahoma Legislative dashboard") House Bill 1916
+============================================================================================
+
+[OK State Legislature page for HB1916](http://www.oklegislature.gov/BillInfo.aspx?Bill=hb1916&Session=2600 "Oklahoma State Legislature source page for HB1916")
+
+* * *
+
+*   [Summary](http://legiscan.com/OK/bill/HB1916/2026 "View Legislative Detail for Oklahoma HB1916")
+*   [Sponsors](http://legiscan.com/OK/sponsors/HB1916/2026 "View Sponsors of Oklahoma HB1916")
+*   [Texts](http://legiscan.com/OK/drafts/HB1916/2026 "View Bill Text Drafts for Oklahoma HB1916")
+*   [Votes](http://legiscan.com/OK/votes/HB1916/2026 "View Roll Call Votes on Oklahoma HB1916")
+*   [Research](http://legiscan.com/OK/research/HB1916/2026 "View Legislation Research Information on Oklahoma HB1916")
+*   [Comments](http://legiscan.com/OK/comments/HB1916/2026 "View Social & PolitiCorps Commentary on Oklahoma HB1916")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Oklahoma HB1916 and other OK legislation")
+
+**Note:**[**Carry Over of previous HB1916**](http://legiscan.com/OK/bill/HB1916/2025)
+
+Status
+------
+
+Spectrum: Partisan Bill (Democrat 1)
+
+Status: Introduced on February 3 2025 - 25% progression
+
+Action: 2025-02-04 - Second Reading referred to Rules
+
+Pending: [House Rules Committee](http://legiscan.com/OK/pending/house-rules-committee/id/1216 "View other bills referred to OK House Rules Committee")
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/OK/text/HB1916/2026 "View latest bill text for Oklahoma HB1916")
+
+Summary
+-------
+
+Artificial intelligence; Responsible Deployment of AI Systems Act; AI Council; AI Regulatory Sandbox Program; Artificial Intelligence Workforce Development Program; effective date.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Oklahoma HB1916 and other OK legislation") or view this same bill number from [multiple sessions](http://legiscan.com/OK/research/HB1916 "Research for OK HB1916 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Oklahoma and national legislation").
+
+Title
+-----
+
+Artificial intelligence; Responsible Deployment of AI Systems Act; AI Council; AI Regulatory Sandbox Program; Artificial Intelligence Workforce Development Program; effective date.
+
+Sponsors
+--------
+
+[Rep. Arturo Alonso-Sandoval](http://legiscan.com/OK/people/arturo-alonso-sandoval/id/23722 "View other legislation sponsored by Oklahoma Representative Arturo Alonso-Sandoval")[D]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-02-04 | House | Second Reading referred to Rules |
+| 2025-02-03 | House | Authored by Representative Alonso-Sandoval |
+| 2025-02-03 | House | First Reading |
+
+[](http://legiscan.com/OK/bill/HB1916)
+Same As/Similar To
+------------------
+
+[HB1916](http://legiscan.com/OK/bill/HB1916/2025 "View detailed bill information for HB1916") (Carry Over) 2025-02-04 - Second Reading referred to Rules
+
+Oklahoma State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [http://www.oklegislature.gov/BillInfo.aspx?Bill=hb1916&Session=2600](http://www.oklegislature.gov/BillInfo.aspx?Bill=hb1916&Session=2600) |
+| Text | [https://www.oklegislature.gov/cf_pdf/2025-26%20INT/hB/HB1916%20INT.PDF](https://www.oklegislature.gov/cf_pdf/2025-26%20INT/hB/HB1916%20INT.PDF) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

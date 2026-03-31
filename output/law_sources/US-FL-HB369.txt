@@ -1,0 +1,198 @@
+Title: Florida H0369 | 2026 | Regular Session
+
+URL Source: http://legiscan.com/FL/bill/HB369
+
+Markdown Content:
+FL H0369 | 2026 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/FL/bill/HB369#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+FL H0369 | 2026 | Regular Session
+=================================
+
+[](http://legiscan.com/FL/bill/HB369 "Share on Facebook")[](http://legiscan.com/FL/bill/HB369 "Share on Bluesky")[](http://legiscan.com/FL/bill/HB369 "Share on X")[](http://legiscan.com/FL/bill/HB369 "Share on LinkedIn")[](http://legiscan.com/FL/bill/HB369 "Share on reddit")[](http://legiscan.com/FL/bill/HB369 "Share on email")
+
+[Florida](http://legiscan.com/FL "View the Florida Legislative dashboard") House Bill 369
+=========================================================================================
+
+[FL State Legislature page for H0369](https://www.flsenate.gov/Session/Bill/2026/369 "Florida State Legislature source page for H0369")
+
+* * *
+
+*   [Summary](http://legiscan.com/FL/bill/H0369/2026 "View Legislative Detail for Florida H0369")
+*   [Sponsors](http://legiscan.com/FL/sponsors/H0369/2026 "View Sponsors of Florida H0369")
+*   [Texts](http://legiscan.com/FL/drafts/H0369/2026 "View Bill Text Drafts for Florida H0369")
+*   [Votes](http://legiscan.com/FL/votes/H0369/2026 "View Roll Call Votes on Florida H0369")
+*   [Research](http://legiscan.com/FL/research/H0369/2026 "View Legislation Research Information on Florida H0369")
+*   [Comments](http://legiscan.com/FL/comments/H0369/2026 "View Social & PolitiCorps Commentary on Florida H0369")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Florida H0369 and other FL legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Republican 2)
+
+Status: Introduced on November 6 2025 - 25% progression
+
+Action: 2026-01-13 - 1st Reading (Original Filed Version)
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/FL/text/H0369/2026 "View latest bill text for Florida H0369")
+
+Summary
+-------
+
+Authorizes execution of patient-directed medical order for specified purpose; provides requirements for valid patient-directed medical orders; authorizes use of telehealth for specified purpose; requires that certain health care services be provided to principal regardless of decision to withhold or withdraw life-prolonging procedures; authorizes physicians, physician assistants, & advanced practice registered nurses to withhold or withdraw life-prolonging procedures without penalty; requires AHCA to create & update database for storage of patient-directed medical orders.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Florida H0369 and other FL legislation") or view this same bill number from [multiple sessions](http://legiscan.com/FL/research/H0369 "Research for FL H0369 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Florida and national legislation").
+
+Title
+-----
+
+Patient-directed Medical Orders
+
+Sponsors
+--------
+
+[Rep. Susan Plasencia](http://legiscan.com/FL/people/susan-plasencia/id/24809 "View other legislation sponsored by Florida Representative Susan Plasencia")[R][Rep. Shane Abbott](http://legiscan.com/FL/people/shane-abbott/id/23343 "View other legislation sponsored by Florida Representative Shane Abbott")[R]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2026-01-13 | House | 1st Reading (Original Filed Version) |
+| 2025-11-18 | House | Now in Health Professions & Programs Subcommittee |
+| 2025-11-18 | House | Referred to Health & Human Services Committee |
+| 2025-11-18 | House | Referred to Civil Justice & Claims Subcommittee |
+| 2025-11-18 | House | Referred to Health Professions & Programs Subcommittee |
+| 2025-11-06 | House | Filed |
+
+[](http://legiscan.com/FL/bill/HB369)
+Same As/Similar To
+------------------
+
+[S312](http://legiscan.com/FL/bill/S0312/2026 "View detailed bill information for S312") (Same As) 2026-01-13 - Introduced
+
+Code Citations
+--------------
+
+| Chapter | Article | Section | Citation Type | Statute Text |
+| --- | --- | --- | --- | --- |
+| [395](http://legiscan.com/gaits/citation/77657 "Find other legislation referencing Florida Chapter 395") | [1041](http://legiscan.com/gaits/citation/77760 "Find other legislation referencing Florida Chapter 395 Article 1041") | [](http://legiscan.com/gaits/citation/77760 "Find other legislation referencing Florida Chapter 395 Article 1041 Section ") | Amended Code | See Bill Text |
+| [400](http://legiscan.com/gaits/citation/77120 "Find other legislation referencing Florida Chapter 400") | [142](http://legiscan.com/gaits/citation/77777 "Find other legislation referencing Florida Chapter 400 Article 142") | [](http://legiscan.com/gaits/citation/77777 "Find other legislation referencing Florida Chapter 400 Article 142 Section ") | Amended Code | See Bill Text |
+| [400](http://legiscan.com/gaits/citation/77120 "Find other legislation referencing Florida Chapter 400") | [487](http://legiscan.com/gaits/citation/290526 "Find other legislation referencing Florida Chapter 400 Article 487") | [](http://legiscan.com/gaits/citation/290526 "Find other legislation referencing Florida Chapter 400 Article 487 Section ") | Amended Code | See Bill Text |
+| [400](http://legiscan.com/gaits/citation/77120 "Find other legislation referencing Florida Chapter 400") | [605](http://legiscan.com/gaits/citation/108400 "Find other legislation referencing Florida Chapter 400 Article 605") | [](http://legiscan.com/gaits/citation/108400 "Find other legislation referencing Florida Chapter 400 Article 605 Section ") | Amended Code | See Bill Text |
+| [400](http://legiscan.com/gaits/citation/77120 "Find other legislation referencing Florida Chapter 400") | [6095](http://legiscan.com/gaits/citation/315230 "Find other legislation referencing Florida Chapter 400 Article 6095") | [](http://legiscan.com/gaits/citation/315230 "Find other legislation referencing Florida Chapter 400 Article 6095 Section ") | Amended Code | See Bill Text |
+| [400](http://legiscan.com/gaits/citation/77120 "Find other legislation referencing Florida Chapter 400") | [611](http://legiscan.com/gaits/citation/434804 "Find other legislation referencing Florida Chapter 400 Article 611") | [](http://legiscan.com/gaits/citation/434804 "Find other legislation referencing Florida Chapter 400 Article 611 Section ") | Amended Code | See Bill Text |
+| [401](http://legiscan.com/gaits/citation/77398 "Find other legislation referencing Florida Chapter 401") | [35](http://legiscan.com/gaits/citation/346744 "Find other legislation referencing Florida Chapter 401 Article 35") | [](http://legiscan.com/gaits/citation/346744 "Find other legislation referencing Florida Chapter 401 Article 35 Section ") | Amended Code | See Bill Text |
+| [401](http://legiscan.com/gaits/citation/77398 "Find other legislation referencing Florida Chapter 401") | [45](http://legiscan.com/gaits/citation/346745 "Find other legislation referencing Florida Chapter 401 Article 45") | [](http://legiscan.com/gaits/citation/346745 "Find other legislation referencing Florida Chapter 401 Article 45 Section ") | Amended Code | See Bill Text |
+| [429](http://legiscan.com/gaits/citation/77426 "Find other legislation referencing Florida Chapter 429") | [255](http://legiscan.com/gaits/citation/77427 "Find other legislation referencing Florida Chapter 429 Article 255") | [](http://legiscan.com/gaits/citation/77427 "Find other legislation referencing Florida Chapter 429 Article 255 Section ") | Amended Code | See Bill Text |
+| [429](http://legiscan.com/gaits/citation/77426 "Find other legislation referencing Florida Chapter 429") | [73](http://legiscan.com/gaits/citation/108430 "Find other legislation referencing Florida Chapter 429 Article 73") | [](http://legiscan.com/gaits/citation/108430 "Find other legislation referencing Florida Chapter 429 Article 73 Section ") | Amended Code | See Bill Text |
+| [744](http://legiscan.com/gaits/citation/77645 "Find other legislation referencing Florida Chapter 744") | [4431](http://legiscan.com/gaits/citation/772968 "Find other legislation referencing Florida Chapter 744 Article 4431") | [](http://legiscan.com/gaits/citation/772968 "Find other legislation referencing Florida Chapter 744 Article 4431 Section ") | Amended Code | See Bill Text |
+| [752](http://legiscan.com/gaits/citation/141736 "Find other legislation referencing Florida Chapter 752") | [001](http://legiscan.com/gaits/citation/347034 "Find other legislation referencing Florida Chapter 752 Article 001") | [](http://legiscan.com/gaits/citation/347034 "Find other legislation referencing Florida Chapter 752 Article 001 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [101](http://legiscan.com/gaits/citation/341692 "Find other legislation referencing Florida Chapter 765 Article 101") | [](http://legiscan.com/gaits/citation/341692 "Find other legislation referencing Florida Chapter 765 Article 101 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [102](http://legiscan.com/gaits/citation/341693 "Find other legislation referencing Florida Chapter 765 Article 102") | [](http://legiscan.com/gaits/citation/341693 "Find other legislation referencing Florida Chapter 765 Article 102 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [110](http://legiscan.com/gaits/citation/311047 "Find other legislation referencing Florida Chapter 765 Article 110") | [](http://legiscan.com/gaits/citation/311047 "Find other legislation referencing Florida Chapter 765 Article 110 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [204](http://legiscan.com/gaits/citation/78981 "Find other legislation referencing Florida Chapter 765 Article 204") | [](http://legiscan.com/gaits/citation/78981 "Find other legislation referencing Florida Chapter 765 Article 204 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [205](http://legiscan.com/gaits/citation/335792 "Find other legislation referencing Florida Chapter 765 Article 205") | [](http://legiscan.com/gaits/citation/335792 "Find other legislation referencing Florida Chapter 765 Article 205 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [3041](http://legiscan.com/gaits/citation/910028 "Find other legislation referencing Florida Chapter 765 Article 3041") | [](http://legiscan.com/gaits/citation/910028 "Find other legislation referencing Florida Chapter 765 Article 3041 Section ") | Amended Code | See Bill Text |
+| [765](http://legiscan.com/gaits/citation/78047 "Find other legislation referencing Florida Chapter 765") | [305](http://legiscan.com/gaits/citation/910029 "Find other legislation referencing Florida Chapter 765 Article 305") | [](http://legiscan.com/gaits/citation/910029 "Find other legislation referencing Florida Chapter 765 Article 305 Section ") | Amended Code | See Bill Text |
+
+Florida State Sources
+---------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://www.flsenate.gov/Session/Bill/2026/369](https://www.flsenate.gov/Session/Bill/2026/369) |
+| Text | [https://www.flsenate.gov/Session/Bill/2026/369/BillText/Filed/PDF](https://www.flsenate.gov/Session/Bill/2026/369/BillText/Filed/PDF) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

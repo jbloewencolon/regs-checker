@@ -1,0 +1,136 @@
+Title: Colorado SB149 | 2025 | Regular Session
+
+URL Source: http://legiscan.com/CO/text/SB149
+
+Markdown Content:
+Bill Text: CO SB149 | 2025 | Regular Session | Enrolled | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CO/text/SB149#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Bill Text: CO SB149 | 2025 | Regular Session | Enrolled
+=======================================================
+
+[](http://legiscan.com/CO/text/SB149 "Share on Facebook")[](http://legiscan.com/CO/text/SB149 "Share on Bluesky")[](http://legiscan.com/CO/text/SB149 "Share on X")[](http://legiscan.com/CO/text/SB149 "Share on LinkedIn")[](http://legiscan.com/CO/text/SB149 "Share on reddit")[](http://legiscan.com/CO/text/SB149 "Share on email")
+
+[Colorado](http://legiscan.com/CO "View the Colorado Legislative dashboard") Senate Bill 149 _**([Prior Session Legislation](http://legiscan.com/CO/research/SB149/2025 "Right number, wrong year? View Colorado SB149 from current and past sessions"))**_
+===========================================================================================================================================================================================================================================================
+
+[CO State Legislature page for SB149](https://leg.colorado.gov/bills/sb25-149 "Colorado State Legislature source page for SB149")
+
+* * *
+
+*   [Summary](http://legiscan.com/CO/bill/SB149/2025 "View Legislative Detail for Colorado SB149")
+*   [Sponsors](http://legiscan.com/CO/sponsors/SB149/2025 "View Sponsors of Colorado SB149")
+*   [Texts](http://legiscan.com/CO/drafts/SB149/2025 "View Bill Text Drafts for Colorado SB149")
+*   [Votes](http://legiscan.com/CO/votes/SB149/2025 "View Roll Call Votes on Colorado SB149")
+*   [Research](http://legiscan.com/CO/research/SB149/2025 "View Legislation Research Information on Colorado SB149")
+*   [Comments](http://legiscan.com/CO/comments/SB149/2025 "View Social & PolitiCorps Commentary on Colorado SB149")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Colorado SB149 and other CO legislation")
+
+*   [Introduced](http://legiscan.com/CO/text/SB149/id/3103047 "Read the full text of the Introduced draft for CO SB149")
+*   [Engrossed](http://legiscan.com/CO/text/SB149/id/3179454 "Read the full text of the Engrossed draft for CO SB149")
+*   [Engrossed](http://legiscan.com/CO/text/SB149/id/3181191 "Read the full text of the Engrossed draft for CO SB149")
+*   [Amended](http://legiscan.com/CO/text/SB149/id/3201289 "Read the full text of the Amended draft for CO SB149")
+*   [Amended](http://legiscan.com/CO/text/SB149/id/3211416 "Read the full text of the Amended draft for CO SB149")
+*   [Enrolled](http://legiscan.com/CO/text/SB149/id/3222168 "Read the full text of the Enrolled draft for CO SB149")
+
+* * *
+
+**Bill Title:** Local Government Duties Equestrian Protections
+
+**Spectrum:** Partisan Bill (Democrat 14)
+
+**Status:**_(Passed)_ 2025-05-28 - Governor Signed [[SB149 Detail]](http://legiscan.com/CO/bill/SB149/2025 "Colorado CO SB149 legislative tracking detail and summary")
+
+**Download:**[Colorado-2025-SB149-Enrolled.pdf](http://legiscan.com/CO/text/SB149/id/3222168/Colorado-2025-SB149-Enrolled.pdf "Download this draft of the Colorado SB149 bill text")
+
+* * *
+
+It appears your computer is unable to display this document, however you can download the file from the links above.
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

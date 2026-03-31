@@ -1,0 +1,194 @@
+Title: California SB942 | 2025-2026 | Regular Session
+
+URL Source: http://legiscan.com/CA/text/SB942
+
+Markdown Content:
+Bill Text: CA SB942 | 2025-2026 | Regular Session | Introduced | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CA/text/SB942#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Bill Text: CA SB942 | 2025-2026 | Regular Session | Introduced
+==============================================================
+
+[](http://legiscan.com/CA/text/SB942 "Share on Facebook")[](http://legiscan.com/CA/text/SB942 "Share on Bluesky")[](http://legiscan.com/CA/text/SB942 "Share on X")[](http://legiscan.com/CA/text/SB942 "Share on LinkedIn")[](http://legiscan.com/CA/text/SB942 "Share on reddit")[](http://legiscan.com/CA/text/SB942 "Share on email")
+
+[California](http://legiscan.com/CA "View the California Legislative dashboard") Senate Bill 942
+================================================================================================
+
+[CA State Legislature page for SB942](https://leginfo.legislature.ca.gov/faces/billStatusClient.xhtml?bill_id=202520260SB942 "California State Legislature source page for SB942")
+
+* * *
+
+*   [Summary](http://legiscan.com/CA/bill/SB942/2025 "View Legislative Detail for California SB942")
+*   [Sponsors](http://legiscan.com/CA/sponsors/SB942/2025 "View Sponsors of California SB942")
+*   [Texts](http://legiscan.com/CA/drafts/SB942/2025 "View Bill Text Drafts for California SB942")
+*   [Votes](http://legiscan.com/CA/votes/SB942/2025 "View Roll Call Votes on California SB942")
+*   [Research](http://legiscan.com/CA/research/SB942/2025 "View Legislation Research Information on California SB942")
+*   [Comments](http://legiscan.com/CA/comments/SB942/2025 "View Social & PolitiCorps Commentary on California SB942")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for California SB942 and other CA legislation")
+
+*   [Introduced](http://legiscan.com/CA/text/SB942/id/3341961 "Read the full text of the Introduced draft for CA SB942")
+
+* * *
+
+**Bill Title:** Private detention facilities.
+
+**Spectrum:** Partisan Bill (Democrat 14)
+
+**Status:**_(Introduced)_ 2026-02-11 - Referred to Com. on RLS. [[SB942 Detail]](http://legiscan.com/CA/bill/SB942/2025 "California CA SB942 legislative tracking detail and summary")
+
+**Download:**[California-2025-SB942-Introduced.html](http://legiscan.com/CA/text/SB942/id/3341961/California-2025-SB942-Introduced.html "Download this draft of the California SB942 bill text")
+
+* * *
+
+ CALIFORNIA LEGISLATURE— 2025–2026 REGULAR SESSION
+
+**Senate Bill**
+
+**No. 942**
+
+* * *
+
+Introduced by Senator Caballero
+
+(Principal coauthor: Senator Padilla)
+
+(Principal coauthor: Assembly Member Carrillo)
+
+(Coauthors: Senators Archuleta, Durazo, Gonzalez, Hurtado, and Reyes)
+
+(Coauthors: Assembly Members Elhawary, Garcia, Ortega, Celeste Rodriguez, Michelle Rodriguez, and Solache)
+January 29,2026
+
+* * *
+
+ An act to add Division 123 (commencing with Section 153000) to the Health and Safety Code, relating to detention facilities. 
+
+LEGISLATIVE COUNSEL'S DIGEST
+----------------------------
+
+SB 942, as introduced, Caballero. Private detention facilities.
+
+Existing law prohibits a city, city and county, or local law enforcement agency from entering into a contract with the federal government or any federal agency to house or detain noncitizens for purposes of civil immigration custody in a locked detention facility. Existing law, until July 1, 2027, requires the Attorney General to engage in reviews of county, local, and private locked detention facilities in which noncitizens are being housed or detained for purposes of civil immigration proceedings in California. Existing law requires that review to include a review of the conditions of confinement, a review of the standard of care and due process provided to the detainees, and a review of the circumstances around their apprehension and transfer to the facility. Existing law requires any private detention facility operator, as defined, to comply with, and adhere to, the detention standards of care and confinement agreed upon in the facility’s contract for operations.
+
+This bill, the Private Detention Facility Oversight and Standards Act of 2026, would make specified findings and declarations related to the regulation of the health, safety, and welfare of individuals held in private detention facilities.
+
+Digest Key
+----------
+
+ Vote: MAJORITY Appropriation: NO Fiscal Committee: NO Local Program: NO
+
+* * *
+
+Bill Text
+---------
+
+The people of the State of California do enact as follows:
+----------------------------------------------------------
+
+### SECTION 1.
+
+Division 123 (commencing with Section 153000) is added to the Health and Safety Code, to read:
+
+#### DIVISION 123.Private Detention Facility Oversight and Standards
+
+###### 153000.
+
+This division shall be known and may be cited as the Private Detention Facility Oversight and Standards Act of 2026.
+
+###### 153001.
+
+The Legislature finds and declares all of the following:
+
+(a)California has an interest in protecting the health, safety, and welfare of individuals held in privately operated detention facilities located within the state.
+
+(b)Private corporations operating detention facilities pursuant to federal contracts function as business enterprises within California and therefore remain subject to the state’s legitimate exercise of licensing, consumer protection, and health and safety authority.
+
+(c)California may require private detention facility operators, as a condition of doing business in this state, to meet or exceed the standards they have already agreed to follow under a federal contract, without regulating federal government operations or state or local correctional systems.
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

@@ -1,0 +1,181 @@
+Title: Texas HB340 | 2025-2026 | 89th Legislature
+
+URL Source: http://legiscan.com/TX/bill/HB340
+
+Markdown Content:
+TX HB340 | 2025-2026 | 89th Legislature | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/TX/bill/HB340#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+TX HB340 | 2025-2026 | 89th Legislature
+=======================================
+
+[](http://legiscan.com/TX/bill/HB340 "Share on Facebook")[](http://legiscan.com/TX/bill/HB340 "Share on Bluesky")[](http://legiscan.com/TX/bill/HB340 "Share on X")[](http://legiscan.com/TX/bill/HB340 "Share on LinkedIn")[](http://legiscan.com/TX/bill/HB340 "Share on reddit")[](http://legiscan.com/TX/bill/HB340 "Share on email")
+
+[Texas](http://legiscan.com/TX "View the Texas Legislative dashboard") House Bill 340
+=====================================================================================
+
+[TX State Legislature page for HB340](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB340 "Texas State Legislature source page for HB340")
+
+* * *
+
+*   [Summary](http://legiscan.com/TX/bill/HB340/2025 "View Legislative Detail for Texas HB340")
+*   [Sponsors](http://legiscan.com/TX/sponsors/HB340/2025 "View Sponsors of Texas HB340")
+*   [Texts](http://legiscan.com/TX/drafts/HB340/2025 "View Bill Text Drafts for Texas HB340")
+*   [Votes](http://legiscan.com/TX/votes/HB340/2025 "View Roll Call Votes on Texas HB340")
+*   [Research](http://legiscan.com/TX/research/HB340/2025 "View Legislation Research Information on Texas HB340")
+*   [Comments](http://legiscan.com/TX/comments/HB340/2025 "View Social & PolitiCorps Commentary on Texas HB340")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas HB340 and other TX legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Republican 1)
+
+Status: Introduced on November 12 2024 - 25% progression
+
+Action: 2025-02-28 - Referred to Public Education
+
+Pending: [House Public Education Committee](http://legiscan.com/TX/pending/house-public-education-committee/id/1891 "View other bills referred to TX House Public Education Committee")
+
+Text: [Latest bill text (Introduced) [HTML]](http://legiscan.com/TX/text/HB340/2025 "View latest bill text for Texas HB340")
+
+Summary
+-------
+
+Relating to a provision in a school district's student code of conduct prohibiting the wearing of clothing or displaying of items indicating membership in or support of certain organizations.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas HB340 and other TX legislation") or view this same bill number from [multiple sessions](http://legiscan.com/TX/research/HB340 "Research for TX HB340 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Texas and national legislation").
+
+Title
+-----
+
+Relating to a provision in a school district's student code of conduct prohibiting the wearing of clothing or displaying of items indicating membership in or support of certain organizations.
+
+Sponsors
+--------
+
+[Rep. Matthew Shaheen](http://legiscan.com/TX/people/matthew-shaheen/id/16847 "View other legislation sponsored by Texas Representative Matthew Shaheen")[R]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-02-28 | House | Referred to Public Education |
+| 2025-02-28 | House | Read first time |
+| 2024-11-12 | House | Filed |
+
+Subjects
+--------
+
+[Education](http://legiscan.com/gaits/subject/5256 "View other legislative instruments with the Education subject")
+
+[Education--Primary & Secondary](http://legiscan.com/gaits/subject/5257 "View other legislative instruments with the Education--Primary & Secondary subject")
+
+[Education--Primary & Secondary--General](http://legiscan.com/gaits/subject/5493 "View other legislative instruments with the Education--Primary & Secondary--General subject")
+
+[Education--School Districts](http://legiscan.com/gaits/subject/5262 "View other legislative instruments with the Education--School Districts subject")
+
+[GANGS](http://legiscan.com/gaits/subject/6172 "View other legislative instruments with the GANGS subject")
+
+[TERRORISM & INTERNAL SECURITY](http://legiscan.com/gaits/subject/6179 "View other legislative instruments with the TERRORISM & INTERNAL SECURITY subject")
+
+Texas State Sources
+-------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB340](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=HB340) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00340I.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/HB00340I.htm) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

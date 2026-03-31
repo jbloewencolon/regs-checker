@@ -1,0 +1,176 @@
+Title: Connecticut SB00002 | 2026 | General Assembly
+
+URL Source: http://legiscan.com/CT/bill/SB2
+
+Markdown Content:
+CT SB00002 | 2026 | General Assembly | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CT/bill/SB2#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+CT SB00002 | 2026 | General Assembly
+====================================
+
+[](http://legiscan.com/CT/bill/SB2 "Share on Facebook")[](http://legiscan.com/CT/bill/SB2 "Share on Bluesky")[](http://legiscan.com/CT/bill/SB2 "Share on X")[](http://legiscan.com/CT/bill/SB2 "Share on LinkedIn")[](http://legiscan.com/CT/bill/SB2 "Share on reddit")[](http://legiscan.com/CT/bill/SB2 "Share on email")
+
+[Connecticut](http://legiscan.com/CT "View the Connecticut Legislative dashboard") Senate Bill 2
+================================================================================================
+
+[CT State Legislature page for SB00002](https://www.cga.ct.gov/asp/cgabillstatus/cgabillstatus.asp?selBillType=Bill&bill_num=SB00002&which_year=2026 "Connecticut State Legislature source page for SB00002")
+
+* * *
+
+*   [Summary](http://legiscan.com/CT/bill/SB00002/2026 "View Legislative Detail for Connecticut SB00002")
+*   [Sponsors](http://legiscan.com/CT/sponsors/SB00002/2026 "View Sponsors of Connecticut SB00002")
+*   [Texts](http://legiscan.com/CT/drafts/SB00002/2026 "View Bill Text Drafts for Connecticut SB00002")
+*   [Votes](http://legiscan.com/CT/votes/SB00002/2026 "View Roll Call Votes on Connecticut SB00002")
+*   [Research](http://legiscan.com/CT/research/SB00002/2026 "View Legislation Research Information on Connecticut SB00002")
+*   [Comments](http://legiscan.com/CT/comments/SB00002/2026 "View Social & PolitiCorps Commentary on Connecticut SB00002")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Connecticut SB00002 and other CT legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Democrat 23)
+
+Status: Introduced on February 4 2026 - 25% progression
+
+Action: 2026-02-13 - Vote to Draft
+
+Pending: [Joint Finance, Revenue and Bonding Committee](http://legiscan.com/CT/pending/joint-finance-revenue-bonding-committee/id/1346 "View other bills referred to CT Joint Finance, Revenue and Bonding Committee")
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/CT/text/SB00002/2026 "View latest bill text for Connecticut SB00002")
+
+Summary
+-------
+
+To lower costs for businesses and the costs businesses pass on to consumers.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Connecticut SB00002 and other CT legislation") or view this same bill number from [multiple sessions](http://legiscan.com/CT/research/SB00002 "Research for CT SB00002 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Connecticut and national legislation").
+
+Title
+-----
+
+An Act Supporting Local Commerce.
+
+Sponsors
+--------
+
+[Sen. Martin Looney](http://legiscan.com/CT/people/martin-looney/id/5631 "View other legislation sponsored by Connecticut Senator Martin Looney")[D][Sen. Robert Duff](http://legiscan.com/CT/people/robert-duff/id/5686 "View other legislation sponsored by Connecticut Senator Robert Duff")[D][Sen. Saud Anwar](http://legiscan.com/CT/people/saud-anwar/id/21290 "View other legislation sponsored by Connecticut Senator Saud Anwar")[D][Sen. Jorge Cabrera](http://legiscan.com/CT/people/jorge-cabrera/id/22168 "View other legislation sponsored by Connecticut Senator Jorge Cabrera")[D]
+[Sen. Christine Cohen](http://legiscan.com/CT/people/christine-cohen/id/20273 "View other legislation sponsored by Connecticut Senator Christine Cohen")[D][Sen. Mae Flexer](http://legiscan.com/CT/people/mae-flexer/id/5802 "View other legislation sponsored by Connecticut Senator Mae Flexer")[D][Sen. Sujata Gadkar-Wilcox](http://legiscan.com/CT/people/sujata-gadkar-wilcox/id/25984 "View other legislation sponsored by Connecticut Senator Sujata Gadkar-Wilcox")[D][Sen. Herron Gaston](http://legiscan.com/CT/people/herron-gaston/id/23568 "View other legislation sponsored by Connecticut Senator Herron Gaston")[D]
+[Sen. Joan Hartley](http://legiscan.com/CT/people/joan-hartley/id/5829 "View other legislation sponsored by Connecticut Senator Joan Hartley")[D][Sen. Jan Hochadel](http://legiscan.com/CT/people/jan-hochadel/id/23569 "View other legislation sponsored by Connecticut Senator Jan Hochadel")[D][Sen. Paul Honig](http://legiscan.com/CT/people/paul-honig/id/25985 "View other legislation sponsored by Connecticut Senator Paul Honig")[D][Sen. Julie Kushner](http://legiscan.com/CT/people/julie-kushner/id/20281 "View other legislation sponsored by Connecticut Senator Julie Kushner")[D]
+[Sen. Matthew Lesser](http://legiscan.com/CT/people/matthew-lesser/id/5711 "View other legislation sponsored by Connecticut Senator Matthew Lesser")[D][Sen. Rick Lopes](http://legiscan.com/CT/people/rick-lopes/id/13879 "View other legislation sponsored by Connecticut Senator Rick Lopes")[D][Sen. Cici Maher](http://legiscan.com/CT/people/cecilia-maher/id/23567 "View other legislation sponsored by Connecticut Senator Cici Maher")[D][Sen. James Maroney](http://legiscan.com/CT/people/james-maroney/id/15085 "View other legislation sponsored by Connecticut Senator James Maroney")[D]
+[Sen. Martha Marx](http://legiscan.com/CT/people/martha-marx/id/23572 "View other legislation sponsored by Connecticut Senator Martha Marx")[D][Sen. Douglas McCrory](http://legiscan.com/CT/people/douglas-mccrory/id/5785 "View other legislation sponsored by Connecticut Senator Douglas McCrory")[D][Sen. Patricia Miller](http://legiscan.com/CT/people/patricia-miller/id/5721 "View other legislation sponsored by Connecticut Senator Patricia Miller")[D][Sen. Norman Needleman](http://legiscan.com/CT/people/norman-needleman/id/20288 "View other legislation sponsored by Connecticut Senator Norman Needleman")[D]
+[Sen. Catherine Osten](http://legiscan.com/CT/people/catherine-osten/id/14848 "View other legislation sponsored by Connecticut Senator Catherine Osten")[D][Sen. MD Rahman](http://legiscan.com/CT/people/md-rahman/id/23573 "View other legislation sponsored by Connecticut Senator MD Rahman")[D][Sen. Derek Slap](http://legiscan.com/CT/people/derek-slap/id/18260 "View other legislation sponsored by Connecticut Senator Derek Slap")[D]
+
+Roll Calls
+----------
+
+2026-02-13 - _Joint_ - [FIN Vote Tally Sheet (Vote to Draft)](http://legiscan.com/CT/rollcall/SB00002/id/1633211 "View roll call details for SB00002 vote FIN Vote Tally Sheet (Vote to Draft)") (Y: 0 N: 0 NV: 0 Abs: 0) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2026-02-13 | Senate | Vote to Draft |
+| 2026-02-04 | Senate | Referred to Joint Committee on Finance, Revenue and Bonding |
+
+Connecticut State Sources
+-------------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://www.cga.ct.gov/asp/cgabillstatus/cgabillstatus.asp?selBillType=Bill&bill_num=SB00002&which_year=2026](https://www.cga.ct.gov/asp/cgabillstatus/cgabillstatus.asp?selBillType=Bill&bill_num=SB00002&which_year=2026) |
+| Text | [https://www.cga.ct.gov/2026/TOB/S/PDF/2026SB-00002-R00-SB.PDF](https://www.cga.ct.gov/2026/TOB/S/PDF/2026SB-00002-R00-SB.PDF) |
+| Roll Call | [https://www.cga.ct.gov/2026/TS/S/PDF/2026SB-00002-R00FIN-CV7-TS.PDF](https://www.cga.ct.gov/2026/TS/S/PDF/2026SB-00002-R00FIN-CV7-TS.PDF) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

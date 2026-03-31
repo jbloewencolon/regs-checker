@@ -1,0 +1,191 @@
+Title: Colorado SB318 | 2025 | Regular Session
+
+URL Source: http://legiscan.com/CO/bill/SB318
+
+Markdown Content:
+CO SB318 | 2025 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CO/bill/SB318#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+CO SB318 | 2025 | Regular Session
+=================================
+
+[](http://legiscan.com/CO/bill/SB318 "Share on Facebook")[](http://legiscan.com/CO/bill/SB318 "Share on Bluesky")[](http://legiscan.com/CO/bill/SB318 "Share on X")[](http://legiscan.com/CO/bill/SB318 "Share on LinkedIn")[](http://legiscan.com/CO/bill/SB318 "Share on reddit")[](http://legiscan.com/CO/bill/SB318 "Share on email")
+
+[Colorado](http://legiscan.com/CO "View the Colorado Legislative dashboard") Senate Bill 318 _**([Prior Session Legislation](http://legiscan.com/CO/research/SB318/2025 "Right number, wrong year? View Colorado SB318 from current and past sessions"))**_
+===========================================================================================================================================================================================================================================================
+
+[CO State Legislature page for SB318](https://leg.colorado.gov/bills/sb25-318 "Colorado State Legislature source page for SB318")
+
+* * *
+
+*   [Summary](http://legiscan.com/CO/bill/SB318/2025 "View Legislative Detail for Colorado SB318")
+*   [Sponsors](http://legiscan.com/CO/sponsors/SB318/2025 "View Sponsors of Colorado SB318")
+*   [Texts](http://legiscan.com/CO/drafts/SB318/2025 "View Bill Text Drafts for Colorado SB318")
+*   [Votes](http://legiscan.com/CO/votes/SB318/2025 "View Roll Call Votes on Colorado SB318")
+*   [Research](http://legiscan.com/CO/research/SB318/2025 "View Legislation Research Information on Colorado SB318")
+*   [Comments](http://legiscan.com/CO/comments/SB318/2025 "View Social & PolitiCorps Commentary on Colorado SB318")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Colorado SB318 and other CO legislation")
+
+Status
+------
+
+**Completed Legislative Action**
+
+Spectrum: Partisan Bill (Democrat 2)
+
+Status: Failed on May 5 2025 - 100% progression
+
+Action: 2025-05-05 - Senate Committee on Business, Labor, & Technology Postpone Indefinitely
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/CO/text/SB318/2025 "View latest bill text for Colorado SB318")
+
+Summary
+-------
+
+Concerning consumer protections in interactions with artificial intelligence systems.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Colorado SB318 and other CO legislation") or view this same bill number from [multiple sessions](http://legiscan.com/CO/research/SB318/2025 "Research for CO SB318 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Colorado and national legislation").
+
+Title
+-----
+
+Artificial Intelligence Consumer Protections
+
+Sponsors
+--------
+
+[Sen. Robert Rodriguez](http://legiscan.com/CO/people/robert-rodriguez/id/20031 "View other legislation sponsored by Colorado Senator Robert Rodriguez")[D][Rep. Brianna Titone](http://legiscan.com/CO/people/brianna-titone/id/20142 "View other legislation sponsored by Colorado Representative Brianna Titone")[D]
+
+Roll Calls
+----------
+
+2025-05-05 - _Senate_ - [Senate Business, Labor, & Technology: Postpone Senate Bill 25-318 indefinitely.](http://legiscan.com/CO/rollcall/SB318/id/1569734 "View roll call details for SB318 vote Senate Business, Labor, & Technology: Postpone Senate Bill 25-318 indefinitely.") (Y: 5 N: 2 NV: 0 Abs: 0) [PASS]
+
+2025-05-05 - _Senate_ - [Senate Business, Labor, & Technology: Postpone Senate Bill 25-318 indefinitely.](http://legiscan.com/CO/rollcall/SB318/id/1564907 "View roll call details for SB318 vote Senate Business, Labor, & Technology: Postpone Senate Bill 25-318 indefinitely.") (Y: 5 N: 2 NV: 0 Abs: 0) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-05-05 | Senate | Senate Committee on Business, Labor, & Technology Postpone Indefinitely |
+| 2025-04-28 | Senate | Introduced In Senate - Assigned to Business, Labor, & Technology |
+
+Subjects
+--------
+
+[Business & Economic Development](http://legiscan.com/gaits/subject/176618 "View other legislative instruments with the Business & Economic Development subject")
+
+[Telecommunications & Information Technology](http://legiscan.com/gaits/subject/177142 "View other legislative instruments with the Telecommunications & Information Technology subject")
+
+Colorado State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://leg.colorado.gov/bills/sb25-318](https://leg.colorado.gov/bills/sb25-318) |
+| Text | [https://leg.colorado.gov/sites/default/files/documents/2025A/bills/2025a_318_01.pdf](https://leg.colorado.gov/sites/default/files/documents/2025A/bills/2025a_318_01.pdf) |
+| Amendment | [https://s3-us-west-2.amazonaws.com/leg.colorado.gov/2025A/amendments/BC5261E7C4E2F63787258C7E00578474/SB318_L.014.pdf](https://s3-us-west-2.amazonaws.com/leg.colorado.gov/2025A/amendments/BC5261E7C4E2F63787258C7E00578474/SB318_L.014.pdf) |
+| Supplement | [https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_00.pdf](https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_00.pdf) |
+| Supplement | [https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_r1.pdf](https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_r1.pdf) |
+| Supplement | [https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_f1.pdf](https://leg.colorado.gov/sites/default/files/documents/2025A/bills/fn/2025a_sb318_f1.pdf) |
+| Roll Call | [https://leg.colorado.gov/content/6a4104a3a717e90b87258c81005f8e89-sb25-318-0-activity-vote-summary](https://leg.colorado.gov/content/6a4104a3a717e90b87258c81005f8e89-sb25-318-0-activity-vote-summary) |
+| Roll Call | [https://leg.colorado.gov/content/6a4104a3a717e90b87258c81005f8e89-sb25-318-1-activity-vote-summary](https://leg.colorado.gov/content/6a4104a3a717e90b87258c81005f8e89-sb25-318-1-activity-vote-summary) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

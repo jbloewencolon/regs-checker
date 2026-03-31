@@ -1,0 +1,293 @@
+Title: LegiScan | Utah State Legislative Dashboard
+
+URL Source: http://legiscan.com/UT/search?keyword=SB226
+
+Markdown Content:
+Utah Legislature | 2026 | General Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/UT/search?keyword=SB226#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Utah Legislature | 2026 | General Session
+=========================================
+
+*   [AK](http://legiscan.com/AK "Legislative dashboard for Alaska")
+*   [AL](http://legiscan.com/AL "Legislative dashboard for Alabama")
+*   [AR](http://legiscan.com/AR "Legislative dashboard for Arkansas")
+*   [AZ](http://legiscan.com/AZ "Legislative dashboard for Arizona")
+*   [CA](http://legiscan.com/CA "Legislative dashboard for California")
+*   [CO](http://legiscan.com/CO "Legislative dashboard for Colorado")
+*   [CT](http://legiscan.com/CT "Legislative dashboard for Connecticut")
+*   [DE](http://legiscan.com/DE "Legislative dashboard for Delaware")
+*   [FL](http://legiscan.com/FL "Legislative dashboard for Florida")
+*   [GA](http://legiscan.com/GA "Legislative dashboard for Georgia")
+*   [HI](http://legiscan.com/HI "Legislative dashboard for Hawaii")
+*   [IA](http://legiscan.com/IA "Legislative dashboard for Iowa")
+*   [ID](http://legiscan.com/ID "Legislative dashboard for Idaho")
+*   [IL](http://legiscan.com/IL "Legislative dashboard for Illinois")
+*   [IN](http://legiscan.com/IN "Legislative dashboard for Indiana")
+*   [KS](http://legiscan.com/KS "Legislative dashboard for Kansas")
+*   [KY](http://legiscan.com/KY "Legislative dashboard for Kentucky")
+*   [LA](http://legiscan.com/LA "Legislative dashboard for Louisiana")
+*   [MA](http://legiscan.com/MA "Legislative dashboard for Massachusetts")
+*   [MD](http://legiscan.com/MD "Legislative dashboard for Maryland")
+*   [ME](http://legiscan.com/ME "Legislative dashboard for Maine")
+*   [MI](http://legiscan.com/MI "Legislative dashboard for Michigan")
+*   [MN](http://legiscan.com/MN "Legislative dashboard for Minnesota")
+*   [MO](http://legiscan.com/MO "Legislative dashboard for Missouri")
+*   [MS](http://legiscan.com/MS "Legislative dashboard for Mississippi")
+*   [MT](http://legiscan.com/MT "Legislative dashboard for Montana")
+*   [NC](http://legiscan.com/NC "Legislative dashboard for North Carolina")
+*   [ND](http://legiscan.com/ND "Legislative dashboard for North Dakota")
+*   [NE](http://legiscan.com/NE "Legislative dashboard for Nebraska")
+*   [NH](http://legiscan.com/NH "Legislative dashboard for New Hampshire")
+*   [NJ](http://legiscan.com/NJ "Legislative dashboard for New Jersey")
+*   [NM](http://legiscan.com/NM "Legislative dashboard for New Mexico")
+*   [NV](http://legiscan.com/NV "Legislative dashboard for Nevada")
+*   [NY](http://legiscan.com/NY "Legislative dashboard for New York")
+*   [OH](http://legiscan.com/OH "Legislative dashboard for Ohio")
+*   [OK](http://legiscan.com/OK "Legislative dashboard for Oklahoma")
+*   [OR](http://legiscan.com/OR "Legislative dashboard for Oregon")
+*   [PA](http://legiscan.com/PA "Legislative dashboard for Pennsylvania")
+*   [RI](http://legiscan.com/RI "Legislative dashboard for Rhode Island")
+*   [SC](http://legiscan.com/SC "Legislative dashboard for South Carolina")
+*   [SD](http://legiscan.com/SD "Legislative dashboard for South Dakota")
+*   [TN](http://legiscan.com/TN "Legislative dashboard for Tennessee")
+*   [TX](http://legiscan.com/TX "Legislative dashboard for Texas")
+*   [UT](http://legiscan.com/UT "Legislative dashboard for Utah")
+*   [VA](http://legiscan.com/VA "Legislative dashboard for Virginia")
+*   [VT](http://legiscan.com/VT "Legislative dashboard for Vermont")
+*   [WA](http://legiscan.com/WA "Legislative dashboard for Washington")
+*   [WI](http://legiscan.com/WI "Legislative dashboard for Wisconsin")
+*   [WV](http://legiscan.com/WV "Legislative dashboard for West Virginia")
+*   [WY](http://legiscan.com/WY "Legislative dashboard for Wyoming")
+*   [DC](http://legiscan.com/DC "Legislative dashboard for Washington D.C.")
+*   [US](http://legiscan.com/US "Legislative dashboard for US Congress")
+
+[](http://legiscan.com/UT/search?keyword=SB226 "Share on Facebook")[](http://legiscan.com/UT/search?keyword=SB226 "Share on Bluesky")[](http://legiscan.com/UT/search?keyword=SB226 "Share on X")[](http://legiscan.com/UT/search?keyword=SB226 "Share on LinkedIn")[](http://legiscan.com/UT/search?keyword=SB226 "Share on reddit")[](http://legiscan.com/UT/search?keyword=SB226 "Share on email")
+
+### [Utah Dashboard](http://legiscan.com/UT "Go to the legislative dashboard for Utah") - [Utah Legislation](http://legiscan.com/UT/legislation "View current legislation in Utah") - [Utah Datasets](http://legiscan.com/UT/datasets "Download data archives of Utah legislation") - [Utah Roster](http://legiscan.com/UT/roster "Roster of Utah legislators") - [Utah Trends](http://legiscan.com/UT/trends "Trending legislation in Utah")
+
+### Active Utah Bills ([Introduced](http://legiscan.com/UT/legislation?status=introduced "View other introduced legislation in Utah"), [Engrossed](http://legiscan.com/UT/legislation?status=engrossed "View other engrossed legislation in Utah"), [Enrolled](http://legiscan.com/UT/legislation?status=enrolled "View other enrolled legislation in Utah"), [Passed](http://legiscan.com/UT/legislation?status=passed "View other passed legislation in Utah"))
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| Bill | Summary | Action |
+| --- | --- | --- |
+| [HB0370](http://legiscan.com/UT/bill/HB0370/2026 "View detailed bill information for UT HB0370") | Sex Offender Oversight Amendments | 2026-02-23 [To Senate Rules Committee](http://legiscan.com/UT/pending/senate-rules-committee/id/2128 "View other bills referred to Utah Senate Rules Committee") |
+| [SB0019](http://legiscan.com/UT/bill/SB0019/2026 "View detailed bill information for UT SB0019") | Digital Evidence Amendments | 2026-02-23 Draft of Enrolled Bill Prepared in Legislative Research and General Counsel / Enrolling |
+| [SB0133](http://legiscan.com/UT/bill/SB0133/2026 "View detailed bill information for UT SB0133") | Offender Registry Amendments | 2026-02-23 [To House Rules Committee](http://legiscan.com/UT/pending/house-rules-committee/id/2116 "View other bills referred to Utah House Rules Committee") |
+| [HB0070](http://legiscan.com/UT/bill/HB0070/2026 "View detailed bill information for UT HB0070") | Correctional Health Services Amendments | 2026-02-23 [To Senate Rules Committee](http://legiscan.com/UT/pending/senate-rules-committee/id/2128 "View other bills referred to Utah Senate Rules Committee") |
+| [SB0149](http://legiscan.com/UT/bill/SB0149/2026 "View detailed bill information for UT SB0149") | Licensing Modifications | 2026-02-23 LFA/ fiscal note publicly available for SB0149S01 in Released |
+| [SB0316](http://legiscan.com/UT/bill/SB0316/2026 "View detailed bill information for UT SB0316") | Public Employee Attorney Fee Recovery Amendments | 2026-02-23 [To Senate Rules Committee](http://legiscan.com/UT/pending/senate-rules-committee/id/2128 "View other bills referred to Utah Senate Rules Committee") |
+| [SB0181](http://legiscan.com/UT/bill/SB0181/2026 "View detailed bill information for UT SB0181") | School Discipline Amendments | 2026-02-23 LFA/ bill sent to agencies for fiscal input for SB0181S02 in Legislative Fiscal Agency |
+| [SB0224](http://legiscan.com/UT/bill/SB0224/2026 "View detailed bill information for UT SB0224") | Vital Records Access Amendments | 2026-02-23 Senate/ to House in Clerk of the House |
+| [HB0331](http://legiscan.com/UT/bill/HB0331/2026 "View detailed bill information for UT HB0331") | Criminal Offenses Modifications | 2026-02-23 LFA/ fiscal note publicly available for HB0331S01 in Released |
+| [HB0147](http://legiscan.com/UT/bill/HB0147/2026 "View detailed bill information for UT HB0147") | Government Form Submission Amendments | 2026-02-23 [To Senate Rules Committee](http://legiscan.com/UT/pending/senate-rules-committee/id/2128 "View other bills referred to Utah Senate Rules Committee") |
+
+### Top Utah Sponsors
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| House Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Rep. Ryan Wilcox](http://legiscan.com/UT/people/ryan-wilcox/id/8151 "View other bills sponsored by Rep. Ryan Wilcox") [R] | 45 | [![Image 2: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/83db648b6afc48a9a8257ac5aba819ec.rss) |
+| [Rep. Tyler Clancy](http://legiscan.com/UT/people/tyler-clancy/id/24493 "View other bills sponsored by Rep. Tyler Clancy") [R] | 39 | [![Image 3: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/0dbdf74d4adb69183b8d123624d7357f.rss) |
+| [Rep. David Shallenberger](http://legiscan.com/UT/people/david-shallenberger/id/25728 "View other bills sponsored by Rep. David Shallenberger") [R] | 34 | [![Image 4: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/01f79314ff3e79ab4025b22521c217bd.rss) |
+| [Rep. Jordan Teuscher](http://legiscan.com/UT/people/jordan-teuscher/id/22378 "View other bills sponsored by Rep. Jordan Teuscher") [R] | 30 | [![Image 5: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/66990ee54eb1db9a463669c00d4c728e.rss) |
+| [Rep. Steve Eliason](http://legiscan.com/UT/people/steven-eliason/id/12088 "View other bills sponsored by Rep. Steve Eliason") [R] | 28 | [![Image 6: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/6b4ca03d066c70f594d6daa4a85778fd.rss) |
+
+| Senate Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Sen. Brady Brammer](http://legiscan.com/UT/people/brady-brammer/id/21105 "View other bills sponsored by Sen. Brady Brammer") [R] | 53 | [![Image 7: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/3b3946d0a90592b975af6e9386a18051.rss) |
+| [Sen. Todd Weiler](http://legiscan.com/UT/people/todd-weiler/id/13816 "View other bills sponsored by Sen. Todd Weiler") [R] | 52 | [![Image 8: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/3da43671d33d36f7fabe0aeb58cae30f.rss) |
+| [Sen. Evan Vickers](http://legiscan.com/UT/people/evan-vickers/id/8186 "View other bills sponsored by Sen. Evan Vickers") [R] | 51 | [![Image 9: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/f4dd5b8e24fca26b669baa6cae2d5f0b.rss) |
+| [Sen. Keven Stratton](http://legiscan.com/UT/people/keven-stratton/id/15461 "View other bills sponsored by Sen. Keven Stratton") [R] | 45 | [![Image 10: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/3e2bcc40e9518c56e07e8162c7b2866d.rss) |
+| [Sen. Mike McKell](http://legiscan.com/UT/people/mike-mckell/id/15458 "View other bills sponsored by Sen. Mike McKell") [R] | 41 | [![Image 11: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/638b91d3f83e618dae02b85e156f2df8.rss) |
+
+### Top Utah Committees
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| House Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Rules](http://legiscan.com/UT/pending/house-rules-committee/id/2116 "View other bills referred to Utah House Rules") | 72 | [![Image 12: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/2c6a9af3e793a6f5557231bb2adf8f1e.rss) |
+| [Judiciary](http://legiscan.com/UT/pending/house-judiciary-committee/id/2109 "View other bills referred to Utah House Judiciary") | 8 | [![Image 13: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/001c7e33fe0207e67cd69f88fd9eba9c.rss) |
+| [Business, Labor, and Commerce](http://legiscan.com/UT/pending/house-business-labor-commerce-committee/id/5042 "View other bills referred to Utah House Business, Labor, and Commerce") | 7 | [![Image 14: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/8448daa0398786f3fa7b1f5ada617b3d.rss) |
+| [Political Subdivisions](http://legiscan.com/UT/pending/house-political-subdivisions-committee/id/2112 "View other bills referred to Utah House Political Subdivisions") | 7 | [![Image 15: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/c5a67e57ec8b0fbd7cff85b830aad5dc.rss) |
+| [Revenue and Taxation](http://legiscan.com/UT/pending/house-revenue-taxation-committee/id/2115 "View other bills referred to Utah House Revenue and Taxation") | 7 | [![Image 16: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/0090c110be5199d427d2cab104993a9a.rss) |
+
+| Senate Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Rules](http://legiscan.com/UT/pending/senate-rules-committee/id/2128 "View other bills referred to Utah Senate Rules") | 71 | [![Image 17: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/df922f85a4ebf8b630017c5d506a7a78.rss) |
+| [Education](http://legiscan.com/UT/pending/senate-education-committee/id/2120 "View other bills referred to Utah Senate Education") | 16 | [![Image 18: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/f41e7050b1082cdfbd3cdbd8b7eac0f2.rss) |
+| [Judiciary, Law Enforcement, and Criminal Justice](http://legiscan.com/UT/pending/senate-judiciary-law-enforcement-criminal-justice-committee/id/2124 "View other bills referred to Utah Senate Judiciary, Law Enforcement, and Criminal Justice") | 16 | [![Image 19: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/4cfc8648eb6c07c36c9303d80d587fcd.rss) |
+| [Business and Labor](http://legiscan.com/UT/pending/senate-business-labor-committee/id/2119 "View other bills referred to Utah Senate Business and Labor") | 13 | [![Image 20: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/3c8be349b568308e4c74567c0f1df110.rss) |
+| [Transportation, Public Utilities, Energy, and Technology](http://legiscan.com/UT/pending/senate-transportation-public-utilities-energy-technology-committee/id/3583 "View other bills referred to Utah Senate Transportation, Public Utilities, Energy, and Technology") | 7 | [![Image 21: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/21752bfd12ca9dd2a8030c2c8fa314ba.rss) |
+
+### Most Viewed Utah Bills
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| Bill | Summary | Text |
+| --- | --- | :---: |
+| [SB0211](http://legiscan.com/UT/bill/SB0211/2026 "View detailed bill information for UT SB0211") | Tort Amendments | [Bill Text](http://legiscan.com/UT/text/SB0211/2026 "View latest bill text for UT SB0211") |
+| [SB0038](http://legiscan.com/UT/bill/SB0038/2026 "View detailed bill information for UT SB0038") | Consumer Protection Modifications | [Bill Text](http://legiscan.com/UT/text/SB0038/2026 "View latest bill text for UT SB0038") |
+| [HB0183](http://legiscan.com/UT/bill/HB0183/2026 "View detailed bill information for UT HB0183") | Sex Designation Amendments | [Bill Text](http://legiscan.com/UT/text/HB0183/2026 "View latest bill text for UT HB0183") |
+| [SB0229](http://legiscan.com/UT/bill/SB0229/2026 "View detailed bill information for UT SB0229") | State Employee Benefits Amendments | [Bill Text](http://legiscan.com/UT/text/SB0229/2026 "View latest bill text for UT SB0229") |
+| [SB0045](http://legiscan.com/UT/bill/SB0045/2026 "View detailed bill information for UT SB0045") | Kratom Adjustments | [Bill Text](http://legiscan.com/UT/text/SB0045/2026 "View latest bill text for UT SB0045") |
+| [HB0029](http://legiscan.com/UT/bill/HB0029/2026 "View detailed bill information for UT HB0029") | Unfair and Deceptive Pricing Amendments | [Bill Text](http://legiscan.com/UT/text/HB0029/2026 "View latest bill text for UT HB0029") |
+| [HB0287](http://legiscan.com/UT/bill/HB0287/2026 "View detailed bill information for UT HB0287") | Immigrant Driving Amendments | [Bill Text](http://legiscan.com/UT/text/HB0287/2026 "View latest bill text for UT HB0287") |
+| [HB0286](http://legiscan.com/UT/bill/HB0286/2026 "View detailed bill information for UT HB0286") | Artificial Intelligence Transparency Amendments | [Bill Text](http://legiscan.com/UT/text/HB0286/2026 "View latest bill text for UT HB0286") |
+| [HB0399](http://legiscan.com/UT/bill/HB0399/2026 "View detailed bill information for UT HB0399") | Prohibition Against Student Character Tracking and Grading Systems | [Bill Text](http://legiscan.com/UT/text/HB0399/2026 "View latest bill text for UT HB0399") |
+| [HB0360](http://legiscan.com/UT/bill/HB0360/2026 "View detailed bill information for UT HB0360") | School Athlete Amendments | [Bill Text](http://legiscan.com/UT/text/HB0360/2026 "View latest bill text for UT HB0360") |
+
+### Most Monitored Utah Bills
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| Bill | Summary | Text |
+| --- | --- | --- |
+| [SB0038](http://legiscan.com/UT/bill/SB0038/2026 "View detailed bill information for UT SB0038") | Consumer Protection Modifications | [Bill Text](http://legiscan.com/UT/text/SB0038/2026 "View latest bill text for UT SB0038") |
+| [HB0438](http://legiscan.com/UT/bill/HB0438/2026 "View detailed bill information for UT HB0438") | Artificial Intelligence Amendments | [Bill Text](http://legiscan.com/UT/text/HB0438/2026 "View latest bill text for UT HB0438") |
+| [HB0029](http://legiscan.com/UT/bill/HB0029/2026 "View detailed bill information for UT HB0029") | Unfair and Deceptive Pricing Amendments | [Bill Text](http://legiscan.com/UT/text/HB0029/2026 "View latest bill text for UT HB0029") |
+| [HB0450](http://legiscan.com/UT/bill/HB0450/2026 "View detailed bill information for UT HB0450") | Data Privacy Amendments | [Bill Text](http://legiscan.com/UT/text/HB0450/2026 "View latest bill text for UT HB0450") |
+| [HB0276](http://legiscan.com/UT/bill/HB0276/2026 "View detailed bill information for UT HB0276") | Artificial Intelligence Modifications | [Bill Text](http://legiscan.com/UT/text/HB0276/2026 "View latest bill text for UT HB0276") |
+| [HB0286](http://legiscan.com/UT/bill/HB0286/2026 "View detailed bill information for UT HB0286") | Artificial Intelligence Transparency Amendments | [Bill Text](http://legiscan.com/UT/text/HB0286/2026 "View latest bill text for UT HB0286") |
+| [SB0293](http://legiscan.com/UT/bill/SB0293/2026 "View detailed bill information for UT SB0293") | Consumer Pricing Data Amendments | [Bill Text](http://legiscan.com/UT/text/SB0293/2026 "View latest bill text for UT SB0293") |
+| [HB0498](http://legiscan.com/UT/bill/HB0498/2026 "View detailed bill information for UT HB0498") | Utah App Store Accountability Act Amendments | [Bill Text](http://legiscan.com/UT/text/HB0498/2026 "View latest bill text for UT HB0498") |
+| [SB0177](http://legiscan.com/UT/bill/SB0177/2026 "View detailed bill information for UT SB0177") | Product Pricing Amendments | [Bill Text](http://legiscan.com/UT/text/SB0177/2026 "View latest bill text for UT SB0177") |
+| [SB0123](http://legiscan.com/UT/bill/SB0123/2026 "View detailed bill information for UT SB0123") | Privacy and Cybersecurity Amendments | [Bill Text](http://legiscan.com/UT/text/SB0123/2026 "View latest bill text for UT SB0123") |
+
+### Utah Sessions
+
+[](http://legiscan.com/UT/search?keyword=SB226)
+| Year | Session | Introduced | Completed | Legislation | Search | Dataset |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026 | General Session | 991 | 15 | [Browse](http://legiscan.com/UT/legislation/2026) | [Search](http://legiscan.com/gaits/search?sid=2214) | [Download](http://legiscan.com/UT/datasets) |
+| 2025 | 2nd Special Session | 5 | 3 | [Browse](http://legiscan.com/UT/legislation/2025/X2) | [Search](http://legiscan.com/gaits/search?sid=2238) | [Download](http://legiscan.com/UT/datasets) |
+| 2025 | 1st Special Session | 18 | 17 | [Browse](http://legiscan.com/UT/legislation/2025/X1) | [Search](http://legiscan.com/gaits/search?sid=2228) | [Download](http://legiscan.com/UT/datasets) |
+| 2025 | General Session | 959 | 549 | [Browse](http://legiscan.com/UT/legislation/2025) | [Search](http://legiscan.com/gaits/search?sid=2137) | [Download](http://legiscan.com/UT/datasets) |
+| 2024 | 4th Special Session | 4 | 3 | [Browse](http://legiscan.com/UT/legislation/2024/X4) | [Search](http://legiscan.com/gaits/search?sid=2153) | [Download](http://legiscan.com/UT/datasets) |
+| 2024 | 3rd Special Session | 7 | 6 | [Browse](http://legiscan.com/UT/legislation/2024/X3) | [Search](http://legiscan.com/gaits/search?sid=2138) | [Download](http://legiscan.com/UT/datasets) |
+| 2024 | General Session | 934 | 550 | [Browse](http://legiscan.com/UT/legislation/2024) | [Search](http://legiscan.com/gaits/search?sid=2050) | [Download](http://legiscan.com/UT/datasets) |
+| 2023 | 1st House Extraordinary Session | 1 | 0 | [Browse](http://legiscan.com/UT/legislation/2023/A1) | [Search](http://legiscan.com/gaits/search?sid=2109) | [Download](http://legiscan.com/UT/datasets) |
+| 2023 | 2nd Special Session | 1 | 1 | [Browse](http://legiscan.com/UT/legislation/2023/X2) | [Search](http://legiscan.com/gaits/search?sid=2056) | [Download](http://legiscan.com/UT/datasets) |
+| 2023 | 1st Special Session | 4 | 3 | [Browse](http://legiscan.com/UT/legislation/2023/X1) | [Search](http://legiscan.com/gaits/search?sid=2049) | [Download](http://legiscan.com/UT/datasets) |
+| 2023 | General Session | 929 | 547 | [Browse](http://legiscan.com/UT/legislation/2023) | [Search](http://legiscan.com/gaits/search?sid=1978) | [Download](http://legiscan.com/UT/datasets) |
+| 2022 | 3rd Special Session | 2 | 1 | [Browse](http://legiscan.com/UT/legislation/2022/X3) | [Search](http://legiscan.com/gaits/search?sid=1974) | [Download](http://legiscan.com/UT/datasets) |
+| 2022 | General Session | 814 | 495 | [Browse](http://legiscan.com/UT/legislation/2022) | [Search](http://legiscan.com/gaits/search?sid=1831) | [Download](http://legiscan.com/UT/datasets) |
+| 2021 | 2nd Special Session | 12 | 12 | [Browse](http://legiscan.com/UT/legislation/2021/X2) | [Search](http://legiscan.com/gaits/search?sid=1940) | [Download](http://legiscan.com/UT/datasets) |
+| 2021 | 1st Special Session | 19 | 15 | [Browse](http://legiscan.com/UT/legislation/2021/X1) | [Search](http://legiscan.com/gaits/search?sid=1833) | [Download](http://legiscan.com/UT/datasets) |
+| 2021 | 1st Senate Extraordinary Session | 2 | 0 | [Browse](http://legiscan.com/UT/legislation/2021/B1) | [Search](http://legiscan.com/gaits/search?sid=1835) | [Download](http://legiscan.com/UT/datasets) |
+| 2021 | 1st House Extraordinary Session | 2 | 0 | [Browse](http://legiscan.com/UT/legislation/2021/A1) | [Search](http://legiscan.com/gaits/search?sid=1834) | [Download](http://legiscan.com/UT/datasets) |
+| 2021 | General Session | 769 | 462 | [Browse](http://legiscan.com/UT/legislation/2021) | [Search](http://legiscan.com/gaits/search?sid=1743) | [Download](http://legiscan.com/UT/datasets) |
+| 2020 | 6th Special Session | 24 | 19 | [Browse](http://legiscan.com/UT/legislation/2020/X6) | [Search](http://legiscan.com/gaits/search?sid=1765) | [Download](http://legiscan.com/UT/datasets) |
+| 2020 | 5th Special Session | 30 | 23 | [Browse](http://legiscan.com/UT/legislation/2020/X5) | [Search](http://legiscan.com/gaits/search?sid=1751) | [Download](http://legiscan.com/UT/datasets) |
+| 2020 | 4th Special Session | 4 | 4 | [Browse](http://legiscan.com/UT/legislation/2020/X4) | [Search](http://legiscan.com/gaits/search?sid=1742) | [Download](http://legiscan.com/UT/datasets) |
+| 2020 | 3rd Special Session | 21 | 14 | [Browse](http://legiscan.com/UT/legislation/2020/X3) | [Search](http://legiscan.com/gaits/search?sid=1741) | [Download](http://legiscan.com/UT/datasets) |
+| 2020 | General Session | 834 | 476 | [Browse](http://legiscan.com/UT/legislation/2020) | [Search](http://legiscan.com/gaits/search?sid=1663) | [Download](http://legiscan.com/UT/datasets) |
+| 2019 | 2nd Special Session | 2 | 2 | [Browse](http://legiscan.com/UT/legislation/2019/X2) | [Search](http://legiscan.com/gaits/search?sid=1736) | [Download](http://legiscan.com/UT/datasets) |
+| 2019 | 1st Special Session | 6 | 5 | [Browse](http://legiscan.com/UT/legislation/2019/X1) | [Search](http://legiscan.com/gaits/search?sid=1713) | [Download](http://legiscan.com/UT/datasets) |
+| 2019 | General Session | 844 | 538 | [Browse](http://legiscan.com/UT/legislation/2019) | [Search](http://legiscan.com/gaits/search?sid=1558) | [Download](http://legiscan.com/UT/datasets) |
+| 2018 | 3rd Special Session | 3 | 3 | [Browse](http://legiscan.com/UT/legislation/2018/X3) | [Search](http://legiscan.com/gaits/search?sid=1619) | [Download](http://legiscan.com/UT/datasets) |
+| 2018 | 2nd Special Session | 10 | 9 | [Browse](http://legiscan.com/UT/legislation/2018/X2) | [Search](http://legiscan.com/gaits/search?sid=1600) | [Download](http://legiscan.com/UT/datasets) |
+| 2018 | Regular Session | 817 | 497 | [Browse](http://legiscan.com/UT/legislation/2018) | [Search](http://legiscan.com/gaits/search?sid=1455) | [Download](http://legiscan.com/UT/datasets) |
+| 2017 | 1st Special Session | 4 | 3 | [Browse](http://legiscan.com/UT/legislation/2017/X1) | [Search](http://legiscan.com/gaits/search?sid=1475) | [Download](http://legiscan.com/UT/datasets) |
+| 2017 | Regular Session | 812 | 503 | [Browse](http://legiscan.com/UT/legislation/2017) | [Search](http://legiscan.com/gaits/search?sid=1225) | [Download](http://legiscan.com/UT/datasets) |
+| 2016 | 4th Special Session | 2 | 2 | [Browse](http://legiscan.com/UT/legislation/2016/X4) | [Search](http://legiscan.com/gaits/search?sid=1436) | [Download](http://legiscan.com/UT/datasets) |
+| 2016 | 3rd Special Session | 9 | 8 | [Browse](http://legiscan.com/UT/legislation/2016/X3) | [Search](http://legiscan.com/gaits/search?sid=1251) | [Download](http://legiscan.com/UT/datasets) |
+| 2016 | 2nd Special Session | 2 | 2 | [Browse](http://legiscan.com/UT/legislation/2016/X2) | [Search](http://legiscan.com/gaits/search?sid=1226) | [Download](http://legiscan.com/UT/datasets) |
+| 2016 | Regular Session | 821 | 446 | [Browse](http://legiscan.com/UT/legislation/2016) | [Search](http://legiscan.com/gaits/search?sid=1180) | [Download](http://legiscan.com/UT/datasets) |
+| 2015 | 1st Special Session | 6 | 5 | [Browse](http://legiscan.com/UT/legislation/2015/X1) | [Search](http://legiscan.com/gaits/search?sid=1181) | [Download](http://legiscan.com/UT/datasets) |
+| 2015 | Regular Session | 831 | 485 | [Browse](http://legiscan.com/UT/legislation/2015) | [Search](http://legiscan.com/gaits/search?sid=1150) | [Download](http://legiscan.com/UT/datasets) |
+| 2014 | Regular Session | 1127 | 452 | [Browse](http://legiscan.com/UT/legislation/2014) | [Search](http://legiscan.com/gaits/search?sid=1072) | [Download](http://legiscan.com/UT/datasets) |
+| 2013 | Regular Session | 1038 | 501 | [Browse](http://legiscan.com/UT/legislation/2013) | [Search](http://legiscan.com/gaits/search?sid=1020) | [Download](http://legiscan.com/UT/datasets) |
+| 2012 | Regular Session | 891 | 300 | [Browse](http://legiscan.com/UT/legislation/2012) | [Search](http://legiscan.com/gaits/search?sid=781) | [Download](http://legiscan.com/UT/datasets) |
+| 2011 | 3rd Special Session | 12 | 7 | [Browse](http://legiscan.com/UT/legislation/2011/X3) | [Search](http://legiscan.com/gaits/search?sid=780) | [Download](http://legiscan.com/UT/datasets) |
+| 2011 | 2nd Special Session | 6 | 6 | [Browse](http://legiscan.com/UT/legislation/2011/X2) | [Search](http://legiscan.com/gaits/search?sid=779) | [Download](http://legiscan.com/UT/datasets) |
+| 2011 | 1st Special Session | 1 | 1 | [Browse](http://legiscan.com/UT/legislation/2011/X1) | [Search](http://legiscan.com/gaits/search?sid=778) | [Download](http://legiscan.com/UT/datasets) |
+| 2011 | Regular Session | 929 | 145 | [Browse](http://legiscan.com/UT/legislation/2011) | [Search](http://legiscan.com/gaits/search?sid=125) | [Download](http://legiscan.com/UT/datasets) |
+| 2010 | 2nd Special Session | 2 | 0 | [Browse](http://legiscan.com/UT/legislation/2010/X2) | [Search](http://legiscan.com/gaits/search?sid=777) | [Download](http://legiscan.com/UT/datasets) |
+| 2010 | Regular Session | 833 | 143 | [Browse](http://legiscan.com/UT/legislation/2010) | [Search](http://legiscan.com/gaits/search?sid=53) | [Download](http://legiscan.com/UT/datasets) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 22: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)
