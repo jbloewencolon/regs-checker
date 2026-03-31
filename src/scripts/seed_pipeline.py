@@ -1,16 +1,18 @@
 """Seed script for populating the database with initial documents for ingestion.
 
 Usage:
-    # Seed Colorado SB205 manually:
-    python -m src.scripts.seed_pipeline --mode manual
+    # === PRIMARY WORKFLOW: Local file ingestion ===
 
-    # Discover and seed all bills from Orrick PDF tracker:
-    python -m src.scripts.seed_pipeline --mode pdf
+    # Seed all 243 laws from CSV + ingest local source files:
+    python -m src.scripts.seed_pipeline --mode seed-local
 
-    # Fetch + parse + chunk all pending ingestion jobs:
-    python -m src.scripts.seed_pipeline --mode fetch
+    # Seed only (create families, skip ingestion):
+    python -m src.scripts.seed_pipeline --mode seed-local --seed-only
 
-    # Fetch with a limit (useful for testing):
+    # Ingest with a limit (useful for testing):
+    python -m src.scripts.seed_pipeline --mode seed-local --limit 5
+
+    # Re-parse already-ingested documents:
     python -m src.scripts.seed_pipeline --mode fetch --limit 5
 
     # === PRIMARY EXTRACTION WORKFLOW (API) ===
@@ -50,6 +52,14 @@ Usage:
 
     # Import corrections from edited CSV:
     python -m src.scripts.seed_pipeline --mode import-csv --input export/pipeline_data.csv
+
+    # === LEGACY (archived) ===
+
+    # Seed Colorado SB205 manually:
+    python -m src.scripts.seed_pipeline --mode manual
+
+    # Discover and seed all bills from Orrick PDF tracker:
+    python -m src.scripts.seed_pipeline --mode pdf
 """
 
 from __future__ import annotations
@@ -239,9 +249,9 @@ def seed_federal_nist_ai_rmf(db) -> IngestionJob:
 
 
 def seed_via_pdf(db) -> list[IngestionJob]:
-    """Seed from ai_law_tracker.csv (primary) or Orrick PDF (fallback)."""
+    """[LEGACY] Seed from ai_law_tracker.csv (primary) or Orrick PDF (fallback)."""
     import csv
-    from src.ingestion.pdf_tracker import STATE_CODES, seed_from_tracker
+    from src.ingestion._archived.pdf_tracker import STATE_CODES, seed_from_tracker
 
     csv_path = Path("static/ai_law_tracker.csv")
     if csv_path.exists():
@@ -266,7 +276,7 @@ def seed_via_pdf(db) -> list[IngestionJob]:
             })
         logger.info("seeding_from_csv", count=len(records))
     else:
-        from src.ingestion.pdf_tracker import parse_tracker_pdf
+        from src.ingestion._archived.pdf_tracker import parse_tracker_pdf
         records = parse_tracker_pdf()
         logger.info("seeding_from_pdf_fallback", count=len(records))
 
@@ -514,30 +524,29 @@ def main():
     parser.add_argument(
         "--mode",
         choices=[
+            "seed-local",
             "manual", "pdf", "fetch", "export-passages", "import-extractions",
             "extract", "recover", "batch-results", "evaluate", "retry-failed",
             "fix-urls", "check-completeness", "check-stale",
             "export-csv", "import-csv", "export-fetch-csv",
         ],
-        default="manual",
+        default="seed-local",
         help=(
             "Pipeline mode: "
-            "'manual' seeds hardcoded docs, "
-            "'pdf' parses Orrick PDF tracker, "
-            "'fetch' processes all pending ingestion jobs, "
-            "'export-passages' exports unprocessed passages for external extraction, "
-            "'import-extractions' imports JSON extraction results, "
+            "'seed-local' seeds from data/fact_laws.csv + ingests local files (PRIMARY), "
+            "'fetch' re-parses already-ingested documents, "
             "'extract' runs AI extraction agents via API, "
             "'recover' re-extracts passages with partial results (missing agents), "
             "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
-            "'fix-urls' applies known URL corrections and data bug fixes, "
             "'check-completeness' reports extraction coverage gaps per law, "
             "'check-stale' reports extractions from outdated models/prompts, "
             "'export-csv' exports pipeline discovery data to CSV, "
             "'export-fetch-csv' exports fetch/parse status to CSV, "
-            "'import-csv' imports corrections from edited CSV"
+            "'import-csv' imports corrections from edited CSV, "
+            "'manual' (legacy) seeds hardcoded docs, "
+            "'pdf' (legacy) parses Orrick PDF tracker"
         ),
     )
     parser.add_argument(
@@ -565,6 +574,12 @@ def main():
         help="Only retry failed jobs matching this substring (e.g. '403', 'SSL', 'timeout')",
     )
     parser.add_argument(
+        "--seed-only",
+        action="store_true",
+        default=False,
+        help="In seed-local mode, only create families without ingesting files",
+    )
+    parser.add_argument(
         "--input",
         type=str,
         default=None,
@@ -580,7 +595,24 @@ def main():
 
     db = SessionLocal()
     try:
-        if args.mode == "manual":
+        if args.mode == "seed-local":
+            from src.ingestion.local_ingest import run_local_ingest
+            summary = run_local_ingest(
+                db,
+                limit=args.limit,
+                seed_only=args.seed_only,
+                on_progress=print,
+            )
+            print(f"\n{'=' * 60}")
+            print("Local ingestion complete:")
+            print(f"  Families created:  {summary.get('created', 0)}")
+            print(f"  Families skipped:  {summary.get('skipped', 0)}")
+            if not args.seed_only:
+                print(f"  Jobs completed:    {summary.get('completed', 0)}")
+                print(f"  Jobs failed:       {summary.get('failed', 0)}")
+                print(f"  No file found:     {summary.get('skipped_no_file', 0)}")
+                print(f"  Total passages:    {summary.get('total_passages', 0)}")
+        elif args.mode == "manual":
             job1 = seed_colorado_sb205(db)
             job2 = seed_federal_nist_ai_rmf(db)
             db.commit()

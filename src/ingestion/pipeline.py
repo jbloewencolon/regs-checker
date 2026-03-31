@@ -1,17 +1,12 @@
-"""Ingestion pipeline — fetch, store, parse, and chunk pending documents.
+"""Ingestion pipeline — parse and chunk pending documents.
 
-Shared logic used by both:
-  - Dagster ingested_documents asset
-  - CLI: python -m src.scripts.seed_pipeline --mode fetch
+The fetch-based ingestion system has been archived. New documents are
+ingested via local files (see src/ingestion/local_ingest.py).
 
-Steps per pending IngestionJob:
-  1. Fetch document at fetch_url (PDF or HTML from legislature sites)
-  2. Store raw bytes in MinIO (raw-artifacts bucket), content-addressed by SHA-256
-  3. Run Discovery Agent to classify content — if the URL was stale and
-     the content is not AI legislation, trigger fallback verification
-  4. Parse text out of PDF/HTML
-  5. Chunk into normalized_source_records (passage-level)
-  6. Update ingestion_job status to completed (or failed with error)
+This module is retained for:
+  - Re-parsing already-fetched jobs (status=fetched)
+  - Dashboard manual upload flow
+  - Dagster ingested_documents asset compatibility
 """
 
 from __future__ import annotations
@@ -30,7 +25,6 @@ from src.db.models import (
     IngestionStatus,
     NormalizedSourceRecord,
 )
-from src.ingestion.connector import fetch_document
 
 # Global cancellation event — set to signal running pipeline to stop.
 _cancel_event = threading.Event()
@@ -52,164 +46,6 @@ def clear_cancel() -> None:
 from src.ingestion.parser import parse_and_normalize
 
 logger = structlog.get_logger()
-
-
-def _verify_content_or_fallback(
-    db,
-    job: IngestionJob,
-    raw_artifact,
-    _log: callable,
-) -> bool:
-    """Run Discovery Agent to classify fetched content; trigger fallback if stale.
-
-    Returns True if the content is valid AI legislation (proceed with parsing).
-    Returns False if the content is invalid and could not be auto-corrected
-    (the job is marked requires_manual_review).
-    """
-    from src.agents.discovery import DiscoveryAgent
-    from src.db.models import RawArtifact
-
-    # Only run classification on text-like content
-    if raw_artifact.content_type not in (
-        "text/html",
-        "text/plain",
-        "application/pdf",
-    ):
-        return True
-
-    # Read a sample of the raw text for classification
-    try:
-        from src.ingestion.parser import extract_text_sample
-        text_sample = extract_text_sample(raw_artifact, max_chars=32000)
-    except Exception:
-        # If we can't extract text yet, skip classification and let parse handle it
-        return True
-
-    if not text_sample or len(text_sample.strip()) < 50:
-        return True  # Too short to classify, proceed normally
-
-    # --- Memoization: skip re-classification if already classified for this artifact ---
-    dv = job.document_version
-    df = dv.family if dv else None
-    cached = (df.metadata_ or {}).get("discovery_classification") if df else None
-    if cached and cached.get("artifact_hash") == raw_artifact.sha256_hash:
-        _log(
-            f"Discovery classification (cached): is_ai={cached.get('is_ai_legislation')}, "
-            f"confidence={cached.get('confidence', 0):.2f}"
-        )
-        return cached.get("is_ai_legislation", True)
-
-    try:
-        discovery = DiscoveryAgent()
-        classification = discovery.classify_bill(text_sample)
-
-        _log(
-            f"Discovery classification: is_ai_legislation={classification.is_ai_legislation}, "
-            f"confidence={classification.confidence:.2f}"
-        )
-
-        # Cache result on DocumentFamily metadata
-        if df is not None:
-            meta = dict(df.metadata_ or {})
-            meta["discovery_classification"] = {
-                "is_ai_legislation": classification.is_ai_legislation,
-                "confidence": classification.confidence,
-                "reasoning": classification.reasoning,
-                "artifact_hash": raw_artifact.sha256_hash,
-            }
-            df.metadata_ = meta
-            db.commit()
-
-        if classification.is_ai_legislation:
-            return True  # Content is valid, proceed
-
-        # --- Fallback: content is NOT AI legislation ---
-        _log(
-            f"Content at {job.fetch_url} is not AI legislation "
-            f"(reason: {classification.reasoning}). Triggering fallback verification..."
-        )
-
-        # Build bill metadata from the document family
-        dv = job.document_version
-        df = dv.family if dv else None
-        s = df.source if df else None
-        bill_metadata = {
-            "title": df.canonical_title if df else None,
-            "jurisdiction": s.jurisdiction_code if s else None,
-            "bill_number": df.short_cite if df else None,
-            "primary_source_url": df.primary_source_url if df else None,
-            "orrick_reference_url": df.orrick_reference_url if df else None,
-            "iapp_reference_url": df.iapp_reference_url if df else None,
-        }
-
-        # Check if search is configured
-        if not settings.search_provider:
-            _log(
-                "No search provider configured — marking job for manual review."
-            )
-            job.status = IngestionStatus.requires_manual_review
-            job.error_message = (
-                f"Discovery Agent classified content as non-AI-legislation "
-                f"(confidence={classification.confidence:.2f}). "
-                f"No search provider configured for fallback verification."
-            )
-            db.commit()
-            return False
-
-        # Search for the correct URL
-        from src.ingestion.web_search import search_for_bill
-        query_parts = [v for v in bill_metadata.values() if v]
-        query = " ".join(query_parts) + " full text official"
-
-        search_results = search_for_bill(query, max_results=3)
-
-        if not search_results:
-            _log("No search results found — marking job for manual review.")
-            job.status = IngestionStatus.requires_manual_review
-            job.error_message = (
-                f"Discovery Agent classified content as non-AI-legislation. "
-                f"Web search returned no results."
-            )
-            db.commit()
-            return False
-
-        # Run Verification Agent to pick the best URL
-        from src.agents.verification import VerificationAgent
-        verifier = VerificationAgent()
-        verification = verifier.verify_url(
-            bill_metadata=bill_metadata,
-            search_results=[
-                {"title": r.title, "url": r.url, "snippet": r.snippet}
-                for r in search_results
-            ],
-        )
-
-        _log(
-            f"Verification result: url={verification.suggested_url}, "
-            f"confidence={verification.confidence:.2f}, "
-            f"reason={verification.reasoning}"
-        )
-
-        # Store the AI-suggested URL and mark for review
-        job.ai_suggested_url = verification.suggested_url
-        job.status = IngestionStatus.requires_manual_review
-        job.error_message = (
-            f"Discovery Agent classified content as non-AI-legislation "
-            f"(confidence={classification.confidence:.2f}). "
-            f"Verification Agent suggested: {verification.suggested_url} "
-            f"(confidence={verification.confidence:.2f})."
-        )
-        db.commit()
-        return False
-
-    except Exception as e:
-        logger.error(
-            "content_verification_error",
-            job_id=job.id,
-            error=str(e),
-        )
-        # Fail open — don't block ingestion on verification errors
-        return True
 
 
 def compute_parse_quality(records: list[NormalizedSourceRecord]) -> float:
@@ -251,60 +87,41 @@ def process_single_job(
         logger.info(msg, job_id=job.id)
 
     try:
-        # --- Phase 1: Fetch (skip if already fetched) ---
-        raw_artifact = None
-        already_fetched = job.status == IngestionStatus.fetched
+        # --- Phase 1: Find existing raw artifact ---
+        from src.db.models import RawArtifact as RawArtifactModel
+        raw_artifact = db.scalars(
+            select(RawArtifactModel)
+            .where(RawArtifactModel.document_version_id == job.document_version_id)
+            .order_by(RawArtifactModel.created_at.desc())
+        ).first()
 
-        if already_fetched:
-            # Already downloaded — find existing raw artifact
-            from src.db.models import RawArtifact as RawArtifactModel
-            raw_artifact = db.scalars(
-                select(RawArtifactModel)
-                .where(RawArtifactModel.document_version_id == job.document_version_id)
-                .order_by(RawArtifactModel.created_at.desc())
-            ).first()
-
-            if raw_artifact is not None:
-                _log(
-                    f"Skipping fetch (already downloaded): {raw_artifact.content_type}, "
-                    f"{raw_artifact.size_bytes:,} bytes"
-                )
-                # Delete old parsed records so re-parse starts clean
-                from src.db.models import NormalizedSourceRecord as NSR
-                old_records = db.scalars(
-                    select(NSR).where(
-                        NSR.document_version_id == job.document_version_id
-                    )
-                ).all()
-                if old_records:
-                    for rec in old_records:
-                        db.delete(rec)
-                    db.commit()
-                    _log(f"Cleared {len(old_records)} old passages for re-parse")
-            else:
-                _log(f"Artifact missing for fetched job — re-fetching {job.fetch_url}")
-                already_fetched = False  # Fall through to fetch
-
-        if not already_fetched:
-            job.status = IngestionStatus.fetching
-            job.fetch_started_at = datetime.utcnow()
-            db.commit()
-            _log(f"Fetching {job.fetch_url}")
-
-            raw_artifact = fetch_document(db, job)
-
-            job.status = IngestionStatus.fetched
-            job.fetch_completed_at = datetime.utcnow()
-            db.commit()
-            _log(
-                f"Stored artifact: {raw_artifact.content_type}, "
-                f"{raw_artifact.size_bytes:,} bytes, sha256={raw_artifact.sha256_hash[:12]}"
+        if raw_artifact is None:
+            job.status = IngestionStatus.failed
+            job.error_message = (
+                "No raw artifact found. Use --mode seed-local to ingest "
+                "local files, or upload via the dashboard."
             )
+            db.commit()
+            _log(f"  No artifact — skipping. Use seed-local to ingest.")
+            return 0
 
-            # --- Phase 1.5: Discovery classification + fallback verification ---
-            if not _verify_content_or_fallback(db, job, raw_artifact, _log):
-                # Content was not AI legislation and fallback couldn't auto-fix
-                return 0
+        _log(
+            f"Found artifact: {raw_artifact.content_type}, "
+            f"{raw_artifact.size_bytes:,} bytes"
+        )
+
+        # Delete old parsed records so re-parse starts clean
+        from src.db.models import NormalizedSourceRecord as NSR
+        old_records = db.scalars(
+            select(NSR).where(
+                NSR.document_version_id == job.document_version_id
+            )
+        ).all()
+        if old_records:
+            for rec in old_records:
+                db.delete(rec)
+            db.commit()
+            _log(f"Cleared {len(old_records)} old passages for re-parse")
 
         # --- Phase 2: Parse + Chunk ---
         job.status = IngestionStatus.parsing
@@ -349,17 +166,13 @@ def run_pending_ingestion(
             IngestionStatus.pending,
             IngestionStatus.fetched,  # Already downloaded, needs re-parse
         ]),
-        IngestionJob.fetch_url.isnot(None),
-        IngestionJob.fetch_url != "",
     )
     if limit:
         query = query.limit(limit)
 
     pending_jobs = db.scalars(query).all()
 
-    # Process already-fetched (re-parse only) jobs first so network errors
-    # from pending (download) jobs don't trip the circuit breaker and block
-    # parsing work that needs no network access.
+    # Sort by status — fetched (re-parse) first, then pending
     pending_jobs.sort(key=lambda j: (0 if j.status == IngestionStatus.fetched else 1))
 
     summary = {

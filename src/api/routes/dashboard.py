@@ -896,15 +896,71 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     )
 
 
-@router.post("/api/run/pdf-discovery")
-def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Seed legislation from the ai_law_tracker.csv (primary discovery source)."""
+@router.post("/api/run/seed-local")
+def run_seed_local(
+    seed_only: bool = False,
+    limit: int | None = None,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Seed laws from data/fact_laws.csv and ingest local source files."""
     if not _acquire_pipeline_lock():
         return HTMLResponse(
             '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
         )
     try:
-        from src.ingestion.pdf_tracker import seed_from_tracker
+        from src.ingestion.local_ingest import run_local_ingest
+
+        summary = run_local_ingest(
+            db,
+            limit=limit,
+            seed_only=seed_only,
+            on_progress=None,
+        )
+
+        parts = []
+        created = summary.get("created", 0)
+        skipped = summary.get("skipped", 0)
+        parts.append(f"Seeded <strong>{created}</strong> new law families ({skipped} already existed).")
+
+        if not seed_only:
+            completed = summary.get("completed", 0)
+            failed = summary.get("failed", 0)
+            passages = summary.get("total_passages", 0)
+            no_file = summary.get("skipped_no_file", 0)
+            parts.append(
+                f"Ingested <strong>{completed}</strong> documents "
+                f"(<strong>{passages}</strong> passages)."
+            )
+            if failed > 0:
+                parts.append(
+                    f'<span style="color:var(--warning);">{failed} failed'
+                    f'{f" ({no_file} missing source files)" if no_file else ""}.</span>'
+                )
+
+        panel_class = "success" if summary.get("failed", 0) == 0 else "warning"
+        return HTMLResponse(
+            f'<div class="result-panel {panel_class}">'
+            f'{" ".join(parts)}'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+    finally:
+        _pipeline_lock.release()
+
+
+@router.post("/api/run/pdf-discovery")
+def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
+    """[LEGACY] Seed legislation from the ai_law_tracker.csv (primary discovery source)."""
+    if not _acquire_pipeline_lock():
+        return HTMLResponse(
+            '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
+        )
+    try:
+        from src.ingestion._archived.pdf_tracker import seed_from_tracker
 
         records = _tracker_csv_to_records()
         if not records:
@@ -2573,7 +2629,7 @@ async def upload_document(
     import hashlib
     from datetime import datetime
 
-    from src.ingestion.connector import _upload_to_s3
+    from src.ingestion.local_ingest import _upload_to_s3
     from src.ingestion.parser import parse_and_normalize
     from src.ingestion.pipeline import compute_parse_quality
 
@@ -2690,7 +2746,7 @@ def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
         # Load IAPP records
         iapp_records = []
         try:
-            from src.ingestion.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+            from src.ingestion._archived.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
             if IAPP_PDF_PATH.exists():
                 iapp_records = parse_iapp_pdf()
         except Exception:
