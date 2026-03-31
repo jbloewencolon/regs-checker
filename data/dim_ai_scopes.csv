@@ -1,0 +1,6 @@
+scope_code,scope_description
+A,Applies to all covered AI systems
+F,Foundation models / frontier / general-purpose systems
+D,Automated decision-making / consequential decisions
+G,Generative AI systems / synthetic content
+*,Applies only to AI systems trained on personal data

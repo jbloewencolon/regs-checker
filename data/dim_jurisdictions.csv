@@ -1,0 +1,50 @@
+jurisdiction_id,name,state_abbrev
+1,California,CA
+2,Colorado,CO
+3,European Union,EU
+4,Utah,UT
+5,Alabama,AL
+6,Arizona,AZ
+7,Arkansas,AR
+8,Connecticut,CT
+9,Delaware,DE
+10,Florida,FL
+11,Georgia,GA
+12,Hawaii,HI
+13,Idaho,ID
+14,Illinois,IL
+15,Indiana,IN
+16,Iowa,IA
+17,Kansas,KS
+18,Kentucky,KY
+19,Louisiana,LA
+20,Maine,ME
+21,Maryland,MD
+22,Massachusetts,MA
+23,Michigan,MI
+24,Minnesota,MN
+25,Mississippi,MS
+26,Missouri,MO
+27,Montana,MT
+28,Nebraska,NE
+29,Nevada,NV
+30,New Hampshire,NH
+31,New Jersey,NJ
+32,New Mexico,NM
+33,New York,NY
+34,North Carolina,NC
+35,North Dakota,ND
+36,Oklahoma,OK
+37,Oregon,OR
+38,Pennsylvania,PA
+39,Rhode Island,RI
+40,South Carolina,SC
+41,South Dakota,SD
+42,Tennessee,TN
+43,Texas,TX
+44,Vermont,VT
+45,Virginia,VA
+46,Washington,WA
+47,West Virginia,WV
+48,Wisconsin,WI
+49,Wyoming,WY

@@ -1,0 +1,5 @@
+status_id,status_name
+1,Active
+2,Enacted
+3,Failed/Dead
+4,Signed
