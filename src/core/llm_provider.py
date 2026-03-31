@@ -1,19 +1,13 @@
-"""LLM provider abstraction — routes calls to Anthropic API or local models.
+"""LLM provider abstraction — routes calls to local models via OpenAI-compatible API.
 
-Supports two providers:
-  - anthropic: Claude API (Haiku for extraction — production quality)
-  - local: Any OpenAI-compatible API server (LM Studio, llama.cpp, vLLM, Ollama, etc.)
-
-The local provider targets Llama 3.2 3B for discovery tasks (bill classification,
-metadata extraction). Extraction agents continue to use Anthropic Haiku for
-legal precision and evidence span quality.
+All extraction and discovery tasks now use local models (LM Studio, llama.cpp,
+vLLM, Ollama, etc.) via the OpenAI chat completions API format. The Anthropic
+API provider has been archived.
 
 Configuration via environment variables:
-  REGS_LLM_PROVIDER          — "anthropic" (default) or "local"
-  REGS_LOCAL_LLM_URL         — Base URL for local server (e.g. http://localhost:1234)
-  REGS_LOCAL_LLM_MODEL       — Model name for local server (e.g. "llama-3.2-3b")
-  REGS_DISCOVERY_PROVIDER    — Provider for discovery agent specifically ("local" default)
-  REGS_EXTRACTION_PROVIDER   — Provider for extraction agents specifically ("anthropic" default)
+  REGS_LOCAL_LLM_URL           — Base URL for local server (e.g. http://localhost:1234)
+  REGS_LOCAL_LLM_MODEL         — Model name for discovery tasks (e.g. "openai/gpt-oss-20b")
+  REGS_LOCAL_EXTRACTION_MODEL  — Model name for extraction tasks
 """
 
 from __future__ import annotations
@@ -64,7 +58,6 @@ class BaseLLMProvider(ABC):
 
         Args:
             model_override: If provided, use this model instead of the default.
-                            Supported by LocalLLMProvider; ignored by AnthropicProvider.
             reasoning_effort: "low", "medium", or "high". Supported by models
                               like openai/gpt-oss-20b; ignored by others.
         """
@@ -75,67 +68,10 @@ class BaseLLMProvider(ABC):
         """Return the default model identifier for tracking."""
 
 
-class AnthropicProvider(BaseLLMProvider):
-    """Anthropic Claude API provider (Haiku for extraction)."""
-
-    def __init__(self) -> None:
-        import anthropic
-
-        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        self._model = settings.extraction_model
-
-    @property
-    def model_id(self) -> str:
-        return self._model
-
-    def call(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        max_tokens: int = 8192,
-        temperature: float = 0.0,
-        model_override: str | None = None,
-        reasoning_effort: str | None = None,
-    ) -> LLMResponse:
-        # model_override and reasoning_effort are accepted for interface
-        # compatibility but ignored; Anthropic uses settings.extraction_model.
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-
-        raw_text = ""
-        for block in response.content:
-            if block.type == "text":
-                raw_text = block.text
-                break
-
-        if not raw_text.strip():
-            raise ValueError(
-                f"Empty text response from Anthropic "
-                f"(stop_reason={response.stop_reason}, "
-                f"content_types={[b.type for b in response.content]})"
-            )
-
-        return LLMResponse(
-            text=raw_text,
-            usage=LLMUsage(
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-            ),
-            model_id=self._model,
-            stop_reason=response.stop_reason,
-        )
-
-
 class LocalLLMProvider(BaseLLMProvider):
     """Local LLM provider via OpenAI-compatible API (LM Studio, llama.cpp, vLLM, Ollama).
 
-    Targets Llama 3.2 3B for discovery tasks. Communicates via the OpenAI
-    chat completions API format, which is supported by:
+    Communicates via the OpenAI chat completions API format, which is supported by:
       - LM Studio (http://localhost:1234)
       - llama.cpp server (--host 0.0.0.0 --port 8080)
       - vLLM (python -m vllm.entrypoints.openai.api_server)
@@ -345,25 +281,28 @@ _provider_cache: dict[str, BaseLLMProvider] = {}
 
 
 def get_provider(provider_type: str | None = None) -> BaseLLMProvider:
-    """Get or create an LLM provider by type.
+    """Get or create an LLM provider.
 
     Args:
-        provider_type: "anthropic", "local", or None (uses REGS_LLM_PROVIDER default).
+        provider_type: "local" or None (uses default). Legacy "anthropic"
+                       values are silently mapped to "local".
 
     Returns:
         A cached provider instance.
     """
     resolved = provider_type or settings.llm_provider
 
+    # Map legacy "anthropic" references to local
+    if resolved == "anthropic":
+        resolved = "local"
+
     if resolved in _provider_cache:
         return _provider_cache[resolved]
 
-    if resolved == "anthropic":
-        provider = AnthropicProvider()
-    elif resolved == "local":
+    if resolved == "local":
         provider = LocalLLMProvider()
     else:
-        raise ValueError(f"Unknown LLM provider: {resolved!r}. Use 'anthropic' or 'local'.")
+        raise ValueError(f"Unknown LLM provider: {resolved!r}. Use 'local'.")
 
     _provider_cache[resolved] = provider
     logger.info("llm_provider_created", provider=resolved, model=provider.model_id)
@@ -371,28 +310,24 @@ def get_provider(provider_type: str | None = None) -> BaseLLMProvider:
 
 
 def get_discovery_provider() -> BaseLLMProvider:
-    """Get the provider configured for discovery tasks (default: local)."""
+    """Get the provider configured for discovery tasks."""
     return get_provider(settings.discovery_provider)
 
 
 def get_extraction_provider() -> BaseLLMProvider:
-    """Get the provider configured for extraction tasks (default: anthropic).
+    """Get the provider configured for extraction tasks.
 
-    When extraction_provider is "local", uses ``local_extraction_model``
-    (default: DeepSeek-R1-0528) as the base model.  Per-agent
+    Uses ``local_extraction_model`` as the base model. Per-agent
     ``model_override`` attributes still take precedence at call time.
     """
-    provider_type = settings.extraction_provider
-    if provider_type == "local":
-        cache_key = "local_extraction"
-        if cache_key not in _provider_cache:
-            _provider_cache[cache_key] = LocalLLMProvider(
-                model=settings.local_extraction_model,
-            )
-            logger.info(
-                "llm_provider_created",
-                provider=cache_key,
-                model=_provider_cache[cache_key].model_id,
-            )
-        return _provider_cache[cache_key]
-    return get_provider(provider_type)
+    cache_key = "local_extraction"
+    if cache_key not in _provider_cache:
+        _provider_cache[cache_key] = LocalLLMProvider(
+            model=settings.local_extraction_model,
+        )
+        logger.info(
+            "llm_provider_created",
+            provider=cache_key,
+            model=_provider_cache[cache_key].model_id,
+        )
+    return _provider_cache[cache_key]

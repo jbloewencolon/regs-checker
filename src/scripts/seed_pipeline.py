@@ -23,8 +23,7 @@ Usage:
     # Extract with a limit (test first!):
     python -m src.scripts.seed_pipeline --mode extract --limit 20
 
-    # Use Batch API for 50% cost savings (results in 24h):
-    python -m src.scripts.seed_pipeline --mode extract --batch
+    # All extraction uses local models (no cloud API)
 
     # === SUPPLEMENTARY WORKFLOWS ===
 
@@ -292,10 +291,10 @@ def run_fetch(db, limit: int | None = None) -> dict:
 
 
 def run_extract(db, limit: int | None = None, batch: bool = False) -> dict:
-    """Run AI extraction agents on all unprocessed passages."""
+    """Run AI extraction agents on all unprocessed passages (local models)."""
     from src.ingestion.extractor import run_extraction
 
-    return run_extraction(db, limit=limit, on_progress=print, batch_mode=batch)
+    return run_extraction(db, limit=limit, on_progress=print)
 
 
 def run_recover(db, limit: int | None = None) -> dict:
@@ -303,13 +302,6 @@ def run_recover(db, limit: int | None = None) -> dict:
     from src.ingestion.extractor import run_recovery_extraction
 
     return run_recovery_extraction(db, limit=limit, on_progress=print)
-
-
-def run_batch_results(db, batch_id: str) -> dict:
-    """Retrieve and process results from a completed Batch API run."""
-    from src.ingestion.extractor import retrieve_batch_results
-
-    return retrieve_batch_results(db, batch_id=batch_id, on_progress=print)
 
 
 def run_evaluate() -> None:
@@ -526,7 +518,7 @@ def main():
         choices=[
             "seed-local",
             "manual", "pdf", "fetch", "export-passages", "import-extractions",
-            "extract", "recover", "batch-results", "evaluate", "retry-failed",
+            "extract", "recover", "evaluate", "retry-failed",
             "fix-urls", "check-completeness", "check-stale",
             "export-csv", "import-csv", "export-fetch-csv",
         ],
@@ -537,7 +529,6 @@ def main():
             "'fetch' re-parses already-ingested documents, "
             "'extract' runs AI extraction agents via API, "
             "'recover' re-extracts passages with partial results (missing agents), "
-            "'batch-results' retrieves and processes completed Batch API results, "
             "'evaluate' runs extraction agents against gold-standard fixtures, "
             "'retry-failed' re-queues and retries failed jobs, "
             "'check-completeness' reports extraction coverage gaps per law, "
@@ -554,18 +545,6 @@ def main():
         type=int,
         default=None,
         help="Max number of jobs to process in fetch mode (default: all)",
-    )
-    parser.add_argument(
-        "--batch",
-        action="store_true",
-        default=False,
-        help="Use Anthropic Batch API for extraction (50%% discount, 24h turnaround)",
-    )
-    parser.add_argument(
-        "--batch-id",
-        type=str,
-        default=None,
-        help="Batch ID to retrieve results for (use with --mode batch-results)",
     )
     parser.add_argument(
         "--error-filter",
@@ -643,28 +622,22 @@ def main():
             from src.scripts.manual_extraction import import_extractions
             import_extractions(db, input_path=args.input)
         elif args.mode == "extract":
-            summary = run_extract(db, limit=args.limit, batch=args.batch)
+            summary = run_extract(db, limit=args.limit)
             print(f"\n{'=' * 60}")
-            if args.batch:
-                print("Batch extraction submitted:")
-                print(f"  Batch ID:           {summary.get('batch_id')}")
-                print(f"  Requests submitted: {summary.get('requests_submitted')}")
-                print(f"  Status:             {summary.get('status')}")
-            else:
-                print("Extraction complete:")
-                print(f"  Passages processed: {summary['records_processed']}")
-                print(f"  Extractions created: {summary['total_extractions']}")
-                print(f"  Failures:           {summary['records_failed']}")
-                print(f"  Short skipped:      {summary.get('records_skipped_short', 0)}")
-                print(f"  Passages merged:    {summary.get('passages_merged', 0)}")
-                print(f"  Agents skipped:     {summary.get('agents_skipped_by_signal', 0)}")
-                tokens = summary.get("token_usage", {})
-                if tokens.get("total_calls"):
-                    print(f"\nToken usage:")
-                    print(f"  Input tokens:  {tokens['input_tokens']:,}")
-                    print(f"  Output tokens: {tokens['output_tokens']:,}")
-                    print(f"  Total tokens:  {tokens['total_tokens']:,}")
-                    print(f"  API calls:     {tokens['total_calls']}")
+            print("Extraction complete:")
+            print(f"  Passages processed: {summary['records_processed']}")
+            print(f"  Extractions created: {summary['total_extractions']}")
+            print(f"  Failures:           {summary['records_failed']}")
+            print(f"  Short skipped:      {summary.get('records_skipped_short', 0)}")
+            print(f"  Passages merged:    {summary.get('passages_merged', 0)}")
+            print(f"  Agents skipped:     {summary.get('agents_skipped_by_signal', 0)}")
+            tokens = summary.get("token_usage", {})
+            if tokens.get("total_calls"):
+                print(f"\nToken usage:")
+                print(f"  Input tokens:  {tokens['input_tokens']:,}")
+                print(f"  Output tokens: {tokens['output_tokens']:,}")
+                print(f"  Total tokens:  {tokens['total_tokens']:,}")
+                print(f"  API calls:     {tokens['total_calls']}")
         elif args.mode == "recover":
             summary = run_recover(db, limit=args.limit)
             print(f"\n{'=' * 60}")
@@ -680,18 +653,6 @@ def main():
                 print(f"  Output tokens: {tokens['output_tokens']:,}")
                 print(f"  Total tokens:  {tokens['total_tokens']:,}")
                 print(f"  API calls:     {tokens['total_calls']}")
-        elif args.mode == "batch-results":
-            if not args.batch_id:
-                print("Error: --batch-id is required for batch-results mode", file=sys.stderr)
-                sys.exit(1)
-            summary = run_batch_results(db, batch_id=args.batch_id)
-            print(f"\n{'=' * 60}")
-            print("Batch results:")
-            print(f"  Batch ID:           {summary.get('batch_id')}")
-            print(f"  Status:             {summary.get('status')}")
-            print(f"  Results processed:  {summary.get('results_processed', 0)}")
-            print(f"  Extractions created: {summary.get('extractions_created', 0)}")
-            print(f"  Errors:             {summary.get('errors', 0)}")
         elif args.mode == "evaluate":
             run_evaluate()
         elif args.mode == "fix-urls":
