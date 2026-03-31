@@ -1,0 +1,33 @@
+# laws.json Field Definitions
+
+- `name`: Canonical law identifier (same as `canonical_law_id`).
+- `canonical_law_id`: Stable unique law ID from `summary.csv`.
+- `bill_number`: Bill number text when available.
+- `jurisdiction`: Jurisdiction/state name.
+- `state_abbrev`: State abbreviation.
+- `status`: Normalized status class.
+  - `proposed-legislation`
+  - `law-passed-not-yet-in-effect`
+  - `law-in-effect`
+- `legislative_status_raw`: Raw legislative status from IAPP/fact table.
+- `effective_date`: ISO date (`YYYY-MM-DD`) when parseable.
+- `effective_date_raw`: Original effective date text.
+- `title`: Best available law title.
+- `ai_scope_summary`: Best available scope/topic summary.
+- `scope_iapp`: Raw IAPP scope code string (for example `A`, `D`, `G`, `F`).
+- `source`: Source system label (for example `Orrick`, `IAPP`).
+- `source_notes`: Notes from source ingestion.
+- `source_url_raw`: Raw source URL column from source data.
+- `url`: Retrieved law full-text source URL used for this project.
+- `filename`: Local path to extracted full-text file for that law.
+- `tags`: Flat deduplicated list of all tags for filtering/search.
+- `tag_categories`: Tags grouped by category.
+  - `jurisdiction`
+  - `state_abbrev`
+  - `source`
+  - `lifecycle_status`
+  - `ai_scope`
+  - `ai_topic`
+  - `concept`
+  - `compliance_requirement`
+  - `regulated_actor`
