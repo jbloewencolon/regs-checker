@@ -36,27 +36,42 @@
 
   <div class="step-list">
 
-    <!-- STEP 1: Discovery + Status Check -->
+    <!-- STEP 1: Seed & Ingest Local Files -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">1</div>
-        <div class="step-title">Find New Laws & Check Statuses</div>
+        <div class="step-title">Seed Laws & Ingest Local Files</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-body">
         <div class="step-description">
-          Seeds legislation from the Law Tracker CSV (<code>static/ai_law_tracker.csv</code>) and
-          cross-references <a href="https://iapp.org/resources/article/us-state-ai-governance-legislation-tracker/" target="_blank">IAPP</a>
-          for status changes. Edit the tracker below, then seed.
+          Seeds legislation from <code>data/fact_laws.csv</code> and ingests pre-fetched
+          source documents from <code>output/law_sources/</code>. No network fetching required.
         </div>
         <div class="step-actions">
           <button class="btn btn-primary"
-                  hx-post="/dashboard/api/run/pdf-discovery"
+                  hx-post="/dashboard/api/run/seed-local"
                   hx-target="#step1-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
-            <span class="btn-label">Seed from Tracker CSV</span>
+            <span class="btn-label">Seed & Ingest All</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Seeding & Ingesting...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/seed-local?seed_only=true"
+                  hx-target="#step1-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Seed Only (No Ingest)</span>
             <span class="htmx-indicator"><span class="spinner"></span> Seeding...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/seed-local?limit=5"
+                  hx-target="#step1-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Test (5 Laws)</span>
+            <span class="htmx-indicator"><span class="spinner"></span></span>
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/status-check"
@@ -66,18 +81,10 @@
             <span class="btn-label">Check All Statuses</span>
             <span class="htmx-indicator"><span class="spinner"></span> Checking...</span>
           </button>
-          <button class="btn btn-sm"
-                  hx-post="/dashboard/api/run/status-check?dry_run=true"
-                  hx-target="#step1-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Preview Changes</span>
-            <span class="htmx-indicator"><span class="spinner"></span></span>
-          </button>
         </div>
         <div class="step-result" id="step1-result">
           {% if stats.pending_ingestion > 0 %}
-          <span class="count">{{ stats.pending_ingestion }}</span> laws waiting to be fetched
+          <span class="count">{{ stats.pending_ingestion }}</span> laws pending ingestion
           {% endif %}
           {% if stats.status_summary %}
           <div class="status-chips">
@@ -171,19 +178,16 @@
 
     <div class="step-connector"></div>
 
-    <!-- STEP 2: Fetch & Parse -->
+    <!-- STEP 2: Parse & Triage -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">2</div>
-        <div class="step-title">Fetch & Parse Documents</div>
+        <div class="step-title">Parse & Triage Passages</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-body">
         <div class="step-description">
-          Downloads bill PDFs/HTML, extracts text, splits into passages.
-          {% if stats.pending_ingestion > 0 %}
-          <span style="color: var(--warning); font-weight: 600;">{{ stats.pending_ingestion }} documents pending fetch.</span>
-          {% endif %}
+          Re-parse ingested documents and triage passages for AI relevance.
           {% if stats.total_passages_raw > 0 %}
           <strong>{{ stats.total_passages_raw }}</strong> passages in database.
           {% endif %}
@@ -198,40 +202,18 @@
         </div>
 
         <div class="step-actions">
-          <button class="btn btn-primary"
-                  hx-post="/dashboard/api/run/fetch"
-                  hx-target="#step2-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Fetch All Pending</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Fetching...</span>
-          </button>
-          <button class="btn"
-                  hx-post="/dashboard/api/run/fetch?limit=5"
-                  hx-target="#step2-result"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Fetch 5 (Test)</span>
-            <span class="htmx-indicator"><span class="spinner"></span></span>
-          </button>
-          <button class="btn btn-danger"
-                  hx-post="/dashboard/api/run/fetch/cancel"
-                  hx-target="#fetch-cancel-status"
-                  hx-swap="innerHTML">
-            Terminate
-          </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset failed jobs for re-parsing? Already-downloaded files will NOT be re-fetched. Completed jobs will not be affected.">
-            Reset (Re-parse)
+                  hx-confirm="Reset failed jobs for re-parsing? Completed jobs will not be affected.">
+            Reset (Re-parse Failed)
           </button>
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/fetch/reset-all"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="HARD RESET: Re-parse ALL documents including completed ones? Existing passages will be deleted and rebuilt from scratch. Downloaded files will NOT be re-fetched.">
+                  hx-confirm="HARD RESET: Re-parse ALL documents including completed ones? Existing passages will be deleted and rebuilt from scratch.">
             Reset All (Re-parse All)
           </button>
           <button class="btn"
@@ -258,7 +240,6 @@
             Reset All Triage
           </button>
         </div>
-        <div id="fetch-cancel-status"></div>
         <div class="step-result" id="step2-result"></div>
 
         <!-- Document accordions -->
