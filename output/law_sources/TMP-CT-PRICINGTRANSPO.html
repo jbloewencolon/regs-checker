@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta name="Description" content="Chapter 244c - Transportation Network Company Vehicles"/>
+<meta name="Number" content="244c"/>
+<title>Chapter 244c - Transportation Network Company Vehicles</title>
+<style type="text/css" media="screen"><!--
+/* High-level style defs for page */
+html {
+background-color: #ffffff;
+color: #000000;
+}
+body {
+padding: 0em 0.5em;
+font-family : "Times New Roman", Times, serif;
+font-size: medium;
+}
+/* HEADINGS */
+h1, h2, h3, h4, h5, h6 {
+color : #000000;
+font-style : normal;
+font-variant : normal;
+font-weight : normal;
+line-height : 1.1;
+margin : 0em 0em;
+text-align : center;
+text-decoration : none;
+text-indent : 0em;
+}
+h1, h2, h3 {
+font-weight : bold;
+}
+h5, h6 {
+margin-top: 2em;
+}
+h1.title-no, h1.title-name {
+color: #800000;
+}
+h2.chap-no, h2.chap-name {
+/* nothing special */
+}
+h3.part-name {
+margin-top: 0.5em;
+}
+h3.part-no {
+margin-top: 2em;
+}
+h4.chap_toc_hd {
+font-weight: bold;
+margin: 1.5em 0em 1em 0em;
+text-align: left;
+}
+h4.subpart-name {
+font-weight: bold;
+margin-top: 0.5em;
+}
+h4.subpart-no {
+font-weight: bold;
+margin-top: 2em;
+}
+/* HORIZONTAL RULES */
+hr.titles_pg_bar {
+background-color: #a0a0a0;
+border-width: 0;
+color: #a0a0a0;
+height: .5em;
+margin: 1em 0em;
+width: 100%;
+}
+hr.chaps_pg_bar {
+background-color: #8b0000;
+border-width: 0;
+color: #8b0000;
+height: .8em;
+margin: .5em 0em;
+width: 100%;
+}
+hr.titles_toc_spcr {
+background-color: #ffcc00;
+border-width: 0;
+color: #ffcc00;
+height: 1em;
+margin: 0.1em .5em;
+text-align: left;
+vertical-align: top;
+width: 150px;
+}
+/* IMAGES */
+img.center {
+display: block;
+margin-left: auto;
+margin-right: auto;
+}
+/* PARAGRAPHS */
+p {
+font-size : 1em;
+font-style : normal;
+font-variant : normal;
+font-weight : normal;
+line-height : 1.2;
+margin : 1em 0em 0em 0em;
+text-align : justify;
+text-justify:distribute;
+text-decoration : none;
+text-indent: 1em;
+}
+p.annotation, p.annotation-first {
+color: #ff3333;
+}
+p.cross-ref, p.cross-ref-first {
+color: #009900;
+}
+p.front-note, p.front-note-first {
+color : #ff6600;
+}
+p.history, p.history-first {
+color : #9900FF;
+}
+p.source, p.source-first {
+color : #996600;
+}
+p.Form-center, p.Text-center, p.Form-head, p.lesser-head {
+text-align : center;
+text-indent: 0em;
+}
+p.Form-head, p.lesser-head {
+margin-top: 2em;
+}
+p.Form-left, p.Text-left {
+text-align : justify;
+text-indent: 0em;
+}
+p.Text-left1 {
+text-align : justify;
+text-indent: 0em;
+margin-top: 0em;
+}
+p.Form-right {
+text-align : right;
+text-indent: 0em;
+}
+p.tb, p.tb-left, p.tb-left1, p.tb-left2, p.tb-center, p.tb-right {
+text-align : justify;
+text-indent : 0em;
+margin : 0.5em 0em 0em 0em;
+}
+p.tb, p.tb-left1 {
+margin-left: 1em;
+}
+p.tb-left2 {
+margin-left: 2em;
+}
+p.tb-center {
+text-align : center;
+}
+p.tb-right {
+text-align : right;
+}
+p.nolead {
+margin-top: 0em;
+}
+p.flush {
+text-align : left;
+text-indent : 0em;
+}
+/* TABLES */
+table {
+/* consider border-collapse : collapse; */
+border-style: none;
+font-size: 1em;
+text-align: left;
+vertical-align: top;
+margin: 1em 0em 1em 0em;
+}
+tbody, thead, tfoot, tr, td, th {
+text-indent: 0em;
+vertical-align: top;
+}
+table.center {
+margin-left: auto;
+margin-right: auto;
+}
+table.nav_tbl {
+border: 0;
+width: 50%;
+padding: 2px;
+border-spacing: 2px;
+text-align: center;
+margin: 1em 0em 2em 0em;
+}
+table.ttl_toc_vol_hd {
+border: 0;
+padding: 0px;
+border-right: 15px;
+vertical-align: middle;
+margin-top: 2em;
+}
+td.bottom {
+vertical-align: bottom;
+}
+td.left_25pct {
+width: 25%;
+}
+td.left_38pct {
+width: 38%;
+}
+td.left_40pct {
+width: 40%;
+}
+/* SPANS */
+span.inline_hd {
+font-weight : bold;
+}
+span.catchln {
+color: #8b0000;
+font-weight : bold;
+}
+span.toc_vol_no {
+font-size: 1.2em;
+font-style : normal;
+font-weight : bold;
+}
+span.toc_ttl_desig, span.toc_ttl_name {
+font-size: 1.1em;
+font-weight: bold;
+color: #003399;
+}
+span.toc_rng_chaps {
+font-size: 1.1em;
+font-weight: bold;
+color: #cc0033;
+}
+/* etc. */
+.titles_main_hd {
+color: #ff0000;
+}
+.toc_rng_secs {
+color: #cc0033;
+font-weight: bold;
+}
+.toc_catchln {
+color: #8b0000;
+margin : .1em 0em 0em 2em;
+max-width: 90%;
+text-indent: -2em;
+}
+.toc_catchln * {
+color: #8b0000;
+}
+.toc_ch_link {
+display: inline-block;
+color: #0000ff;
+font-size: 1.1em;
+font-weight: normal;
+}
+.nav_link {
+color: #0000ff;
+}
+.full-width {
+width: 100%;
+}
+.half-width {
+width: 50%;
+}
+.third-width {
+width: 33%;
+}
+--></style>
+</head>
+<body>
+<div id="chap_244c.htm" lang="en-US">
+<h2 class="chap-no">CHAPTER 244c</h2>
+<h2 class="chap-name">TRANSPORTATION NETWORK<br/>COMPANY VEHICLES</h2>
+<h4 class="chap_toc_hd" id="TOC">Table of Contents</h4>
+<p class="toc_catchln"><a href="#sec_13b-116">Sec. 13b-116. Definitions.</a></p>
+<p class="toc_catchln"><a href="#sec_13b-117">Sec. 13b-117. Registration of transportation network company. Penalty.</a></p>
+<p class="toc_catchln"><a href="#sec_13b-118">Sec. 13b-118. Display of information and decal. Fares and dynamic pricing. Adoption of nondiscrimination policy. Records and audits. Limitations on hours of operation. Prohibition against using taxicab or motor vehicle in livery service as transportation network company vehicle. Regulations.</a></p>
+<p class="toc_catchln"><a href="#sec_13b-119">Sec. 13b-119. Transportation network company driver requirements. Adoption of policies re drugs and alcohol and illness and fatigue. Operation as transportation network company driver without authority; penalty. Certification re condition of transportation network company vehicle.</a></p>
+<p class="toc_catchln"><a href="#sec_13b-120">Sec. 13b-120. Automobile liability insurance requirements.</a></p>
+<p class="toc_catchln"><a href="#sec_13b-121">Sec. 13b-121. Fee for prearranged ride by transportation network company.</a></p>
+<p class="toc_catchln"><a href="#secs_13b-122_to_13b-126">Secs. 13b-122 to 13b-126.</a> <b>Reserved</b></p>
+<hr class="chaps_pg_bar"/>
+<p><span class="catchln" id="sec_13b-116">Sec. 13b-116. Definitions.</span> As used in this section and sections <a href ="chap_244c.htm#sec_13b-117">13b-117</a> to <a href ="chap_244c.htm#sec_13b-120">13b-120</a>, inclusive:</p>
+<p>(1) &#x201C;Transportation network company&#x201D; means a company, corporation, partnership, trust, association, sole proprietorship or similar organization that operates in this state and uses a digital network to connect transportation network company riders to transportation network company drivers to provide prearranged rides. &#x201C;Transportation network company&#x201D; does not include the holder of a certificate of public convenience and necessity issued under the provisions of section <a href ="chap_244a.htm#sec_13b-97">13b-97</a> to operate a taxicab or the holder of a permit issued under the provision of section <a href ="chap_244b.htm#sec_13b-103">13b-103</a> to operate a motor vehicle in livery service.</p>
+<p>(2) &#x201C;Transportation network company driver&#x201D; or &#x201C;driver&#x201D; means an individual who is not an employee of a transportation network company, but who uses a transportation network company vehicle to provide prearranged rides.</p>
+<p>(3) &#x201C;Transportation network company rider&#x201D; or &#x201C;rider&#x201D; means an individual or individuals who use a digital network to connect with a transportation network company driver to receive a prearranged ride between points chosen by the individual or individuals.</p>
+<p>(4) &#x201C;Potential transportation network company rider&#x201D; or &#x201C;potential rider&#x201D; means an individual or individuals who use a digital network to request a prearranged ride but have not entered the transportation network company vehicle.</p>
+<p>(5) &#x201C;Digital network&#x201D; means any online-enabled application, web site or system offered or utilized by a transportation network company that enables the provision of prearranged rides.</p>
+<p>(6) &#x201C;Prearranged ride&#x201D; means transport by a transportation network company driver of a transportation network company rider, (A) beginning when the driver accepts a request from the rider through a digital network, (B) continuing while the driver transports the rider, and (C) ending when the last rider exits the transportation network company vehicle.</p>
+<p>(7) &#x201C;Transportation network company vehicle&#x201D; means a motor vehicle as described in subsection (h) of section <a href ="chap_244c.htm#sec_13b-119">13b-119</a> that is owned, leased or otherwise used by a transportation network company driver when the driver is connected to a digital network or is engaged in the provision of a prearranged ride.</p>
+<p class="source-first">(P.A. 17-140, S. 1.)</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="sec_13b-117">Sec. 13b-117. Registration of transportation network company. Penalty.</span> (a) On and after January 1, 2018, each transportation network company shall register annually with the Commissioner of Transportation on a form prescribed by the commissioner. The registration form shall include: (1) The transportation network company&#x0027;s name, business address and telephone number; (2) if the company is registered in another state, the name, address and telephone number of the company&#x0027;s agent for service of process in this state; (3) the name, address and telephone number of a person at the company who will serve as the main contact person for the commissioner; and (4) information sufficient to demonstrate, to the commissioner&#x0027;s satisfaction, that the company is in compliance with the provisions of this section and sections <a href ="chap_244c.htm#sec_13b-118">13b-118</a> to <a href ="chap_244c.htm#sec_13b-120">13b-120</a>, inclusive, and any regulations adopted pursuant to subsection (j) of section <a href ="chap_244c.htm#sec_13b-118">13b-118</a>. Each transportation network company seeking initial registration shall submit with its registration form filed under this section a nonrefundable registration fee of five thousand dollars. Each registration shall be renewed annually. The nonrefundable fee for such renewal shall be five thousand dollars. The registrant shall file amendments to the registration reporting to the commissioner any material changes in any information contained in the registration not later than thirty calendar days after the registrant knows or reasonably should know of the change.</p>
+<p>(b) The commissioner may suspend, revoke or refuse to renew a registration issued pursuant to this subsection if the commissioner determines the transportation network company intentionally: (1) Misled, deceived or defrauded the public or the commissioner; (2) engaged in any untruthful or misleading advertising; (3) engaged in unfair or deceptive business practices; or (4) violated any provision of this section and sections <a href ="chap_244c.htm#sec_13b-118">13b-118</a> to <a href ="chap_244c.htm#sec_13b-120">13b-120</a>, inclusive, or any regulations adopted pursuant to subsection (j) of section <a href ="chap_244c.htm#sec_13b-118">13b-118</a>. Prior to the suspension, revocation or nonrenewal of the registration, the transportation network company shall be given notice and an opportunity for a hearing. Such hearing shall be held in accordance with the provisions of chapter 54. Any transportation network company whose registration has been suspended may, after ninety days, apply to the commissioner to have such registration reinstated.</p>
+<p>(c) Any transportation network company that operates in this state without a valid registration or when such registration has been suspended shall be fined not more than fifty thousand dollars.</p>
+<p class="source-first">(P.A. 17-140, S. 2; 17-203, S. 1.)</p>
+<p class="history-first">History: P.A. 17-140 effective January 1, 2018; P.A. 17-203 amended subsection (a) to decrease the registration fee from $50,000 to $5,000, effective January 1, 2018.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="sec_13b-118">Sec. 13b-118. Display of information and decal. Fares and dynamic pricing. Adoption of nondiscrimination policy. Records and audits. Limitations on hours of operation. Prohibition against using taxicab or motor vehicle in livery service as transportation network company vehicle. Regulations.</span> (a)(1) After a potential transportation network company rider submits a request for a prearranged ride, the transportation network company shall display to the rider through its digital network a picture of the transportation network company driver and the license plate number of the transportation network company vehicle that will be used to provide the prearranged ride before the rider enters such vehicle.</p>
+<p>(2) A transportation network company driver shall display on a transportation network company vehicle a removable decal at all times when the driver is connected to a digital network or is engaged in the provision of a prearranged ride. Such decal shall be: (A) Issued by the transportation network company; (B) sufficiently large so as to be readable during daylight hours at a distance of at least fifty feet; (C) reflective, illuminated or otherwise visible in darkness; and (D) displayed on the passenger side of the transportation network company vehicle if such decal is illuminated.</p>
+<p>(b) (1) A transportation network company may charge a fare to a transportation network company rider for a prearranged ride provided the company discloses such fare to the rider through its digital network: (A) The fare or fare calculation method; (B) the applicable rates being charged; and (C) an option to receive an estimated fare before a prearranged ride.</p>
+<p>(2) Within a reasonable period of time following the completion of a prearranged ride, a transportation network company shall transmit an electronic receipt to the transportation network company rider on behalf of the transportation network company driver that lists: (A) The origin and destination of the prearranged ride; (B) the total time and distance of the prearranged ride; and (C) an itemization of the total fare paid, if any.</p>
+<p>(3) No transportation network company driver shall solicit or accept cash payments for fares from transportation network company riders. Any payment for a prearranged ride shall be made only through the transportation network company&#x0027;s digital network.</p>
+<p>(4) (A) For the purposes of this subdivision, &#x201C;dynamic pricing&#x201D; means offering a prearranged ride at a price that changes according to the demand for prearranged rides and availability of transportation network company drivers.</p>
+<p>(B) If a transportation network company elects to implement dynamic pricing, the transportation network company, through its digital network, shall: (i) Provide notice to a potential transportation network company rider that dynamic pricing is in effect before a request for a prearranged ride may be submitted; (ii) provide a fare estimator that enables the potential rider to estimate the cost of such prearranged ride under dynamic pricing; and (iii) include a feature that requires the potential rider to confirm that he or she understands that dynamic pricing will be applied to the cost of such prearranged ride.</p>
+<p>(C) No transportation network company shall increase the price of a prearranged ride to more than two and one-half times the usual price charged for such prearranged ride in an area which is the subject of any disaster emergency declaration issued by the Governor pursuant to chapter 517, any transportation emergency declaration issued by the Governor pursuant to section <a href ="chap_031.htm#sec_3-6b">3-6b</a> or any major disaster or emergency declaration issued by the President of the United States.</p>
+<p>(c) A transportation network company shall adopt a policy of nondiscrimination on the basis of the age, color, creed, destination, intellectual or physical disability, national origin, race, sex, sexual orientation or gender identity with respect to transportation network company riders, potential transportation network company riders and transportation network company drivers. A transportation network company shall notify all drivers who use the company&#x0027;s digital network of such policy.</p>
+<p>(d) A transportation network company shall provide a potential transportation network company rider with an opportunity to indicate whether such rider requires a transportation network company vehicle that is accessible by wheelchair. If a transportation network company cannot arrange for a wheelchair-accessible transportation network company vehicle to provide a prearranged ride, the company shall direct the potential transportation network company rider to an alternate provider of wheelchair-accessible transportation, if available.</p>
+<p>(e) (1) A transportation network company shall maintain: (A) The record of each prearranged ride for a period of not less than three years from the date the prearranged ride was provided; (B) records regarding each transportation network company driver for a period of not less than three years from the date on which the transportation network company driver last connected to the company&#x0027;s digital network; and (C) records regarding each transportation network company vehicle for a period of not less than three years from the date on which the transportation network company vehicle was last used to provide a prearranged ride.</p>
+<p>(2) The Commissioner of Transportation or the commissioner&#x0027;s designee, upon reasonable written notice and not more than four times a year, may audit the records maintained by a transportation network company pursuant to subdivision (1) of this subsection and subdivision (3) of subsection (d) of section <a href ="chap_244c.htm#sec_13b-119">13b-119</a>. Each such audit shall occur at a transportation network company&#x0027;s place of business or at a location in this state jointly selected by the commissioner or the commissioner&#x0027;s designee and the transportation network company. The commissioner or the commissioner&#x0027;s designee shall not require a transportation network company to disclose information that identifies or would tend to identify any transportation network company driver or transportation network company rider, unless the identity of the driver or rider is needed to resolve a complaint or investigate an audit finding to ensure compliance with any provision of the general statutes and any regulations adopted pursuant to subsection (j) of this section.</p>
+<p>(3) Any records obtained during an audit pursuant to subdivision (3) of this subsection shall be confidential and not subject to disclosure under the Freedom of Information Act, as defined in section <a href ="chap_014.htm#sec_1-200">1-200</a>, except that the Commissioner of Transportation may disclose such records: (A) To law enforcement for law enforcement purposes, provided such disclosure is made in cooperation with the transportation network company, (B) to any state or federal agency for any action undertaken by the commissioner to enforce the provisions of this section or any regulation adopted pursuant to subsection (j) of this section, (C) at the request of any state or federal agency conducting an audit or investigation pursuant to such agency&#x0027;s legal authority, provided the commissioner gives the transportation network company an opportunity to object and propose an alternative method of cooperation with such disclosure, or (D) pursuant to a court order. If the commissioner discloses such records pursuant to this subdivision, the commissioner shall (i) provide written notice to the transportation network company prior to disclosing such company&#x0027;s records, and (ii) redact any information that is not required to be disclosed pursuant to subsection (b) of section <a href ="chap_014.htm#sec_1-210">1-210</a>, including, but not limited to, any trade secret or commercial or financial information described in subdivision (5) of said subsection, unless such disclosure is expressly required under subparagraph (A), (B), (C) or (D) of this subdivision.</p>
+<p>(f) A transportation network company shall not disclose any transportation network company rider&#x0027;s personally identifiable information, except pursuant to the publicly disclosed terms of the company&#x0027;s privacy policy, if any. For any disclosure not governed by a transportation network company&#x0027;s privacy policy, the company must obtain a transportation network company rider&#x0027;s consent before the company may disclose the rider&#x0027;s personally identifiable information.</p>
+<p>(g) No transportation network company driver shall use a digital network or provide prearranged rides for more than: (1) Fourteen consecutive hours; or (2) sixteen hours within a twenty-four-hour period.</p>
+<p>(h) The Commissioner of Motor Vehicles shall not require a transportation network company driver to: (1) Obtain a commercial driver&#x0027;s license or commercial learner&#x0027;s permit pursuant to section <a href ="chap_246.htm#sec_14-44c">14-44c</a>; or (2) register the driver&#x0027;s transportation network company vehicle as a commercial vehicle.</p>
+<p>(i) (1) For the purposes of this subsection, &#x201C;certificate or permit holder&#x201D; means any person, association, limited liability company or corporation that holds a certificate of public convenience and necessity to operate a taxicab, as described in section <a href ="chap_244a.htm#sec_13b-97">13b-97</a> or holds a permit to operate a motor vehicle in livery service, as described in section <a href ="chap_244b.htm#sec_13b-103">13b-103</a>.</p>
+<p>(2) In no event may a certificate or permit holder use or allow to be used a motor vehicle operated as a taxicab or motor vehicle in livery service to also be used or operated as a transportation network company vehicle.</p>
+<p>(j) The Commissioner of Transportation may adopt regulations, in accordance with the provisions of chapter 54, to implement the provisions of this section.</p>
+<p class="source-first">(P.A. 17-140, S. 3; P.A. 19-161, S. 11; P.A. 24-20, S. 14.)</p>
+<p class="history-first">History: P.A. 19-161 added Subsec. (a)(2)(D) re display of illuminated decal; P.A. 24-20 amended Subsec. (h) by replacing reference to commercial driver&#x0027;s instruction permit with reference to commercial learner&#x0027;s permit.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="sec_13b-119">Sec. 13b-119. Transportation network company driver requirements. Adoption of policies re drugs and alcohol and illness and fatigue. Operation as transportation network company driver without authority; penalty. Certification re condition of transportation network company vehicle.</span> (a) Prior to permitting an individual to act as a transportation network company driver on its digital network, the transportation network company shall: (1) Require the individual to submit an application to the company that includes information regarding the individual&#x0027;s name, address, date of birth, motor vehicle operator&#x0027;s license number and motor vehicle registration; (2) (A) conduct, or have a consumer reporting agency regulated under the federal Fair Credit Reporting Act conduct, a driving record check and a local, state and national criminal history records check, including a search of state and national sexual offender registry databases provided such databases are accessible to the public, or (B) arrange for the fingerprinting of the individual to be submitted to the Federal Bureau of Investigation for a national criminal history records check and to the State Police Bureau of Identification for a state criminal history records check conducted in accordance with section <a href ="chap_529.htm#sec_29-17a">29-17a</a>; and (3) disclose to such individual, electronically or in writing, (A) the insurance coverage, including the types of coverage and any coverage limits, that the company provides while a transportation network company driver is connected to the company&#x0027;s digital network or is engaged in the provision of a prearranged ride, and (B) that a transportation network company driver&#x0027;s personal automobile insurance policy might not provide coverage while such driver is connected to the company&#x0027;s digital network, available to receive a request for a prearranged ride or engaged in the provision of a prearranged ride.</p>
+<p>(b) A transportation network company shall conduct, or have a consumer reporting agency regulated under the federal Fair Credit Reporting Act conduct, a local, state and national criminal history records check, including a search of state and national sexual offender registry databases, or arrange for the fingerprinting of the individual to be submitted to the Federal Bureau of Investigation for a national criminal history records check and to the State Police Bureau of Identification for a state criminal history records check conducted in accordance with section <a href ="chap_529.htm#sec_29-17a">29-17a</a>, at least once every three years after permitting an individual to act as a transportation network company driver.</p>
+<p>(c) (1) No transportation network company shall permit an individual to act as a transportation network company driver on its digital network if such individual: (A) Has, during the three years prior to the date of such individual&#x0027;s application to be a transportation network company driver, (i) committed more than three moving violations, as defined in section <a href ="chap_246.htm#sec_14-111g">14-111g</a>, (ii) committed one serious traffic violation, as defined in section <a href ="chap_246.htm#sec_14-1">14-1</a>, or (iii) had his or her motor vehicle operator&#x0027;s license suspended pursuant to section <a href ="chap_248.htm#sec_14-227b">14-227b</a>; (B) has been convicted, within seven years prior to the date of such individual&#x0027;s application, of driving under the influence of drugs or alcohol, fraud, sexual offenses, use of a motor vehicle to commit a felony, acts of violence or acts of terror; (C) is included in the state sexual offenders registry or the United States Department of Justice National Sex Offender Public Website; (D) does not possess a Connecticut motor vehicle operator&#x0027;s license or a motor vehicle operator&#x0027;s license issued by a reciprocal state; (E) does not possess proof of registration for each motor vehicle such individual proposes to use as a transportation network company vehicle; or (F) is not at least nineteen years of age. For the purposes of this subsection, &#x201C;reciprocal state&#x201D; means a state that permits transportation network company drivers who possess a Connecticut motor vehicle operator&#x0027;s license to provide a prearranged ride that originates in such state.</p>
+<p>(2) An individual who is permitted to act as a transportation network company driver shall report to the transportation network company not later than twenty-four hours after the occurrence of any of the following incidents: (A) The commission of a fourth moving violation, as defined in section <a href ="chap_246.htm#sec_14-111g">14-111g</a>, during the past three years; (B) the commission of one serious traffic violation, as defined in section <a href ="chap_246.htm#sec_14-1">14-1</a>; (C) the suspension of his or her motor vehicle operator&#x0027;s license pursuant to section <a href ="chap_248.htm#sec_14-227b">14-227b</a>; (D) the conviction of driving under the influence of drugs or alcohol, fraud, sexual offenses, use of a motor vehicle to commit a felony, acts of violence or acts of terror; (E) inclusion in the state sexual offenders registry or the United States Department of Justice National Sex Offender Public Website; (F) failure to possess an operator&#x0027;s license; or (G) failure to possess proof of registration for a transportation network company vehicle. Each transportation network company that receives a report pursuant to this subdivision or becomes aware of such incident shall prohibit the individual from acting as a transportation network company driver on the company&#x0027;s digital network until the individual meets the qualifications of this section to be a transportation network company driver.</p>
+<p>(d) (1) A transportation network company shall adopt a policy that a transportation network company driver shall not use or be under the influence of drugs or alcohol while the driver is connected to the company&#x0027;s digital network or engaged in the provision of a prearranged ride. The company shall provide notice of such policy on its Internet web site, and include procedures for a transportation network company rider to report a complaint about a driver whom the rider reasonably suspects was using or under the influence of drugs or alcohol while engaged in the provision of a prearranged ride.</p>
+<p>(2) Upon the company&#x0027;s receipt of a complaint by a rider alleging a violation of such policy, the company shall suspend the driver&#x0027;s access to the company&#x0027;s digital network as soon as possible and conduct an investigation into the reported incident. The suspension shall last until completion of the investigation. If the investigation confirms the driver used or was under the influence of drugs or alcohol while engaged in the provision of a prearranged ride or while connected to the company&#x0027;s digital network, the company shall ban the driver&#x0027;s access to the digital network on a permanent basis.</p>
+<p>(3) The company shall maintain all records related to the enforcement of such policy for a period of not less than three years from the date that a complaint by a rider is received by the company.</p>
+<p>(e) A transportation network company shall adopt a policy that prohibits a transportation network company driver from providing a prearranged ride when such driver&#x0027;s ability to operate a transportation network company motor vehicle is impaired by illness, fatigue or any other condition that would likely preclude safe operation of such vehicle.</p>
+<p>(f) A transportation network company driver shall: (1) Comply with all applicable laws regarding nondiscrimination against transportation network company riders or potential transportation network company riders on the basis of age, color, creed, destination, intellectual or physical disability, national origin, race, sex, sexual orientation or gender identity; (2) comply with all applicable laws relating to the accommodation of service animals and accommodate service animals without imposing additional charges for such accommodation; (3) comply with the policies adopted by the transportation network company pursuant to subsection (c) of section <a href ="chap_244c.htm#sec_13b-118">13b-118</a> and subsections (d) and (e) of this section; (4) not impose additional charges for providing prearranged rides to persons with physical disabilities because of such disabilities; and (5) not solicit or accept a request for transportation unless the request is accepted through the transportation network company&#x0027;s digital network. For the purposes of this subsection, &#x201C;service animal&#x201D; has the same meaning as provided in section <a href ="chap_435.htm#sec_22-345">22-345</a>.</p>
+<p>(g) (1) Any person who holds himself or herself out to be a transportation network company driver who is not permitted by a transportation network company to use its digital network shall be guilty of a class B misdemeanor.</p>
+<p>(2) The state shall remit to a municipality fifty per cent of the fine amount received for a violation of subdivision (1) of this subsection with respect to each summons issued by such municipality. Each clerk of the Superior Court or the Chief Court Administrator, or any other official of the Superior Court designated by the Chief Court Administrator, shall, on or before the thirtieth day of January, April, July and October in each year, certify to the Comptroller the amount due for the previous quarter under this subsection to each municipality served by the office of the clerk or official.</p>
+<p>(h) (1) A transportation network company vehicle shall (A) have four doors; (B) not be older than twelve model years old; and (C) be designed to transport no more than eight passengers, including the driver.</p>
+<p>(2) Before any motor vehicle is used by a transportation network company driver as a transportation network company vehicle, and every two years thereafter, the driver shall certify to the transportation network company that the following equipment is in good working order: (A) Foot brakes; (B) emergency brakes; (C) steering mechanism; (D) windshield; (E) rear window and other glass; (F) windshield wipers; (G) headlights; (H) tail lights; (I) turn indicator lights; (J) brake lights; (K) front seat adjustment mechanism; (L) doors; (M) horn; (N) speedometer; (O) bumpers; (P) muffler and exhaust system; (Q) condition of tires, including tread depth; (R) interior and exterior rearview mirrors; and (S) seat safety belts and air bags for driver and passengers. The transportation network company shall maintain such certification for not less than three years.</p>
+<p class="source-first">(P.A. 17-140, S. 4; P.A. 19-161, S. 3; P.A. 24-18, S. 3.)</p>
+<p class="history-first">History: P.A. 17-140 effective January 1, 2018; P.A. 19-161 amended Subsec. (c)(1)(D) to add provision re motor vehicle operator&#x0027;s license issued by reciprocal state, amended Subsec. (c) by defining &#x201C;reciprocal state&#x201D; and made a conforming change; P.A. 24-18 amended Subsec. (f) by defining &#x201C;service animal&#x201D;, effective July 1, 2024.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="sec_13b-120">Sec. 13b-120. Automobile liability insurance requirements.</span> (a) A transportation network company driver or a transportation network company on the driver&#x0027;s behalf shall procure and maintain primary automobile liability insurance that recognizes that the driver is a transportation network company driver, or otherwise uses a vehicle to transport passengers for compensation, and provides coverage for the driver as follows:</p>
+<p>(1) For the period during which the driver is connected to the transportation network company&#x0027;s digital network and is available to receive requests for prearranged rides but is not engaged in the provision of a prearranged ride: (A) Primary automobile liability insurance coverage of at least (i) fifty thousand dollars for damages by reason of bodily injury to, or the death of, any one person, (ii) one hundred thousand dollars for damages by reason of bodily injury or death per accident, and (iii) twenty-five thousand dollars for property damage; and (B) uninsured and underinsured motorist coverage in accordance with the provisions of section <a href ="chap_700.htm#sec_38a-336">38a-336</a>; and</p>
+<p>(2) For the period during which the driver is engaged in the provision of a prearranged ride: (A) Primary automobile liability insurance coverage of at least one million dollars for damages by reason of bodily injury, death or property damage per accident; and (B) uninsured and underinsured motorist coverage in accordance with the provisions of section <a href ="chap_700.htm#sec_38a-336">38a-336</a>.</p>
+<p>(b) The coverage requirements of subsection (a) of this section may be satisfied by an automobile liability insurance policy maintained by a transportation network company driver or the transportation network company or a combination of both. Nothing in this section shall be construed to: (1) Require an insurance company that issues automobile liability insurance policies in this state to issue automobile liability insurance policies that provide the coverage specified under subsection (a) of this section, or (2) preclude an insurance company from providing primary or excess coverage by contract or endorsement for a transportation network company vehicle.</p>
+<p>(c) If an automobile liability insurance policy maintained by a transportation network company driver has lapsed or does not provide the coverage required under subsection (a) of this section, the transportation network company&#x0027;s automobile liability insurance policy shall provide such coverage, beginning with the first dollar of a claim, and the insurance company issuing such policy shall have the duty to defend a claim that arises while the driver is connected to the transportation network company&#x0027;s digital network or is engaged in the provision of a prearranged ride.</p>
+<p>(d) Coverage under an automobile liability insurance policy maintained by a transportation network company shall not be contingent on another insurance company first denying a claim, nor shall such other insurance company be required to first deny a claim.</p>
+<p>(e) A transportation network company may procure the coverage required under subsection (a) of this section from: (1) An insurance company authorized to do business in this state, or (2) a surplus lines insurer that has at least an A minus credit rating by A.M. Best or an A or similar credit rating by another rating agency approved by the Insurance Commissioner. Any such insurance company or surplus lines insurer shall comply with the provisions of subsection (a) of section <a href ="chap_700.htm#sec_38a-318a">38a-318a</a>.</p>
+<p>(f) (1) A transportation network company driver shall carry proof of insurance satisfying the coverage required under subsection (a) of this section at all times during the driver&#x0027;s use of a transportation network company vehicle while connected to a transportation network company&#x0027;s digital network or engaged in the provision of a prearranged ride. The transportation network company shall ensure it provides such proof of insurance to all of its drivers to whom such transportation network company is providing such coverage.</p>
+<p>(2) In the event of an accident, a transportation network company driver shall provide such proof of insurance coverage to the directly interested parties, insurance companies and investigating police officers. A transportation network company driver shall disclose, upon request, to directly interested parties, insurance companies and investigating police officers whether the driver was connected to the transportation network company&#x0027;s digital network or was engaged in the provision of a prearranged ride at the time of the accident.</p>
+<p>(3) In any claims coverage investigation, a transportation network company shall immediately provide, upon a request from a directly involved party or the transportation network company driver&#x0027;s insurance company, the precise times the driver was connected to and disconnected from the transportation network company&#x0027;s digital network in the twelve-hour periods immediately preceding and immediately following the accident. An insurance company providing any coverage required under subsection (a) of this section shall disclose, upon request by any other insurance company providing any coverage required under said subsection, the applicable coverages, exclusions and limits under the automobile liability insurance policy issued to satisfy the coverage requirements under said subsection.</p>
+<p>(g) Notwithstanding the provisions of sections <a href ="chap_246.htm#sec_14-112">14-112</a>, <a href ="chap_700.htm#sec_38a-334">38a-334</a>, <a href ="chap_700.htm#sec_38a-335">38a-335</a> and <a href ="chap_700.htm#sec_38a-336">38a-336</a>, an insurance company that offers automobile liability insurance coverage in this state may offer automobile liability insurance policies to individuals that exclude any or all coverage afforded under such policies for any loss or injury that occurs during the period an insured is connected to a transportation network company&#x0027;s digital network and available to receive requests for prearranged rides or engaged in the provision of a prearranged ride. Such exclusions may include, but are not limited to: (1) Liability coverage for bodily injury, death or property damage; (2) personal injury protection coverage; (3) uninsured and underinsured motorist coverage; (4) medical payments coverage; (5) collision physical damage coverage; or (6) comprehensive physical damage coverage. Nothing in this subsection shall be construed to require an insurance company that clearly and conspicuously discloses such exclusions to use any particular policy language or reference to this subsection to exclude any or all coverage pursuant to this subsection.</p>
+<p>(h) (1) An insurance company that excludes coverage pursuant to subsection (g) of this section shall have no duty to defend or indemnify any claim against a transportation network company driver for which coverage is expressly excluded in such driver&#x0027;s automobile liability insurance policy. If an insurance company defends or indemnifies a claim against a transportation network company driver for which coverage is expressly excluded in such driver&#x0027;s automobile liability insurance policy, the insurance company shall have a right of subrogation against other insurance companies that provide automobile liability insurance coverage to such driver to satisfy the requirements of subsection (a) of this section.</p>
+<p>(2) Nothing in this section shall be construed to invalidate or limit an exclusion contained in an automobile liability insurance policy, including any such policy in use or approved for use in this state prior to January 1, 2018, that excludes coverage for vehicles used to transport property or passengers for a fee or available for hire by the public.</p>
+<p>(i) Prior to initially permitting a transportation network company driver to accept a rider request for a prearranged ride through the transportation network company&#x0027;s digital network, a transportation network company shall disclose, in writing, to such driver the following:</p>
+<p>(1) The insurance coverage, including the types of coverage and the limits for each type of coverage, that the transportation network company provides during the period such driver is using a transportation network company vehicle while connected to the transportation network company&#x0027;s digital network and available to receive requests for prearranged rides or engaged in the provision of a prearranged ride;</p>
+<p>(2) A statement that such driver&#x0027;s automobile insurance policy might not provide coverage while such driver is connected to the transportation network company&#x0027;s digital network and available to receive requests for prearranged rides or engaged in the provision of a prearranged ride; and</p>
+<p>(3) A statement that if such driver&#x0027;s transportation network company vehicle has a lien on it, the use of such vehicle for such purposes without physical damage coverage may violate the terms of the contract with the lienholder.</p>
+<p class="source-first">(P.A. 17-140, S. 5; 17-203, S. 2, 4.)</p>
+<p class="history-first">History: P.A. 17-140 effective January 1, 2018; P.A. 17-203 amended Subsec. (a) by replacing &#x201C;automobile liability insurance policy&#x201D; with &#x201C;primary automobile liability insurance&#x201D;, adding &#x201C;or otherwise uses a vehicle to transport passengers for compensation&#x201D;, and making conforming changes, and amended Subsec. (h) by deleting former Subdiv. (3) re insurance company&#x0027;s duty to defend, effective January 1, 2018.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="sec_13b-121">Sec. 13b-121. Fee for prearranged ride by transportation network company.</span> (a) As used in this section, &#x201C;transportation network company&#x201D; and &#x201C;prearranged ride&#x201D; have the same meanings as provided in section <a href ="chap_244c.htm#sec_13b-116">13b-116</a>.</p>
+<p>(b) Each transportation network company shall pay a fee of thirty cents on each prearranged ride that originates in this state.</p>
+<p>(c) On or before the last day of the month next succeeding each calendar quarter, each transportation network company shall: (1) File a return electronically for the preceding period with the Commissioner of Revenue Services on such forms as the commissioner may prescribe; and (2) make payment of the fees required under subsection (b) of this section by electronic funds transfer in the manner provided by chapter 228g. Any document received and maintained by the commissioner with respect to a transportation network company shall be return information, as defined in section <a href ="chap_201.htm#sec_12-15">12-15</a>, and shall not be subject to disclosure under the Freedom of Information Act, as defined in section <a href ="chap_014.htm#sec_1-200">1-200</a>.</p>
+<p>(d) Any fees due and unpaid under this section shall be subject to the penalties and interest established in section <a href ="chap_225.htm#sec_12-547">12-547</a> and the amount of such fee, penalty or interest, due and unpaid, may be collected under the provisions of section <a href ="chap_202.htm#sec_12-35">12-35</a> as if they were taxes due to the state.</p>
+<p>(e) The provisions of sections <a href ="chap_225.htm#sec_12-548">12-548</a>, <a href ="chap_225.htm#sec_12-550">12-550</a> to <a href ="chap_225.htm#sec_12-554">12-554</a>, inclusive, and <a href ="chap_225.htm#sec_12-555b">12-555b</a> shall apply to the provisions of this section in the same manner and with the same force and effect as if the language of said sections had been incorporated in full into this section and had expressly referred to the fee imposed under this section, except to the extent that any such provision is inconsistent with a provision of this section.</p>
+<p>(f) Any fees received under this section shall be deposited into the General Fund. For revenue reporting purposes only, the Commissioner of Revenue Services shall include any such fees with the revenue reported under chapter 225.</p>
+<p>(g) The Commissioner of Revenue Services, in consultation with the Commissioner of Transportation, may adopt regulations in accordance with the provisions of chapter 54, to carry out the provisions of this section.</p>
+<p class="source-first">(June Sp. Sess. P.A. 17-2, S. 654; P.A. 19-117, S. 360; P.A. 19-186, S. 8.)</p>
+<p class="history-first">History: June Sp. Sess. P.A. 17-2 effective January 1, 2018; P.A. 19-117 amended Subsec. (b) by increasing fee on each prearranged ride that originates in this state from 25 cents to 30 cents, effective July 1, 2019; P.A. 19-186 amended Subsec. (f) by replacing &#x201C;chapter 222&#x201D; with &#x201C;chapter 225&#x201D; re revenue reporting, effective July 8, 2019.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+<p><span class="catchln" id="secs_13b-122_to_13b-126">Secs. 13b-122 to 13b-126.</span> Reserved for future use.</p>
+<table class="nav_tbl">
+<tr>
+<td><a class="nav_link" href="#TOC">(Return to Chapter<br/>Table of Contents)</a></td>
+<td><a class="nav_link" href="title_13b.htm">(Return to<br/>List of Chapters)</a></td>
+<td><a class="nav_link" href="titles.htm">(Return to<br/>List of Titles)</a></td>
+</tr>
+</table>
+</div>
+</body>
+</html>

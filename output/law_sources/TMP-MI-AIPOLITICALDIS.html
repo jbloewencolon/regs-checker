@@ -1,0 +1,601 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"Arial Black";
+	panose-1:2 11 10 4 2 1 2 2 2 4;}
+@font-face
+	{font-family:"Century Schoolbook";
+	panose-1:2 4 6 4 5 5 5 2 3 4;}
+@font-face
+	{font-family:CenturyExpanded;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:10.0pt;
+	margin-left:0in;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.mibillstate, li.mibillstate, div.mibillstate
+	{mso-style-name:mi_bill_state;
+	margin-top:60.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-align:center;
+	font-size:11.0pt;
+	font-family:"Arial Black",sans-serif;
+	text-transform:uppercase;}
+p.mibilllegislature, li.mibilllegislature, div.mibilllegislature
+	{mso-style-name:mi_bill_legislature;
+	margin:0in;
+	text-align:center;
+	font-size:11.0pt;
+	font-family:"Arial Black",sans-serif;
+	text-transform:uppercase;}
+p.mibillsession, li.mibillsession, div.mibillsession
+	{mso-style-name:mi_bill_session;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:13.0pt;
+	margin-left:0in;
+	text-align:center;
+	font-size:11.0pt;
+	font-family:"Arial Black",sans-serif;
+	text-transform:uppercase;}
+p.mibillsponsor, li.mibillsponsor, div.mibillsponsor
+	{mso-style-name:mi_bill_sponsor;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:13.9pt;
+	text-align:justify;
+	text-indent:-13.9pt;
+	line-height:11.0pt;
+	font-size:9.5pt;
+	font-family:"Century Schoolbook",serif;
+	font-weight:bold;}
+p.mibillbillnumber, li.mibillbillnumber, div.mibillbillnumber
+	{mso-style-name:mi_bill_billnumber;
+	margin-top:12.0pt;
+	margin-right:.3pt;
+	margin-bottom:3.0pt;
+	margin-left:21.25pt;
+	text-align:center;
+	page-break-after:avoid;
+	font-size:23.0pt;
+	font-family:"Century Schoolbook",serif;
+	font-weight:bold;}
+p.mibilltitle, li.mibilltitle, div.mibilltitle
+	{mso-style-name:mi_bill_title;
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-align:justify;
+	text-indent:13.9pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillenact, li.mibillenact, div.mibillenact
+	{mso-style-name:mi_bill_enact;
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:12.0pt;
+	margin-left:0in;
+	text-align:center;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;
+	font-style:italic;}
+p.mibillstatute, li.mibillstatute, div.mibillstatute
+	{mso-style-name:mi_bill_statute;
+	margin-top:2.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-align:justify;
+	text-indent:13.7pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillclerkofrepsigline, li.mibillclerkofrepsigline, div.mibillclerkofrepsigline
+	{mso-style-name:mi_bill_clerkofrepsigline;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:290.6pt;
+	text-align:right;
+	page-break-after:avoid;
+	border:none;
+	padding:0in;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillclerkofrepsig, li.mibillclerkofrepsig, div.mibillclerkofrepsig
+	{mso-style-name:mi_bill_clerkofrepsig;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:50.0pt;
+	margin-left:0in;
+	text-align:right;
+	page-break-after:avoid;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillsecofsenatesigline, li.mibillsecofsenatesigline, div.mibillsecofsenatesigline
+	{mso-style-name:mi_bill_secofsenatesigline;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:290.6pt;
+	text-align:right;
+	page-break-after:avoid;
+	border:none;
+	padding:0in;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillsecofsenatesig, li.mibillsecofsenatesig, div.mibillsecofsenatesig
+	{mso-style-name:mi_bill_secofsenatesig;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:50.0pt;
+	margin-left:0in;
+	text-align:right;
+	page-break-after:avoid;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillapproveddate, li.mibillapproveddate, div.mibillapproveddate
+	{mso-style-name:mi_bill_approveddate;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:50.0pt;
+	margin-left:0in;
+	page-break-after:avoid;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillgovernorsig, li.mibillgovernorsig, div.mibillgovernorsig
+	{mso-style-name:mi_bill_governorsig;
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:177.2pt;
+	page-break-after:avoid;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillgovernorsigline, li.mibillgovernorsigline, div.mibillgovernorsigline
+	{mso-style-name:mi_bill_governorsigline;
+	margin:0in;
+	page-break-after:avoid;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillPublicActNo, li.mibillPublicActNo, div.mibillPublicActNo
+	{mso-style-name:mi_bill_PublicActNo;
+	margin:0in;
+	text-align:center;
+	font-size:10.0pt;
+	font-family:"Arial",sans-serif;}
+p.mibillenactingsection, li.mibillenactingsection, div.mibillenactingsection
+	{mso-style-name:mi_bill_enactingsection;
+	margin-top:2.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-indent:13.9pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillnonstatute, li.mibillnonstatute, div.mibillnonstatute
+	{mso-style-name:mi_bill_nonstatute;
+	margin-top:2.0pt;
+	margin-right:.3pt;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-align:justify;
+	text-indent:13.9pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibilltablefirstcolumn, li.mibilltablefirstcolumn, div.mibilltablefirstcolumn
+	{mso-style-name:mi_bill_tablefirstcolumn;
+	margin-top:2.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	text-indent:13.9pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+p.mibillimmediateeffect, li.mibillimmediateeffect, div.mibillimmediateeffect
+	{mso-style-name:mi_bill_immediateeffect;
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:42.0pt;
+	margin-left:0in;
+	text-indent:13.9pt;
+	font-size:9.0pt;
+	font-family:"Century Schoolbook",serif;}
+span.mibillstatutetnri
+	{mso-style-name:mi_bill_statute_tnri;
+	font-family:"Times New Roman",serif;
+	font-style:italic;}
+span.mibillnew
+	{mso-style-name:mi_bill_new;
+	font-family:"Courier New";
+	font-variant:normal !important;
+	text-transform:none;
+	font-weight:bold;
+	font-style:normal;
+	text-decoration:none;
+	vertical-align:baseline;}
+.MsoChpDefault
+	{font-family:"Calibri",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+ /* Page Definitions */
+ @page WordSection1
+	{size:8.5in 11.0in;
+	margin:.8in 1.1in .8in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>Act
+No. 263</span></p>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>Public
+Acts of 2023</span></p>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>Approved
+by the Governor</span></p>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>November
+30, 2023</span></p>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>Filed
+with the Secretary of State</span></p>
+
+<p class=MsoNormal align=center style='margin-top:0in;margin-right:0in;
+margin-bottom:0in;margin-left:5.0pt;text-align:center;line-height:normal;
+text-autospace:none'><span style='font-size:10.0pt;font-family:"Times New Roman",serif'>December
+1, 2023</span></p>
+
+<p class=mibillPublicActNo><span lang=EN-GB style='font-family:"Times New Roman",serif'>EFFECTIVE
+DATE:  February 13, 2024</span></p>
+
+<p class=mibillstate>state of michigan</p>
+
+<p class=mibilllegislature>102nd Legislature</p>
+
+<p class=mibillsession>Regular session of 2023</p>
+
+<p class=mibillsponsor><span lang=EN-GB>Introduced by Reps. Tsernoglou,
+Rheingans, Price, Conlin, Puri, Paiz, Hope, Martus, Brixie, Bierlein, Rogers,
+Scott, Andrews, McFall, Brabec, Morse, Haadsma, Wilson, Dievendorf, Morgan,
+Hood, Skaggs, Byrnes, Steckloff, Tyrone Carter, MacDonell, Hoskins, Brenda
+Carter, O’Neal, Neeley, Shannon and Farhat</span></p>
+
+<p class=mibillbillnumber>ENROLLED HOUSE BILL No. 5141</p>
+
+<p class=mibilltitle style='line-height:10.7pt'>AN ACT to amend 1976 PA 388,
+entitled “An act to regulate political activity; to regulate campaign
+financing; to restrict campaign contributions and expenditures; to require
+campaign statements and reports; to regulate anonymous contributions; to
+regulate campaign advertising and literature; to provide for segregated funds
+for political purposes; to provide for the use of public funds for political
+purposes; to create certain funds; to provide for reversion, retention, or
+refunding of unexpended balances in certain funds; to require other statements
+and reports; to regulate acceptance of certain gifts, payments, and
+reimbursements; to prescribe the powers and duties of certain state departments
+and state and local officials and employees; to provide appropriations; to
+prescribe penalties and provide remedies; and to repeal certain acts and parts
+of acts,” by amending section 47 (MCL&nbsp;169.247), as amended by 2015 PA 269,
+and by adding section 59.</p>
+
+<p class=mibillenact style='line-height:10.7pt'>The People of the State of
+Michigan enact:</p>
+
+<p class=mibillstatute style='line-height:10.7pt'><span style='color:black;
+background:white'>Sec. 47. (1) Except as otherwise provided in this subsection
+and subject to subsections (3) and (4), a billboard, placard, poster, pamphlet,
+or other printed matter having reference to an election, a candidate, or a
+ballot question, must display an identification that contains the name and
+address of the person paying for the matter. Except as otherwise provided in
+this subsection and subsection (5) and subject to subsections (3) and (4), if
+the printed matter relating to a candidate is an independent expenditure that
+is not authorized in writing by the candidate committee of that candidate, in
+addition to the identification required under this subsection, the printed
+matter must contain the following disclaimer: “Not authorized by any candidate
+committee”. An individual other than a candidate is not subject to this
+subsection if the individual is acting independently and not acting as an agent
+for a candidate or any committee. This subsection does not apply to
+communications between a separate segregated fund established under section 55
+and individuals who can be solicited for contributions to that separate
+segregated fund under section 55.</span></p>
+
+<p class=mibillstatute style='line-height:10.7pt'><span style='color:black;
+background:white'>(2) A radio or television paid advertisement having reference
+to an election, a candidate, or a ballot question must identify the sponsoring
+person as required by the Federal Communications Commission, bear an
+identification that contains the name of the person paying for the
+advertisement, and be in compliance with subsection (3) and, except as
+otherwise provided by subsection (5), with the following:</span></p>
+
+<p class=mibillstatute style='line-height:10.7pt'><span style='color:black;
+background:white'>(a) If the radio or television paid advertisement relates to
+a candidate and is an independent expenditure, the advertisement must contain
+the following disclaimer: “Not authorized by any candidate”.</span></p>
+
+<p class=mibillstatute style='line-height:10.7pt'><span style='color:black;
+background:white'>(b) If the radio or television paid advertisement relates to
+a candidate and is not an independent expenditure but is paid for by a person
+other than the candidate to which it is related, the advertisement must contain
+the following disclaimer: </span></p>
+
+<p class=mibillstatute style='line-height:10.7pt'><span style='color:black;
+background:white'>“Authorized by..................................................................................................”.</span></p>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0
+ title=NewTable1 width=624 style='width:468.1pt;border-collapse:collapse'>
+ <tr style='page-break-inside:avoid'>
+  <td width=624 style='width:468.1pt;padding:0in 0in 0in 0in'>
+  <p class=mibilltablefirstcolumn style='line-height:10.7pt'><span
+  style='color:black;background:white'>                             (name of
+  candidate or name of candidate committee)</span></p>
+  </td>
+ </tr>
+</table>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(3) The size and placement of an identification or disclaimer
+required by this section must be determined by rules promulgated by the
+secretary of state. The rules may exempt printed matter and certain other items
+such as campaign buttons or balloons, the size of which makes it unreasonable
+to add an identification or disclaimer, from the identification or disclaimer
+required by this section.</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(4) Except for a communication described in subsection (5)
+and except for a candidate committee’s printed matter or radio or television
+paid advertisements, each identification required by this section must also
+indicate that the printed matter or radio or television paid advertisement is
+paid for “with regulated funds”. Printed matter or a radio or television paid
+advertisement that is not subject to this act must not bear the statement
+required by this subsection.</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(5) A communication otherwise entirely exempted from this act
+under section 6(2)(j) is subject to both of the following:</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(a) Must contain the identification required by subsection
+(1), (2), or (7) if that communication references a clearly identified
+candidate or ballot question within 60 days before a general election or 30
+days before a primary election in which the candidate or ballot question
+appears on a ballot and is targeted to the relevant electorate where the
+candidate or ballot question appears on the ballot by means of radio,
+television, mass mailing, or prerecorded telephone message.</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(b) Is not required to contain the disclaimer required under subsection
+(1) or (2).</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(6) A person who knowingly violates this section is guilty of
+a misdemeanor punishable by a fine of not more than $1,000.00 or imprisonment
+for not more than 93 days, or both.</span></p>
+
+<p class=mibillstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(7) A prerecorded telephone message that in express terms
+advocates the election or defeat of a clearly identified candidate, or the
+qualification, passage, or defeat of a ballot question, must bear an
+identification that contains the name and telephone number, address, or other
+contact information of the person paying for the prerecorded telephone message,
+and must be in compliance with subsection (4). Except as otherwise provided in
+this subsection, a prerecorded telephone message subject to this subsection is
+not required to contain a disclaimer. If the prerecorded telephone message is
+generated in whole or substantially by artificial intelligence, the prerecorded
+telephone message must contain the following disclaimer: “This message was
+generated in whole or substantially by artificial intelligence.”.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span class=mibillnew><span
+style='font-size:11.5pt;font-family:"Century Schoolbook",serif;color:black;
+background:white;font-weight:normal'>&nbsp;</span></span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><a
+name="sec_import_start_169_259"></a><span style='color:black;background:white'>Sec.
+59. (1) If a person, committee, or other entity creates, originally publishes,
+or originally distributes a qualified political advertisement, the qualified
+political advertisement must include, in a clear and conspicuous manner, a
+statement that meets all of the following requirements, as applicable:</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(a) State that the qualified political advertisement was
+generated in whole or substantially by artificial intelligence.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(b) If the qualified political advertisement is a graphic
+communication, appear in letters at least as large as the majority of the text
+in the graphic communication and be in the same language as the language used
+in the graphic communication.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(c) If the qualified political advertisement is an audio
+communication, be spoken in a clearly audible and intelligible manner at the
+beginning or end of the communication, last at least 3 seconds, and be in the
+same language as the language used in the audio communication.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(d) If the qualified political advertisement is a video
+communication that also includes audio, do all of the following:</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(</span><span class=mibillstatutetnri><span style='font-family:
+"Century Schoolbook",serif'>i</span></span><span style='color:black;background:
+white'>) Appear for at least 4 seconds in letters at least as large as the
+majority of any text communication, or if there is no other text communication,
+in a size that is easily readable by the average viewer.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(</span><span class=mibillstatutetnri><span style='font-family:
+"Century Schoolbook",serif'>ii</span></span><span style='color:black;
+background:white'>) Be spoken in a clearly audible and intelligible manner at
+the beginning or end of the communication and last at least 3 seconds.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(</span><span class=mibillstatutetnri><span style='font-family:
+"Century Schoolbook",serif'>iii</span></span><span style='color:black;
+background:white'>) Be in the same language as the language used in the video
+communication.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(2) A person that violates subsection (1) is subject to the
+following:</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(a) For a first violation, the person is responsible for a
+state civil infraction and may be ordered to pay a civil fine of not more than
+$250.00.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(b) For a second or subsequent violation, the person is
+responsible for a state civil infraction and may be ordered to pay a civil fine
+of not more than $1,000.00 for each violation.</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(3) Each qualified political advertisement that is
+distributed or aired to the public that violates this section is a separate
+violation under subsection (2).</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(4) This section does not apply to any of the following:</span></p>
+
+<p class=mibillnonstatute style='line-height:10.5pt'><span style='color:black;
+background:white'>(a) A radio or television broadcasting station, including a
+cable or satellite television operator, programmer, or producer that broadcasts
+a qualified political advertisement or a communication generated in whole or
+substantially by artificial intelligence as part of a bona fide newscast, news
+interview, news documentary, or on&#8209;the-spot coverage of bona fide news
+events, if the broadcast clearly acknowledges through content or a disclosure,
+in a manner that can be easily heard or read by the average listener or viewer,
+that the qualified political advertisement or communication generated in whole
+or substantially by artificial intelligence does not accurately represent the
+speech or conduct of the depicted individual.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span style='color:black;
+background:white'>(b) A radio or television broadcasting station, including a
+cable or satellite television operator, programmer, or producer, when the
+station is paid to broadcast qualified political advertisements.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><a name="_Hlk149321171"><span
+style='color:black;background:white'>(c) A distribution platform, including,
+but not limited to, a website or a regularly published newspaper, magazine, or
+other periodical of general circulation, including an internet or electronic
+publication, that routinely carries news and commentary of general interest and
+that publishes qualified political advertisements prohibited under this
+section, if the distribution platform has a clearly stated written policy,
+provided to any person, committee, or other entity that creates, seeks to
+publish, or originally distributes a qualified political advertisement, that
+the qualified political advertisement must include a statement consistent with
+subsection (1).</span></a></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span style='color:black;
+background:white'>(d) A qualified political advertisement that constitutes
+satire or parody.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span style='color:black;
+background:white'>(e) A business or its affiliate if the business or its
+affiliate is regulated by the Michigan public service commission or the Federal
+Communications Commission.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span style='color:black;
+background:white'>(5) A distribution platform, as described in subsection
+(4)(c), is not liable for the lack of disclosure content created in whole or
+substantially by artificial intelligence in a qualified political advertisement
+or prerecorded telephone message if the distribution platform can show that the
+distribution platform provided notice of its prohibitions related to a lack of
+disclosure of content created in whole or substantially by artificial
+intelligence in a qualified political advertisement or prerecorded telephone
+message.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span style='color:black;
+background:white'>(6) As used in this section, “qualified political
+advertisement” means any paid advertisement, including, but not limited to,
+search engine marketing, display advertisements, video advertisements, native
+advertisements, issue advertisements, messaging service advertisements, mobile
+application advertisements, and sponsorships, relating to a candidate for
+federal, state, or local office in this state, any election to federal, state,
+or local office in this state, or a ballot question that contains any image,
+audio, or video that is generated in whole or substantially with the use of
+artificial intelligence.</span></p>
+
+<p class=mibillnonstatute style='line-height:11.0pt'><span class=mibillnew><span
+style='font-size:11.5pt;font-family:"Century Schoolbook",serif;color:black;
+background:white;font-weight:normal'>&nbsp;</span></span></p>
+
+<p class=mibillenactingsection style='text-align:justify;text-indent:13.7pt;
+line-height:11.0pt'><a name="enacting_section"></a><span style='color:black;
+letter-spacing:-.1pt;background:white'>Enacting section 1. This amendatory act
+does not take effect unless House Bill No. 5143 of the 102nd&nbsp;Legislature</span><span
+style='color:black;background:white'> is enacted into law.</span></p>
+
+<p class=mibillimmediateeffect style='line-height:11.0pt'><span
+style='position:absolute;z-index:-1895825408;left:0px;margin-left:326px;
+margin-top:15px;width:311px;height:197px'><img width=311 height=197
+src="2023-PA-0263_files/image001.jpg"></span></p>
+
+<div style='border:none;border-bottom:solid windowtext 1.0pt;padding:0in 0in 1.0pt 0in;
+margin-left:290.6pt;margin-right:0in'>
+
+<p class=mibillclerkofrepsigline style='margin-left:0in;line-height:11.0pt'><span
+lang=EN-GB>&nbsp;</span></p>
+
+</div>
+
+<p class=mibillclerkofrepsig style='line-height:11.0pt'>Clerk of the House of
+Representatives</p>
+
+<div style='border:none;border-bottom:solid windowtext 1.0pt;padding:0in 0in 1.0pt 0in;
+margin-left:290.6pt;margin-right:0in'>
+
+<p class=mibillsecofsenatesigline style='margin-left:0in;line-height:11.0pt'><span
+lang=EN-GB>&nbsp;</span></p>
+
+</div>
+
+<p class=mibillsecofsenatesig style='line-height:11.0pt'>Secretary of the Senate</p>
+
+<p class=mibillapproveddate style='line-height:11.0pt'>Approved___________________________________________</p>
+
+<p class=mibillgovernorsigline style='line-height:11.0pt'>____________________________________________________</p>
+
+<p class=mibillgovernorsig style='line-height:11.0pt'>Governor</p>
+
+</div>
+
+</body>
+
+</html>
