@@ -27,30 +27,17 @@ class Settings(BaseSettings):
     s3_bucket_raw: str = "raw-artifacts"
     s3_bucket_processed: str = "processed-artifacts"
 
-    # LLM Provider routing
-    llm_provider: str = "anthropic"  # Default provider: "anthropic" or "local"
-    discovery_provider: str = "local"  # Provider for discovery tasks
-    extraction_provider: str = "anthropic"  # Provider for extraction tasks
-
-    # Anthropic API
-    anthropic_api_key: str = ""
-    extraction_model: str = "claude-haiku-4-5-20251001"
-    extraction_temperature: float = 0.0
-    extraction_max_tokens: int = 8192
+    # LLM Provider routing (all local models via OpenAI-compatible API)
+    llm_provider: str = "local"
+    discovery_provider: str = "local"
+    extraction_provider: str = "local"
 
     # Local LLM (OpenAI-compatible API: LM Studio, llama.cpp, vLLM, Ollama)
     local_llm_url: str = "http://localhost:1234"  # LM Studio default
-    local_llm_model: str = "openai/gpt-oss-20b"  # Default model for discovery tasks (same as extraction to avoid VRAM swap)
-    local_extraction_model: str = "openai/gpt-oss-20b"  # Default model for local extraction
+    local_llm_model: str = "openai/gpt-oss-20b"  # Default model for discovery tasks
+    local_extraction_model: str = "openai/gpt-oss-20b"  # Default model for extraction
     local_context_length: int = 32768  # Context window size configured in LM Studio
-    local_extraction_max_tokens: int = 4096  # Max output tokens for local extraction (lower than cloud)
-
-    # Web search (for fallback URL verification)
-    search_provider: str = ""  # "tavily", "serper", or "google_cse"
-    tavily_api_key: str = ""
-    serper_api_key: str = ""
-    google_cse_api_key: str = ""
-    google_cse_cx: str = ""  # Custom Search Engine ID
+    local_extraction_max_tokens: int = 4096  # Max output tokens for extraction
 
     # FastAPI
     api_host: str = "0.0.0.0"
