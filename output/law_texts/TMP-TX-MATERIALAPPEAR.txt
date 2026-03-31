@@ -1,0 +1,308 @@
+                                                                     H.B.ANo.A581
+
+
+
+
+1                                       AN ACT
+
+2    relating to the creation of artificial sexual material harmful to
+
+3    minors.
+
+4          BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF TEXAS:
+
+5          SECTIONA1.AAThe heading to Chapter 129B, Civil Practice and
+
+6    Remedies Code, is amended to read as follows:
+
+7    CHAPTER 129B.AALIABILITY RELATED TO SEXUAL MATERIAL HARMFUL TO [FOR
+
+8              ALLOWING] MINORS [TO ACCESS PORNOGRAPHIC MATERIAL]
+
+9          SECTIONA2.AASection 129B.001, Civil Practice and Remedies
+
+10   Code, is amended by amending Subdivision (1) and adding Subdivision
+
+11   (1-a) to read as follows:
+
+12                 (1)AA"Artificial   sexual     material    harmful     to   minors"
+
+13   means computer-generated sexual material harmful to minors that was
+
+14   produced, adapted, or modified using an artificial intelligence
+
+15   application    or   other   computer    software   in   which   a   person    is
+
+16   recognizable as an actual person by the person ’s face, likeness, or
+
+17   other distinguishing characteristic, such as a unique birthmark or
+
+18   other recognizable feature.
+
+19                 (1-a)AA"Commercial       entity"   includes   a   corporation,
+
+20   limited liability company, partnership, limited partnership, sole
+
+21   proprietorship, or other legally recognized business entity.
+
+22         SECTIONA3.AAThe heading to Section 129B.002, Civil Practice
+
+23   and Remedies Code, is amended to read as follows:
+
+24         Sec.A129B.002.AAPUBLICATION AND CREATION OF MATERIAL HARMFUL
+
+
+
+
+                                            1
+                                                                            H.B.ANo.A581
+
+1    TO MINORS.A
+
+2             SECTIONA4.AASection 129B.002, Civil Practice and Remedies
+
+3    Code, is amended by adding Subsections (a-1) and (a-2) and amending
+
+4    Subsection (b) to read as follows:
+
+5             (a-1)AAExcept as provided by Subsection (a-2), a commercial
+
+6    entity    that    operates    an    Internet     website        with    a   publicly
+
+7    accessible tool for creating artificial sexual material harmful to
+
+8    minors or otherwise makes publicly available an application for
+
+9    creating sexual material harmful to minors shall use reasonable age
+
+10   verification methods as described by Section 129B.003 to verify an
+
+11   individual attempting to access the tool is 18 years of age or
+
+12   older.
+
+13            (a-2)AASubsection (a-1) does not apply to a commercial entity
+
+14   that:
+
+15                   (1)AAincludes a prohibition against the generation of
+
+16   artificial sexual material harmful to minors in the entity ’s terms
+
+17   and conditions or use policies that must be acknowledged before a
+
+18   user is granted access; and
+
+19                   (2)AAtakes affirmative steps to limit the creation of
+
+20   artificial sexual material harmful to minors through technological
+
+21   tools    such    as   training     an   application       or   software     creating
+
+22   artificial images to identify likely sexual material, providing
+
+23   effective     reporting     tools,      filtering    likely     sexual      material,
+
+24   filtering       sexually    explicit     content     generated    by     artificial
+
+25   intelligence before the material is shown to users, or filtering
+
+26   sexually explicit images from the entity ’s artificial intelligence
+
+27   dataset    before     the   dataset     is    used   to   train   the    artificial
+
+
+
+
+                                               2
+                                                                           H.B.ANo.A581
+
+1    intelligence.
+
+2             (b)AAA commercial entity that performs the age verification
+
+3    required by Subsection (a) or (a-1) or a third party that performs
+
+4    the age verification required by Subsection (a) or (a-1) may not
+
+5    retain any identifying information of the individual.
+
+6             SECTIONA5.AASection 129B.003(b), Civil Practice and Remedies
+
+7    Code, is amended to read as follows:
+
+8             (b)AAA   commercial   entity   required      to   use   reasonable     age
+
+9    verification methods under Section 129B.002 [that knowingly and
+
+10   intentionally     publishes    or   distributes      material    on   an   Internet
+
+11   website] or a third party that performs age verification under this
+
+12   chapter shall require an individual to:
+
+13                 (1)AAprovide digital identification; or
+
+14                 (2)AAcomply with a commercial age verification system
+
+15   that verifies age using:
+
+16                        (A)AAgovernment-issued identification; or
+
+17                        (B)AAa commercially reasonable method that relies
+
+18   on public or private transactional data to verify the age of an
+
+19   individual.
+
+20            SECTIONA6.AAChapter 129B, Civil Practice and Remedies Code,
+
+21   is amended by adding Section 129B.0045 to read as follows:
+
+22            Sec.A129B.0045.AAREQUIREMENTS         FOR    SOURCES    OF    ARTIFICIAL
+
+23   SEXUAL MATERIAL HARMFUL TO MINORS.             (a)     Except as provided by
+
+24   Subsection    (b),   a   commercial   entity    that    operates      an   Internet
+
+25   website with a publicly accessible tool for creating artificial
+
+26   sexual    material   harmful   to   minors   or   otherwise      makes     publicly
+
+27   available an application for creating artificial sexual material
+
+
+
+
+                                             3
+                                                                           H.B.ANo.A581
+
+1    harmful to minors shall ensure that an individual used as a source
+
+2    for the material:
+
+3                  (1)AAis 18 years of age or older; and
+
+4                  (2)AAhas consented to the use of the individual ’s face
+
+5    and body as a source for the material.
+
+6          (b)AAThis     section   does    not   apply   to    a   commercial      entity
+
+7    described by Section 129B.002(a-2).
+
+8          SECTIONA7.AASection 129B.005(b), Civil Practice and Remedies
+
+9    Code, is amended to read as follows:
+
+10         (b)AAAn    Internet     service   provider,       or    its   affiliates      or
+
+11   subsidiaries, a search engine, or a cloud service provider may not
+
+12   be held to have violated this chapter solely for providing access or
+
+13   connection to or from a website or other information or content on
+
+14   the Internet or on a facility, system, or network not under that
+
+15   provider ’s    control,       including        transmission,          downloading,
+
+16   intermediate storage, access software, or other services to the
+
+17   extent the provider or search engine is not responsible for the
+
+18   creation of the content that constitutes sexual material harmful to
+
+19   minors or artificial sexual material harmful to minors.
+
+20         SECTIONA8.AASection 129B.006(b), Civil Practice and Remedies
+
+21   Code, is amended to read as follows:
+
+22         (b)AAA    civil   penalty      imposed    under     this      section   for   a
+
+23   violation of Section 129B.002, [or] 129B.003, or 129B.0045 may be
+
+24   in an amount equal to not more than the total, if applicable, of:
+
+25                 (1)AA$10,000    per    day    that    the   entity      operates      an
+
+26   Internet website or makes available an application in violation of
+
+27   the age verification requirements of this chapter;
+
+
+
+
+                                             4
+                                                                    H.B.ANo.A581
+
+1              (2)AA$10,000   per      instance   when   the   entity      retains
+
+2   identifying information in violation of Section 129B.002(b); and
+
+3              (3)AAif, because of the entity ’s violation of the age
+
+4   verification   requirements   of   this   chapter,   one   or   more    minors
+
+5   accesses sexual material harmful to minors, an additional amount of
+
+6   not more than $250,000.
+
+7         SECTIONA9.AAThis Act takes effect September 1, 2025.
+
+
+
+
+                                         5
+                                                       H.B.ANo.A581
+
+
+______________________________       ______________________________
+
+AAAAPresident of the Senate               Speaker of the HouseAAAAAA
+
+
+      I certify that H.B. No. 581 was passed by the House on April
+
+24, 2025, by the following vote:AAYeas 146, Nays 0, 2 present, not
+
+voting; and that the House concurred in Senate amendments to H.B.
+
+No. 581 on May 28, 2025, by the following vote:AAYeas 133, Nays 1, 2
+
+present, not voting.
+
+
+                                     ______________________________
+
+                                         Chief Clerk of the HouseAAA
+
+
+      I certify that H.B. No. 581 was passed by the Senate, with
+
+amendments, on May 22, 2025, by the following vote:AAYeas 31, Nays
+
+0.
+
+
+                                     ______________________________
+
+                                          Secretary of the SenateAAA
+
+
+APPROVED: __________________
+
+AAAAAAAAAAAAAAAAADateAAAAAAA
+
+
+
+AAAAAAAAA __________________
+
+AAAAAAAAAAAAAAAGovernorAAAAAAA
+
+
+
+
+                                 6
+

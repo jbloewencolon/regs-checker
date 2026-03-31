@@ -1,0 +1,625 @@
+                             HB168 ENROLLED
+
+
+
+ 1   HB168
+
+ 2   LRVFAWW-3
+
+ 3   By Representatives Woods, Stadthagen, Underwood, Shedd,
+
+ 4   Crawford, Brinyark, Gidley, Lamb, Bolton, Starnes, Shaver,
+
+ 5   DuBose, Shaw, Shirey, Givens, Holk-Jones, Fidler, Stubbs,
+
+ 6   Colvin, Ingram, Carns, Bedsole, Treadaway, Estes, Stringer,
+
+ 7   Hammett, Faulkner, Hulsey, Wilcox, Wood (R), Simpson, Moore
+
+ 8   (P), Kiel, Rigsby, Butler, Harrison, Pettus, Sells, Hill,
+
+ 9   Mooney, Fincher, Rehm, Standridge, Whorton, Wood (D)
+
+10   RFD: Judiciary
+
+11   First Read: 14-Feb-24
+
+
+
+
+                                 Page 0
+                             HB168 Enrolled
+
+ 1   Enrolled, An Act,
+
+ 2
+ 3
+ 4
+
+ 5           Relating to child sexual abuse material; to amend
+ 6   Sections 13A-6-240, as last amended by Act 2023-464, 2023
+ 7   Regular Session, 13A-12-190, 13A-12-191, 13A-12-192,
+ 8   13A-12-193, 13A-12-194, 13A-12-196, 13A-12-197, and
+ 9   13A-12-198, Code of Alabama 1975; to further provide for the
+10   age of a child for offenses involving child sexual abuse
+11   material; to provide for exceptions; to provide a cause of
+12   action for certain offenses involving child sexual abuse
+13   material; to provide for exceptions; to authorize a court to
+14   award punitive damages against an individual who commits
+15   certain offenses involving child sexual abuse material; to
+16   direct the State Board of Education to require local school
+17   boards to develop policies related to certain crimes; to
+18   repeal Section 13A-12-195, Code of Alabama 1975, relating to
+19   the commercial exploitation of child sexual abuse material; to
+20   make nonsubstantive, technical revisions to update the
+21   existing code language to current style; and in connection
+22   therewith would have as its purpose or effect the requirement
+23   of a new or increased expenditure of local funds within the
+24   meaning of Section 111.05 of the Constitution of Alabama of
+25   2022.
+26   BE IT ENACTED BY THE LEGISLATURE OF ALABAMA:
+27           Section 1. This act shall be known and may be cited as
+28   the Alabama Child Protection Act of 2024.
+
+                                  Page 1
+                            HB168 Enrolled
+
+29         Section 2. The Legislature finds and declares the
+30   following:
+31         (1) Child pornography harms and debases the most
+32   defenseless of our residents.
+33         (2) Child pornography is not entitled to protection
+34   under the First Amendment.
+35         (3) The State of Alabama has a compelling state
+36   interest in protecting children from those who sexually
+37   exploit them, including both child molesters and child
+38   pornographers, and this interest extends to stamping out the
+39   vice of child pornography, also referred to as child sexual
+40   abuse material, at all levels in the distribution chain.
+41         (4) The state thus has a compelling interest in
+42   ensuring that the criminal prohibitions against child sexual
+43   abuse material remain enforceable and effective.
+44         (5) Artificially-generated child sexual abuse material
+45   is virtually indistinguishable from actual child sexual abuse
+46   material.
+47         (6) With artificial technology, perpetrators can now
+48   computer-generate depictions of children that are
+49   indistinguishable from depictions of real children; use parts
+50   of images of real children to create a composite image that is
+51   unidentifiable as a particular child and in a way that
+52   prevents even an expert from concluding that parts of images
+53   of real children were used; and disguise pictures of real
+54   children being abused by making the image look
+55   computer-generated.
+56         (7) Child sexual abuse material results from the abuse
+
+                                  Page 2
+                            HB168 Enrolled
+
+57   of real children by sex offenders. The production of child
+58   sexual abuse material is a byproduct of the sexual abuse of
+59   children. There is no evidence that the development of
+60   artificially-generated child sexual abuse material would stop
+61   or even reduce the sexual abuse of real children or the
+62   practice of visually recording that abuse.
+63         (8) Artificially-generated child sexual abuse material
+64   re-victimizes actual child victims, as their images are
+65   collected from the Internet and studied by artificial
+66   intelligence tools to create new images.
+67         (9) Artificially-generated child sexual abuse material
+68   whets the appetites of child molesters who may use the images
+69   to seduce children.
+70         (10) The danger to children who are seduced and
+71   molested with the aid of child sexual abuse material is just
+72   as great when the child molester or child pornographer uses
+73   child sexual abuse material produced wholly or in part by
+74   electronic, mechanical, or other means as when the material
+75   consists of images of actual children engaged in sexually
+76   explicit conduct.
+77         (11) Artificially-generated child sexual abuse material
+78   provides another means by which child pornographers can profit
+79   from child sexual abuse.
+80         (12) Because artificially-generated child sexual abuse
+81   material can be swiftly generated in bulk, law enforcement
+82   will often discover large amounts on seized devices,
+83   complicating investigations and interfering with efforts to
+84   identify and protect child victims and stop the dissemination
+
+                                 Page 3
+                                HB168 Enrolled
+
+ 85   of the material.
+ 86         (13) Many criminal defendants argue that the images of
+ 87   child sexual abuse material they possess are not those of
+ 88   actual children, insisting that the state prove beyond a
+ 89   reasonable doubt that the images are not
+ 90   artificially-generated.
+ 91         (14) In the absence of state legislative action, the
+ 92   difficulties the state has experienced in enforcing child
+ 93   pornography laws will continue to intensify and threaten to
+ 94   render unenforceable laws that protect actual children.
+ 95         (15) Imposing an additional requirement that the state
+ 96   prove beyond a reasonable doubt that the defendant knew that
+ 97   the image was in fact an actual child, as some courts have
+ 98   done, threatens to result in the de facto legalization of the
+ 99   possession, receipt, and distribution of child sexual abuse
+100   material for all except the original producers of the
+101   material.
+102         (16) To avoid this grave threat to the state's
+103   unquestioned compelling interest in effective enforcement of
+104   the sexual abuse laws that protect actual children, a statute
+105   must be adopted that prohibits a well-defined subcategory of
+106   images.
+107         (17) For these reasons, actual and
+108   artificially-generated child sexual abuse material, which are
+109   virtually indistinguishable, must now be considered legally
+110   indistinguishable and subject to the criminal penalties
+111   provided in current law.
+112         Section 3. Section 13A-6-240, as last amended by Act
+
+                                    Page 4
+                             HB168 Enrolled
+
+113   2023-464, 2023 Regular Session, Sections 13A-12-190,
+114   13A-12-191, 13A-12-192, 13A-12-193, 13A-12-194, 13A-12-196,
+115   13A-12-197, and 13A-12-198, Code of Alabama 1975, are amended
+116   to read as follows:
+117         "§13A-6-240
+118         (a) A person commits the crime of distributing a
+119   private image if he or she knowingly posts, emails, texts,
+120   transmits, or otherwise distributes a private image when the
+121   depicted person individual has not consented to the
+122   transmission and the depicted person individual had a
+123   reasonable expectation of privacy against transmission of the
+124   private image.
+125         (b)(1) For purposes of this section, "private image"
+126   means a photograph, digital image, video, film, or other
+127   recording of a person an individual who is identifiable from
+128   the recording itself or from the circumstances of its
+129   transmission and who is engaged in any act of sadomasochistic
+130   abuse, sexual intercourse, sexual excitement, masturbation,
+131   breast nudity, as defined in Section 13A-12-190, genital
+132   nudity, or other sexual conductsexually explicit conduct, as
+133   defined in Section 13A-12-190.
+134         (2) The term includes a recording that has been edited,
+135   altered, or otherwise manipulated from its original form.
+136         (c)(1) For purposes of this section, a "reasonable
+137   expectation of privacy" includes, but is not limited to,
+138   either of the following circumstances:
+139         a. The person individual depicted in the private image
+140   created it or consented to its creation believing that it
+
+                                  Page 5
+                             HB168 Enrolled
+
+141   would remain confidential.
+142         b. The sexual conduct depicted in the image was
+143   involuntary.
+144         (2) There is no reasonable expectation of privacy
+145   against the transmission of a private image made voluntarily
+146   in a public or commercial setting.
+147         (d) It is a defense to distributing a private image if
+148   the distribution of the private image was made in the public
+149   interest, including, but not limited to, the reporting of
+150   unlawful conduct; the lawful and common practices of law
+151   enforcement, legal proceedings, or medical treatment; or a
+152   bona fide attempt to prevent further distribution of the
+153   private image.
+154         (e) For the purposes of determining jurisdiction, the
+155   crime of distributing a private image shall be considered to
+156   be committed in any county in which any part of the crime took
+157   place, in the county of residence of the victim or defendant,
+158   or any county where the image is received.
+159         (f) A violation of this section is a Class A
+160   misdemeanor. A subsequent adjudication or conviction under
+161   this section is a Class C felony.
+162         (g) No Internet service provider, search engine, cloud
+163   service provider, or affiliate or subsidiary of any of the
+164   same, shall be held to have violated this section soley for
+165   providing access or connection to or from a website, other
+166   information or content on the Internet, or a facility, system,
+167   or network not under the control of the provider, including,
+168   but not limited to, the transmission, download, or
+
+                                   Page 6
+                               HB168 Enrolled
+
+169   intermediate storage of content that is child sexual abuse
+170   material."
+171            "§13A-12-190
+172            For the purposes of this division, the following terms
+173   shall have the following meanings respectively ascribed to
+174   them by this section:
+175            (1)(4) DISSEMINATE. To transmit, distribute, sell,
+176   lend, provide, transfer, or show, including through electronic
+177   means.
+178            (2)(3) DISPLAY PUBLICLY. The exposing, placing,
+179   posting, exhibiting, or in any fashion displaying in any
+180   location, whether public or private, an item in such a manner
+181   that it may be readily seen and its content or character
+182   distinguished by normal unaided vision viewing it from a
+183   public thoroughfare, depot, or vehicle.
+184            (3)(9) PUBLIC THOROUGHFARE, DEPOT, OR VEHICLE. Any
+185   street, highway, park, depot, or transportation platform or
+186   other place, whether indoors or outoutdoors, or any vehicle
+187   for public transportation, owned or operated by government,
+188   either directly or through a public corporation or authority,
+189   or owned or operated by any agency of public transportation
+190   that is designed for the use, enjoyment, or transportation of
+191   the general public.
+192            (4)(6) KNOWINGLY. A person knowingly disseminates or
+193   publicly displays obscene matter acts when the person knows
+194   the nature of the matterchild sexual abuse material. A person
+195   knows the nature of the matter material when either of the
+196   following circumstances exist:
+
+                                    Page 7
+                             HB168 Enrolled
+
+197         a. The person is aware of the character and content of
+198   the mattermaterial.
+199         b. The person recklessly disregards circumstances
+200   suggesting the character and content of the mattermaterial.
+201         (5)(10) SADO-MASOCHISTIC SADOMASOCHISTIC ABUSE. Such
+202   term means either Either of the following:
+203         a. Flagellation or torture, for the purpose of sexual
+204   stimulation, by or upon a person an individual who is nude or
+205   clad in undergarments or in a revealing or bizarre costume.
+206         b. The condition of a person an individual who is nude
+207   or clad in undergarments or in a revealing or bizarre costume
+208   being fettered, bound, or otherwise physically restrained for
+209   the purpose of sexual stimulation.
+210         (6)(12) SEXUAL EXCITEMENT. The condition of human male
+211   or female genitals when in a state of sexual stimulation.
+212         (7)(13) SEXUAL INTERCOURSE. Intercourse, real or
+213   simulated, whether genital-genital, oral-genital,
+214   anal-genital, or oral-anal, whether between persons
+215   individuals of the same or opposite sex or between a human and
+216   an animal.
+217         (8)(7) MASTURBATION. Manipulation, by hand or
+218   instrument, of the human genitals, whether one's own or
+219   another's for the purpose of sexual stimulation.
+220         (9)(8) OTHER SEXUAL CONDUCT. Any touching of the
+221   genitals, pubic areas, or buttocks of the human male or
+222   female, or the breasts of the female, whether alone or between
+223   members of the same or opposite sex or between humans and
+224   animals in an act of apparent sexual stimulation or
+
+                                  Page 8
+                                HB168 Enrolled
+
+225   gratification.
+226         (10)(1) BREAST NUDITY. The lewd showing of the
+227   post-pubertal human female breasts below a point immediately
+228   above the top of the areola.
+229         (11)(5) GENITAL NUDITY. The lewd showing of the
+230   genitals or pubic area.
+231         (12) MATTER. Any book, magazine, newspaper, or other
+232   printed material, or any picture, photograph, motion picture,
+233   video cassette, tape, record, digital video disc (DVD), video
+234   compilation, or electronic depiction in a comparable format,
+235   or an image, file, download, or other content stored, or
+236   reproduced by using a computer or electronic device or other
+237   digital storage, or any other thing, articles, or materials
+238   that either are or contain a photographic or other visual
+239   depiction of a live act, performance, or event.
+240         (13) OBSCENE. a. When used to describe any matter that
+241   contains a visual reproduction of breast nudity, the term
+242   shall include all of the following:
+243         1. Applying contemporary local community standards, on
+244   the whole, appeals to the prurient interest.
+245         2. Is patently offensive.
+246         3. On the whole, lacks serious literary, artistic,
+247   political, or scientific value.
+248         b. When used to describe matter that is a depiction of
+249   an act of sado-masochistic abuse, sexual intercourse, sexual
+250   excitement, masturbation, genital nudity, or other sexual
+251   conduct, the term means matter containing a visual
+252   reproduction that itself lacks serious literary, artistic,
+
+                                     Page 9
+                               HB168 Enrolled
+
+253   political, or scientific value.
+254         (14) LOCAL COMMUNITY. The judicial circuit in which the
+255   indictment is brought.
+256         (15) VISUAL DEPICTION. A portrayal, representation,
+257   illustration, image, likeness, or other thing that creates a
+258   sensory impression, whether an original, duplicate, or
+259   reproduction.
+260         (16)(11) SEPARATE OFFENSE. The depiction of an
+261   individual less than 17 18 years of age that violates this
+262   division shall constitute a separate offense for each single
+263   visual depiction.
+264         (2) CHILD SEXUAL ABUSE MATERIAL. Any visual depiction
+265   of an individual under 18 years of age engaged in any act of
+266   sexually explicit conduct, including a virtually
+267   indistinguishable depiction.
+268         (14) SEXUALLY EXPLICIT CONDUCT. Actual or simulated
+269   conduct that includes sadomasochistic abuse, sexual
+270   excitement, sexual intercourse, masturbation, breast nudity,
+271   genital nudity, or other sexual conduct.
+272         (15) VIRTUALLY INDISTINGUISHABLE DEPICTION. A visual
+273   depiction created, altered, or produced by digital, computer
+274   generated, or other means that a reasonable person would
+275   conclude is of an actual individual under 18 years of age
+276   engaged in sexually explicit conduct."
+277         "§13A-12-191
+278         (a) Any person who shall knowingly disseminate or
+279   display publicly any obscene matter containing a visual
+280   depiction of a person under the age of 17 years engaged in any
+
+                                  Page 10
+                             HB168 Enrolled
+
+281   act of sado-masochistic abuse, sexual intercourse, sexual
+282   excitement, masturbation, breast nudity, genital nudity, or
+283   other sexual conduct child sexual abuse material shall be
+284   guilty of a Class B felony.
+285         (b) Any person who shall knowingly advertise, promote,
+286   present, distribute, or solicit by any means, including by
+287   computer, any material or purported material in a manner that
+288   reflects the belief, or that is intended to cause another to
+289   believe, that the material or purported material is a visual
+290   depiction of an actual individual under 18 years of age
+291   engaging in sexually explicit conduct shall be guilty of a
+292   Class B felony."
+293         "§13A-12-192
+294         (a) Any person who knowingly possesses with intent to
+295   disseminate any obscene matter that contains a visual
+296   depiction of a person under the age of 17 years engaged in any
+297   act of sado-masochistic abuse, sexual intercourse, sexual
+298   excitement, masturbation, breast nudity, genital nudity, or
+299   other sexual conduct child sexual abuse material shall be
+300   guilty of a Class B felony. Any transfer of the visual
+301   depiction child sexual abuse material from any electronic
+302   device to any other device, program, application, or any other
+303   place with storage capability which that can be made available
+304   or is accessible by other users, is prima facie evidence of
+305   possession with intent to disseminate.
+306         (b) Any person who knowingly possesses any obscene
+307   matter that contains a visual depiction of a person under the
+308   age of 17 years engaged in any act of sado-masochistic abuse,
+
+                                    Page 11
+                             HB168 Enrolled
+
+309   sexual intercourse, sexual excitement, masturbation, breast
+310   nudity, genital nudity, or other sexual conduct child sexual
+311   abuse material shall be guilty of a Class C felony."
+312          "§13A-12-193
+313          (a) In proving that a person an individual in a visual
+314   depiction who is engaged in any obscene act set out in
+315   Sections 13A-12-191, 13A-12-192, 13A-12-196 and 13A-12-197
+316   sexually explicit conduct is under the age of 17 18 years of
+317   age, the state is not required to introduce into evidence a
+318   birth certificate, produce testimony as to the date of birth
+319   of such personthe individual, or produce testimony of any
+320   person who knows or is acquainted with the person individual
+321   alleged to be under the age of 17 18 years of age. If the
+322   defendant or the state intends to rely on a birth certificate
+323   to prove the date of birth of any person in the visually
+324   reproduced matterindividual, such the defendant or the state
+325   shall file with the clerk of the court in which the action is
+326   pending, at least 15 days prior to trial, a notice of an
+327   intention to rely on an official, certified copy of a birth
+328   certificate together with a copy of the birth certificate.
+329          (b) A jury, or the court if a jury trial is waived, The
+330   factfinder may infer from the following factors whether or not
+331   the person individual displayed or depicted in any obscene
+332   matter visual depiction is under the age of 17 18 years of
+333   age:
+334          (1) The general body growth and bone structure of the
+335   person;individual.
+336          (2) The development of pubic hair or body hair on the
+
+                                  Page 12
+                             HB168 Enrolled
+
+337   person;individual.
+338         (3) The development of the person's individual's sexual
+339   organs;.
+340         (4) The context in which the person individual is
+341   placed by any accompanying printed or text material;.
+342         (5) Any expert testimony as to the degree of maturity
+343   of the personindividual.
+344         (c) The existence of any or all of the factors listed
+345   in subsection (b) of this section (a) shall not operate to
+346   change the requirement that before any conviction may be had,
+347   the state must convince the factfinder beyond a reasonable
+348   doubt that the person individual engaged in the act of
+349   sado-masochistic abuse, sexual intercourse, sexual excitement,
+350   masturbation, breast nudity, genital nudity, or other sexual
+351   conduct in the visual depiction sexually explicit conduct is
+352   or is virtually indistinguishable from an individual under the
+353   age of 17 18 years of age.
+354         (d) It is an affirmative defense to prosecution under
+355   this division if the actual individual purported to be under
+356   18 years of age and engaged in sexually explicit conduct was
+357   an actual individual 18 years of age or older at the time of
+358   the offense."
+359         "§13A-12-194
+360         The state shall not be required to establish the actual
+361   existence or identity, either in the indictment or in any
+362   subsequent proceeding, of the person individual alleged to be
+363   under the age of 17 18 years of age who is engaged in any of
+364   the acts described in Sections 13A-12-191, 13A-12-192,
+
+                                   Page 13
+                             HB168 Enrolled
+
+365   13A-12-196 and 13A-12-197, which are visual depictionact of
+366   sexually explicit conduct."
+367         "§13A-12-196
+368         Any parent or guardianresponsible person, as defined in
+369   Section 26-15-2, who knowingly permits or allows their child,
+370   ward, or dependent under the age of 17 18 years of age to
+371   engage in the production of any obscene matter child sexual
+372   abuse material containing a visual depiction of such the
+373   child, ward, or dependent under the age of 17 years engaged in
+374   any act of sado-masochistic abuse, sexual excitement,
+375   masturbation, breast nudity, genital nudity, or other sexual
+376   conduct shall be guilty of a Class A felony."
+377         "§13A-12-197
+378         (a) Any person who knowingly films, prints, records,
+379   photographs, or otherwise produces any obscene matter that
+380   contains a visual depiction of a person under the age of 17
+381   years engaged in any act of sado-masochistic abuse, sexual
+382   intercourse, sexual excitement, masturbation, breast nudity,
+383   genital nudity, or other sexual conduct child sexual abuse
+384   material shall be guilty of a Class A felony.
+385         (b) For any person who violates this section, each
+386   depiction of each individual less than 17 years of age
+387   constitutes a separate offense."
+388         "§13A-12-198
+389         Any article, equipment, machine, materials, matter,
+390   vehicle, or other thing whatsoever used in the commercial
+391   production, transportation, dissemination, display, or storage
+392   of any obscene matter displaying or depicting a person under
+
+                                    Page 14
+                               HB168 Enrolled
+
+393   the age of 17 years engaged in any of the obscene acts
+394   described in Sections 13A-12-191, 13A-12-192, 13A-12-196 and
+395   13A-12-197 child sexual abuse material shall be contraband and
+396   shall be forfeited to the State of Alabama. The manner,
+397   method, and procedure for the forfeiture and condemnation of
+398   such the thing shall be the same as that provided by law for
+399   the confiscation or, condemnation, or forfeiture of
+400   automobiles, conveyances, or vehicles in which alcoholic
+401   beverages are illegally transported."
+402         Section 4. (a) For the purposes of Division 4 of
+403   Article 4 of Chapter 12 of Title 13A, Code of Alabama 1975,
+404   each depiction of child sexual abuse material that violates
+405   any section constitutes a separate offense.
+406         (b) No Internet service provider, search engine, cloud
+407   service provider, or affiliate or subsidiary of any of the
+408   same, shall be held to have violated this division solely for
+409   providing access or connection to or from a website, other
+410   information or content on the Internet, or a facility, system,
+411   or network not under the control of the provider, including,
+412   but not limited to, the transmission, download, or
+413   intermediate storage of content that is child sexual abuse
+414   material.
+415         Section 5. (a) An individual who commits any of the
+416   following crimes is civilly liable to the individual depicted
+417   in the relevant image:
+418         (1) Distributing a private image, pursuant to Section
+419   13A-6-240, Code of Alabama 1975.
+420         (2) Dissemination, distribution, or public display of
+
+                                  Page 15
+                              HB168 Enrolled
+
+421   child sexual abuse material, pursuant to Section 13A-12-191,
+422   Code of Alabama 1975.
+423         (3) Possession of child sexual abuse material, pursuant
+424   to Section 13A-12-192, Code of Alabama 1975.
+425         (4) Possession with intent to distribute child sexual
+426   abuse material, pursuant to Section 13A-12-192, Code of
+427   Alabama 1975.
+428         (5) Permitting or allowing a child, ward, or dependent
+429   to engage in production of child sexual abuse material as a
+430   parent or guardian, pursuant to Section 13A-12-196, Code of
+431   Alabama 1975.
+432         (6) Production of child sexual abuse material, pursuant
+433   to Section 13A-12-197, Code of Alabama 1975.
+434         (7) Advertising, promoting, presenting, or soliciting
+435   child sexual abuse material, pursuant to Section 13A-12-191,
+436   Code of Alabama 1975.
+437         (b) No civil action may be brought pursuant to this
+438   section for actions taken to prevent, detect, protect against,
+439   report, or respond to the production, generation,
+440   incorporation, or synthesization through artificial
+441   intelligence of child sexual abuse material.
+442         Section 6. Civil liability pursuant to Section 5 shall
+443   consist of all of the following:
+444         (1) The full actual damages incurred.
+445         (2) Court costs and reasonable attorney fees.
+446         (3) Punitive damages, if the plaintiff proves by clear
+447   and convincing evidence that the defendant consciously or
+448   deliberately engaged in wantonness or malice with regard to
+
+                                 Page 16
+                              HB168 Enrolled
+
+449   the plaintiff, as defined in Section 6-11-20, Code of Alabama
+450   1975.
+451           Section 7. The State Board of Education shall require
+452   each local board of education to do all of the following
+453   before the start of the 2024-2025 school year:
+454           (1) Develop a written policy on student discipline and
+455   education related to the distribution of private images as
+456   defined in Section 13A-6-240, Code of Alabama 1975, and the
+457   distribution, dissemination, public display, advertising,
+458   promoting, presenting, soliciting, possession, possession with
+459   intent to distribute, and production of child sexual abuse
+460   material as defined in Division 4 of Article 4 of Chapter 12
+461   of Title 13A, Code of Alabama 1975.
+462           (2) Include within the written policy a prohibition of
+463   private, explicit, or pornographic images generated with
+464   artificial intelligence.
+465           (3) Broadly disseminate the policy following its
+466   adoption.
+467           (4) Distribute copies of the policy to all teachers,
+468   staff, parents, and students.
+469           Section 8. Section 13A-12-195, Code of Alabama 1975,
+470   relating to the commercial exploitation of obscene material,
+471   is repealed.
+472           Section 9. Although this bill would have as its purpose
+473   or effect the requirement of a new or increased expenditure of
+474   local funds, the bill is excluded from further requirements
+475   and application under Section 111.05 of the Constitution of
+476   Alabama of 2022, because the bill defines a new crime or
+
+                                  Page 17
+                             HB168 Enrolled
+
+477   amends the definition of an existing crime.
+478         Section 10. This act shall become effective on October
+479   1, 2024.
+
+
+
+
+                                 Page 18
+                               HB168 Enrolled
+
+480
+481
+482
+483
+484
+485
+486            ________________________________________________
+487                 Speaker of the House of Representatives
+488
+489
+490
+491            ________________________________________________
+492              President and Presiding Officer of the Senate
+493
+494
+495                        House of Representatives
+496
+497          I hereby certify that the within Act originated in and
+498   was passed by the House 22-Feb-24.
+499
+500                                      John Treadwell
+501                                      Clerk
+502
+503
+504
+505
+506
+507   Senate               11-Apr-24                              Passed
+508
+509
+510
+
+
+
+
+                                   Page 19
+

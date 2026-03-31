@@ -1,0 +1,1679 @@
+§ 6-1-1701. Definitions, CO ST § 6-1-1701
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                       C.R.S.A. § 6-1-1701
+
+                                                      § 6-1-1701. Definitions
+
+                                                            Currentness
+
+
+As used in this part 17, unless the context otherwise requires:
+
+
+(1)(a) “Algorithmic discrimination” means any condition in which the use of an artificial intelligence system results in an
+unlawful differential treatment or impact that disfavors an individual or group of individuals on the basis of their actual or
+perceived age, color, disability, ethnicity, genetic information, limited proficiency in the English language, national origin, race,
+religion, reproductive health, sex, veteran status, or other classification protected under the laws of this state or federal law.
+
+
+(b) “Algorithmic discrimination” does not include:
+
+
+(I) The offer, license, or use of a high-risk artificial intelligence system by a developer or deployer for the sole purpose of:
+
+
+(A) The developer's or deployer's self-testing to identify, mitigate, or prevent discrimination or otherwise ensure compliance
+with state and federal law; or
+
+
+(B) Expanding an applicant, customer, or participant pool to increase diversity or redress historical discrimination; or
+
+
+(II) An act or omission by or on behalf of a private club or other establishment that is not in fact open to the public, as set forth
+in Title II of the federal “Civil Rights Act of 1964”, 42 U.S.C. sec. 2000a(e), as amended.
+
+
+(2) “Artificial intelligence system” means any machine-based system that, for any explicit or implicit objective, infers from
+the inputs the system receives how to generate outputs, including content, decisions, predictions, or recommendations, that can
+influence physical or virtual environments.
+
+
+(3) “Consequential decision” means a decision that has a material legal or similarly significant effect on the provision or denial
+to any consumer of, or the cost or terms of:
+
+
+(a) Education enrollment or an education opportunity;
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                1
+§ 6-1-1701. Definitions, CO ST § 6-1-1701
+
+
+
+
+(b) Employment or an employment opportunity;
+
+
+(c) A financial or lending service;
+
+
+(d) An essential government service;
+
+
+(e) Health-care services;
+
+
+(f) Housing;
+
+
+(g) Insurance; or
+
+
+(h) A legal service.
+
+
+(4) “Consumer” means an individual who is a Colorado resident.
+
+
+(5) “Deploy” means to use a high-risk artificial intelligence system.
+
+
+(6) “Deployer” means a person doing business in this state that deploys a high-risk artificial intelligence system.
+
+
+(7) “Developer” means a person doing business in this state that develops or intentionally and substantially modifies an artificial
+intelligence system.
+
+
+(8) “Health-care services” has the same meaning as provided in 42 U.S.C. sec. 234(d)(2).
+
+
+(9)(a) “High-risk artificial intelligence system” means any artificial intelligence system that, when deployed, makes, or is a
+substantial factor in making, a consequential decision.
+
+
+(b) “High-risk artificial intelligence system” does not include:
+
+
+(I) An artificial intelligence system if the artificial intelligence system is intended to:
+
+
+(A) Perform a narrow procedural task; or
+
+
+(B) Detect decision-making patterns or deviations from prior decision-making patterns and is not intended to replace or influence
+a previously completed human assessment without sufficient human review; or
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                             2
+§ 6-1-1701. Definitions, CO ST § 6-1-1701
+
+
+
+
+(II) The following technologies, unless the technologies, when deployed, make, or are a substantial factor in making, a
+consequential decision:
+
+
+(A) Anti-fraud technology that does not use facial recognition technology;
+
+
+(B) Anti-malware;
+
+
+(C) Anti-virus;
+
+
+(D) Artificial intelligence-enabled video games;
+
+
+(E) Calculators;
+
+
+(F) Cybersecurity;
+
+
+(G) Databases;
+
+
+(H) Data storage;
+
+
+(I) Firewall;
+
+
+(J) Internet domain registration;
+
+
+(K) Internet website loading;
+
+
+(L) Networking;
+
+
+(M) Spam- and robocall-filtering;
+
+
+(N) Spell-checking;
+
+
+(O) Spreadsheets;
+
+
+(P) Web caching;
+
+
+(Q) Web hosting or any similar technology; or
+
+
+
+                  © 2025 Thomson Reuters. No claim to original U.S. Government Works.                               3
+§ 6-1-1701. Definitions, CO ST § 6-1-1701
+
+
+
+
+(R) Technology that communicates with consumers in natural language for the purpose of providing users with information,
+making referrals or recommendations, and answering questions and is subject to an accepted use policy that prohibits generating
+content that is discriminatory or harmful.
+
+
+(10)(a) “Intentional and substantial modification” or “intentionally and substantially modifies” means a deliberate change made
+to an artificial intelligence system that results in any new reasonably foreseeable risk of algorithmic discrimination.
+
+
+(b) “Intentional and substantial modification” or “intentionally and substantially modifies” does not include a change made to
+a high-risk artificial intelligence system, or the performance of a high-risk artificial intelligence system, if:
+
+
+(I) The high-risk artificial intelligence system continues to learn after the high-risk artificial intelligence system is:
+
+
+(A) Offered, sold, leased, licensed, given, or otherwise made available to a deployer; or
+
+
+(B) Deployed;
+
+
+(II) The change is made to the high-risk artificial intelligence system as a result of any learning described in subsection (10)
+(b)(I) of this section;
+
+
+(III) The change was predetermined by the deployer, or a third party contracted by the deployer, when the deployer or third party
+completed an initial impact assessment of such high-risk artificial intelligence system pursuant to section 6-1-1703(3); and
+
+
+(IV) The change is included in technical documentation for the high-risk artificial intelligence system.
+
+
+(11)(a) “Substantial factor” means a factor that:
+
+
+(I) Assists in making a consequential decision;
+
+
+(II) Is capable of altering the outcome of a consequential decision; and
+
+
+(III) Is generated by an artificial intelligence system.
+
+
+(b) “Substantial factor” includes any use of an artificial intelligence system to generate any content, decision, prediction, or
+recommendation concerning a consumer that is used as a basis to make a consequential decision concerning the consumer.
+
+
+(12) “Trade secret” has the meaning set forth in section 7-74-102(4).
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                           4
+§ 6-1-1701. Definitions, CO ST § 6-1-1701
+
+
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1701, CO ST § 6-1-1701
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+              © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                               5
+§ 6-1-1702. Developer duty to avoid algorithmic..., CO ST § 6-1-1702
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                       C.R.S.A. § 6-1-1702
+
+                   § 6-1-1702. Developer duty to avoid algorithmic discrimination--required documentation
+
+                                                           Currentness
+
+
+(1) On and after February 1, 2026, a developer of a high-risk artificial intelligence system shall use reasonable care to
+protect consumers from any known or reasonably foreseeable risks of algorithmic discrimination arising from the intended and
+contracted uses of the high-risk artificial intelligence system. In any enforcement action brought on or after February 1, 2026,
+by the attorney general pursuant to section 6-1-1706, there is a rebuttable presumption that a developer used reasonable care
+as required under this section if the developer complied with this section and any additional requirements or obligations as set
+forth in rules promulgated by the attorney general pursuant to section 6-1-1707.
+
+
+(2) On and after February 1, 2026, and except as provided in subsection (6) of this section, a developer of a high-risk artificial
+intelligence system shall make available to the deployer or other developer of the high-risk artificial intelligence system:
+
+
+(a) A general statement describing the reasonably foreseeable uses and known harmful or inappropriate uses of the high-risk
+artificial intelligence system;
+
+
+(b) Documentation disclosing:
+
+
+(I) High-level summaries of the type of data used to train the high-risk artificial intelligence system;
+
+
+(II) Known or reasonably foreseeable limitations of the high-risk artificial intelligence system, including known or reasonably
+foreseeable risks of algorithmic discrimination arising from the intended uses of the high-risk artificial intelligence system;
+
+
+(III) The purpose of the high-risk artificial intelligence system;
+
+
+(IV) The intended benefits and uses of the high-risk artificial intelligence system; and
+
+
+(V) All other information necessary to allow the deployer to comply with the requirements of section 6-1-1703;
+
+
+(c) Documentation describing:
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                            1
+§ 6-1-1702. Developer duty to avoid algorithmic..., CO ST § 6-1-1702
+
+
+
+
+(I) How the high-risk artificial intelligence system was evaluated for performance and mitigation of algorithmic discrimination
+before the high-risk artificial intelligence system was offered, sold, leased, licensed, given, or otherwise made available to the
+deployer;
+
+
+(II) The data governance measures used to cover the training datasets and the measures used to examine the suitability of data
+sources, possible biases, and appropriate mitigation;
+
+
+(III) The intended outputs of the high-risk artificial intelligence system;
+
+
+(IV) The measures the developer has taken to mitigate known or reasonably foreseeable risks of algorithmic discrimination that
+may arise from the reasonably foreseeable deployment of the high-risk artificial intelligence system; and
+
+
+(V) How the high-risk artificial intelligence system should be used, not be used, and be monitored by an individual when the
+high-risk artificial intelligence system is used to make, or is a substantial factor in making, a consequential decision; and
+
+
+(d) Any additional documentation that is reasonably necessary to assist the deployer in understanding the outputs and monitor
+the performance of the high-risk artificial intelligence system for risks of algorithmic discrimination.
+
+
+(3)(a) Except as provided in subsection (6) of this section, a developer that offers, sells, leases, licenses, gives, or otherwise
+makes available to a deployer or other developer a high-risk artificial intelligence system on or after February 1, 2026, shall
+make available to the deployer or other developer, to the extent feasible, the documentation and information, through artifacts
+such as model cards, dataset cards, or other impact assessments, necessary for a deployer, or for a third party contracted by a
+deployer, to complete an impact assessment pursuant to section 6-1-1703(3).
+
+
+(b) A developer that also serves as a deployer for a high-risk artificial intelligence system is not required to generate the
+documentation required by this section unless the high-risk artificial intelligence system is provided to an unaffiliated entity
+acting as a deployer.
+
+
+(4)(a) On and after February 1, 2026, a developer shall make available, in a manner that is clear and readily available on the
+developer's website or in a public use case inventory, a statement summarizing:
+
+
+(I) The types of high-risk artificial intelligence systems that the developer has developed or intentionally and substantially
+modified and currently makes available to a deployer or other developer; and
+
+
+(II) How the developer manages known or reasonably foreseeable risks of algorithmic discrimination that may arise from the
+development or intentional and substantial modification of the types of high-risk artificial intelligence systems described in
+accordance with subsection (4)(a)(I) of this section.
+
+
+(b) A developer shall update the statement described in subsection (4)(a) of this section:
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                            2
+§ 6-1-1702. Developer duty to avoid algorithmic..., CO ST § 6-1-1702
+
+
+
+
+(I) As necessary to ensure that the statement remains accurate; and
+
+
+(II) No later than ninety days after the developer intentionally and substantially modifies any high-risk artificial intelligence
+system described in subsection (4)(a)(I) of this section.
+
+
+(5) On and after February 1, 2026, a developer of a high-risk artificial intelligence system shall disclose to the attorney general,
+in a form and manner prescribed by the attorney general, and to all known deployers or other developers of the high-risk artificial
+intelligence system, any known or reasonably foreseeable risks of algorithmic discrimination arising from the intended uses of
+the high-risk artificial intelligence system without unreasonable delay but no later than ninety days after the date on which:
+
+
+(a) The developer discovers through the developer's ongoing testing and analysis that the developer's high-risk artificial
+intelligence system has been deployed and has caused or is reasonably likely to have caused algorithmic discrimination; or
+
+
+(b) The developer receives from a deployer a credible report that the high-risk artificial intelligence system has been deployed
+and has caused algorithmic discrimination.
+
+
+(6) Nothing in subsections (2) to (5) of this section requires a developer to disclose a trade secret, information protected from
+disclosure by state or federal law, or information that would create a security risk to the developer.
+
+
+(7) On and after February 1, 2026, the attorney general may require that a developer disclose to the attorney general, no later
+than ninety days after the request and in a form and manner prescribed by the attorney general, the statement or documentation
+described in subsection (2) of this section. The attorney general may evaluate such statement or documentation to ensure
+compliance with this part 17, and the statement or documentation is not subject to disclosure under the “Colorado Open Records
+Act”, part 2 of article 72 of title 24. In a disclosure pursuant to this subsection (7), a developer may designate the statement
+or documentation as including proprietary information or a trade secret. To the extent that any information contained in the
+statement or documentation includes information subject to attorney-client privilege or work-product protection, the disclosure
+does not constitute a waiver of the privilege or protection.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1702, CO ST § 6-1-1702
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                      © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                   3
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                       C.R.S.A. § 6-1-1703
+
+            § 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk management policy and program
+
+                                                           Currentness
+
+
+(1) On and after February 1, 2026, a deployer of a high-risk artificial intelligence system shall use reasonable care to protect
+consumers from any known or reasonably foreseeable risks of algorithmic discrimination. In any enforcement action brought on
+or after February 1, 2026, by the attorney general pursuant to section 6-1-1706, there is a rebuttable presumption that a deployer
+of a high-risk artificial intelligence system used reasonable care as required under this section if the deployer complied with
+this section and any additional requirements or obligations as set forth in rules promulgated by the attorney general pursuant
+to section 6-1-1707.
+
+
+(2)(a) On and after February 1, 2026, and except as provided in subsection (6) of this section, a deployer of a high-risk artificial
+intelligence system shall implement a risk management policy and program to govern the deployer's deployment of the high-risk
+artificial intelligence system. The risk management policy and program must specify and incorporate the principles, processes,
+and personnel that the deployer uses to identify, document, and mitigate known or reasonably foreseeable risks of algorithmic
+discrimination. The risk management policy and program must be an iterative process planned, implemented, and regularly and
+systematically reviewed and updated over the life cycle of a high-risk artificial intelligence system, requiring regular, systematic
+review and updates. A risk management policy and program implemented and maintained pursuant to this subsection (2) must
+be reasonable considering:
+
+
+(I)(A) The guidance and standards set forth in the latest version of the “Artificial Intelligence Risk Management Framework”
+published by the national institute of standards and technology in the United States department of commerce, standard ISO/
+IEC 42001 of the International Organization for Standardization, or another nationally or internationally recognized risk
+management framework for artificial intelligence systems, if the standards are substantially equivalent to or more stringent than
+the requirements of this part 17; or
+
+
+(B) Any risk management framework for artificial intelligence systems that the attorney general, in the attorney general's
+discretion, may designate;
+
+
+(II) The size and complexity of the deployer;
+
+
+(III) The nature and scope of the high-risk artificial intelligence systems deployed by the deployer, including the intended uses
+of the high-risk artificial intelligence systems; and
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              1
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+
+
+(IV) The sensitivity and volume of data processed in connection with the high-risk artificial intelligence systems deployed by
+the deployer.
+
+
+(b) A risk management policy and program implemented pursuant to subsection (2)(a) of this section may cover multiple high-
+risk artificial intelligence systems deployed by the deployer.
+
+
+(3)(a) Except as provided in subsections (3)(d), (3)(e), and (6) of this section:
+
+
+(I) A deployer, or a third party contracted by the deployer, that deploys a high-risk artificial intelligence system on or after
+February 1, 2026, shall complete an impact assessment for the high-risk artificial intelligence system; and
+
+
+(II) On and after February 1, 2026, a deployer, or a third party contracted by the deployer, shall complete an impact assessment
+for a deployed high-risk artificial intelligence system at least annually and within ninety days after any intentional and substantial
+modification to the high-risk artificial intelligence system is made available.
+
+
+(b) An impact assessment completed pursuant to this subsection (3) must include, at a minimum, and to the extent reasonably
+known by or available to the deployer:
+
+
+(I) A statement by the deployer disclosing the purpose, intended use cases, and deployment context of, and benefits afforded
+by, the high-risk artificial intelligence system;
+
+
+(II) An analysis of whether the deployment of the high-risk artificial intelligence system poses any known or reasonably
+foreseeable risks of algorithmic discrimination and, if so, the nature of the algorithmic discrimination and the steps that have
+been taken to mitigate the risks;
+
+
+(III) A description of the categories of data the high-risk artificial intelligence system processes as inputs and the outputs the
+high-risk artificial intelligence system produces;
+
+
+(IV) If the deployer used data to customize the high-risk artificial intelligence system, an overview of the categories of data the
+deployer used to customize the high-risk artificial intelligence system;
+
+
+(V) Any metrics used to evaluate the performance and known limitations of the high-risk artificial intelligence system;
+
+
+(VI) A description of any transparency measures taken concerning the high-risk artificial intelligence system, including any
+measures taken to disclose to a consumer that the high-risk artificial intelligence system is in use when the high-risk artificial
+intelligence system is in use; and
+
+
+(VII) A description of the post-deployment monitoring and user safeguards provided concerning the high-risk artificial
+intelligence system, including the oversight, use, and learning process established by the deployer to address issues arising from
+the deployment of the high-risk artificial intelligence system.
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                2
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+
+
+(c) In addition to the information required under subsection (3)(b) of this section, an impact assessment completed pursuant to
+this subsection (3) following an intentional and substantial modification to a high-risk artificial intelligence system on or after
+February 1, 2026, must include a statement disclosing the extent to which the high-risk artificial intelligence system was used
+in a manner that was consistent with, or varied from, the developer's intended uses of the high-risk artificial intelligence system.
+
+
+(d) A single impact assessment may address a comparable set of high-risk artificial intelligence systems deployed by a deployer.
+
+
+(e) If a deployer, or a third party contracted by the deployer, completes an impact assessment for the purpose of complying
+with another applicable law or regulation, the impact assessment satisfies the requirements established in this subsection (3) if
+the impact assessment is reasonably similar in scope and effect to the impact assessment that would otherwise be completed
+pursuant to this subsection (3).
+
+
+(f) A deployer shall maintain the most recently completed impact assessment for a high-risk artificial intelligence system as
+required under this subsection (3), all records concerning each impact assessment, and all prior impact assessments, if any, for
+at least three years following the final deployment of the high-risk artificial intelligence system.
+
+
+(g) On or before February 1, 2026, and at least annually thereafter, a deployer, or a third party contracted by the deployer, must
+review the deployment of each high-risk artificial intelligence system deployed by the deployer to ensure that the high-risk
+artificial intelligence system is not causing algorithmic discrimination.
+
+
+(4)(a) On and after February 1, 2026, and no later than the time that a deployer deploys a high-risk artificial intelligence system
+to make, or be a substantial factor in making, a consequential decision concerning a consumer, the deployer shall:
+
+
+(I) Notify the consumer that the deployer has deployed a high-risk artificial intelligence system to make, or be a substantial
+factor in making, a consequential decision before the decision is made;
+
+
+(II) Provide to the consumer a statement disclosing the purpose of the high-risk artificial intelligence system and the nature of
+the consequential decision; the contact information for the deployer; a description, in plain language, of the high-risk artificial
+intelligence system; and instructions on how to access the statement required by subsection (5)(a) of this section; and
+
+
+(III) Provide to the consumer information, if applicable, regarding the consumer's right to opt out of the processing of personal
+data concerning the consumer for purposes of profiling in furtherance of decisions that produce legal or similarly significant
+effects concerning the consumer under section 6-1-1306(1)(a)(I)(C).
+
+
+(b) On and after February 1, 2026, a deployer that has deployed a high-risk artificial intelligence system to make, or be a
+substantial factor in making, a consequential decision concerning a consumer shall, if the consequential decision is adverse to
+the consumer, provide to the consumer:
+
+
+(I) A statement disclosing the principal reason or reasons for the consequential decision, including:
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              3
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+
+
+(A) The degree to which, and manner in which, the high-risk artificial intelligence system contributed to the consequential
+decision;
+
+
+(B) The type of data that was processed by the high-risk artificial intelligence system in making the consequential decision; and
+
+
+(C) The source or sources of the data described in subsection (4)(b)(I)(B) of this section;
+
+
+(II) An opportunity to correct any incorrect personal data that the high-risk artificial intelligence system processed in making,
+or as a substantial factor in making, the consequential decision; and
+
+
+(III) An opportunity to appeal an adverse consequential decision concerning the consumer arising from the deployment of a
+high-risk artificial intelligence system, which appeal must, if technically feasible, allow for human review unless providing the
+opportunity for appeal is not in the best interest of the consumer, including in instances in which any delay might pose a risk
+to the life or safety of such consumer.
+
+
+(c)(I) Except as provided in subsection (4)(c)(II) of this section, a deployer shall provide the notice, statement, contact
+information, and description required by subsections (4)(a) and (4)(b) of this section:
+
+
+(A) Directly to the consumer;
+
+
+(B) In plain language;
+
+
+(C) In all languages in which the deployer, in the ordinary course of the deployer's business, provides contracts, disclaimers,
+sale announcements, and other information to consumers; and
+
+
+(D) In a format that is accessible to consumers with disabilities.
+
+
+(II) If the deployer is unable to provide the notice, statement, contact information, and description required by subsections (4)
+(a) and (4)(b) of this section directly to the consumer, the deployer shall make the notice, statement, contact information, and
+description available in a manner that is reasonably calculated to ensure that the consumer receives the notice, statement, contact
+information, and description.
+
+
+(5)(a) On and after February 1, 2026, and except as provided in subsection (6) of this section, a deployer shall make available,
+in a manner that is clear and readily available on the deployer's website, a statement summarizing:
+
+
+(I) The types of high-risk artificial intelligence systems that are currently deployed by the deployer;
+
+
+(II) How the deployer manages known or reasonably foreseeable risks of algorithmic discrimination that may arise from the
+deployment of each high-risk artificial intelligence system described pursuant to subsection (5)(a)(I) of this section; and
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              4
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+
+
+(III) In detail, the nature, source, and extent of the information collected and used by the deployer.
+
+
+(b) A deployer shall periodically update the statement described in subsection (5)(a) of this section.
+
+
+(6) Subsections (2), (3), and (5) of this section do not apply to a deployer if, at the time the deployer deploys a high-risk artificial
+intelligence system and at all times while the high-risk artificial intelligence system is deployed:
+
+
+(a) The deployer:
+
+
+(I) Employs fewer than fifty full-time equivalent employees; and
+
+
+(II) Does not use the deployer's own data to train the high-risk artificial intelligence system;
+
+
+(b) The high-risk artificial intelligence system:
+
+
+(I) Is used for the intended uses that are disclosed to the deployer as required by section 6-1-1702(2)(a); and
+
+
+(II) Continues learning based on data derived from sources other than the deployer's own data; and
+
+
+(c) The deployer makes available to consumers any impact assessment that:
+
+
+(I) The developer of the high-risk artificial intelligence system has completed and provided to the deployer; and
+
+
+(II) Includes information that is substantially similar to the information in the impact assessment required under subsection (3)
+(b) of this section.
+
+
+(7) If a deployer deploys a high-risk artificial intelligence system on or after February 1, 2026, and subsequently discovers that
+the high-risk artificial intelligence system has caused algorithmic discrimination, the deployer, without unreasonable delay, but
+no later than ninety days after the date of the discovery, shall send to the attorney general, in a form and manner prescribed by
+the attorney general, a notice disclosing the discovery.
+
+
+(8) Nothing in subsections (2) to (5) and (7) of this section requires a deployer to disclose a trade secret or information protected
+from disclosure by state or federal law. To the extent that a deployer withholds information pursuant to this subsection (8) or
+section 6-1-1705(5), the deployer shall notify the consumer and provide a basis for the withholding.
+
+
+(9) On and after February 1, 2026, the attorney general may require that a deployer, or a third party contracted by the deployer,
+disclose to the attorney general, no later than ninety days after the request and in a form and manner prescribed by the attorney
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                  5
+§ 6-1-1703. Deployer duty to avoid algorithmic discrimination--risk..., CO ST § 6-1-1703
+
+
+general, the risk management policy implemented pursuant to subsection (2) of this section, the impact assessment completed
+pursuant to subsection (3) of this section, or the records maintained pursuant to subsection (3)(f) of this section. The attorney
+general may evaluate the risk management policy, impact assessment, or records to ensure compliance with this part 17, and
+the risk management policy, impact assessment, and records are not subject to disclosure under the “Colorado Open Records
+Act”, part 2 of article 72 of title 24. In a disclosure pursuant to this subsection (9), a deployer may designate the statement or
+documentation as including proprietary information or a trade secret. To the extent that any information contained in the risk
+management policy, impact assessment, or records includes information subject to attorney-client privilege or work-product
+protection, the disclosure does not constitute a waiver of the privilege or protection.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1703, CO ST § 6-1-1703
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                     © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                   6
+§ 6-1-1704. Disclosure of an artificial intelligence system to consumer, CO ST § 6-1-1704
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                      C.R.S.A. § 6-1-1704
+
+                            § 6-1-1704. Disclosure of an artificial intelligence system to consumer
+
+                                                           Currentness
+
+
+(1) On and after February 1, 2026, and except as provided in subsection (2) of this section, a deployer or other developer that
+deploys, offers, sells, leases, licenses, gives, or otherwise makes available an artificial intelligence system that is intended to
+interact with consumers shall ensure the disclosure to each consumer who interacts with the artificial intelligence system that
+the consumer is interacting with an artificial intelligence system.
+
+
+(2) Disclosure is not required under subsection (1) of this section under circumstances in which it would be obvious to a
+reasonable person that the person is interacting with an artificial intelligence system.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1704, CO ST § 6-1-1704
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                      © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                    1
+§ 6-1-1705. Compliance with other legal obligations--definitions, CO ST § 6-1-1705
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                        C.R.S.A. § 6-1-1705
+
+                                § 6-1-1705. Compliance with other legal obligations--definitions
+
+                                                             Currentness
+
+
+(1) Nothing in this part 17 restricts a developer's, a deployer's, or other person's ability to:
+
+
+(a) Comply with federal, state, or municipal laws, ordinances, or regulations;
+
+
+(b) Comply with a civil, criminal, or regulatory inquiry, investigation, subpoena, or summons by a federal, a state, a municipal,
+or other governmental authority;
+
+
+(c) Cooperate with a law enforcement agency concerning conduct or activity that the developer, deployer, or other person
+reasonably and in good faith believes may violate federal, state, or municipal laws, ordinances, or regulations;
+
+
+(d) Investigate, establish, exercise, prepare for, or defend legal claims;
+
+
+(e) Take immediate steps to protect an interest that is essential for the life or physical safety of a consumer or another individual;
+
+
+(f) By any means other than the use of facial recognition technology, prevent, detect, protect against, or respond to security
+incidents, identity theft, fraud, harassment, malicious or deceptive activities, or illegal activity; investigate, report, or prosecute
+the persons responsible for any such action; or preserve the integrity or security of systems;
+
+
+(g) Engage in public or peer-reviewed scientific or statistical research in the public interest that adheres to all other applicable
+ethics and privacy laws and is conducted in accordance with 45 CFR 46, as amended, or relevant requirements established by
+the federal food and drug administration;
+
+
+(h) Conduct research, testing, and development activities regarding an artificial intelligence system or model, other than testing
+conducted under real-world conditions, before the artificial intelligence system or model is placed on the market, deployed, or
+put into service, as applicable; or
+
+
+(i) Assist another developer, deployer, or other person with any of the obligations imposed under this part 17.
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                 1
+§ 6-1-1705. Compliance with other legal obligations--definitions, CO ST § 6-1-1705
+
+
+
+
+(2) The obligations imposed on developers, deployers, or other persons under this part 17 do not restrict a developer's, a
+deployer's, or other person's ability to:
+
+
+(a) Effectuate a product recall; or
+
+
+(b) Identify and repair technical errors that impair existing or intended functionality.
+
+
+(3) The obligations imposed on developers, deployers, or other persons under this part 17 do not apply where compliance with
+this part 17 by the developer, deployer, or other person would violate an evidentiary privilege under the laws of this state.
+
+
+(4) Nothing in this part 17 imposes any obligation on a developer, a deployer, or other person that adversely affects the rights
+or freedoms of a person, including the rights of a person to freedom of speech or freedom of the press that are guaranteed in:
+
+
+(a) The first amendment to the United States constitution; or
+
+
+(b) Section 10 of article II of the state constitution.
+
+
+(5) Nothing in this part 17 applies to a developer, a deployer, or other person:
+
+
+(a) Insofar as the developer, deployer, or other person develops, deploys, puts into service, or intentionally and substantially
+modifies, as applicable, a high-risk artificial intelligence system:
+
+
+(I) That has been approved, authorized, certified, cleared, developed, or granted by a federal agency, such as the federal food
+and drug administration or the federal aviation administration, acting within the scope of the federal agency's authority, or by a
+regulated entity subject to the supervision and regulation of the federal housing finance agency; or
+
+
+(II) In compliance with standards established by a federal agency, including standards established by the federal office of the
+national coordinator for health information technology, or by a regulated entity subject to the supervision and regulation of
+the federal housing finance agency, if the standards are substantially equivalent or more stringent than the requirements of this
+part 17;
+
+
+(b) Conducting research to support an application for approval or certification from a federal agency, including the federal
+aviation administration, the federal communications commission, or the federal food and drug administration or research to
+support an application otherwise subject to review by the federal agency;
+
+
+(c) Performing work under, or in connection with, a contract with the United States department of commerce, the United States
+department of defense, or the national aeronautics and space administration, unless the developer, deployer, or other person is
+performing the work on a high-risk artificial intelligence system that is used to make, or is a substantial factor in making, a
+decision concerning employment or housing; or
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                            2
+§ 6-1-1705. Compliance with other legal obligations--definitions, CO ST § 6-1-1705
+
+
+
+
+(d) That is a covered entity within the meaning of the federal “Health Insurance Portability and Accountability Act of 1996”,
+42 U.S.C. secs. 1320d to 1320d-9, and the regulations promulgated under the federal act, as both may be amended from time
+to time, and is providing health-care recommendations that:
+
+
+(I) Are generated by an artificial intelligence system;
+
+
+(II) Require a health-care provider to take action to implement the recommendations; and
+
+
+(III) Are not considered to be high risk.
+
+
+(6) Nothing in this part 17 applies to any artificial intelligence system that is acquired by or for the federal government or any
+federal agency or department, including the United States department of commerce, the United States department of defense,
+or the national aeronautics and space administration, unless the artificial intelligence system is a high-risk artificial intelligence
+system that is used to make, or is a substantial factor in making, a decision concerning employment or housing.
+
+
+(7) An insurer, as defined in section 10-1-102(13), a fraternal benefit society, as described in section 10-14-102, or a developer
+of an artificial intelligence system used by an insurer is in full compliance with this part 17 if the insurer, the fraternal benefit
+society, or the developer is subject to the requirements of section 10-3-1104.9 and any rules adopted by the commissioner of
+insurance pursuant to section 10-3-1104.9.
+
+
+(8)(a) A bank, out-of-state bank, credit union chartered by the state of Colorado, federal credit union, out-of-state credit union,
+or any affiliate or subsidiary thereof, is in full compliance with this part 17 if the bank, out-of-state bank, credit union chartered
+by the state of Colorado, federal credit union, out-of-state credit union, or affiliate or subsidiary is subject to examination by
+a state or federal prudential regulator under any published guidance or regulations that apply to the use of high-risk artificial
+intelligence systems and the guidance or regulations:
+
+
+(I) Impose requirements that are substantially equivalent to or more stringent than the requirements imposed in this part 17; and
+
+
+(II) At a minimum, require the bank, out-of-state bank, credit union chartered by the state of Colorado, federal credit union,
+out-of-state credit union, or affiliate or subsidiary to:
+
+
+(A) Regularly audit the bank's, out-of-state bank's, credit union chartered by the state of Colorado's, federal credit union's, out-
+of-state credit union's, or affiliate's or subsidiary's use of high-risk artificial intelligence systems for compliance with state and
+federal anti-discrimination laws and regulations applicable to the bank, out-of-state bank, credit union chartered by the state of
+Colorado, federal credit union, out-of-state credit union, or affiliate or subsidiary; and
+
+
+(B) Mitigate any algorithmic discrimination caused by the use of a high-risk artificial intelligence system or any risk of
+algorithmic discrimination that is reasonably foreseeable as a result of the use of a high-risk artificial intelligence system.
+
+
+(b) As used in this subsection (8):
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                3
+§ 6-1-1705. Compliance with other legal obligations--definitions, CO ST § 6-1-1705
+
+
+
+
+(I) “Affiliate” has the meaning set forth in section 11-101-401(3.5).
+
+
+(II) “Bank” has the meaning set forth in section 11-101-401(5).
+
+
+(III) “Credit union” has the meaning set forth in section 11-30-101(1)(a).
+
+
+(IV) “Out-of-state bank” has the meaning set forth in section 11-101-401(50).
+
+
+(9) If a developer, a deployer, or other person engages in an action pursuant to an exemption set forth in this section, the
+developer, deployer, or other person bears the burden of demonstrating that the action qualifies for the exemption.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1705, CO ST § 6-1-1705
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                     © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                   4
+§ 6-1-1706. Enforcement by attorney general, CO ST § 6-1-1706
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                       C.R.S.A. § 6-1-1706
+
+                                          § 6-1-1706. Enforcement by attorney general
+
+                                                            Currentness
+
+
+(1) Notwithstanding section 6-1-103, the attorney general has exclusive authority to enforce this part 17.
+
+
+(2) Except as provided in subsection (3) of this section, a violation of the requirements established in this part 17 constitutes
+an unfair trade practice pursuant to section 6-1-105(1)(hhhh).
+
+
+(3) In any action commenced by the attorney general to enforce this part 17, it is an affirmative defense that the developer,
+deployer, or other person:
+
+
+(a) Discovers and cures a violation of this part 17 as a result of:
+
+
+(I) Feedback that the developer, deployer, or other person encourages deployers or users to provide to the developer, deployer,
+or other person;
+
+
+(II) Adversarial testing or red teaming, as those terms are defined or used by the national institute of standards and technology; or
+
+
+(III) An internal review process; and
+
+
+(b) Is otherwise in compliance with:
+
+
+(I) The latest version of the “Artificial Intelligence Risk Management Framework” published by the national institute of
+standards and technology in the United States department of commerce and standard ISO/IEC 42001 of the International
+Organization for Standardization;
+
+
+(II) Another nationally or internationally recognized risk management framework for artificial intelligence systems, if the
+standards are substantially equivalent to or more stringent than the requirements of this part 17; or
+
+
+(III) Any risk management framework for artificial intelligence systems that the attorney general, in the attorney general's
+discretion, may designate and, if designated, shall publicly disseminate.
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                               1
+§ 6-1-1706. Enforcement by attorney general, CO ST § 6-1-1706
+
+
+
+
+(4) A developer, a deployer, or other person bears the burden of demonstrating to the attorney general that the requirements
+established in subsection (3) of this section have been satisfied.
+
+
+(5) Nothing in this part 17, including the enforcement authority granted to the attorney general under this section, preempts or
+otherwise affects any right, claim, remedy, presumption, or defense available at law or in equity. A rebuttable presumption or
+affirmative defense established under this part 17 applies only to an enforcement action brought by the attorney general pursuant
+to this section and does not apply to any right, claim, remedy, presumption, or defense available at law or in equity.
+
+
+(6) This part 17 does not provide the basis for, and is not subject to, a private right of action for violations of this part 17 or
+any other law.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1706, CO ST § 6-1-1706
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                      © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                    2
+§ 6-1-1707. Rules, CO ST § 6-1-1707
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 17. Artificial Intelligence
+
+                                                     C.R.S.A. § 6-1-1707
+
+                                                      § 6-1-1707. Rules
+
+                                                         Currentness
+
+
+(1) The attorney general may promulgate rules as necessary for the purpose of implementing and enforcing this part 17,
+including:
+
+
+(a) The documentation and requirements for developers pursuant to section 6-1-1702(2);
+
+
+(b) The contents of and requirements for the notices and disclosures required by sections 6-1-1702(5) and (7); 6-1-1703(4),
+(5), (7), and (9); and 6-1-1704;
+
+
+(c) The content and requirements of the risk management policy and program required by section 6-1-1703(2);
+
+
+(d) The content and requirements of the impact assessments required by section 6-1-1703(3);
+
+
+(e) The requirements for the rebuttable presumptions set forth in sections 6-1-1702 and 6-1-1703; and
+
+
+(f) The requirements for the affirmative defense set forth in section 6-1-1706(3), including the process by which the attorney
+general will recognize any other nationally or internationally recognized risk management framework for artificial intelligence
+systems.
+
+
+Credits
+Added by Laws 2024, Ch. 198 (S.B. 24-205), § 1, eff. May 17, 2024.
+
+
+C. R. S. A. § 6-1-1707, CO ST § 6-1-1707
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                    © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                  1
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 6. Consumer and Commercial Affairs (Refs & Annos)
+      Fair Trade and Restraint of Trade
+         Article 1. Colorado Consumer Protection Act (Refs & Annos)
+           Part 1. Consumer Protection--General (Refs & Annos)
+
+                                                       C.R.S.A. § 6-1-105
+
+                                   § 6-1-105. Unfair or deceptive trade practices--definitions
+
+                                                           Currentness
+
+
+(1) A person engages in a deceptive trade practice when, in the course of the person's business, vocation, or occupation, the
+person:
+
+
+(a) Either knowingly or recklessly passes off goods, services, or property as those of another;
+
+
+(b) Either knowingly or recklessly makes a false representation as to the source, sponsorship, approval, or certification of goods,
+services, or property;
+
+
+(c) Either knowingly or recklessly makes a false representation as to affiliation, connection, or association with or certification
+by another;
+
+
+(d) Uses deceptive representations or designations of geographic origin in connection with goods or services;
+
+
+(e) Either knowingly or recklessly makes a false representation as to the characteristics, ingredients, uses, benefits, alterations,
+or quantities of goods, food, services, or property or a false representation as to the sponsorship, approval, status, affiliation,
+or connection of a person therewith;
+
+
+(f) Represents that goods are original or new if he knows or should know that they are deteriorated, altered, reconditioned,
+reclaimed, used, or secondhand;
+
+
+(g) Represents that goods, food, services, or property are of a particular standard, quality, or grade, or that goods are of a
+particular style or model, if he knows or should know that they are of another;
+
+
+(h) Disparages the goods, services, property, or business of another by false or misleading representation of fact;
+
+
+(i) Advertises goods, services, or property with intent not to sell them as advertised;
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              1
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(j) Advertises goods or services with intent not to supply reasonably expectable public demand, unless the advertisement
+discloses a limitation of quantity;
+
+
+(k) Advertises under the guise of obtaining sales personnel when in fact the purpose is to first sell a product or service to the
+sales personnel applicant;
+
+
+(l) Makes false or misleading statements of fact concerning the price of goods, services, or property or the reasons for, existence
+of, or amounts of price reductions;
+
+
+(m) Fails to deliver to the customer at the time of an installment sale of goods or services a written order, contract, or receipt
+setting forth the name and address of the seller, the name and address of the organization which he represents, and all of the terms
+and conditions of the sale, including a description of the goods or services, stated in readable, clear, and unambiguous language;
+
+
+(n) Employs “bait and switch” advertising, which is advertising accompanied by an effort to sell goods, services, or property
+other than those advertised or on terms other than those advertised and which is also accompanied by one or more of the
+following practices:
+
+
+(I) Refusal to show the goods or property advertised or to offer the services advertised;
+
+
+(II) Disparagement in any respect of the advertised goods, property, or services or the terms of sale;
+
+
+(III) Requiring tie-in sales or other undisclosed conditions to be met prior to selling the advertised goods, property, or services;
+
+
+(IV) Refusal to take orders for the goods, property, or services advertised for delivery within a reasonable time;
+
+
+(V) Showing or demonstrating defective goods, property, or services which are unusable or impractical for the purposes set
+forth in the advertisement;
+
+
+(VI) Accepting a deposit for the goods, property, or services and subsequently switching the purchase order to higher-priced
+goods, property, or services; or
+
+
+(VII) Failure to make deliveries of the goods, property, or services within a reasonable time or to make a refund therefor;
+
+
+(o) Either knowingly or recklessly fails to identify flood-damaged or water-damaged goods as to such damages;
+
+
+(p) Solicits door-to-door as a seller, unless the seller, within thirty seconds after beginning the conversation, identifies himself
+or herself, whom he or she represents, and the purpose of the call;
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              2
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(p.3) to (p.7) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(q) Contrives, prepares, sets up, operates, publicizes by means of advertisements, or promotes any pyramid promotional scheme;
+
+
+(r) Advertises or otherwise represents that goods or services are guaranteed without clearly and conspicuously disclosing the
+nature and extent of the guarantee, any material conditions or limitations in the guarantee which are imposed by the guarantor,
+the manner in which the guarantor will perform, and the identity of such guarantor. Any representation that goods or services
+are “guaranteed for life” or have a “lifetime guarantee” shall contain, in addition to the other requirements of this paragraph (r),
+a conspicuous disclosure of the meaning of “life” or “lifetime” as used in such representation (whether that of the purchaser,
+the goods or services, or otherwise). Guarantees shall not be used which under normal conditions could not be practically
+fulfilled or which are for such a period of time or are otherwise of such a nature as to have the capacity and tendency of
+misleading purchasers or prospective purchasers into believing that the goods or services so guaranteed have a greater degree of
+serviceability, durability, or performance capability in actual use than is true in fact. The provisions of this paragraph (r) apply
+not only to guarantees but also to warranties, to disclaimer of warranties, to purported guarantees and warranties, and to any
+promise or representation in the nature of a guarantee or warranty; however, such provisions do not apply to any reference to a
+guarantee in a slogan or advertisement so long as there is no guarantee or warranty of specific merchandise or other property.
+
+
+(s) and (t) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(u) Fails to disclose material information concerning goods, services, or property which information was known at the time of an
+advertisement or sale if such failure to disclose such information was intended to induce the consumer to enter into a transaction;
+
+
+(v) Disburses funds in connection with a real estate transaction in violation of section 38-35-125(2), C.R.S.;
+
+
+(w) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(x) Violates sections 6-1-203 to 6-1-206 or part 7 of this article 1;
+
+
+(y) Fails, in connection with any solicitation, oral or written, to clearly and prominently disclose immediately adjacent to or
+after the description of any item or prize to be received by any person the actual retail value of each item or prize to be awarded.
+For the purposes of this paragraph (y), the actual retail value is the price at which substantial sales of the item were made in the
+person's trade area or in the trade area in which the item or prize is to be received within the last ninety days or, if no substantial
+sales were made, the actual cost of the item or prize to the person on whose behalf any contest or promotion is conducted; except
+that, whenever the actual cost of the item to the provider is less than fifteen dollars per item, a disclosure that “actual cost to
+the provider is less than fifteen dollars” may be made in lieu of disclosure of actual cost. The provisions of this paragraph (y)
+shall not apply to a promotion which is soliciting the sale of a newspaper, magazine, or periodical of general circulation, or to a
+promotion soliciting the sale of books, records, audio tapes, compact discs, or videos when the promoter allows the purchaser to
+review the merchandise without obligation for at least seven days and provides a full refund within thirty days after the receipt
+of the returned merchandise or when a membership club operation is in conformity with rules and regulations of the federal
+trade commission contained in 16 CFR 425.
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                 3
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(z) Refuses or fails to obtain all governmental licenses or permits required to perform the services or to sell the goods, food,
+services, or property as agreed to or contracted for with a consumer;
+
+
+(aa) Fails, in connection with the issuing, making, providing, selling, or offering to sell of a motor vehicle service contract, to
+comply with the provisions of article 11 of title 42, C.R.S.;
+
+
+(bb) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(cc) Engages in any commercial telephone solicitation which constitutes an unlawful telemarketing practice as described in
+section 6-1-304;
+
+
+(dd) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(ee) Intentionally violates any provision of article 10 of title 5, C.R.S.;
+
+
+(ee.5) to (ff) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(gg) Fails to disclose or misrepresents to another person, a secured creditor, or an assignee by whom such person is retained
+to repossess personal property whether such person is bonded in accordance with section 4-9-629, C.R.S., or fails to file such
+bond with the attorney general;
+
+
+(hh) Violates any provision of article 16 of this title;
+
+
+(ii) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(jj) Represents to any person that such person has won or is eligible to win any award, prize, or thing of value as the result of
+a contest, promotion, sweepstakes, or drawing, or that such person will receive or is eligible to receive free goods, services, or
+property, unless, at the time of the representation, the person has the present ability to supply such award, prize, or thing of value;
+
+
+(kk) Violates any provision of article 6 of this title;
+
+
+(ll) Either knowingly or recklessly makes a false representation as to the results of a radon test or the need for radon mitigation;
+
+
+(mm) Violates section 35-27-113(3)(e), (3)(f), or (3)(i), C.R.S.;
+
+
+(nn) Repealed by Laws 2000, Ch. 2, § 1, eff. July 1, 2001.
+
+
+(oo) Fails to comply with the provisions of section 35-80-108(1)(a), (1)(b), or (2)(f), C.R.S.;
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                 4
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(pp) Violates article 9 of title 42, C.R.S.;
+
+
+(qq) Repealed by Laws 1999, Ch. 188, § 14, eff. May 18, 1999.
+
+
+(rr) Violates the provisions of part 8 of this article;
+
+
+(ss) Violates any provision of part 33 of article 32 of title 24 that applies to the installation of manufactured homes or tiny homes;
+
+
+(tt) Violates any provision of part 9 of this article;
+
+
+(uu) Violates section 38-40-105, C.R.S.;
+
+
+(vv) Violates section 24-21-523(1)(f) or (1)(i) or 24-21-525(3), (4), or (5);
+
+
+(ww) Violates any provision of section 6-1-702;
+
+
+(xx) Violates any provision of part 11 of this article;
+
+
+(yy) Repealed by Laws 2015, Ch. 259, § 7, eff. Aug. 5, 2015.
+
+
+(zz) Violates any provision of section 6-1-717;
+
+
+(aaa) Violates any provision of section 12-10-710;
+
+
+(bbb) Violates any provision of section 12-10-713;
+
+
+(ccc) Violates the provisions of section 6-1-722;
+
+
+(ddd) Violates section 6-1-724;
+
+
+(eee) Violates section 6-1-701;
+
+
+(fff) Violates section 6-1-723;
+
+
+(ggg) Violates section 6-1-725;
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                5
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(hhh) Either knowingly or recklessly represents that hemp, hemp oil, or any derivative of a hemp plant constitutes retail
+marijuana or medical marijuana unless it fully satisfies the definition of such products pursuant to section 44-10-103(34) or (57);
+
+
+(iii) Either knowingly or recklessly enters into, or attempts to enforce, an agreement regarding the recovery of an overbid on
+foreclosed property if the agreement concerns the recovery of funds in the possession of:
+
+
+(I) A public trustee prior to transfer of the funds to the state treasurer under section 38-38-111; or
+
+
+(II) The state treasurer and does not meet the requirements for such an agreement as specified in section 38-13-1304;
+
+
+(jjj) Violates section 6-1-726;
+
+
+(kkk) Repealed by Laws 2022, Ch. 255 (H.B. 22-1287), § 27, eff. Oct. 1, 2022.
+
+
+(lll) Violates article 20 of title 5;
+
+
+(mmm) Violates section 12-30-112;
+
+
+(nnn) Violates any provision of part 13 of this article 1 as specified in section 6-1-1311(1)(c);
+
+
+(ooo) Violates part 14 of this article 1;
+
+
+(ppp) Violates section 7-90-314(1);
+
+
+(qqq) Violates part 15 of this article 1;
+
+
+(rrr) Either knowingly or recklessly engages in any unfair, unconscionable, deceptive, deliberately misleading, false, or
+fraudulent act or practice;
+
+
+(sss) Violates this section as it applies to hemp, industrial hemp, industrial hemp products, intoxicating hemp, adult use cannabis
+products, the plant cannabis sp., or anything derived from or produced from the plant cannabis sp.;
+
+
+(ttt) Violates part 4 of article 10.1 of title 40;
+
+
+(uuu) Violates section 12-10-403.5;
+
+
+
+
+                 © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                            6
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(vvv) Violates section 6-1-733;
+
+
+(www) Violates section 25-18.9-104;
+
+
+(xxx) Violates section 12-30-112, 12-30-113, 25-3-121, or 25-3-122;
+
+
+(yyy) Violates section 25-49-106;
+
+
+(zzz) Fails to comply with the requirements of section 12-280-142;
+
+
+(aaaa) Charges, bills, or collects a facility fee or fails to comply with other provisions relating to facility fees in violation of
+section 6-20-102(2) or (3);
+
+
+(bbbb) Violates section 25.5-1-904;
+
+
+(cccc) Sells or offers for sale a product or electronic smoking device that is age-restricted to a person who does not meet the
+age restriction;
+
+
+(dddd) Fails to register a mobile home park in violation of section 38-12-1106;
+
+
+(eeee) Is a towing carrier and conducts a nonconsensual tow in violation of section 40-10.1-405;
+
+
+(ffff) Fails to comply with the manufacturer requirements under the insulin affordability program pursuant to section 12-280-139
+or the manufacturer requirements for the emergency supply of prescription insulin pursuant to section 12-280-140;
+
+
+(gggg) Violates section 6-1-731.5; or
+
+
+(hhhh) Violates part 17 of this article 1.
+
+
+(iiii) Violates a provision of section 6-1-739.
+
+
+(jjjj) Violates section 6-1-738.
+
+
+(kkkk) Violates section 25-5-1602.
+
+
+(llll) Violates section 42-4-221(12).
+
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                              7
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+
+
+(mmmm) Is a vehicle immobilization company and immobilizes a vehicle in violation of sections 40-10.1-802 to 40-10.1-812
+or section 40-10.1-814.
+
+
+(nnnn) Violated section 13-16-126.
+
+
+(oooo) Violates article 29 of this title 6.
+
+
+(pppp) Violates part 18 of this article 1.
+
+
+(2) Evidence that a person has engaged in a deceptive trade practice shall be prima facie evidence of intent to injure competitors
+and to destroy or substantially lessen competition.
+
+
+(3) The deceptive trade practices listed in this section are in addition to and do not limit the types of unfair trade practices
+actionable at common law or under other statutes of this state.
+
+
+(4) As used in this section, unless the context otherwise requires:
+
+
+(a) “Electronic smoking device” has the meaning set forth in section 25-14-203(4.5).
+
+
+(b) “Recklessly” means a reckless disregard for the truth or falsity of a statement or advertisement.
+
+
+Credits
+Amended by Laws 1975, S.B.69, § 1, eff. July 1, 1975; Laws 1984, H.B.1271, § 2, eff. July 1, 1984; Laws 1984, H.B.1385, §
+2, eff. July 1, 1984; Laws 1985, H.B.1159, § 2, eff. June 1, 1985; Laws 1987, H.B.1300, §§ 3, 4, eff. July 1, 1987; Laws 1988,
+H.B.1236, § 2, eff. July 1, 1988; Laws 1988, H.B.1263, § 2, eff. July 1, 1988; Laws 1989, H.B.1195, § 2, eff. Jan. 1, 1990;
+Laws 1989, H.B.1305, §§ 1, 4, eff. June 7, 1989; Laws 1990, H.B.90-1090, § 2, eff. July 1, 1990; Laws 1990, H.B.90-1243,
+§ 2, eff. April 20, 1990; Laws 1991, H.B.91-1253, § 1, eff. May 16, 1991; Laws 1991, H.B.91-1264, § 1, eff. June 8, 1991;
+Laws 1992, H.B.92-1314, § 2, eff. June 1, 1992; Laws 1992, S.B.92-17, § 2, eff. April 29, 1992; Laws 1993, H.B.93-1144, §
+2, eff. July 1, 1993; Laws 1993, S.B.93-17, § 3, eff. July 1, 1993; Laws 1993, S.B.93-165, § 1, eff. July 1, 1993; Laws 1994,
+H.B.94-1102, § 1, eff. July 1, 1994; Laws 1994, S.B.94-1, § 14, eff. Jan. 1, 1995; Laws 1994, S.B.94-23, § 10, eff. July 1, 1994;
+Laws 1994, S.B.94-36, § 1, eff. April 20, 1994; Laws 1996, H.B.96-1137, § 1, eff. July 1, 1996; Laws 1996, H.B.96-1260, §
+1, eff. July 1, 1996; Laws 1997, H.B.97-1105, § 13, eff. May 21, 1997; Laws 1997, H.B.97-1284, § 1, eff. July 1, 1997; Laws
+1997, S.B.97-24, § 1, eff. July 1, 1997; Laws 1998, Ch. 213, § 2, eff. Aug. 5, 1998; Laws 1999, Ch. 188, §§ 3, 14, eff. May 18,
+1999; Laws 2000, Ch. 2, § 1, eff. July 1, 2001; Laws 2000, Ch. 203, § 2, eff. Aug. 2, 2000; Laws 2000, Ch. 259, § 3, eff. July 1,
+2001; Laws 2001, Ch. 321, § 37, eff. July 1, 2001; Laws 2001, Ch. 324, § 2, eff. Aug. 8, 2001; Laws 2002, Ch. 323, § 3, eff. June
+7, 2002; Laws 2003, Ch. 29, § 3, eff. March 5, 2003; Laws 2004, Ch. 55, § 2, eff. March 23, 2004; Laws 2004, Ch. 130, § 2, eff.
+Aug. 4, 2004; Laws 2006, Ch. 291, § 2, eff. May 30, 2006; Laws 2007, Ch. 210, § 1, eff. July 1, 2007; Laws 2007, Ch. 386, §
+10, eff. June 1, 2007; Laws 2007, Ch. 387, § 5, eff. June 1, 2007; Laws 2010, Ch. 180, § 2, eff. Aug. 11, 2010; Laws 2013, Ch.
+271, § 2, eff. May 24, 2013; Laws 2013, Ch. 399, § 2, eff. June 5, 2013; Laws 2014, Ch. 358, § 2, eff. Aug. 6, 2014; Laws 2015,
+Ch. 199, § 7, eff. May 18, 2015; Laws 2015, Ch. 259, § 7, eff. Aug. 5, 2015; Laws 2016, Ch. 97, § 2, eff. Aug. 10, 2016; Laws
+2016, Ch. 117, § 1, eff. Aug. 10, 2016; Laws 2016, Ch. 246, § 2, eff. July 1, 2016; Laws 2017, Ch. 207, § 4, eff. July 1, 2018;
+Laws 2018, Ch. 36, § 1, eff. Aug. 8, 2018; Laws 2018, Ch. 55, § 4, eff. Oct. 1, 2018; Laws 2019, Ch. 110 (S.B. 19-088), § 2, eff.
+
+
+
+                © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                            8
+§ 6-1-105. Unfair or deceptive trade practices--definitions, CO ST § 6-1-105
+
+
+July 1, 2020; Laws 2019, Ch. 136 (H.B. 19-1172), § 8, eff. Oct. 1, 2019; Laws 2019, Ch. 157 (S.B. 19-002), § 3, eff. Aug. 2,
+2019; Laws 2019, Ch. 171 (H.B. 19-1174), § 1, eff. Jan. 1, 2020; Laws 2019, Ch. 268 (H.B. 19-1289), § 2, eff. May 23, 2019;
+Laws 2019, Ch. 315 (S.B. 19-224), § 8, eff. Jan. 1, 2020; Laws 2021, Ch. 483 (S.B. 21-190), § 3, eff. July 1, 2023; Laws 2022,
+Ch. 21 (H.B. 22-1099), § 2, eff. Jan. 1, 2023; Laws 2022, Ch. 172 (H.B. 22-1242), § 25, eff. Aug. 10, 2022; Laws 2022, Ch. 255
+(H.B. 22-1287), § 27, eff. Oct. 1, 2022; Laws 2022, Ch. 278 (S.B. 22-205), § 3, eff. May 31, 2022; Laws 2022, Ch. 326 (S.B.
+22-034), § 2, eff. Feb. 1, 2023; Laws 2022, Ch. 327 (H.B. 22-1031), § 1, eff. Jan. 1, 2023; Laws 2022, Ch. 416 (H.B. 22-1314),
+§ 12, eff. Aug. 10, 2022; Laws 2022, Ch. 446 (H.B. 22-1284), § 6, eff. Aug. 10, 2022; Laws 2023, Ch. 50 (S.B. 23-077), § 2,
+eff. Aug. 7, 2023; Laws 2023, Ch. 61 (S.B. 23-037), § 1, eff. Aug. 7, 2023; Laws 2023, Ch. 63 (S.B. 23-150), § 2, eff. Aug.
+7, 2023; Laws 2023, Ch. 152 (S.B. 23-093), § 6, eff. May 4, 2023; Laws 2023, Ch. 275 (S.B. 23-176), § 4, eff. May 30, 2023;
+Laws 2023, Ch. 277 (H.B. 23-1215), § 3, eff. May 30, 2023; Laws 2023, Ch. 305 (S.B. 23-252), § 1, eff. Aug. 7, 2023; Laws
+2023, Ch. 376 (H.B. 23-1257), § 2, eff. June 5, 2023; Laws 2023, Ch. 447 (H.B. 23-1002), § 4, eff. Aug. 7, 2023; Laws 2024,
+Ch. 198 (S.B. 24-205), § 2, eff. May 17, 2024; Laws 2024, Ch. 292 (H.B. 24-1051), § 7, eff. Aug. 7, 2024; Laws 2024, Ch. 346
+(H.B. 24-1356), § 2, eff. June 3, 2024; Laws 2024, Ch. 351 (H.B. 24-1438), § 1, eff. June 3, 2024; Laws 2024, Ch. 402 (S.B.
+24-011), § 3, eff. Aug. 7, 2024; Laws 2025, Ch. 92 (H.B. 25-1217), § 3, eff. Aug. 6, 2025; Laws 2025, Ch. 279 (H.B. 25-1197),
+§ 3, eff. Aug. 6, 2025; Laws 2025, Ch. 313 (S.B. 25-071), § 1, eff. Aug. 6, 2025; Laws 2025, Ch. 391 (H.B. 25-1117), § 4, eff.
+June 3, 2025; Laws 2025, Ch. 407 (H.B. 25-1329), § 2, eff. Aug. 6, 2025; Laws 2025, Ch. 412 (S.B. 25-282), § 3, eff. Aug. 6,
+2025; Laws 2025, Ch. 427 (S.B. 25-299), § 3, eff. Aug. 6, 2025; Laws 2025, Ch. 438 (H.B. 25-1161), § 2, eff. Aug. 6, 2025.
+
+
+C. R. S. A. § 6-1-105, CO ST § 6-1-105
+Current through the First Regular and Extraordinary Sessions, 75th General Assembly (2025). Some statute sections may be
+more current. See credits for details.
+
+End of Document                                                   © 2025 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+               © 2025 Thomson Reuters. No claim to original U.S. Government Works.                                                 9
+

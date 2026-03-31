@@ -1,0 +1,188 @@
+                                                                          S.B.ANo.A815
+
+
+
+
+1                                         AN ACT
+
+2    relating to the use of certain automated systems in, and certain
+
+3    adverse determinations made in connection with, the health benefit
+
+4    claims process.
+
+5          BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF TEXAS:
+
+6          SECTIONA1.AASection 4201.002, Insurance Code, is amended by
+
+7    amending Subdivision (1) and adding Subdivisions (1-a), (1-b), and
+
+8    (1-c) to read as follows:
+
+9                 (1)AA"Adverse determination" means a determination by a
+
+10   utilization review agent that health care services provided or
+
+11   proposed to be provided to a patient are not medically necessary or
+
+12   appropriate or are experimental or investigational.
+
+13                (1-a)AA"Algorithm"        means    a    computerized         procedure
+
+14   consisting of a set of steps used to accomplish a determined task.
+
+15                (1-b)AA"Artificial        intelligence        system"    means       any
+
+16   machine learning-based system that, for any explicit or implicit
+
+17   objective,   infers     from   the   inputs    the   system   receives      how   to
+
+18   generate outputs, including content, decisions, predictions, and
+
+19   recommendations,        that   can    influence       physical       or    virtual
+
+20   environments.
+
+21                (1-c)AA"Automated decision system" means an algorithm,
+
+22   including an algorithm incorporating an artificial intelligence
+
+23   system,   that   uses    data-based    analytics      to   make,     suggest,     or
+
+24   recommend    certain     determinations,        decisions,     judgments,         or
+
+
+
+
+                                            1
+                                                                           S.B.ANo.A815
+
+1    conclusions.
+
+2           SECTIONA2.AASubchapter D, Chapter 4201, Insurance Code, is
+
+3    amended by adding Section 4201.156 to read as follows:
+
+4           Sec.A4201.156.AAUSE OF AUTOMATED DECISION SYSTEM FOR ADVERSE
+
+5    DETERMINATIONS.         (a)AAA utilization review agent may not use an
+
+6    automated decision system to make, wholly or partly, an adverse
+
+7    determination.
+
+8           (b)AAThe commissioner may audit and inspect at any time a
+
+9    utilization review agent ’s use of an automated decision system for
+
+10   utilization review.
+
+11          (c)AAThis section does not prohibit the use of an algorithm,
+
+12   artificial intelligence system, or automated decision system for
+
+13   administrative support or fraud-detection functions.
+
+14          SECTIONA3.AASection 4201.303(a), Insurance Code, is amended
+
+15   to read as follows:
+
+16          (a)AANotice of an adverse determination must include:
+
+17                  (1)AAthe       principal        reasons      for     the      adverse
+
+18   determination;
+
+19                  (2)AAthe clinical basis for the adverse determination;
+
+20                  (3)AAa    description      of   and   [or]   the    source    of    the
+
+21   screening criteria and review procedures used as guidelines in
+
+22   making the adverse determination; and
+
+23                  (4)AAa description of the procedure for the complaint
+
+24   and   appeal    process,      including   notice     to   the     enrollee   of    the
+
+25   enrollee ’s    right     to   appeal   an      adverse    determination       to   an
+
+26   independent review organization and of the procedures to obtain
+
+27   that review.
+
+
+
+
+                                               2
+                                                           S.B.ANo.A815
+
+1         SECTIONA4.AAChapter 4201, Insurance Code, as amended by this
+
+2   Act, applies only to utilization review conducted for a health
+
+3   benefit plan delivered, issued for delivery, or renewed on or after
+
+4   January 1, 2026.   Utilization review conducted for a health benefit
+
+5   plan delivered, issued for delivery, or renewed before January 1,
+
+6   2026, is governed by the law as it existed immediately before the
+
+7   effective date of this Act, and that law is continued in effect for
+
+8   that purpose.
+
+9         SECTIONA5.AAThis Act takes effect September 1, 2025.
+
+
+
+
+                                      3
+                                                                S.B.ANo.A815
+
+
+
+
+______________________________     ______________________________
+     President of the SenateAAAAAAAAAAAAASpeaker of the House
+
+      I   hereby    certify    that   S.B.ANo.A815   passed   the    Senate   on
+
+MarchA26,A2025,     by   the   following     vote:AAYeasA30,    NaysA0,       one
+
+present not voting.
+
+
+
+                                           ______________________________
+                                           AAAASecretary of the Senate
+
+      I   hereby    certify    that   S.B.ANo.A815   passed    the   House    on
+
+MayA24,A2025,      by   the   following    vote:AAYeasA116,    NaysA13,       two
+
+present not voting.
+
+
+
+                                           ______________________________
+                                           AAAAChief Clerk of the House
+
+
+Approved:
+
+
+______________________________
+AAAAAAAAAAAAADate
+
+
+
+______________________________
+AAAAAAAAAAAGovernor
+
+
+
+
+                                       4
+

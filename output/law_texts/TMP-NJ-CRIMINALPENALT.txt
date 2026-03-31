@@ -1,0 +1,336 @@
+                          [Third Reprint]
+
+ASSEMBLY COMMITTEE SUBSTITUTE FOR
+               ASSEMBLY, No. 3540
+
+  STATE OF NEW JERSEY
+                 221st LEGISLATURE
+                           ADOPTED MAY 20, 2024
+
+
+
+  Sponsored by:
+  Assemblyman HERB CONAWAY, JR.
+  District 7 (Burlington)
+  Assemblyman LOUIS D. GREENWALD
+  District 6 (Burlington and Camden)
+  Assemblywoman ELLEN J. PARK
+  District 37 (Bergen)
+  Senator PAUL D. MORIARTY
+  District 4 (Atlantic, Camden and Gloucester)
+  Senator KRISTIN M. CORRADO
+  District 40 (Bergen, Essex and Passaic)
+
+  Co-Sponsored by:
+  Assemblywomen Quijano, Haider, Assemblymen Karabinchak, Wimberly,
+  Stanley, Sampson, Miller, Assemblywomen Bagolie, Lampitt, Speight,
+  Ramirez, Swain, Assemblymen Hutchison, Tully, Senators Bramnick,
+  Turner, Scutari, Amato and Assemblywoman Hall
+
+
+
+
+  SYNOPSIS
+     Establishes criminal penalties for production or dissemination of deceptive
+  audio or visual media, commonly known as “deepfakes.”
+
+  CURRENT VERSION OF TEXT
+    As amended on March 17, 2025 by the General Assembly pursuant to the
+  Governor's recommendations.
+
+
+
+                    (Sponsorship Updated As Of: 3/24/2025)
+                [3R] ACS for A3540 CONAWAY, GREENWALD
+                                     2
+
+ 1   AN ACT establishing 3civil and3 criminal penalties for the
+ 2     production and dissemination of deceptive audio or visual media
+ 3     and supplementing Title 2C of the New Jersey Statutes.
+ 4
+ 5      BE IT ENACTED by the Senate and General Assembly of the State
+ 6   of New Jersey:
+ 7
+         3
+ 8        1. The Legislature finds and declares that:
+ 9       a. Technological advances in artificial intelligence have resulted in
+10   widespread accessibility to sophisticated “deepfake” technology,
+11   which can be used to manipulate audio and visual content to create
+12   deceptive audio and visual media depictions that often cannot be
+13   distinguished from reality.
+14       b. Digitally altered media generated with this technology can
+15   produce false and deceptive, but completely realistic and convincing,
+16   media depicting events that never happened, interactions that never
+17   took place, conduct that never occurred, and statements that were
+18   never made.
+19       c. While there are numerous valid and appropriate uses for this
+20   sophisticated technology, such as criticism, comment, satire, parody,
+21   news reporting, teaching, scholarship, or research, it may also be used
+22   inappropriately, to deceive, humiliate, or violate the privacy of
+23   individuals who are portrayed in deceptive audio and visual media
+24   without their consent.
+25       d. It is manifest that lawbreakers will use all available tools to
+26   subvert the law, and “deepfake” technology, which may be readily
+27   accessed through the Internet or computer software programs, can be a
+28   powerful tool to accomplish illicit ends. Utilizing “deepfake”
+29   technology, bad actors may engage in a broad range of criminal or
+30   unlawful conduct such as creating audio and visual media depictions
+31   of sexual abuse and sexual exploitation involving children or non-
+32   consenting adults, creating false, misleading, and misattributed
+33   political advertising and campaign materials, and targeting individuals
+34   and corporate entities for harassment, damaging reputations and
+35   ruining lives. Punishment for committing a crime using “deepfake”
+36   technology should be cumulative, as the impact of the underlying
+37   criminal conduct is amplified through the insidious use of “deepfake”
+38   technology as the means to break the law.
+39       e. With the readily available amplifiers of the Internet and social
+40   media, digital media can be both ubiquitous and enduring, and the
+41   harm to a person falsely depicted in a “deepfake” image or visual or
+42   audio recording can result in widespread and pervasive emotional
+43   distress, reputational damage, and indelible harm to that person’s
+44   personal and professional relationships.
+       EXPLANATION – Matter enclosed in bold-faced brackets [thus] in the above bill is
+     not enacted and is intended to be omitted in the law.
+
+       Matter underlined thus is new matter.
+       Matter enclosed in superscript numerals has been adopted as follows:
+       1Assembly AAP committee amendments adopted June 24, 2024.
+       2Assembly ABU committee amendments adopted June 26, 2024.
+       3Assembly amendments adopted in accordance with Governor's
+
+        recommendations March 17, 2025.
+              [3R] ACS for A3540 CONAWAY, GREENWALD
+                                   3
+
+ 1       f. There is a compelling State interest in fostering the appropriate
+ 2   use of “deepfake” technology and deterring the inappropriate
+ 3   application of this technology to commit illicit conduct, in a way that
+ 4   safeguards the health, safety, and welfare of the public without unduly
+ 5   infringing on the First Amendment rights of content creators.
+ 6   Similarly, the State has a compelling interest in protecting the privacy
+ 7   and reputational interests of residents who might otherwise be falsely
+ 8   depicted through “deepfake” technology, and in providing them a
+ 9   meaningful mechanism through which to obtain appropriate redress.
+10       g. While civil liability and enforcement may to some extent
+11   prevent the misuse of this technology in furtherance of criminal
+12   activity, the relative ease with which this technology may be accessed
+13   and deployed, measured against the magnitude of the indelible and
+14   long-lasting harms its use can inflict upon victims and their families,
+15   warrants more severe consequences to more effectively punish and
+16   deter the inappropriate use of “deepfake” technology.
+17       h. Accordingly, the Legislature finds that it is necessary and
+18   proper to establish robust specific criminal penalties to punish and
+19   deter the use of “deepfake” technology to generate or create works of
+20   deceptive audio or visual media for the purpose of attempting or
+21   furthering the commission of a crime or offense, or to solicit, disclose,
+22   or use a work of deceptive audio or visual media for that purpose, and
+23   by providing the aggrieved victims of such conduct a civil recourse by
+24   which they may seek appropriate recompense.3
+25
+        3
+26        [1.] 2.3 a. As used in P.L. , c. (C.           ) (pending before the
+27   Legislature as this bill):
+28       “Deceptive audio or visual media” means any video recording,
+29   motion picture film, sound recording, electronic image, photograph,
+30   any technological representation of speech or conduct substantially
+31   derivative thereof, or any forgery or facsimile of a document or
+32   writing, that appears to a reasonable person to realistically depict any
+33   speech, conduct, or writing of a person who did not in fact engage in
+34   the speech, conduct, or writing, and the production of which was
+35   substantially dependent upon technical means, rather than the ability of
+36   another person to physically or verbally impersonate the person.
+37       “Disclose” means to sell, give, provide, lend, trade, mail, deliver,
+38   transfer, publish, distribute, circulate, disseminate, present, exhibit,
+39   advertise, offer, share, or make 3externally3 available via the Internet
+40   or by any other means, whether or not for pecuniary gain.
+41       “Interactive computer service provider” shall have the same
+42   meaning as set forth in 47 U.S.C. s.230.
+43       “Solicit” means to offer to create or generate, or to advertise the
+44   ability to create or generate, a work of deceptive audio or visual media,
+45   whether or not for hire, commission, monetary remuneration, or
+46   pecuniary gain. “Solicit” shall also mean to request the creation or
+47   generation of a work of deceptive audio or visual media, whether or
+48   not for monetary remuneration or compensation.
+               [3R] ACS for A3540 CONAWAY, GREENWALD
+                                    4
+
+ 1       “Victim” means a person who suffers personal, physical, or
+ 2   psychological injury or death or incurs loss of or injury to personal or
+ 3   real property as a result of the conduct of another that would constitute
+ 4   a violation of subsections b. or c. of this section. “Victim” also
+ 5   includes the spouse, parent, legal guardian, grandparent, child, sibling,
+ 6   domestic partner, or civil union partner of the decedent in the case of a
+ 7   person’s death.
+ 8       “Video streaming service” means a service that transmits video
+ 9   content over the Internet that is played continuously without
+10   download.
+11       b. A natural person commits a crime of the third degree if,
+12   without license or privilege to do so, the person generates or creates, or
+13   causes to be generated or created, a work of deceptive audio or visual
+14   media 3[with the intent that it be used as part of a plan or course of
+15   conduct to commit] for the purpose of attempting or furthering the
+16   commission of3 any crime or offense, 3or with the knowledge that the
+17   work is to be used by another for such purpose,3 including but not
+18   limited to:
+19       (1) a crime or offense under chapters 14, 16, 20, 21, 28, or 29 of
+20   Title 2C of the New Jersey Statutes;
+21       (2) advertising commercial sex abuse of a minor, pursuant to
+22   subsection b. of section 12 of P.L.2013, c.51 (C.2C:13-10);
+23       (3) endangering the welfare of children, pursuant to N.J.S.2C:24-
+24   4;
+25       (4) threats or improper influence in official and political matters,
+26   pursuant to N.J.S.2C:27-3;
+27       (5) false public alarms, pursuant to N.J.S.2C:33-3;
+28       (6) harassment, pursuant to N.J.S.2C:33-4;
+29       (7) cyber-harassment, pursuant to section 1 of P.L.2013, c.272
+30   (C.2C:33-4.1); or
+31       (8) hazing, pursuant to section 1 of P.L.1980, c.169 (C.2C:40-3).
+         3
+32         [The trier of fact may infer that a work of deceptive audio or
+33   visual media was generated or created without license or privilege to
+34   do so if the work was generated or created using a commercially or
+35   publicly available generative artificial intelligence system in violation
+36   of the terms of service, terms of use, or end user license agreement of
+37   the system.]3
+38       c. (1) A natural person commits a crime of the third degree if,
+39   without license or privilege to do so, the person solicits, discloses, or
+40   uses a work of deceptive audio or visual media 3[as part of a plan or
+41   course of conduct to commit] for the purpose of attempting or
+42   furthering the commission of3 any crime or offense,3or with the
+43   knowledge that the work is to be used by another for such purpose,3
+44   including but not limited to any crime or offense listed in subsection b.
+45   of this section.
+46       (2) 2[A] Except as otherwise provided in subsection g. of this
+47   section, a2 natural person commits a crime of the 3[third] fourth3
+48   degree if, without license or privilege to do so, the person 3knowingly
+                 [3R] ACS for A3540 CONAWAY, GREENWALD
+                                      5
+
+ 1   or recklessly3 discloses a work of deceptive audio or visual media
+     3
+ 2     [that the person knows or reasonably should know was]3 created in
+ 3   violation of subsection b. of this section.
+ 4        d. In addition to any term of imprisonment imposed pursuant to
+ 5   N.J.S.2C:43-6 and notwithstanding the provisions of subsection b. of
+ 6   N.J.S.2C:43-3, a fine of up to $30,000 may be imposed for a violation
+ 7   of this section.
+ 8        e. Notwithstanding the provisions of N.J.S.2C:1-8 or any other
+ 9   provisions of law:
+10        (1) a conviction arising under subsection b. of this section shall
+11   not merge with a conviction under subsection c. of this section, nor
+12   shall a conviction under subsection c. of this section merge with a
+13   conviction under subsection b. of this section; and
+14        (2) a conviction arising under subsection b. or paragraph (1) of
+15   subsection c. of this section shall not merge with a conviction of any
+16   underlying offense, nor shall any conviction for such underlying
+17   offense merge with a conviction under subsection b. of this section.
+18   The court shall impose 2[separate] consecutive2 sentences upon a
+19   conviction under subsection b. or paragraph (1) of subsection c. of this
+20   section and a conviction of any underlying offense.
+21        f. A 1natural1 person who violates the provisions of
+22   P.L. , c. (C.          ) (pending before the Legislature as this bill) shall
+     3      3
+23     also be liable to the victim of the violation, and the victim may bring
+24   a civil action in the Superior Court. The court may award:
+25        (1) actual damages, but not less than liquidated damages
+26   computed at the rate of $1,000 for each 3knowing or reckless3
+27   violation of P.L. , c.       (C.     ) (pending before the Legislature as
+28   this bill);
+29        (2) punitive damages upon proof of willful 3[or reckless]3
+30   disregard of the law;
+31        (3) reasonable attorney’s fees and other litigation costs reasonably
+32   incurred; and
+33        (4) other such preliminary and equitable relief as the court
+34   determines appropriate.
+35        A conviction for a violation of P.L. , c.        (C.       ) (pending
+36   before the Legislature as this bill) shall not be a prerequisite for a civil
+37   action brought pursuant to this subsection. The civil action authorized
+38   by this subsection shall be in addition to, and not in lieu of, any other
+39   civil action, injunctive relief, or other remedy available at law,
+40   including, but not limited to, a civil action for common law
+41   defamation, libel, slander, invasion of privacy, false light,
+42   misappropriation of identity, intrusion of privacy, or public disclosure
+43   of private facts.
+44        g. (1) 2[It shall be deemed a fair use and shall not be a violation
+45   of]2 P.L.    , c.   (C.    ) (pending before the Legislature as this bill)
+     2
+46       [if a work of deceptive audio or visual media1[,] is1 clearly
+47   identified as a work of deceptive audio or visual media 1or, if the
+48   deceptive nature of the work is unknown or unverified, but is clearly
+                 [3R] ACS for A3540 CONAWAY, GREENWALD
+                                      6
+
+ 1   identified as a possible work of deceptive audio or visual media1, is
+ 2   disclosed in connection with] shall not apply to content that
+     3
+ 3       [constitutes2] a reasonable viewer or listener would understand to
+ 4   constitute3 criticism, comment, satire, parody, news reporting,
+ 5   teaching, scholarship, 3[or]3 research 3, or to any content3 2[,
+ 6   pursuant to 17 U.S.C. s.107] that a reasonable viewer or listener
+ 7   would not believe to authentically depict speech or conduct2.
+ 8       (2) P.L. , c. (C.          ) (pending before the Legislature as this
+           1
+ 9   bill) shall not apply to an interactive computer service provider, cloud
+10   services provider, or commercial developer or provider of artificial
+11   intelligence technology 2, where such developer or provider is not
+12   deemed to be a publisher, speaker, or information content provider
+13   pursuant to 47 U.S.C. s.2302, and1 shall not be construed to alter or
+14   negate any rights, obligations, or immunities of an interactive
+15   computer service provider 1or cloud services provider1 pursuant to 47
+16   U.S.C. s.2301[, and shall not apply to a commercial developer or
+17   provider of artificial intelligence technology, provided that to the
+18   extent the provider or developer allows for the public dissemination of
+19   consumer generated media as that term is defined pursuant to
+20   paragraph (14) of 47 U.S.C. s.153, the provider or developer exercises
+21   commercially reasonable efforts to ensure that consumer generated
+22   media does not violate this section].1
+23        (3) P.L. , c. (C.         ) (pending before the Legislature as this
+24   bill) shall not apply to any broadcasting station, cable service, radio
+25   station, 3or3 telecommunications carrier, 3[ or television station,]3 as
+26   those terms are defined pursuant to 47 U.S.C. s.153, or to any
+     3
+27     television station,3 billboard, Internet website, mobile application,
+28   video streaming service, newspaper, magazine, publication, 2[or]2
+29   printed matter 2, or other advertising channel or medium2 through
+30   which an advertisement containing deceptive audio or visual media
+31   appears 2, where the advertising channel or medium’s role in
+32   disclosing the advertisement is limited to the selling of advertising
+33   time or space, or where an advertising channel or medium is prohibited
+34   by federal law from censoring the advertisement regardless of its
+35   content2 1[, when the owner, publisher, or operator of the advertising
+36   medium has no knowledge of the intent, design, or purpose of the
+37   advertiser]1.
+38       (4) This section shall not apply to any broadcasting station,
+39   including a cable or satellite television company, programmer, or
+40   producer, an Internet website, 2video streaming service,2 or a regularly
+41   published newspaper, magazine, or other periodical of general
+42   circulation, including an Internet or electronic publication, that
+43   routinely carries news and commentary of general interest, and that
+44   broadcasts or publishes any deceptive audio or visual media prohibited
+45   by this section 2solely2 for the purpose of disseminating newsworthy
+46   facts; provided that 2if the deceptive nature of the work is known or
+                 [3R] ACS for A3540 CONAWAY, GREENWALD
+                                      7
+
+ 1   verified,2 the broadcast or publication shall clearly contain a
+ 2   disclaimer which is either shown or read aloud that identifies 2the
+ 3   work as a work of2 deceptive audio or visual media 2[and states that
+ 4   the deceptive audio or visual media contains manipulated images or
+ 5   sound]2. 2[1If the deceptive nature of the work is unknown or
+ 6   unverified, the broadcast or publication shall clearly contain a
+ 7   disclaimer which is either shown or read aloud that identifies the work
+ 8   as a possible work of deceptive audio or visual media.1]2
+ 9       (5) It shall not be a violation of this section to disclose any
+10   deceptive audio or visual media to law enforcement officers in
+11   connection with a criminal investigation or prosecution of a violation
+12   of this section1[, or];1 pursuant to a subpoena or court order requiring
+13   the disclosure of a work of deceptive audio or visual media1; 3to a
+14   school administrator, attorney, family member, or other advocate for
+15   purposes of reporting conduct that may constitute a violation of this
+16   section;3 or in furtherance of an investigation concerning fraud,
+17   cybersecurity, identity theft, harassment, or a violation of a
+18   commercial computer network’s contractual terms of service1.
+19
+        3
+20          [2.] 3.3   This act shall take effect immediately.
+

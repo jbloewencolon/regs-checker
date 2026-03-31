@@ -1,0 +1,517 @@
+§ 10-3-1104.9. Insurers’ use of external consumer data and..., CO ST § 10-3-1104.9
+
+
+
+
+  West's Colorado Revised Statutes Annotated
+   Title 10. Insurance
+      Regulation of Insurance Companies
+         Article 3. Regulation of Insurance Companies (Refs & Annos)
+           Part 11. Unfair Competition--Deceptive Practices (Refs & Annos)
+
+                                                      C.R.S.A. § 10-3-1104.9
+
+        § 10-3-1104.9. Insurers’ use of external consumer data and information sources, algorithms, and predictive
+      models--unfair discrimination prohibited--rules--stakeholder process required--investigations--definitions--repeal
+
+                                                   Effective: September 7, 2021
+                                                            Currentness
+
+
+(1) In addition to the methods and practices prohibited pursuant to section 10-3-1104 (1)(f), an insurer shall not, with regard
+to any insurance practice:
+
+
+(a) Unfairly discriminate based on race, color, national or ethnic origin, religion, sex, sexual orientation, disability, gender
+identity, or gender expression; or
+
+
+(b) Pursuant to rules adopted by the commissioner, use any external consumer data and information sources, as well as any
+algorithms or predictive models that use external consumer data and information sources, in a way that unfairly discriminates
+based on race, color, national or ethnic origin, religion, sex, sexual orientation, disability, gender identity, or gender expression.
+
+
+(2)(a) The commissioner shall adopt rules for the implementation of this section.
+
+
+(b) The commissioner shall engage in a stakeholder process prior to the adoption of rules for any type of insurance that includes
+carriers, producers, consumer representatives, and other interested parties. The commissioner shall hold stakeholder meetings
+for stakeholders of different types of insurance to ensure sufficient opportunity to consider factors and processes relevant to
+each type of insurance. The commissioner shall provide notice of stakeholder meetings on the division website, and stakeholder
+meetings shall be open to the public.
+
+
+(3)(a) After the stakeholder process described in subsection (2) of this section, the commissioner shall adopt rules for specific
+types of insurance, by insurance practice, which rules establish means by which an insurer may demonstrate, to the extent
+practicable, that it has tested whether its use of external consumer data and information sources, as well as algorithms or
+predictive models using external consumer data and information sources, unfairly discriminates based on race, color, national
+or ethnic origin, religion, sex, sexual orientation, disability, gender identity, or gender expression. The rules shall not become
+effective until January 1, 2023, at the earliest, for any type of insurance, and the commissioner shall consider solvency impacts,
+if any, to insurers in adopting the rules.
+
+
+(b) Rules adopted pursuant to this section must require each insurer to:
+
+
+
+
+                © 2024 Thomson Reuters. No claim to original U.S. Government Works.                                                1
+§ 10-3-1104.9. Insurers’ use of external consumer data and..., CO ST § 10-3-1104.9
+
+
+
+
+(I) Provide information to the commissioner concerning the external consumer data and information sources used by the insurer
+in the development and implementation of algorithms and predictive models for a particular type of insurance and insurance
+practice;
+
+
+(II) Provide an explanation of the manner in which the insurer uses external consumer data and information sources, as well
+as algorithms and predictive models using external consumer data and information sources, for the particular type of insurance
+and insurance practice;
+
+
+(III) Establish and maintain a risk management framework or similar processes or procedures that are reasonably designed to
+determine, to the extent practicable, whether the insurer’s use of external consumer data and information sources, as well as
+algorithms and predictive models using external consumer data and information sources, unfairly discriminates based on race,
+color, national or ethnic origin, religion, sex, sexual orientation, disability, gender identity, or gender expression;
+
+
+(IV) Provide an assessment of the results of the risk management framework or similar processes or procedures and actions
+taken to minimize the risk of unfair discrimination, including ongoing monitoring; and
+
+
+(V) Provide an attestation by one or more officers that the insurer has implemented the risk management framework or similar
+processes or procedures appropriately on a continuous basis.
+
+
+(c) The rules adopted by the commissioner pursuant to this section must include provisions establishing:
+
+
+(I) A reasonable period of time for insurers to remedy any unfairly discriminatory impact in an algorithm or predictive model;
+and
+
+
+(II) The ability of insurers to use external consumer data and information sources, as well as algorithms or predictive models
+using external consumer data and information sources, that have been previously assessed by the division and found not to be
+unfairly discriminatory.
+
+
+(d) Documents, materials, and other information in the possession or control of the division that are obtained by, created by,
+or disclosed to the commissioner or any other person pursuant to this section or any rules adopted pursuant to this section are
+recognized as proprietary and containing trade secrets. All such documents, materials, and other information are confidential
+and privileged; are not subject to disclosure under the “Colorado Open Records Act”, part 2 of article 72 of title 24 1 , or other
+open records, freedom of information, sunshine, or similar law of this state; are not subject to subpoena; and are not subject to
+discovery or admissible in evidence in any private civil action. However, the commissioner may use the documents, materials,
+or other information in the furtherance of any regulatory or legal action brought as part of the commissioner’s official duties.
+The commissioner shall not otherwise make the documents, materials, or other information public without the prior written
+consent of the insurer from which the documents, materials, or other information was obtained. The commissioner may make
+data publicly available in an aggregated or de-identified format in a manner deemed appropriate by the commissioner.
+
+
+(4) Pursuant to section 10-3-1106, the commissioner may examine and investigate an insurer’s use of an external consumer data
+and information source, algorithm, or predictive model in any insurance practice. Insurers shall cooperate with the commissioner
+and the division in any examination or investigation under this section.
+
+
+               © 2024 Thomson Reuters. No claim to original U.S. Government Works.                                             2
+§ 10-3-1104.9. Insurers’ use of external consumer data and..., CO ST § 10-3-1104.9
+
+
+
+
+(5)(a) In the report submitted by the department of regulatory agencies to the legislative committees of reference during the
+first two weeks of each regular legislative session, pursuant to part 2 of article 7 of title 2, the division shall include:
+
+
+(I) Information concerning any rules adopted pursuant to this section;
+
+
+(II) Information concerning any changes in insurance rates that have resulted from the prohibitions described in subsection (1)
+of this section;
+
+
+(III) A summary of the stakeholder engagement process described in subsection (2)(b) of this section; and
+
+
+(IV) A description of data sources, if any, discussed during the stakeholder engagement process, which data sources insurers
+may use to comply with this section.
+
+
+(b) This subsection (5) is repealed, effective July 1, 2025.
+
+
+(6) Notwithstanding any provision of this section to the contrary, this section does not apply to:
+
+
+(a) Title insurance, as defined in section 10-11-102(8);
+
+
+(b) Bonds executed by qualified surety companies pursuant to part 3 of article 4 of this title 10; or
+
+
+(c) Insurers issuing commercial insurance policies; except that this section does apply to insurers that issue business owners’
+policies or commercial general liability policies, which business owners’ policies or commercial general liability policies have
+annual premiums of ten thousand dollars or less.
+
+
+(7) Nothing in this section:
+
+
+(a) Requires an insurer to collect from an applicant or policyholder the race, color, national or ethnic origin, religion, sex, sexual
+orientation, disability, gender identity, or gender expression of an individual; or
+
+
+(b) May be construed to:
+
+
+(I) Prohibit the use of, or require life, annuity, long-term care, or disability insurers to test, medical, family history, occupational,
+disability, or behavioral information related to a specific individual, which information, based on actuarially sound principles,
+has a direct relationship to mortality, morbidity, or longevity risk unless such information is otherwise included in the testing
+of an algorithm or predictive model that also uses external consumer data and information sources;
+
+
+
+
+                © 2024 Thomson Reuters. No claim to original U.S. Government Works.                                                   3
+§ 10-3-1104.9. Insurers’ use of external consumer data and..., CO ST § 10-3-1104.9
+
+
+
+
+(II) Prohibit the use of, or require life, annuity, long-term care, or disability insurers to test, traditional underwriting factors being
+used for the exclusive purpose of determining insurable interest or eligibility for coverage unless such factors are otherwise
+included in the testing of an algorithm or predictive model that also uses external consumer data and information sources;
+
+
+(III) Amend, modify, or supersede section 10-3-1104(1)(f)(III) or (1)(f)(IV); or
+
+
+(IV) Prohibit the use of or require the testing of longstanding and well-established common industry practices in settling claims
+or traditional underwriting practices unless such practices or factors are otherwise included in the testing of an algorithm or
+predictive model that also uses external consumer data and information sources.
+
+
+(8) As used in this section, unless the context otherwise requires:
+
+
+(a) “Algorithm” means a computational or machine learning process that informs human decision making in insurance practices.
+
+
+(b)(I) “External consumer data and information source” means a data or an information source that is used by an insurer to
+supplement traditional underwriting or other insurance practices or to establish lifestyle indicators that are used in insurance
+practices. “External consumer data and information source” includes credit scores, social media habits, locations, purchasing
+habits, home ownership, educational attainment, occupation, licensures, civil judgments, and court records.
+
+
+(II) The commissioner may promulgate rules to further define “external consumer data and information source” for particular
+lines of insurance and insurance practices.
+
+
+(c) “Insurance practice” means marketing, underwriting, pricing, utilization management, reimbursement methodologies, and
+claims management in the transaction of insurance.
+
+
+(d) “Predictive model” means a process of using mathematical and computational methods that examine current and historical
+data sets for underlying patterns and calculate the probability of an outcome.
+
+
+(e) “Unfairly discriminate” and “unfair discrimination” include the use of one or more external consumer data and information
+sources, as well as algorithms or predictive models using external consumer data and information sources, that have a correlation
+to race, color, national or ethnic origin, religion, sex, sexual orientation, disability, gender identity, or gender expression, and that
+use results in a disproportionately negative outcome for such classification or classifications, which negative outcome exceeds
+the reasonable correlation to the underlying insurance practice, including losses and costs for underwriting.
+
+
+Credits
+Added by Laws 2021, Ch. 436 (S.B. 21-169), § 2, eff. Sept. 7, 2021.
+
+
+
+
+                © 2024 Thomson Reuters. No claim to original U.S. Government Works.                                                    4
+§ 10-3-1104.9. Insurers’ use of external consumer data and..., CO ST § 10-3-1104.9
+
+
+
+
+                                                      Footnotes
+
+
+1      C.R.S. § 24-72-200.1 et seq.
+
+C. R. S. A. § 10-3-1104.9, CO ST § 10-3-1104.9
+Current through the Second Regular and Extraordinary Sessions, 74th General Assembly (2024). Some statute sections may
+be more current. See credits for details.
+
+End of Document                                               © 2024 Thomson Reuters. No claim to original U.S. Government Works.
+
+
+
+
+              © 2024 Thomson Reuters. No claim to original U.S. Government Works.                                              5
+DEPARTMENT OF REGULATORY AGENCIES
+
+Division of Insurance
+
+UNFAIR DISCRIMINATION
+
+3 CCR 702-10
+[Editor’s Notes follow the text of the rules at the end of this CCR Document.]
+
+________________________________________________________________________
+
+Regulation 10-1-1   GOVERNANCE AND RISK MANAGEMENT FRAMEWORK REQUIREMENTS
+       FOR LIFE INSURERS’ USE OF EXTERNAL CONSUMER DATA AND INFORMATION
+       SOURCES, ALGORITHMS, AND PREDICTIVE MODELS
+
+Section 1           Authority
+Section 2           Scope and Purpose
+Section 3           Applicability
+Section 4           Definitions
+Section 5           Governance and Risk Management Framework
+Section 6           Reporting Requirements
+Section 7           Confidentiality
+Section 8           Severability
+Section 9           Enforcement
+Section 10          Effective Date
+Section 11          History
+
+Section 1           Authority
+
+This regulation is promulgated and adopted by the Commissioner of Insurance under the authority of §§
+10-1-109 and 10-3-1104.9, C.R.S.
+
+Section 2           Scope and Purpose
+
+This regulation establishes the governance and risk management requirements for life insurers that use
+external consumer data and information sources (ECDIS), as well as algorithms and predictive models
+that use ECDIS.
+
+Section 3           Applicability
+
+This regulation shall apply to all life insurers authorized to do business in the state of Colorado.
+
+Section 4           Definitions
+
+A.        “Algorithm” shall have the same meaning as set forth in § 10-3-1104.9(8)(a), C.R.S.
+
+B.        “Division” means, for the purposes of this regulation, the Colorado Division of Insurance.
+
+
+
+
+                                                                                                         1
+CODE OF COLORADO REGULATIONS                                                                    3 CCR 702-10
+Division of Insurance
+
+
+C.     “External Consumer Data and Information Source” or “ECDIS” means, for the purposes of this
+       regulation, a data or an information source that is used by a life insurer to supplement or supplant
+       traditional underwriting factors or other insurance practices or to establish lifestyle indicators that
+       are used in insurance practices. This term includes credit scores, social media habits, locations,
+       purchasing habits, home ownership, educational attainment, licensures, civil judgments, court
+       records, occupation that does not have a direct relationship to mortality, morbidity or longevity
+                risk, consumer-generated Internet of Things data, biometric data, and any insurance risk
+       scores derived by the insurer or third-party from the above listed or similar data and/or
+       information sources.
+
+D.     “Insurance Practice” shall have the same meaning as set forth in § 10-3-1104.9(8)(c), C.R.S.
+
+E.     “Internet of Things” means, for the purposes of this regulation, networks of physical objects
+       embedded with sensors, software, and other technologies for the purposes of collecting,
+       transmitting, and exchanging data over the Internet. This definition does not apply to devices that
+       require direct human intervention for data collection and exchange.
+
+F.     “Life Insurer” or “insurer” means, for the purpose of this regulation, an entity authorized and
+       licensed by the commissioner of insurance to sell life insurance products in the state of Colorado.
+
+G.     “Predictive Model” shall have the same meaning as set forth in § 10-3-1104.9, C.R.S.
+
+H.     “Unfairly Discriminate” and “Unfair Discrimination” shall have the same meaning as set forth in §
+       10-3-1104.9(8)(e), C.R.S.
+
+Section 5      Governance and Risk Management Framework
+
+A.     Life insurers that use ECDIS, as well as algorithms and predictive models that use ECDIS in any
+       insurance practice, must establish a risk-based governance and risk management framework that
+                facilitates and supports policies, procedures, systems, and controls designed to
+       determine whether the use of such ECDIS, algorithms, and predictive models potentially result in
+       unfair discrimination with respect to race and remediate unfair discrimination, if detected. The
+       governance and risk management framework must include the following components:
+
+       1.      Documented governing principles outlining the values and objectives of the insurer that
+               provide the guidance necessary for ensuring that:
+
+               a.       ECDIS, and algorithms and predictive models that use ECDIS are designed,
+                        developed, used, and monitored in a manner that achieves effective oversight
+                        and management; and
+
+               b.       The use of ECDIS, and the algorithms and predictive models that use ECDIS are
+                        reasonably designed to prevent unfair discrimination.
+
+       2.      The governance structure and risk management framework must be overseen by the
+               board of directors or a committee of the board.
+
+       3.      Senior management responsibility and accountability for setting and monitoring the
+               overall strategy and providing direction governing the use of ECDIS, and algorithms and
+               predictive models that use ECDIS. This includes establishing clear lines of
+               communication and delegated decision-making authority, and regular reporting to senior
+               management on the performance and potential risks of using ECDIS, and the algorithms
+               and predictive models that use ECDIS.
+
+
+
+
+                                                                                                             2
+CODE OF COLORADO REGULATIONS                                                             3 CCR 702-10
+Division of Insurance
+
+
+      4.    Documented cross-functional ECDIS, algorithm, and predictive model governance group
+            composed of representatives from key functional areas including legal, compliance, risk
+            management, product development, underwriting, actuarial, data science, marketing, and
+            customer service, as applicable.
+
+      5.    Documented policies, processes, and procedures, including assigned roles and
+            responsibilities, for the design, development, testing, deployment, use, and ongoing
+            monitoring of ECDIS and algorithms and predictive models that use ECDIS, and
+            processes to ensure that they are documented, tested, and validated. Such policies and
+            processes must include an ongoing internal supervision and training program for relevant
+            personnel on the responsible and compliant use of ECDIS, and the algorithms and
+            predictive models that use ECDIS.
+
+      6.    Documented processes and protocols in place for addressing consumer complaints and
+            inquiries about the use of ECDIS, as well as algorithms, and predictive models that use
+            ECDIS. Such policies and protocols must provide consumers with information necessary
+            to take meaningful action in the event of an adverse decision made based on the use of
+            ECDIS, and the algorithms and predictive models that use ECDIS.
+
+      7.    Documented rubric for assessing and prioritizing risks associated with the deployment of
+            ECDIS, as well as algorithms and predictive models that use ECDIS, in insurance in
+            practices with reasonable consideration given to insurance practices’ consumer
+            impact(s).
+
+      8.    Documented up-to-date inventory, including version control, of all utilized ECDIS, as well
+            as algorithms and predictive models that use ECDIS, including a detailed description of
+            each ECDIS, algorithm, and predictive model, their clearly stated purpose(s), and the
+            outputs generated through their use.
+
+      9.    Documented explanation of any material change(s) in the inventory of all ECDIS, as well
+            as all algorithms and predictive models that use ECDIS, and the rationale for the
+            change(s).
+
+      10.   Documented description of testing conducted to detect unfair discrimination in insurance
+            practices resulting from the use of ECDIS, as well as algorithms and predictive models
+            that use ECDIS, including the methodology, assumptions, results, and steps taken to
+            address unfairly discriminatory outcomes.
+
+      11.   Documented description of ongoing monitoring regarding the performance of algorithms
+            and predictive models that use ECDIS including accounting for model drift.
+
+      12.   Documented description of the process used for selecting external resources including
+            third-party vendors that supply ECDIS, algorithms, and/or predictive models that use
+            ECDIS including the intended use of the ECDIS, algorithm(s), and/or predictive model(s).
+
+      13.   Documented comprehensive annual reviews of the governance structure and risk
+            management framework and updates to the required documentation to ensure its
+            continued accuracy and relevance.
+
+
+
+
+                                                                                                       3
+CODE OF COLORADO REGULATIONS                                                                     3 CCR 702-10
+Division of Insurance
+
+
+B.      If an insurer uses third-party vendors and other external resources with respect to ECDIS, as well
+        as algorithms and predictive models that use ECDIS, the insurer remains responsible for ensuring
+        all requirements in Section 5.A. are met, including the production of any documents or information
+        that the Division deems necessary to ensure compliance with regulatory requirements. The
+        insurer must establish and document a process for the selection and oversight of all external
+        resources and third-party vendors as part of the governance structure and risk management
+        framework.
+
+        Insurers may satisfy requests for documentation and information by third-party vendors providing
+        the requested documents or information directly to the Division on behalf of the insurer
+
+C.      All components of the governance structure and risk management framework required by Section
+        5 must be available upon request by the Division pursuant to § 10-3-1104.9(4), C.R.S. on
+        December 1, 2024, and annually thereafter.
+
+Section 6        Reporting Requirements
+
+A.      Insurers that are using ECDIS, as well as algorithms and/or predictive models that use ECDIS, as
+        of the effective date of this regulation must submit to the Division a narrative report summarizing
+        the progress made towards complying with the requirements specified in Section 5 including
+        identifying the areas still under development, any difficulties encountered, and expected
+        completion date. This report is due June 1, 2024.
+
+B.      Insurers that are using ECDIS, as well as algorithms and/or predictive models that use ECDIS, as
+        of the effective date of this regulation must submit to the Division on December 1, 2024 and
+        annually thereafter a narrative report summarizing compliance with the requirements in Section 5
+        and the title and qualifications of each individual responsible for ensuring compliance along with
+        the specific requirement(s) from Section 5 for which that individual is responsible. The names of
+        each individual may also be provided but are unnecessary to comply with this requirement. This
+        report must be signed by an officer attesting to compliance with this regulation. In the event an
+        insurer is unable to attest to compliance with this regulation, the insurer must submit to the
+        Division a corrective action plan. This report shall be no more than ten (10) pages including an
+        executive summary and address Sections 5.A.1. through 5.A.13.
+
+C.      Insurers that do not use ECDIS or algorithms and/or predictive models that use ECDIS are
+        exempt from the requirements described in Section 5 and must submit to the Division within one
+        month of the effective date of this regulation and on December 1 annually thereafter an
+        attestation signed by an officer indicating that the insurer does not use ECDIS or algorithms
+        and/or predictive models that use ECDIS.
+
+D.      Insurers that do not use ECDIS or algorithms and/or predictive models that use ECDIS as of the
+        effective date of this regulation but subsequently plan to use ECDIS or algorithms and/or
+        predictive models that use ECDIS must submit to the Division the report specified in Section 6.B.
+        prior to the use of ECDIS or algorithms and/or predictive models that use ECDIS.
+
+Section 7        Confidentiality
+
+Any documents or materials disclosed to the Division as a result of this regulation shall be subject to § 10-
+3-1104.9(3)(d), C.R.S.
+
+Section 8        Severability
+
+If any provision of this regulation or the application of it to any person or circumstance is for any reason
+held to be invalid, the remainder of this regulation shall not be affected.
+
+
+
+
+                                                                                                               4
+CODE OF COLORADO REGULATIONS                                                                  3 CCR 702-10
+Division of Insurance
+
+
+Section 9        Enforcement
+
+Noncompliance with this regulation may result in the imposition of any sanctions made available in the
+Colorado statutes pertaining to the business of insurance, or other laws, which include the imposition of
+civil penalties, issuance of cease and desist orders, and/or suspensions or revocations of license, subject
+to the requirements of due process.
+
+Section 10       Effective Date
+
+This regulation shall become effective on November 14, 2023.
+
+Section 11       History
+
+New regulation effective November 14, 2023.
+
+________________________________________________________________________
+
+Editor’s Notes
+
+History
+New rule eff. 11/14/2023.
+
+
+
+
+                                                                                                          5
+

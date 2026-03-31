@@ -1,0 +1,209 @@
+ - 2025
+69th Legislature 2025                                                                                                    HB 178
+
+
+
+
+       AN ACT LIMITING THE USE OF ARTIFICIAL INTELLIGENCE SYSTEMS BY STATE AND LOCAL
+
+       GOVERNMENT; PROHIBITING CERTAIN USES OF ARTIFICIAL INTELLIGENCE SYSTEMS; REQUIRING
+
+       DISCLOSURE OF CERTAIN USES OF ARTIFICIAL INTELLIGENCE SYSTEMS; REQUIRING CERTAIN
+
+       DECISIONS OR RECOMMENDATIONS TO BE REVIEWED BY A HUMAN IN AN APPROPRIATE
+
+       RESPONSIBLE POSITION; AND PROVIDING DEFINITIONS.
+
+
+
+       BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF MONTANA:
+
+
+
+               Section 1.     Definitions. As used in [sections 1 through 4], unless the context clearly indicates
+
+       otherwise, the following definitions apply:
+
+               (1)      "Artificial intelligence system" means a machine learning-based system that, for any explicit or
+
+       implicit objective, infers from the inputs the system receives how to generate outputs, including but not limited
+
+       to content, decisions, predictions, and recommendations that can influence physical or virtual environments.
+
+               (2)      "Cognitive behavioral manipulation" means the use of artificial intelligence systems to influence
+
+       or alter an individual's or group's thoughts, emotions, decisions, or actions through deceptive, coercive, or
+
+       subliminal means, or by exploiting psychological vulnerabilities, without the informed consent of the individual or
+
+       group being influenced.
+
+               (3)      "Government entity" has the same meaning as provided in 46-5-110.
+
+               (4)      "Human in an appropriate responsible position" means a human person who is a state officer or
+
+       a public employee as those terms are defined in 2-2-102 who has reasonable training in the uses and
+
+       limitations of artificial intelligence systems and is in a position to modify or reject the particular use of an artificial
+
+       intelligence system.
+
+               (5)      "Peace officer" has the same meaning as provided in 45-2-101.
+
+               (6)      "State officer" has the same meaning as provided in 2-2-102.
+
+                                                                  -1-                      Authorized Print Version – HB 178
+
+                                                                                                              ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                  HB 178
+
+
+
+
+               Section 2.     Prohibited use of artificial intelligence by government entity. A government entity or
+
+       state officer may not use an artificial intelligence system:
+
+               (1)       for the cognitive behavioral manipulation of a person or group;
+
+               (2)       to classify a person or group based on behavior, socioeconomic status, or personal
+
+       characteristics resulting in unlawful discrimination or a disparate impact on a person or group based on an
+
+       actual or perceived differentiating characteristic;
+
+               (3)       for a malicious purpose; or
+
+               (4)       for surveillance of public spaces, except:
+
+               (a)       to locate a missing, endangered, or wanted person; or
+
+               (b)       in conformity with Title 44, chapter 15, part 1, regarding continuous facial surveillance.
+
+
+
+               Section 3.     Required disclosures by government entities -- exemption. (1) Except as provided in
+
+       subsection (2):
+
+               (a)       if a government entity or state officer publishes material produced by an artificial intelligence
+
+       system that is not reviewed by a human in an appropriate responsible position, the material must be
+
+       accompanied by a disclosure that the material was produced by an artificial intelligence system; and
+
+               (b)       if a government entity or state officer has an interface with the public that uses an artificial
+
+       intelligence system, the use of the artificial intelligence system in the interface must be disclosed.
+
+               (2)       A peace officer acting in the peace officer's official capacity to investigate crimes is exempt
+
+       from a disclosure requirement in subsection (1) when the disclosure may result in:
+
+               (a)       endangerment of the life or physical safety of an individual;
+
+               (b)       flight from prosecution;
+
+               (c)       destruction or tampering with evidence;
+
+               (d)       intimidation of potential witnesses; or
+
+               (e)       otherwise seriously jeopardizing an investigation or unduly delaying a trial.
+
+
+
+               Section 4.     Required review. If an artificial intelligence system produces a recommendation or
+
+
+                                                                   -2-                   Authorized Print Version – HB 178
+
+                                                                                                           ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                    HB 178
+
+
+       decision for a government entity or state officer that could impact the rights, duties, or privileges and immunities
+
+       of a person, the recommendation or decision must be reviewed and is subject to rejection or modification by a
+
+       human in an appropriate responsible position.
+
+
+
+               Section 5.     Codification instruction. [Sections 1 through 4] are intended to be codified as an integral
+
+       part of Title 2, and the provisions of Title 2 apply to [sections 1 through 4].
+
+
+
+               Section 6.     Severability. If a part of [this act] is invalid, all valid parts that are severable from the
+
+       invalid part remain in effect. If a part of [this act] is invalid in one or more of its applications, the part remains in
+
+       effect in all valid applications that are severable from the invalid applications.
+
+                                                                - END -
+
+
+
+
+                                                                  -3-                       Authorized Print Version – HB 178
+
+                                                                                                             ENROLLED BILL
+I hereby certify that the within bill,
+
+HB 178, originated in the House.
+
+
+
+
+___________________________________________
+
+Chief Clerk of the House
+
+
+
+
+___________________________________________
+
+Speaker of the House
+
+
+
+Signed this _______________________________day
+
+of____________________________________, 2025.
+
+
+
+
+___________________________________________
+
+President of the Senate
+
+
+
+Signed this _______________________________day
+of____________________________________, 2025.
+                                    HOUSE BILL NO. 178
+
+
+
+  INTRODUCED BY B. MITCHELL, D. ZOLNIKOV, C. HINKLE, G. LAMMERS, J. GILLETTE, T. FALK, K.
+
+                                         BOGNER
+
+
+
+
+AN ACT LIMITING THE USE OF ARTIFICIAL INTELLIGENCE SYSTEMS BY STATE AND LOCAL
+
+GOVERNMENT; PROHIBITING CERTAIN USES OF ARTIFICIAL INTELLIGENCE SYSTEMS; REQUIRING
+
+DISCLOSURE OF CERTAIN USES OF ARTIFICIAL INTELLIGENCE SYSTEMS; REQUIRING CERTAIN
+
+DECISIONS OR RECOMMENDATIONS TO BE REVIEWED BY A HUMAN IN AN APPROPRIATE
+
+RESPONSIBLE POSITION; AND PROVIDING DEFINITIONS.
+

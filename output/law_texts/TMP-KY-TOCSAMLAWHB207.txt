@@ -1,0 +1,709 @@
+     UNOFFICIAL COPY                                                                 24 RS HB 207/EN
+
+
+
+ 1           AN ACT relating to crimes and punishments.
+
+ 2   Be it enacted by the General Assembly of the Commonwealth of Kentucky:
+
+ 3           Section 1. KRS 17.500 is amended to read as follows:
+
+ 4   As used in KRS 17.500 to 17.580:
+
+ 5   (1)     "Approved provider" means a mental health professional licensed or certified in
+
+ 6           Kentucky whose scope of practice includes providing mental health treatment
+
+ 7           services and who is approved by the Sex Offender Risk Assessment Advisory
+
+ 8           Board, under administrative regulations promulgated by the board, to provide
+
+ 9           comprehensive sex offender presentence evaluations or treatment to adults and
+
+10           youthful offenders, as defined in KRS 600.020;
+
+11   (2)     "Cabinet" means the Justice and Public Safety Cabinet;
+
+12   (3)     (a)     Except as provided in paragraph (b) of this subsection, "criminal offense
+
+13                   against a victim who is a minor" means any of the following offenses if the
+
+14                   victim is under the age of eighteen (18) at the time of the commission of the
+
+15                   offense:
+
+16                   1.      Kidnapping, as set forth in KRS 509.040, except by a parent;
+
+17                   2.      Unlawful imprisonment, as set forth in KRS 509.020, except by a
+
+18                           parent;
+
+19                   3.      Sex crime;
+
+20                   4.      Promoting a sexual performance of a minor, as set forth in KRS
+
+21                           531.320;
+
+22                   5.      Human trafficking involving commercial sexual activity, as set forth in
+
+23                           KRS 529.100;
+
+24                   6.      Promoting human trafficking involving commercial sexual activity, as
+
+25                           set forth in KRS 529.110;
+26                   7.      Promoting prostitution, as set forth in KRS 529.040, when the defendant
+
+27                           advances or profits from the prostitution of a person under the age of
+
+                                                    Page 1 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                             Engrossed
+     UNOFFICIAL COPY                                                                   24 RS HB 207/EN
+
+
+
+ 1                           eighteen (18);
+
+ 2                   8.      Use of a minor in a sexual performance, as set forth in KRS 531.310;
+
+ 3                   9.      Sexual abuse, as set forth in KRS 510.120 and 510.130;
+
+ 4                   10.     Unlawful transaction with a minor in the first degree, as set forth in KRS
+
+ 5                           530.064(1)(a);
+
+ 6                   11.     Any offense involving a minor or depictions of a minor, as set forth in
+
+ 7                           KRS Chapter 531;
+
+ 8                   12.     Any attempt to commit any of the offenses described in subparagraphs
+
+ 9                           1. to 11. of this paragraph;
+
+10                   13.     Solicitation to commit any of the offenses described in subparagraphs 1.
+
+11                           to 11. of this paragraph; or
+
+12                   14.     Any offense from another state or territory, any federal offense, or any
+
+13                           offense subject to a court martial of the United States Armed Forces,
+
+14                           which is similar to any of the offenses described in subparagraphs 1. to
+
+15                           13. of this paragraph.
+
+16           (b)     Conduct which is criminal only because of the age of the victim shall not be
+
+17                   considered a criminal offense against a victim who is a minor if the
+
+18                   perpetrator was under the age of eighteen (18) at the time of the commission
+
+19                   of the offense;
+
+20   (4)     "Law enforcement agency" means any lawfully organized investigative agency,
+
+21           sheriff's office, police unit, or police force of federal, state, county, urban-county
+
+22           government, charter county, city, consolidated local government, or a combination
+
+23           of these, responsible for the detection of crime and the enforcement of the general
+
+24           criminal federal or state laws;
+
+25   (5)     "Registrant" means:
+26           (a)     Any person eighteen (18) years of age or older at the time of the offense or
+
+27                   any youthful offender, as defined in KRS 600.020, who has committed:
+
+                                                      Page 2 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                               Engrossed
+     UNOFFICIAL COPY                                                                    24 RS HB 207/EN
+
+
+
+ 1                   1.      A sex crime; or
+
+ 2                   2.      A criminal offense against a victim who is a minor; or
+
+ 3           (b)     Any person required to register under KRS 17.510; or
+
+ 4           (c)     Any sexually violent predator; or
+
+ 5           (d)     Any person whose sexual offense has been diverted pursuant to KRS 533.250,
+
+ 6                   until the diversionary period is successfully completed;
+
+ 7   (6)     "Registrant information" means the name, including any lawful name change
+
+ 8           together with the previous name, Social Security number, age, race, sex, date of
+
+ 9           birth, height, weight, hair and eye color, fingerprints, palm prints, DNA sample, a
+
+10           photograph, aliases used, residence, motor vehicle operator's license number as well
+
+11           as any other government-issued identification card numbers, if any, a brief
+
+12           description of the crime or crimes committed, and other information the cabinet
+
+13           determines, by administrative regulation, may be useful in the identification of
+
+14           registrants;
+
+15   (7)     "Residence" means any place where a person sleeps. For the purposes of this
+
+16           statute, a registrant may have more than one (1) residence. A registrant is required
+
+17           to register each residence address;
+
+18   (8)     "Sex crime" means:
+
+19           (a)     A felony offense defined in KRS Chapter 510, KRS 529.100 or 529.110
+
+20                   involving commercial sexual activity, 530.020, 530.064(1)(a), 531.310,
+
+21                   531.320, [or ]531.335, or Section 4, 5, 6, 7, or 11 of this Act;
+
+22           (b)     A felony attempt to commit a felony offense specified in paragraph (a) of this
+
+23                   subsection; or
+
+24           (c)     A federal felony offense, a felony offense subject to a court-martial of the
+
+25                   United States Armed Forces, or a felony offense from another state or a
+26                   territory where the felony offense is similar to a felony offense specified in
+
+27                   paragraph (a) of this subsection;
+
+                                                    Page 3 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                                Engrossed
+     UNOFFICIAL COPY                                                               24 RS HB 207/EN
+
+
+
+ 1   (9)     "Sexual offender" means any person convicted of, pleading guilty to, or entering an
+
+ 2           Alford plea to a sex crime as defined in this section, as of the date the verdict is
+
+ 3           entered by the court;
+
+ 4   (10) "Sexually violent predator" means any person who has been subjected to
+
+ 5           involuntary civil commitment as a sexually violent predator, or a similar
+
+ 6           designation, under a state, territory, or federal statutory scheme;
+
+ 7   (11) "The board" means the Sex Offender Risk Assessment Advisory Board created
+
+ 8           under KRS 17.554;
+
+ 9   (12) "Victim" has the same meaning as in KRS 421.500;
+
+10   (13) "DNA sample" or "deoxyribonucleic acid sample" means a blood or swab specimen
+
+11           from a person, as prescribed by administrative regulation, that is required to provide
+
+12           a DNA sample pursuant to KRS 17.170 or 17.510, that shall be submitted to the
+
+13           Department of Kentucky State Police forensic laboratory for law enforcement
+
+14           identification purposes and inclusion in law enforcement identification databases;
+
+15           and
+
+16   (14) "Authorized personnel" means an agent of state government who is properly trained
+
+17           in DNA sample collection pursuant to administrative regulation.
+
+18           Section 2. KRS 531.010 is amended to read as follows:
+
+19   As used in this chapter:
+
+20   (1)     "Child sex doll" means an anatomically correct or anatomically precise doll,
+
+21           mannequin, or robot that may consist of an entire body, pelvis, or any other body
+
+22           part, with features of, or with features that resemble, those of a minor and
+
+23           intended for use in sexual acts;
+
+24   (2)     "Computer" means electronic, magnetic, optical, electrochemical, or other high-
+
+25           speed data processing device performing logical, arithmetic, or storage functions,
+26           including but not limited to personal computers, laptops, computer software,
+
+27           computer servers, processors, coprocessors, memory devices, storage devices, and
+
+                                                    Page 4 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                           Engrossed
+     UNOFFICIAL COPY                                                                24 RS HB 207/EN
+
+
+
+ 1           input and output devices;
+
+ 2   (3)     "Computer-generated image" means any visual depiction, including any
+
+ 3           photograph, film, video, or picture, where the depiction has been created,
+
+ 4           adapted, or modified by a computer to appear to be an identifiable person;
+
+ 5   (4)     "Distribute" means to transfer possession of, whether with or without
+
+ 6           consideration;[.]
+
+ 7   (5)     "Identifiable person" means a person who is recognizable by the person's face,
+
+ 8           likeness, or other distinguishing characteristic;
+
+ 9   (6)[(2)]        "Matter" means any:
+
+10           (a)     Book, magazine, newspaper, or other printed or written material;[ or any]
+
+11           (b)     Picture, drawing, photograph, motion picture, live image transmitted over the
+
+12                   internet or other electronic network,[ or] other pictorial representation, or
+
+13                   computer-generated image;[ or]
+
+14           (c)     [any ]Statue, child sex doll, or other figure; or[, or any]
+
+15           (d)     Recording, transcription, or mechanical, chemical, or electrical reproduction,
+
+16                   or any other articles, equipment, machines, or materials;[.]
+
+17   (7)[(3)]        "Obscene" means:
+
+18           (a)     To the average person, applying contemporary community standards, the
+
+19                   predominant appeal of the matter, taken as a whole, is to prurient interest in
+
+20                   sexual conduct;[ and]
+
+21           (b)     The matter depicts or describes the sexual conduct in a patently offensive
+
+22                   way; and
+
+23           (c)     The matter, taken as a whole, lacks serious literary, artistic, political, or
+
+24                   scientific value;[.]
+
+25   (8)[(4)]        "Private erotic matter" means an obscene visual image, including a
+26           photograph, film, video recording, computer-generated image, or digital
+
+27           reproduction, of an identifiable person, depicting sexual conduct or the exposure of
+
+                                                    Page 5 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                            Engrossed
+     UNOFFICIAL COPY                                                                   24 RS HB 207/EN
+
+
+
+ 1           uncovered human genitals, buttocks, or nipple of the female breast. A person may
+
+ 2           be identifiable from the image itself or from information distributed in connection
+
+ 3           with the visual image; and[.]
+
+ 4   (9)[(5)]        "Sexual conduct" means acts of masturbation, homosexuality, lesbianism,
+
+ 5           bestiality, sexual intercourse, or deviate[deviant] sexual intercourse; or physical
+
+ 6           contact with the genitals, flagellation, or excretion for the purpose of sexual
+
+ 7           stimulation or gratification.
+
+ 8           Section 3. KRS 531.300 is amended to read as follows:
+
+ 9   As used in KRS 531.080 and 531.300[531.310] to 531.370:
+
+10   (1)     ["Distribute" means to transfer possession of, whether with or without
+
+11           consideration;
+
+12   (2)     "Matter" means any book, magazine, newspaper, or other printed or written
+
+13           material or any picture, drawing, photograph, motion picture, live image transmitted
+
+14           over the Internet or other electronic network, or other pictorial representation or any
+
+15           statue or other figure, or any recording transcription or mechanical, chemical or
+
+16           electrical reproduction or any other articles, equipment, machines, or materials;
+
+17   (3)     ]"Obscene" means the predominate appeal of the matter taken as a whole is to a
+
+18           prurient interest in sexual conduct involving minors;
+
+19   (2)     "Performance" means any play, motion picture, photograph, dance, or any other
+
+20           visual representation or computer-generated image exhibited before an audience;
+
+21   (3)     "Promote" means to prepare, publish, print, procure, or manufacture, or to offer
+
+22           or agree to do the same;
+
+23   (4)[(4)]        "Sexual conduct by a minor" means:
+
+24           (a)     Acts of masturbation, homosexuality, lesbianism, bestiality[beastiality],
+
+25                   sexual intercourse, or deviate[deviant] sexual intercourse, actual or simulated;
+26           (b)     Physical contact with, or willful or intentional exhibition of the genitals;
+
+27           (c)     Flagellation or excretion for the purpose of sexual stimulation or gratification;
+
+                                                    Page 6 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                                   Engrossed
+     UNOFFICIAL COPY                                                               24 RS HB 207/EN
+
+
+
+ 1                   or
+
+ 2           (d)     The exposure, in an obscene manner, of the unclothed or apparently unclothed
+
+ 3                   human male or female genitals, pubic area or buttocks, or the female breast,
+
+ 4                   whether or not subsequently obscured by a mark placed thereon, or otherwise
+
+ 5                   altered, in any resulting motion picture, photograph, computer-generated
+
+ 6                   image, or other visual representation, exclusive of exposure portrayed in
+
+ 7                   matter of a private, family nature not intended for distribution outside the
+
+ 8                   family;[
+
+ 9   (5)     "Performance" means any play, motion picture, photograph or dance. Performance
+
+10           also means any other visual representation exhibited before an audience;]
+
+11   (5)[(6)]        "Sexual performance" means any performance or part thereof which includes
+
+12           sexual conduct by a minor; and
+
+13   (6)[(7)]        "Traffic" means to manufacture, distribute, sell, transfer, or possess with
+
+14           intent to manufacture, distribute, sell, or transfer["Promote" means to prepare,
+
+15           publish, print, procure or manufacture, or to offer or agree to do the same].
+
+16           SECTION 4. A NEW SECTION OF KRS 531.300 TO 531.370 IS CREATED
+
+17   TO READ AS FOLLOWS:
+
+18   (1)     A person is guilty of possession of a child sex doll when he or she knowingly
+
+19           possesses a child sex doll.
+
+20   (2)     Possession of a child sex doll is a Class D felony.
+
+21           SECTION 5. A NEW SECTION OF KRS 531.300 TO 531.370 IS CREATED
+
+22   TO READ AS FOLLOWS:
+
+23   (1)     A person is guilty of trafficking a child sex doll when he or she knowingly traffics
+
+24           a child sex doll.
+
+25   (2)     Any person who has in his or her possession more than one (1) child sex doll
+26           shall be rebuttably presumed to have that child sex doll in his or her possession
+
+27           with the intent to traffic it.
+
+                                                    Page 7 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                            Engrossed
+     UNOFFICIAL COPY                                                               24 RS HB 207/EN
+
+
+
+ 1   (3)     Trafficking a child sex doll is a Class C felony.
+
+ 2           SECTION 6. A NEW SECTION OF KRS 531.300 TO 531.370 IS CREATED
+
+ 3   TO READ AS FOLLOWS:
+
+ 4   (1)     A person is guilty of importing a child sex doll when he or she knowingly
+
+ 5           transports a child sex doll into the Commonwealth by any means with the intent
+
+ 6           to distribute, sell, or transfer the child sex doll.
+
+ 7   (2)     Any person who has in his or her possession more than one (1) child sex doll
+
+ 8           shall be rebuttably presumed to have that child sex doll in his or her possession
+
+ 9           with the intent to distribute, sell, or transfer it.
+
+10   (3)     Importing a child sex doll is a Class C felony.
+
+11           SECTION 7. A NEW SECTION OF KRS 531.300 TO 531.370 IS CREATED
+
+12   TO READ AS FOLLOWS:
+
+13   (1)     A person is guilty of permitting or promoting the use of a child sex doll when, he
+
+14           or she having possession or control of a child sex doll or having possession or
+
+15           control of a premises which he or she knows or has reasonable cause to know is
+
+16           being used for the purposes of utilizing a child sex doll, fails to make reasonable
+
+17           and timely effort to halt or abate such use.
+
+18   (2)     Permitting or promoting the use of a child sex doll is a Class C felony.
+
+19           Section 8. KRS 531.320 is amended to read as follows:
+
+20   (1)     A person is guilty of promoting a sexual performance by a minor when, knowing
+
+21           the character and content thereof, he or she produces, directs, or promotes any
+
+22           performance which includes sexual conduct by a minor or computer-generated
+
+23           image of a minor.
+
+24   (2)     Promoting a sexual performance by a minor is:
+
+25           (a)     A Class C felony if the minor or computer-generated image of a minor
+26                   involved in the sexual performance is less than eighteen (18) years old at the
+
+27                   time the minor or computer-generated image of a minor engages in the
+
+                                                    Page 8 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                            Engrossed
+     UNOFFICIAL COPY                                                              24 RS HB 207/EN
+
+
+
+ 1                   prohibited activity;
+
+ 2           (b)     A Class B felony if the minor or computer-generated image of a minor
+
+ 3                   involved in the sexual performance is less than sixteen (16) years old at the
+
+ 4                   time the minor or computer-generated image of a minor engages in the
+
+ 5                   prohibited activity; and
+
+ 6           (c)     A Class A felony if the minor involved in the sexual performance incurs
+
+ 7                   physical injury thereby.
+
+ 8           Section 9. KRS 531.330 is amended to read as follows:
+
+ 9   (1)     For purposes of KRS 529.040 where the offense involves commercial sexual
+
+10           activity and for the purposes of KRS 530.070, 531.080, and 531.300 to 531.370,
+
+11           any person who appears to be under the age of eighteen (18), or under the age of
+
+12           sixteen (16), shall be presumed to be under the age of eighteen (18), or under the
+
+13           age of sixteen (16), as the case may be.
+
+14   (2)     In any prosecution under KRS 529.040 where the offense involves commercial
+
+15           sexual activity by a minor and in any prosecution under KRS 530.070, 531.080, and
+
+16           531.300 to 531.370, the defendant may prove in exculpation that he or she in good
+
+17           faith reasonably believed that the person involved in the performance was not a
+
+18           minor.
+
+19   (3)     In any prosecution under KRS 531.300 to 531.370 where the offense involves a
+
+20           computer-generated image that used an actual minor or minors as the source, the
+
+21           presumption of minority shall be the age of the actual minor or minors.
+
+22   (4)     The presumption raised in subsection (1) or (3) of this section may be rebutted by
+
+23           any competent evidence.
+
+24           Section 10. KRS 531.335 is amended to read as follows:
+
+25   (1)     A person is guilty of possession or viewing of matter portraying a sexual
+26           performance by a minor when, having knowledge of its content, character, and that
+
+27           the sexual performance is by a minor, he or she:
+
+                                                    Page 9 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                           Engrossed
+     UNOFFICIAL COPY                                                                24 RS HB 207/EN
+
+
+
+ 1           (a)     Knowingly has in his or her possession or control any matter which visually
+
+ 2                   depicts an actual sexual performance by a minor person or computer-
+
+ 3                   generated image of a minor person; or
+
+ 4           (b)     Intentionally views any matter which visually depicts an actual sexual
+
+ 5                   performance by a minor person or computer-generated image of a minor
+
+ 6                   person.
+
+ 7   (2)     The provisions of subsection (1)(b) of this section:
+
+ 8           (a)     Shall only apply to the deliberate, purposeful, and voluntary viewing of matter
+
+ 9                   depicting sexual conduct by a minor person or computer-generated image of
+
+10                   a minor person and not to the accidental or inadvertent viewing of such
+
+11                   matter;
+
+12           (b)     Shall not apply to persons viewing the matter in the course of a law
+
+13                   enforcement investigation or criminal or civil litigation involving the matter;
+
+14                   and
+
+15           (c)     Shall not apply to viewing the matter by a minor or the minor's parents or
+
+16                   guardians, or to school administrators investigating violations of subsection
+
+17                   (1)(b) of this section.
+
+18   (3)     Possession or viewing of matter portraying a sexual performance by a minor is:
+
+19           (a)     A Class D felony if the person knows that the minor or computer-generated
+
+20                   image of a minor portrayed is less than eighteen (18) years old at the time of
+
+21                   the sexual performance; and
+
+22           (b)     A Class C felony if the person knows that the minor or computer-generated
+
+23                   image of a minor person portrayed is less than twelve (12) years old at the
+
+24                   time of the sexual performance.
+
+25           Section 11. KRS 531.340 is amended to read as follows:
+26   (1)     A person is guilty of distribution of matter portraying a sexual performance by a
+
+27           minor when, having knowledge of its content and character, he or she:
+
+                                                    Page 10 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                            Engrossed
+     UNOFFICIAL COPY                                                                     24 RS HB 207/EN
+
+
+
+ 1           (a)     Sends or causes to be sent into this state for sale or distribution;[ or]
+
+ 2           (b)     Brings or causes to be brought into this state for sale or distribution; or
+
+ 3           (c)     In this state[, he or she]:
+
+ 4                   1.      Exhibits for profit or gain;[ or]
+
+ 5                   2.      Distributes;[ or]
+
+ 6                   3.      Offers to distribute; or
+
+ 7                   4.      Has in his or her possession with intent to distribute, exhibit for profit or
+
+ 8                           gain or offer to distribute;[,]
+
+ 9                   any matter portraying a sexual performance by a minor or computer-
+
+10                   generated image of a minor.
+
+11   (2)     Any person who has in his or her possession more than one (1) unit of matter, as
+
+12           defined in Section 2 of this Act,[material coming within the provision of KRS
+
+13           531.300(2)] shall be rebuttably presumed to have that matter[such material] in his
+
+14           or her possession with the intent to distribute it.
+
+15   (3)     Distribution of matter portraying a sexual performance by a minor is:
+
+16           (a)     A Class D felony for the first offense, and a Class C felony for each
+
+17                   subsequent offense, if the person knows that the minor or computer-
+
+18                   generated image of a minor portrayed is less than eighteen (18) years old at
+
+19                   the time of the sexual performance; and
+
+20           (b)     A Class C felony for the first offense, and a Class B felony for each
+
+21                   subsequent offense, if the person knows that the minor or computer-
+
+22                   generated image of a minor portrayed is less than twelve (12) years old at the
+
+23                   time of the sexual performance.
+
+24           Section 12. KRS 531.350 is amended to read as follows:
+
+25   (1)     A person is guilty of promoting sale of material portraying a sexual performance by
+26           a minor when he or she knowingly, as a condition to a sale, allocation,
+
+27           consignment, or delivery for resale of any paper, magazine, book, periodical,
+
+                                                     Page 11 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                                  Engrossed
+     UNOFFICIAL COPY                                                                  24 RS HB 207/EN
+
+
+
+ 1           publication or other merchandise, requires that the purchaser or consignee receive
+
+ 2           any matter portraying a sexual performance by a minor or computer-generated
+
+ 3           image of a minor, or he or she denies or threatens to deny a franchise, revokes or
+
+ 4           threatens to revoke, or imposes any penalty, financial or otherwise, by reason of the
+
+ 5           failure of any person to accept such matter, or by reason of the return of such
+
+ 6           matter.
+
+ 7   (2)     Promoting sale of matter portraying a sexual performance by a minor is a:
+
+ 8           (a)     Class A misdemeanor for the first offense;[,]
+
+ 9           (b)     [a ]Class D felony for the second offense;[,] and
+
+10           (c)     [a ]Class C felony for the third or[each] subsequent offense.
+
+11           Section 13. KRS 531.360 is amended to read as follows:
+
+12   (1)     A person is guilty of advertising material portraying a sexual performance by a
+
+13           minor when, having knowledge of its content and character thereof, he or she writes
+
+14           or creates advertising or solicits anyone to publish such advertising or otherwise
+
+15           promotes the sale or distribution of matter portraying a sexual performance by a
+
+16           minor or a computer-generated image of a minor.
+
+17   (2)     Advertising material portraying a sexual performance by a minor is a
+
+18           (a)     Class D felony for the first offense; and
+
+19           (b)     [a ]Class C felony for the second or[each] subsequent offense.
+
+20           SECTION 14. A NEW SECTION OF KRS 531.300 TO 531.370 IS CREATED
+
+21   TO READ AS FOLLOWS:
+
+22   In any prosecution under KRS 531.300 to 531.370 where the offense involves matter or
+
+23   material portraying a computer-generated image of a minor, the Commonwealth shall
+
+24   not be required to prove the actual identity or age of the minor, or that the minor
+
+25   actually exists.
+
+
+
+
+                                                    Page 12 of 12
+     HB020720.100 - 1390 - XXXX 3/27/2024 3:26 PM                                              Engrossed
+

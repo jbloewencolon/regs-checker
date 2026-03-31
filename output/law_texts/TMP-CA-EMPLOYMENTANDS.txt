@@ -1,0 +1,1927 @@
+                                                                                       Attachment B
+                                                                                  Version: 3/17/2025
+                                     Civil Rights Council
+                Final Unmodified Text of Proposed Employment Regulations
+                         Regarding Automated-Decision Systems
+
+                                     CALIFORNIA CODE OF REGULATIONS
+                                            Title 2. Administration
+                             Div. 4.1. Department of Fair Employment & Housing
+                               Chapter 5. Fair Employment & Housing Council
+                                 Subchapter 2. Discrimination in Employment
+
+
+                                                  TEXT
+
+                       Text proposed to be added is displayed in underline type.
+                     Text proposed to be deleted is displayed in strikethrough type.
+
+  NOTE: Unrelated modifications to Cal. Code Regs., tit. 2, section 11017.1, made through rulemaking
+      (OAL Matter Number 2023-0609-06), became operative after the Initial Text for Proposed
+Modifications to Employment Regulations Regarding Automated-Decision Systems (“Initial Text”) had
+been finalized. Accordingly, the Initial Text includes outdated language for section 11017.1. In this first
+  modified text, section 11017.1 has been updated to reflect its current language, and those updates
+are not subject to public comment since they do not represent proposed modifications to existing law.
+ However, the proposed modifications to section 11017.1 for purposes of this rulemaking, which have
+  been incorporated into the current text and are displayed as described above, are subject to public
+                                                 comment.
+
+                                        Article 1. General Matters
+
+                                           § 11008. Definitions.
+
+As used in this chapter, the following definitions shall apply unless the context otherwise requires:
+
+(a) Reserved.
+
+(b) “Agent.” An agent includes any person acting on behalf of an employer, directly or indirectly, to
+exercise a function traditionally exercised by the employer or any other FEHA-regulated activity, which
+may include applicant recruitment, applicant screening, hiring, promotion, or decisions regarding pay,
+benefits, or leave, including when such activities and decisions are conducted in whole or in part
+through the use of an automated decision system. An agent of an employer is also an “employer” for
+purposes of the Act.
+
+(a)(c) “Applicant.” Any individual who files a written application or, where an employer or other covered
+entity does not provide an application form, any individual who otherwise indicates a specific desire to
+an employer or other covered entity to be considered for employment. Except for recordkeeping
+purposes, “Applicant” is also an individual who can prove that he or she hasthey have been deterred
+from applying for a job by an employer’s or other covered entity’s alleged discriminatory practice.
+“Applicant” does not include an individual who without coercion or intimidation willingly withdraws his
+or hertheir application prior to being interviewed, tested or hired.
+
+(b)(d) “Apprenticeship Training Program.” Any apprenticeship program, including local or state joint
+apprenticeship committees, subject to the provision of Chapter 4 of Division 3 of the California Labor
+Code, section 3070 et seq.
+
+(c)(e) “Employee.” Any individual under the direction and control of an employer under any
+appointment or contract of hire or apprenticeship, express or implied, oral or written.
+
+        (1) “Employee” does not include an independent contractor as defined in Labor Code section
+        3353.
+
+        (2) “Employee” does not include any individual employed by his or hertheir parents, by his or
+        hertheir spouse, or by his or hertheir child.
+
+        (3) “Employee” does not include any individual employed under special license in a non-profit
+        sheltered workshop or rehabilitation facility.
+
+        (4) An employment agency is not an employee of the person or individual for whom it procures
+        employees.
+
+        (5) An individual compensated by a temporary service agency for work to be performed for an
+        employer contracting with the temporary service agency is an employee of that employer for
+        such terms, conditions and privileges of employment under the control of that employer. Such
+        an individual also is an employee of the temporary service agency with regard to such terms,
+        conditions and privileges of employment under the control of the temporary service agency.
+
+(d)(f) “Employer.” Any person or individual engaged in any business or enterprise regularly employing
+five or more individuals, including individuals performing any service under any appointment, contract
+of hire or apprenticeship, express or implied, oral or written.
+
+        (1) “Regularly employing” means employing five or more individuals for any part of the day on
+        which the unlawful conduct allegedly occurred, or employing five or more employees on a
+        regular basis.
+
+        (A) “Regular basis” refers to the nature of a business that is recurring, rather than constant. For
+        example, in an industry that typically has a three-month season during a calendar year, an
+        employer that employs five or more employees during that season “regularly employs” the
+        requisite number of employees. Thus, to be covered by the Act, an employer need not have five
+        or more employees working every day throughout the year or have five or more employees at
+        the time of the allegedly unlawful conduct, so long as at least five employees are regularly on its
+        payroll during the season.
+
+        (B) Part-time employees, including those who work partial days and fewer than each day of the
+        work week, will be counted the same as full-time employees. For example, for counting
+        purposes, an employer has five employees when three work every day and two work alternate
+        days to fill one position, and there are no more than four employees working on any working
+
+                                                     2
+        day. Employees on paid or unpaid leave, including California Family Rights Act (CFRA), parenting
+        leave, pregnancy leave, leave of absence, disciplinary suspension, or any other employer-
+        approved leave of absence, are counted.
+
+        (C) Employees located inside and outside of California are counted in determining whether
+        employers are covered under the Act. However, employees located outside of California are not
+        themselves covered by the protections of the Act if the allegedly unlawful conduct did not occur
+        in California, or the allegedly unlawful conduct was not ratified by decision makers or
+        participants in unlawful conduct located in California.
+
+        (2) The means for counting five employees described in this subsection also applies to counting
+        employees for purposes of establishing coverage under Government Code sections 12945.2,
+        12945.6, and 12950.1.
+
+        (3) Any person or individual acting as an agent of an employer, directly or indirectly, is also an
+        employer.
+
+        (4) “Employer” includes the State of California, any political or civil subdivision thereof, counties,
+        cities, city and county, local agencies, or special districts, irrespective of whether that entity
+        employs five or more individuals.
+
+        (5) A religious association or religious corporation not organized for private profit is not an
+        employer under the meaning of this Act; any non-profit religious organization exempt from
+        federal and state income tax as a non-profit religious organization is presumed not to be an
+        employer under this Act. Notwithstanding such status, any portion of such tax exempt religious
+        association or religious corporation subject to state or federal income taxes as an unrelated
+        business and regularly employing five or more individuals is an employer.
+
+        (6) “Employer” includes any non-profit corporation or non-profit association other than that
+        defined in subsection (5).
+
+(e)(g) “Employer or Other Covered Entity.” Any employer, employment agency, labor organization or
+apprenticeship training program as defined herein and subject to the provisions of the Act.
+
+(f)(h) “Employment Agency.” An employment agency includes Aany person undertaking, for
+compensation, to procure the procurement of job applicants, employees or opportunities to work,
+including persons undertaking these services through the use of an automated-decision system.
+
+(g)(i) “Employment Benefit.” Except as otherwise provided in the Act, any benefit of employment
+covered by the Act, including hiring, employment, promotion, selection for training programs leading to
+employment or promotions, freedom from disbarment” or discharge from employment or a training
+program, compensation, provision of a discrimination-free workplace, and any other favorable term,
+condition or privilege of employment.
+
+        (1) For a labor organization, “employment benefit” includes all rights and privileges of
+        membership, including freedom from exclusion, expulsion or restriction of membership, second
+        class or segregated membership, discrimination in the election of officers or selection of staff, or
+        any other action against a member or any employee or person employed by an employer.
+
+                                                      3
+        (2) “Employment benefit” also includes the selection or training of any person for, or freedom
+        from termination from, an unpaid internship or another limited duration program to provide
+        unpaid work experience for that person in any apprenticeship training program or any other
+        training program leading to employment or promotion.
+
+        (3) “Provision of a discrimination-free workplace” is a provision of a workplace free of
+        harassment, as defined in section 11019(b).
+
+(h)(j) “Employment Practice.” Any act, omission, policy or decision of an employer or other covered
+entity affecting any of an individual’s employment benefits or consideration for an employment benefit.
+
+(i)(k) “Labor Organization.” Any organization that exists and is constituted for the purpose, in whole or in
+part, of collective bargaining or of dealing with employers regarding grievances, terms or conditions of
+employment, or of providing other mutual aid or protection.
+
+(j)(l) “Person performing services pursuant to a contract.” A person who meets all of the following
+criteria: 1) has the right to control the performance of the contract for services and discretion as to the
+manner of performance; 2) is customarily engaged in an independently established business; and 3) has
+control over the time and place the work is performed, supplies the tools and instruments used in the
+work, and performs work that requires a particular skill not ordinarily used in the course of the
+employer’s work.
+
+(m) “Proxy.” A characteristic or category closely correlated with a basis protected by the Act.
+
+(k)(n) “Unpaid interns and volunteers.” For purposes of the Act, any individual (often a student or
+trainee) who works without pay for an employer or other covered entity, in any unpaid internship or
+another limited duration program to provide unpaid work experience, or as a volunteer. Unpaid interns
+and volunteers may or may not be employees.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12925, 12926, 12940,
+12941 and 12942, Government Code; Campbell v. Arco Marine, Inc. (1996) 42 Cal.App.4th 1850; Sims v.
+Worldpac Inc. (N.D. Cal. Feb. 22, 2013) 2013 WL 663277; Raines v. U.S. Healthworks Medical Group
+(2023) 15 Cal. 5th 268.
+
+                                 § 11008.1. Automated-Decision Systems
+
+(a) “Automated-Decision System.” A computational process that makes a decision or facilitates human
+decision making regarding an employment benefit, as defined in section 11008(i) of these regulations.
+An Automated-Decision System may be derived from and/or use artificial intelligence, machine-learning,
+algorithms, statistics, and/or other data processing techniques.
+
+        (1) Automated-Decision Systems perform tasks such as:
+
+        (A) Using computer-based assessments or tests, such as questions, puzzles, games, or other
+        challenges to:
+
+                (i) Make predictive assessments about an applicant or employee;
+
+                                                     4
+                (ii) Measure an applicant’s or employee’s skills, dexterity, reaction-time, and/or other
+                abilities or characteristics;
+
+                (iii) Measure an applicant’s or employee’s personality trait, aptitude, attitude, and/or
+                cultural fit; and/or
+
+                (iv) Screen, evaluate, categorize, and/or recommend applicants or employees.
+
+        (B) Directing job advertisements or other recruiting materials to targeted groups;
+
+        (C) Screening resumes for particular terms or patterns;
+
+        (D) Analyzing facial expression, word choice, and/or voice in online interviews; or
+
+        (E) Analyzing employee or applicant data acquired from third parties.
+
+        (2) “Automated-Decision System” excludes word processing software, spreadsheet software,
+        map navigation systems., web hosting, domain registration, networking, caching, website-
+        loading, data storage, firewalls, anti-virus, anti-malware, spam- and robocall-filtering,
+        spellchecking, calculators, database, or similar technologies, provided that these technologies
+        do not make a decision regarding an employment benefit.
+
+(b) “Algorithm.” A set of rules or instructions a computer follows to perform calculations or other
+problem-solving operations. Algorithms can, for example, detect patterns in datasets and automate
+decisions-making based on those patterns and datasets.
+
+(c) “Artificial Intelligence.” A machine-based system that infers, from the input it receives, how to
+generate outputs. Outputs can include predictions, content, recommendations, or decisions.
+
+(d) “Automated-Decision System Data.”
+
+        (1) Any data used in or resulting from the application of an automated-decision system, such as
+        data provided by or about individual applicants or employees, or data reflecting employment
+        decisions or outcomes; and/or
+
+        (2) Any data used to develop or customize an automated-decision system for use by a particular
+        employer or other covered entity.
+
+(e) “Machine Learning.” The ability for a computer to use and learn from its own analysis of data or
+experience and apply this learning automatically in future calculations or tasks.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12926, 12940,
+Government Code.
+
+
+
+
+                                                     5
+                           § 11009. Principles of Employment Discrimination.
+
+(a) Unlawful Practices and Individual Relief. In allegations of employment discrimination, a finding that
+an employer or other covered entity has engaged in an unlawful employment practice is not dependent
+upon a showing of individual back pay or other compensable liability. Upon a finding that an employer
+or other covered entity has engaged in an unlawful employment practice and on order of appropriate
+relief, a severable and separate showing may be made that the complainant, complainants or class of
+complainants is entitled to individual or personal relief including, but not limited to, hiring,
+reinstatement or upgrading, back pay, restoration to membership in a labor organization, or other relief
+in furtherance of the purpose of the Act.
+
+(b) Liability of Employers. In view of the common law theory of respondeat superior and its codification
+in California Civil Code section 2338, an employer or other covered entity shall be liable for the
+discriminatory actions of its supervisors, managers or agents committed within the scope of their
+employment or relationship with the employer or other covered entity or, as defined in section
+11019(b), for the discriminatory actions of its employees where it is demonstrated that, as a result of
+any such discriminatory action, the applicant or employee has suffered a loss of or has been denied an
+employment benefit.
+
+(c) Discrimination is established if a preponderance of the evidence demonstrates that an enumerated
+basis was a substantial motivating factor in the denial of an employment benefit to that individual by the
+employer or other covered entity, and the denial is not justified by a permissible defense. This standard
+applies only to claims of discrimination on a basis enumerated in Government Code section 12940,
+subdivision (a), and to claims of retaliation under Government Code section 12940, subdivision (h). This
+standard does not apply to other practices made unlawful by the Fair Employment and Housing Act,
+including, but not limited to, harassment, denial of reasonable accommodation, failure to engage in the
+interactive process, and failure to provide leaves under Government Code sections 12945 and 12945.2.
+A substantial factor motivating the denial of the employment benefit is a factor that a reasonable
+person would consider to have contributed to the denial. It must be more than a remote or trivial factor.
+It does not have to be the only cause of the denial.
+
+(d) An applicant or employee who is a victim of human trafficking, as that term is used in Civil Code
+section 52.5 and Penal Code section 236.1, may have a separate right of action under the Fair
+Employment and Housing Act if he or shethey alleges discrimination on a basis protected by the Act.
+Nothing in this regulation shall limit any claims an individual may have under other California laws
+prohibiting human trafficking.
+
+(e) It is unlawful for anyone to discriminate against a person who serves in an unpaid internship or any
+other limited-duration program to provide unpaid work experience in the selection, termination,
+training, or other terms and treatment of that person on any basis protected by the Act.
+
+(f) It is unlawful for an employer or other covered entity to use an automated-decision system or
+selection criteria (including a qualification standard, employment test, or proxy) that discriminates
+against an applicant or employee or a class of applicants or employees on a basis protected by the Act,
+subject to any available defense. Relevant to any such claim or available defense is evidence, or the lack
+of evidence, of anti-bias testing or similar proactive efforts to avoid unlawful discrimination, including
+
+
+
+                                                    6
+the quality, efficacy, recency, and scope of such effort, the results of such testing or other effort, and the
+response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12941, 12942 and 12961, Government Code; Harris v. City of Santa Monica (2013) 56 Cal.4th 203.
+
+                                          § 11013. Recordkeeping.
+
+Employers and other covered entities are required to maintain certain relevant records of personnel
+actions. Each employer or other covered entity subject to this section shall retain at all times at each
+reporting unit, or at company or divisional headquarters, a copy of the most recent California Employer
+Information Report (CEIR) or appropriate substitute and applicant identification records for each such
+unit and shall make them available upon request to any officer, agent, or employee of the Council or
+Department.
+
+(a) California Employer Information Report. All employers regularly employing one hundred or more
+employees, apprenticeship programs with five or more apprentices and at least one sponsoring
+employer with 25 or more employees and at least one sponsoring union, which operates a hiring hall or
+has 25 or more members, and labor organizations with 100 or more members shall prepare an annual
+CEIR in conformity with guidelines on reporting issued by the Department.
+
+        (1) Substituting Federal Reports. An employer or other covered entity may utilize an appropriate
+        federal report in lieu of the CEIR. Appropriate federal reports include the EEOC’s EEO-1, EEO-2,
+        EEO-3, EEO-4, EEO-5, and EEO-6 reports and appropriate reports filed with the Office of Federal
+        Contract Compliance Programs (OFCCP).
+
+        (2) Sample Forms and Guidelines. Appropriate copies of sample forms and applicable guidelines
+        shall be available to any employer or other covered entity from the Civil Rights Department.
+
+        (3) Special Reporting. If an employer or other covered entity is engaged in activities for which
+        the standard reporting criteria are not appropriate, special reporting procedures may be
+        required. In such case, the employer or other covered entity should so advise the Department
+        and submit a specific proposal for an alternative reporting system prior to the date on which the
+        report should be prepared. If it is claimed that the preparation of the report would create undue
+        hardship, an employer may apply to the Department for an exemption from the requirements of
+        this section.
+
+        (4) Remedy for Failure to Prepare or Make Reports Available. Upon application by the CRD or
+        CRC for judicial relief, any employer failing or refusing to prepare or to make available reports as
+        required under this section may be compelled to do so by a Superior Court of California.
+
+        (5) Penalties for False Statements. The willful making of false statements on a CEIR or other
+        required record is a violation of California Government Code section 12976, and is punishable by
+        fine or imprisonment as set forth therein.
+
+(b) Applicant Identification Records. Unless otherwise prohibited by law and for recordkeeping purposes
+only, every employer or other covered entity shall maintain data regarding the race, sex, and national
+origin of each applicant and for the job for which he or shethey applied. If such data is to be provided on
+
+                                                      7
+an identification form, this form shall be separate or detachable from the application form itself.
+Employment decisions shall not be based on whether an applicant has provided this information, nor
+shall the applicant identification information be used for discriminatory purposes, except pursuant to a
+bona fide affirmative action or non-discrimination plan.
+
+        (1) For recordkeeping purposes only, “applicant” means any individual who files a formal
+        application or, where an employer or other covered entity does not provide application forms,
+        any individual who otherwise indicates to the employer or other covered entity a specific desire
+        to be considered for employment. An individual who simply appears to make an informal inquiry
+        or who files an unsolicited resume upon which no employment action is taken is not an
+        applicant.
+
+        (2) An employer or other covered entity shall either retain the original documents used to
+        identify applicants, or keep statistical summaries of the collected information.
+
+        (3) Applicant records shall be preserved for the time period set forth in subdivisions (c)(1) and
+        (2) below.
+
+(c) Preservation of Records. Any personnel or other employment records made or kept created or
+received by any employer or other covered entity dealing with any employment practice and affecting
+any employment benefit of any applicant or employee (including all applications, personnel,
+membership or employment referral records or files) shall be preserved by the employer or other
+covered entity for a period of twofour years from the date of the making of the record or the date of the
+personnel action involved, whichever occurs later. This includes all applications, personnel records,
+membership records, employment referral records, selection criteria, automated-decision system data,
+and other records created or received by the employer or other covered entity dealing with any
+employment practice and affecting any employment benefit of any applicant or employee.
+
+        (1) California Employment Information Report. Every employer subject to subsection (a) above
+        shall preserve for a period of two four years from the date of preparation of the CEIR such
+        records as were necessary for completion of the CEIR.
+
+        (2) Applicant Identification Records. Every employer subject to subsection (b) above shall
+        preserve applicant identification information for a period of two four years from the date it was
+        received.
+
+        (3) Separate Records on Sex, Race, and National Origin. Records as to the sex, race, or national
+        origin of any individual accepted for employment shall be kept separately from the employee’s
+        main personnel file or other records available to those responsible for personnel decisions. For
+        example, such records could be kept as part of an automatic data processing system in the
+        payroll department.
+
+        (4) After Filing of Complaint. Upon notice of or knowledge that a complaint has been filed
+        against it under the Act, any respondent, including the State Personnel Board, shall maintain
+        and preserve any and all relevant records and files until such complaint is fully and finally
+        disposed of and all appeals from related proceedings have concludedthe later of the following:
+
+        (A) The first date after the period of time for filing a civil action has expired.
+
+                                                       8
+        (B) The first date after the complaint has been fully and finally disposed of and all administrative
+        proceedings, civil actions, appeals, or related proceedings have terminated.
+
+        (A5) For purposes of this subsection, “related proceedings” shall include any action brought in
+        Superior Court pursuant to section 12965 of the Government Code.
+
+        (B6) The term “records and files relevant to the complaint” shall include, but is not limited to,
+        personnel or employment records relating to the complaining party and to all other employees
+        holding similar positions to that held or sought by the complainant at the facility or other
+        relevant subdivision where the discriminatory practice allegedly occurred. The term also
+        includes automated-decision system data as well as applications, forms or test papers
+        completed by the complainant and by all other candidates for the same position at that facility
+        or other relevant subdivision where the employment practice occurred. All relevant records
+        made or kept pursuant to subsections (a) and (b) above shall also preserved.
+
+        (C7) The term “fully and finally disposed of and all administrative proceedings, civil actions,
+        appeals, or from related proceedings have concludedterminated” refers to the expiration of the
+        statutory period within which a complainant or respondent may bring an action in Superior
+        Court, or an agreement has been reached by the parties whereby no further judicial review is
+        available to any of the parties, or a final order has been entered by a body of judicial review for
+        which the time for filing a notice of appeal has expired.
+
+(d) Posting of Act. Every employer or other covered entity shall post in a conspicuous place or places on
+its premises a notice to be prepared and distributed by the Department, which sets forth excerpts of the
+Act and such relevant information the Department deems necessary to explain the Act. Such employers
+employing significant numbers, no less than 10% of their work force, of non-English-speaking persons
+(e.g., Chinese or Spanish speaking) at any facility or establishment must also post in the appropriate
+foreign language at each such facility or establishment. Such notices may be obtained from the
+Department.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12940 and 12946,
+Government Code.
+
+                               Article 2. Particular Employment Practices
+
+                                           § 11015. Definitions.
+
+(a) “Recruitment.” The practice of any employer or other covered entity that has the purpose or effect
+of informing any individual about an employment opportunity, or assisting an individual to apply for
+employment, an activity leading to employment, membership in a labor organization, acceptance in an
+apprenticeship training program, or referral by an employment agency.
+
+(b) “Date of Determination to Hire.” The time at which an employer or other covered entity has made an
+offer of employment to the individual.
+
+
+
+
+                                                     9
+(c) “Pre-employment Inquiry.” Any oral or written request made by an employer or other covered entity
+for information concerning the qualifications of an applicant for employment or for entry into an activity
+leading to employment.
+
+(d) “Application.” Except for recordkeeping purposes, any writing or other device, including but not
+limited to an automated-decision system, used by an employer or other covered entity to make a pre-
+employment inquiry or submitted to an employer or other covered entity for the purpose of seeking
+consideration for employment.
+
+(e) “Placement.” Any status, category, rank, level, location, department, division, program, duty or
+group of duties, or any other similar classification or position for which an employee can be selected or
+to which an employee can be assigned by any employment practice. Employment practices that can
+determine placement in this way include, but are not limited to: hiring, discharge, promotion, transfer,
+callback, or other change of classification or position; inclusion in membership in any group or
+organization; any referral assignment to any place, unit, division, status or type of work.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940
+and 12942, Government Code.
+
+                                   § 11016. Pre-Employment Practices
+
+(a) Recruitment.
+
+        (1) Duty Not to Discriminate. Any employer or other covered entity engaged in recruitment
+        activity shall recruit in a non-discriminatory manner. However, nothing in these regulations shall
+        preclude affirmative efforts to utilize recruitment practices to attract an individual who is a
+        member of an underrepresented protected class covered by the Act.
+
+        (2) Prohibited Recruitment Practices. An employer or other covered entity shall not, unless
+        pursuant to a permissible defense, engage in any recruitment activity, including but not limited
+        to practices accomplished through the use of an automated-decision system, that:
+
+        (A) Restricts, excludes, or classifies individuals on a basis enumerated in the Act;
+
+        (B) Expresses a preference for individuals on a basis enumerated in the Act; or
+
+        (C) Communicates or uses advertising methods to communicate the availability of employment
+        benefits in a manner intended to discriminate on a basis enumerated in the Act.
+
+(b) Pre-employment Inquiries.
+
+        (1) Limited Permissible Inquiries. An employer or other covered entity may make any pre-
+        employment inquiries that do not discriminate on a basis enumerated in the Act. Inquiries,
+        including but not limited to inquiries made through the use of an automated-decision system,
+        that directly or indirectly identify an individual on a basis enumerated in the Act are unlawful
+        unless made pursuant to a permissible defense.
+
+
+
+                                                     10
+        (A) An employer may make, in connection with prospective employment, an inquiry as to, or a
+        request for information regarding, the physical fitness, medical condition, physical condition, or
+        medical history of applicants if the inquiry or request for information complies with the
+        provisions of sections 11067, 11070 and 11071 of these regulations.
+
+        (B) Pre-employment inquiries regarding an applicant’s availability for work on certain days and
+        times shall not be used to ascertain the applicant’s religious creed, disability, or medical
+        condition. Such inquiries must clearly communicate that an employee need not disclose any
+        scheduling restrictions based on legally protected grounds, in language such as: “Other than
+        time off for reasons related to your religion, a disability, or a medical condition, are there any
+        days or times when you are unavailable to work?” or “Other than time off for reasons related to
+        your religion, a disability, or a medical condition, are you available to work the proposed
+        schedule?”
+
+        (2) Applicant Flow and Other Statistical Recordkeeping. Notwithstanding any prohibition in
+        these regulations on pre-employment inquiries, it is not unlawful for an employer or other
+        covered entity to collect applicant-flow and other recordkeeping data for statistical purposes as
+        provided in section 11013(b) of these regulations or in other provisions of state and federal law.
+
+(c) Applications.
+
+        (1) Application Forms. When employers or other covered entities provide, accept, and consider
+        application forms in the normal course of business, in so doing they shall not discriminate on a
+        basis enumerated in the Act.
+
+        (2) Photographs. Photographs shall not be required as part of an application unless pursuant to
+        a permissible defense.
+
+        (3) Schedule Information. An application’s request for information related to schedule and
+        availability for work shall not be used to ascertain the applicant’s religious creed, disability, or
+        medical condition. Such requests must clearly communicate that an employee need not disclose
+        any scheduling restrictions based on legally protected grounds in language such as: “Other than
+        time off for reasons related to your religion, a disability, or a medical condition, are there any
+        days or times when you are unavailable to work?” or “Other than time off for reasons related to
+        your religion, a disability, or a medical condition, are you available to work the proposed
+        schedule?”
+
+        (A) The use of online application technology that limits, or screens out, ranks, or prioritizes
+        applicants based on their schedule may have a disparate impact on discriminate against
+        applicants based on their religious creed, disability, or medical condition. Such a practice having
+        an adverse impact is unlawful unless job-related and consistent with business necessity and the
+        online application technology includes a mechanism for the applicant to request an
+        accommodation.
+
+        (4) Separation or Coding. Application forms shall not be separated or coded, manually or
+        electronically, or otherwise treated so as to identify individuals on a basis enumerated in the Act
+        unless pursuant to a permissible defense or for recordkeeping or statistical purposes.
+
+
+                                                    11
+        (5) Automated-Decision Systems. The use of an automated-decision system that, for example,
+        measures an applicant’s skill, dexterity, reaction time, and/or other abilities or characteristics
+        may discriminate against individuals with certain disabilities or other characteristics protected
+        under the Act. To avoid unlawful discrimination, an employer or other covered entity may need
+        to provide reasonable accommodation to an applicant as required by Article 8 (religious creed)
+        or Article 9 (disability) of these regulations.
+
+(d) Interviews or Other Screening of Applicants. Personal iInterviews or other screening of applicants
+shall be free of discrimination. Notwithstanding any internal safeguards taken to secure a
+discrimination-free atmosphere in interviews or other screening of applicants, the entire interview or
+other screening process is subject to review for adverse impact on individuals discrimination on a basis
+enumerated in the Act.
+
+        (1) Automated-Decision Systems. An automated-decision system that, for example, analyzes an
+        applicant's tone of voice, facial expressions or other physical characteristics or behavior may
+        discriminate against individuals based on race, national origin, gender, disability, or other
+        characteristics protected under the Act. To avoid unlawful discrimination, an employer or other
+        covered entity may need to provide reasonable accommodation to an applicant as required by
+        Article 8 (religious creed) or Article 9 (disability) of these regulations.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12941 and 12942, Government Code.
+
+                                      § 11017. Employee Selection.
+
+(a) Selection and Testing. Any policy or practice of an employer or other covered entity that has an
+adverse impact on employment opportunities of individuals on a basis enumerated in the Act is unlawful
+unless the policy or practice is job-related and consistent with business necessity (business necessity is
+defined in section 11010(b)). The Council herein adopts the Uniform Guidelines on Employee Selection
+Procedures promulgated by various federal agencies, including the EEOC and Department of Labor. [29
+C.F.R. 1607 (1978)].
+
+(b) Placement. Placements that are less desirable in terms of location, hours or other working conditions
+are unlawful where such assignments segregate, or otherwise discriminate against individuals on a basis
+enumerated in the Act, unless otherwise made pursuant to a permissible defense to employment
+discrimination. An assignment labeled or otherwise deemed to be “protective” of a category of persons
+on a basis enumerated in the Act is unlawful unless made pursuant to a permissible defense. (See also
+section 11041 regarding permissible transfers on account of pregnancy by employees not covered under
+Title VII of the federal Civil Rights Act of 1964.)
+
+(c) Promotion and Transfer. An employer or other covered entity shall not restrict information on
+promotion and transfer opportunities to certain employees or classes of employees when the restriction
+has the effect of discriminating on a basis enumerated in the Act.
+
+        (1) Requests for Transfer or Promotion. An employer or other covered entity who considers bids
+        or other requests for promotion or transfer shall do so in a manner that does not discriminate
+        against individuals on a basis enumerated in the Act, unless pursuant to a permissible defense.
+
+
+                                                    12
+        (2) Training. Where training that may make an employee eligible for promotion and/or transfer
+        is made available, it shall be made available in a manner that does not discriminate against
+        individuals on a basis enumerated in the Act.
+
+        (3) No-Transfer Policies. Where an employment practice has operated in the past to segregate
+        employees on a basis enumerated in the Act, a no-transfer policy or other practice that has the
+        effect of maintaining a continued segregated pattern is unlawful.
+
+(d) Specific Practices.
+
+        (1) Criminal Records. See Section 11017.1.
+
+        (2) Height Standards. Height standards that discriminate on a basis enumerated in the Act shall
+        not be used by an employer or other covered entity to deny an individual an employment
+        benefit, unless pursuant to a permissible defense.
+
+        (3) Weight Standards. Weight standards that discriminate on a basis enumerated in the Act shall
+        not be used by an employer or other covered entity to deny an individual an employment
+        benefit, unless pursuant to a permissible defense.
+
+(e) Permissible Selection Devices. A testing device, automated-decision system, or other means of
+selection that is facially neutral, but that has an adverse impact (as defined in the Uniform Guidelines on
+Employee Selection Procedures (29 C.F.R. 1607 (1978)) upon persons on a basis enumerated in the Act,
+is permissible only upon a showing that the selection practice is job-related and consistent with business
+necessity (business necessity is defined in section 11010(b)).
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940
+and 12941, Government Code.
+
+                  § 11017.1. Consideration of Criminal History in Employment Decisions.
+
+(a) Prohibition of Consideration of Criminal History Prior to a Conditional Offer of Employment. Except in
+the circumstances addressed in subsection (a)(4) below, employers and other covered entities
+("employers" for purposes of this section) are prohibited from inquiring into, considering, distributing,
+or disseminating information related to the criminal history of an applicant until after the employer has
+made a conditional offer of employment to the applicant.
+
+        (1) Prohibited consideration under this subsection includes, but is not limited to, inquiring about
+        criminal history through an employment application, background check, or internet searches, or
+        the use of an automated-decision system.
+
+        (2) Employers are prohibited from including statements in job advertisements, postings,
+        applications, or other materials that no persons with criminal history will be considered for hire,
+        such as "No Felons" or "Must Have Clean Record."
+
+        (3) Employers who violate the prohibition on inquiring into criminal history prior to making a
+        conditional offer of employment may not, after extending a conditional offer of employment,
+
+
+                                                     13
+        use an applicant's failure to disclose criminal history prior to the conditional offer as a factor in
+        subsequent employment decisions, including denial of the position conditionally offered.
+
+        (4) The prohibition against inquiring about or using any criminal history before a conditional
+        offer of employment has been made does not apply in the following circumstances (though use
+        of such criminal history, either during the application process or during employment, is still
+        subject to the requirements in subsections (b) and (d)-(g)):
+
+        (A) If the position is one for which an employer is otherwise required by law to conduct a
+        conviction history background check where the employer is a state or local agency;
+
+        (B) If the position is with a criminal justice agency, as defined in Section 13101 of the Penal
+        Code;
+
+        (C) If the position is as a Farm Labor Contractor, as described in Section 1685 of the Labor Code;
+        or
+
+        (D) If the position is one that an employer or an employer's agent is required by any state,
+        federal, or local law to conduct criminal background checks for employment purposes or to
+        restrict employment based on criminal history. Federal law, for purposes of this provision,
+        includes rules or regulations promulgated by a self-regulatory organization as defined in
+        Section 3(a)(26) of the Securities Exchange Act of 1934, 15 U.S.C. § 78c(a)(26).
+
+        (5) For the exemptions set forth in subsection (a)(4)(A) and (a)(4)(D) to apply, the employer or
+        the employer's agent must be required by law to conduct the criminal background check. A
+        state, federal, or local law requiring another entity, such as an occupational licensing board, to
+        conduct a criminal background check will not exempt an employer from the prohibitions set
+        forth in this subsection and other requirements of this section.
+
+        (6) If an applicant raises their criminal history voluntarily prior to receiving a conditional offer,
+        the employer must not consider any information the employer is prohibited from considering
+        under subsection (b). In addition, an employer is prohibited from considering any other
+        conviction history information until after making a conditional offer of employment, unless
+        subsection (a)(4) applies.
+
+(b) Prohibition of Consideration of Certain Types of Criminal History. Employers are prohibited from
+inquiring into, considering, distributing, or disseminating information regarding the following types of
+criminal history prior to making a conditional offer, after a conditional offer has been made, and in any
+other subsequent employment decisions such as decisions regarding promotion, training, discipline, lay-
+off, and termination:
+
+        (1) An arrest or detention that did not result in conviction (Labor Code section 432.7 (see limited
+        exceptions in subdivisions (a)(1) for an arrest for which the employee or applicant is out on bail
+        or on their own recognizance pending trial and (f)(1) for specified positions at health facilities);
+        Government Code section 12952);
+
+        (2) Referral to or participation in a pretrial or post-trial diversion program (Labor Code
+        section 432.7 and Government Code section 12952);
+
+                                                      14
+       (A) While employers are prohibited from considering referral to or participation in a pretrial or
+       post-trial diversion program, it is permissible to consider these programs as evidence of
+       rehabilitation or mitigating circumstances after a conditional offer has been made if offered by
+       the applicant as evidence of rehabilitation or mitigating circumstances.
+
+       (B) While employers are prohibited from considering referral to or participation in a pretrial or
+       post-trial diversion program, until a pretrial or post-trial diversion program is completed and the
+       underlying pending charges or conviction dismissed, sealed, or eradicated, employers may still
+       consider the conviction or pending charges themselves after a conditional offer is made.
+
+       (3) A conviction that has been judicially dismissed or ordered sealed, expunged or statutorily
+       eradicated pursuant to law (e.g., juvenile offense records sealed pursuant to Welfare and
+       Institutions Code section 389 and Penal Code sections 851.7 or 1203.45) or any conviction for
+       which the person has received a full pardon or has been issued a certificate of rehabilitation
+       (Id.);
+
+       (4) An arrest, detention, processing, diversion, supervision, adjudication, or court disposition
+       that occurred while a person was subject to the process and jurisdiction of juvenile court law
+       (Labor Code section 432.7); and
+
+       (5) A non-felony conviction for possession of marijuana that is two or more years old (Labor
+       Code section 432.8).
+
+       (6) In addition to the limitations provided in subsections (b)(1)-(5), employers that obtain
+       investigative consumer reports such as background checks are also subject to the requirements
+       of the Fair Credit Reporting Act (15 U.S.C. § 1681 et seq.) and the California Investigative
+       Consumer Reporting Agencies Act (Civil Code section 1786 et seq.).
+
+       (7) Employers may also be subject to local laws or city ordinances that provide additional
+       limitations.
+
+(c) Requirements if an Employer Intends to Deny an Applicant the Employment Conditionally Offered
+Because of the Applicant's Conviction History.
+
+       (1) Initial Individualized Assessment. If an employer intends to deny an applicant the
+       employment position they were conditionally offered based solely or in part on the applicant's
+       conviction history, the employer must first conduct an individualized assessment -- a reasoned,
+       evidence-based determination of whether the applicant's conviction history has a direct and
+       adverse relationship with the specific duties of the job that justify denying the applicant the
+       position.
+
+       (A) The standard for determining what constitutes a direct and adverse relationship that justifies
+       denying the applicant the position is the same standard described in subsection (f)(4).
+
+               (i) An applicant's possession of a benefit, privilege, or right required for the performance
+               of a job by a licensing, regulatory, or government agency or board is probative of the
+
+
+                                                   15
+       applicant's conviction history not being directly and adversely related to the specific
+       duties of that job.
+
+(B) The individualized assessment must include, at a minimum, consideration of the following
+factors:
+
+       (i) The nature and gravity of the offense or conduct. Consideration of this factor may
+       include but is not limited to:
+
+               (I) The specific personal conduct of the applicant that resulted in the conviction;
+
+               (II) Whether the harm was to property or people;
+
+               (III) The degree of the harm (e.g., amount of loss in theft);
+
+               (IV) The permanence of the harm;
+
+               (V) The context in which the offense occurred;
+
+               (VI) Whether a disability, including but not limited to a past drug addiction or
+               mental impairment, contributed to the offense or conduct, and if so, whether
+               the likelihood of harm arising from similar conduct could be sufficiently
+               mitigated or eliminated by a reasonable accommodation, or whether the
+               disability has been mitigated or eliminated by treatment or otherwise;
+
+               (VII) Whether trauma, domestic or dating violence, sexual assault, stalking,
+               human trafficking, duress, or other similar factors contributed to the offense or
+               conduct; and/or
+
+               (VIII) The age of the applicant when the conduct occurred.
+
+       (ii) The time that has passed since the offense or conduct and/or completion of the
+       sentence. Consideration of this factor may include but is not limited to:
+
+               (I) The amount of time that has passed since the conduct underlying the
+               conviction, which may significantly predate the conviction itself; and/or
+
+               (II) When the conviction led to incarceration, the amount of time that has
+               passed since the applicant's release from incarceration.
+
+       (iii) The nature of the job held or sought. Consideration of this factor may include but is
+       not limited to:
+
+               (I) The specific duties of the job;
+
+               (II) Whether the context in which the conviction occurred is likely to arise in the
+               workplace; and/or
+
+
+                                            16
+                (III) Whether the type or degree of harm that resulted from the conviction is
+                likely to occur in the workplace.
+
+(C) To the extent that any evidence of rehabilitation or mitigating circumstances, as described in
+subsections (c)(2)(D)(i)-(ii), is voluntarily provided by the applicant, or by another party at the
+applicant's request, before or during the initial individualized assessment, that evidence must be
+considered as part of the initial individualized assessment. In doing so, an employer may
+consider, but is not limited to considering, the factors set forth in subsection (c)(1)(B) and
+subsection (c)(3) as they relate to the evidence of rehabilitation or mitigating circumstances.
+
+(2) Notice of Preliminary Decision and Opportunity for Applicant Response. If, after conducting
+an initial individualized assessment, the employer makes a preliminary decision that the
+applicant's conviction history disqualifies the applicant from the employment conditionally
+offered, the employer shall notify the applicant of the preliminary decision in writing. The
+written notice to the applicant may, but is not required to, justify or explain the employer's
+reasoning for making the decision. However, the notice to the applicant must include all of the
+following:
+
+(A) Notice of the disqualifying conviction or convictions that are the basis for the preliminary
+decision to rescind the offer.
+
+(B) A copy of the conviction history report utilized or relied on by the employer, if any (such
+reports include, but are not limited to: consumer reports, credit reports, public records, results
+of internet searches, news articles, or any other writing containing information related to the
+conviction history that was utilized or relied upon by the employer).
+
+(C) Notice of the applicant's right to respond to the notice before the preliminary decision
+rescinding the offer of employment becomes final.
+
+(D) An explanation informing the applicant that, if the applicant chooses to respond, the
+response may include submission of either or both of the following types of evidence: evidence
+challenging the accuracy of the conviction history report that is the basis for the preliminary
+decision to rescind the offer, or evidence of rehabilitation or mitigating circumstances.
+
+        (i) Evidence of rehabilitation or mitigating circumstances may include, but is not limited
+        to, the items listed in paragraphs (I)-(X) below. Any such evidence of rehabilitation or
+        mitigating circumstances is optional and may only be voluntarily provided by the
+        applicant or by another party at the applicant's request.
+
+                (I) The length and consistency of employment history before and after the
+                offense or conduct;
+
+                (II) The facts or circumstances surrounding the offense or conduct;
+
+                (III) The applicant's current or former participation in self-improvement efforts,
+                including but not limited to school, job training, counseling, community service,
+                and/or a rehabilitation program, including in-custody programs;
+
+
+                                            17
+        (IV) Whether trauma, domestic or dating violence, sexual assault, stalking,
+        human trafficking, duress, or other similar factors contributed to the offense or
+        conduct;
+
+        (V) The age of the applicant when the conduct occurred;
+
+        (VI) Whether a disability, including but not limited to a past drug addiction or
+        mental impairment, contributed to the offense or conduct, and, if so, whether
+        the likelihood of harm arising from similar conduct could be sufficiently
+        mitigated or eliminated by a reasonable accommodation, or whether the
+        disability has been mitigated or eliminated by treatment or otherwise;
+
+        (VII) The likelihood that similar conduct will recur;
+
+        (VIII) Whether the applicant is bonded under a federal, state, or local bonding
+        program;
+
+        (IX) The fact that the applicant is seeking employment; and/or
+
+        (X) Successful completion, or compliance with the terms and conditions, of
+        probation or parole.
+
+(ii) Documentary evidence may include, but is not limited to, the items listed in
+paragraphs (I)-(V) below. Any such documentary evidence is optional and may only be
+voluntarily provided by the applicant or by another party at the applicant's request.
+
+        (I) Certificates or other documentation of participation in, enrollment in, or
+        completion of an educational, vocational, training, counseling, community
+        service, or rehabilitation program, including in-custody programs;
+
+        (II) Letters from current or former teachers, counselors, supervisors, co-workers,
+        parole or probation officers, or others who know the applicant;
+
+        (III) Police reports, protective orders, and/or documentation from healthcare
+        providers, counselors, case managers, or victim advocates who can attest to the
+        applicant's status as a survivor of domestic or dating violence, sexual assault,
+        stalking, or comparable offenses;
+
+        (IV) Documentation confirming the existence of a disability; and/or
+
+        (V) Any other document demonstrating rehabilitation or mitigating
+        circumstances.
+
+(iii) An employer is prohibited from the following actions:
+
+        (I) Refusing to accept additional evidence voluntarily provided by an applicant,
+        or by another party at the applicant's request, at any stage of the hiring process
+
+
+                                    18
+                 (including prior to making a preliminary decision to rescind the applicant's job
+                 offer);
+
+                 (II) Requiring an applicant to submit any of the additional evidence described in
+                 this subsection at any time in the hiring process;
+
+                 (III) Requiring an applicant to provide a specific type of documentary evidence
+                 (e.g., a police report as evidence of domestic or dating violence), or disqualifying
+                 an applicant from the employment conditionally offered for failing to provide
+                 any specific type of documents or other evidence;
+
+                 (IV) Requiring an applicant to disclose their status as a survivor of domestic or
+                 dating violence, sexual assault, stalking, or comparable statuses; and/or
+
+                 (V) Requiring an applicant to produce medical records and/or disclose the
+                 existence of a disability or diagnosis.
+
+(E) Notice of the deadline for the applicant to respond, if the applicant chooses to do so.
+
+        (i) The deadline for providing a response must be at least five business days from the
+        date of receipt of the notice. An employer may offer an applicant more than five
+        business days to respond to the notice regarding its preliminary decision.
+
+        (ii) If notice is transmitted through a format that does not provide a confirmation of
+        receipt, such as a written notice mailed by an employer without tracking delivery
+        enabled, the notice shall be deemed received five calendar days after the mailing is
+        deposited for delivery for California addresses, ten calendar days after the mailing for
+        addresses outside of California, and twenty calendar days after mailing for addresses
+        outside of the United States.
+
+        (iii) If notice is transmitted through email, the notice shall be deemed received two
+        business days after it is sent.
+
+(F) If the applicant timely notifies the employer in writing that the applicant disputes the
+accuracy of the conviction history being relied upon and that the applicant is taking specific
+steps to obtain evidence supporting the applicant's assertion, then the applicant shall be
+permitted no fewer than five additional business days to respond to the notice before the
+employer's decision to rescind the employment offer becomes final.
+
+(3) Reassessment. The employer shall consider any information submitted by the applicant
+before making a final decision regarding whether or not to rescind the conditional offer of
+employment. When considering evidence of rehabilitation or mitigating circumstances provided
+by the applicant, or by another party at the applicant's request, the employer may consider, but
+is not limited to, the following factors, in addition to the factors set forth in subsection (c)(1)(B),
+as applicable:
+
+
+
+
+                                              19
+        (A) When the conviction led to incarceration, the applicant's conduct during incarceration,
+        including participation in work and educational or rehabilitative programming and other
+        prosocial conduct;
+
+        (B) The applicant's employment history since the conviction or completion of sentence;
+
+        (C) The applicant's community service and engagement since the conviction or completion of
+        sentence, including but not limited to volunteer work for a community organization,
+        engagement with a religious group or organization, participation in a support or recovery group,
+        and other types of civic participation; and/or
+
+        (D) The applicant's other rehabilitative efforts since the completion of sentence or conviction or
+        mitigating factors not captured in the above subfactors.
+
+        (4) Final Decision. If the employer makes a final decision to rescind the conditional offer and
+        deny an application based solely or in part on the applicant's conviction history, the employer
+        shall notify the applicant in writing. The employer may, but is not required to, use the sample
+        final notice form available on the Department's website. However, any notice to the applicant
+        must includes the following:
+
+        (A) The final denial or disqualification decision reached. The employer may also include, but is
+        not required to include, the justification or an explanation of the employer's reasoning for
+        reaching the decision that it did;
+
+        (B) Any procedure the employer has for the applicant to challenge the decision or request
+        reconsideration; and
+
+        (C) The right to contest the decision by filing a complaint with the Civil Rights Department.
+
+(d) Labor contractors, union hiring halls, and client employers.
+
+        (1) A labor contractor, union hiring hall, and client employer are governed in the same way by
+        section 11017.1 of these regulations as are other employers.
+
+        (2) A labor contractor or union hiring hall may not decline to admit a worker to a pool or
+        availability list, discontinue a worker's inclusion in a pool or availability list, or decline to refer a
+        worker to a position with a client employer, because of the worker's criminal history unless the
+        labor contractor or union hiring hall has complied with the procedures and requirements
+        outlined in section 11017.1 of these regulations. To the extent labor contractors or union hiring
+        halls place applicants into a pool of workers from which individuals may be assigned to a variety
+        of positions, the labor contractors or union hiring halls must still comply with the requirements
+        of section 11017.1, including the individualized assessment of whether any conviction history
+        being considered has a direct and adverse relationship with the specific duties of the jobs for
+        which the applicant may be assigned from the pool or hall.
+
+        (3) If a labor contractor or union hiring hall re-conducts inquiries into criminal history to
+        maintain the eligibility of workers admitted to a pool or availability list, then it must comply with
+        the procedures and requirements outlined in section 11017.1 of these regulations. When re-
+
+                                                       20
+        conducting an inquiry, labor contractors or union hiring halls cannot satisfy the requirements of
+        subsection (c) if they disqualify a worker from retention in a pool based on conviction history
+        that was already considered and deemed not disqualifying for entry into the pool in the first
+        place unless the decision is based on new material developments such as changes to job duties,
+        legal requirements, or experience or data regarding the particular convictions involved.
+
+        (4) A client employer may inquire into or consider the conviction history of a worker supplied by
+        a labor contractor or union hiring hall only after extending a conditional offer of employment to
+        the worker and when following the procedures described in subsections (a) - (c), unless the
+        specific position is exempted pursuant to subsection (a)(4). A client employer violates this
+        section by instructing labor contractors or union hiring halls to refer only workers without
+        conviction records, unless exempted by subsection (a)(4).
+
+(e) Disparate Treatment. The Act also prohibits employers from treating applicants or employees
+differently in the course of considering criminal conviction history, or any evidence of rehabilitation or
+mitigating circumstances, if the disparate treatment is substantially motivated by a basis protected by
+the Act.
+
+(f) Adverse Impact. In addition to the types of criminal history addressed in subsection (b) that
+employers are explicitly prohibited from inquiring about or considering unless an exception applies,
+consideration of other forms of criminal convictions, not enumerated above, may have an adverse
+impact on applicants or employees on a basis protected by the Act, including, but not limited to, gender,
+race, and national origin.
+
+        (1) An applicant or employee bears the burden of demonstrating that the policy of considering
+        criminal convictions has an adverse impact on a basis protected by the Act.
+
+        (2) Consistent with sections 11017 and 11010 of these regulations and the Uniform Guidelines
+        on Employee Selection Procedures ( 29 C.F.R. part 1607 (1978)) incorporated by reference in
+        sections 11017(a) and (e), adverse impact includes a substantial disparity in the rate of selection
+        in hiring, promotion, or other employment decisions which works to the disadvantage of groups
+        of individuals on the basis of any characteristics protected by the Act.
+
+        (3) An adverse impact may be established through the use of statistics or by offering any other
+        evidence that establishes an adverse impact. State- or national-level statistics on conviction
+        records that show a substantial disparity based on any characteristic protected by the Act are
+        presumptively sufficient to establish an adverse impact. This presumption may be rebutted by a
+        showing that there is a reason to expect a markedly different result after accounting for any
+        particularized circumstances such as the geographic area encompassed by the applicant or
+        employee pool, the particular types of convictions being considered, or the particular job at
+        issue.
+
+        (4) Establishing "Job-Related and Consistent with Business Necessity."
+
+        (A) If the policy or practice of considering criminal convictions creates an adverse impact on
+        applicants or employees on a basis protected by the Act, the burden shifts to the employer to
+        establish that the policy is nonetheless justifiable because it is job-related and consistent with
+        business necessity. The policy or practice needs to bear a demonstrable relationship to
+
+                                                     21
+successful performance on the job and in the workplace and measure the person's fitness for
+the specific position(s), not merely to evaluate the person in the abstract. In order to establish
+job-relatedness and business necessity, any employer must demonstrate that the policy or
+practice is appropriately tailored, taking into account at least the following factors:
+
+        (i) The nature and gravity of the offense or conduct;
+
+        (ii) The time that has passed since the offense or conduct and/or completion of the
+        sentence; and
+
+        (iii) The nature of the job held or sought.
+
+(B) Demonstrating that a policy or practice of considering conviction history in employment
+decisions is appropriately tailored to the job for which it is used as an evaluation factor requires
+that an employer demonstrate the applicant's or employee's conviction history has a direct and
+adverse relationship with the specific duties of the job that justify denying the applicant or
+employee the position.
+
+(C) Bright-line conviction disqualification or consideration policies or practices that include
+conviction-related information that is seven or more years old are subject to a rebuttable
+presumption that they are not sufficiently tailored to meet the job-related and consistent with
+business necessity affirmative defense (except if justified by subsection (g) below).
+
+(D) An individualized assessment must involve notice to the adversely impacted applicant or
+employee (before any adverse action is taken) that they have been screened out or otherwise
+denied an employment opportunity because of a criminal conviction; if more than one
+conviction appeared on the background report, which conviction(s) were found disqualifying; a
+reasonable opportunity for the individuals to demonstrate that the exclusion should not be
+applied due to their particular circumstances; and consideration by the employer as to whether
+the additional information provided by the individuals or otherwise obtained by the employer
+warrants an exception to the exclusion and shows that the policy as applied to the applicant or
+employee is not job -related and consistent with business necessity.
+
+(E) Before an employer may take an adverse action such as discharging, laying off, or declining
+to promote an adversely impacted individual based on conviction history obtained by a source
+other than the applicant or employee (e.g. through a credit report or internally generated
+research), the employer must give the impacted individual notice of the disqualifying conviction
+and a reasonable opportunity to present evidence that the information is factually inaccurate. If
+the applicant or employee establishes that the record is factually inaccurate, then that
+information cannot be considered in the employment decision.
+
+(5) Less Discriminatory Alternatives. If an employer demonstrates that its policy or practice of
+considering conviction history is job-related and consistent with business necessity, adversely
+impacted employees or applicants may still prevail under the Act if they can demonstrate that
+there is a less discriminatory policy or practice that serves the employer's goals as effectively as
+the challenged policy or practice, such as a more narrowly targeted list of convictions or another
+form of inquiry that evaluates job qualification or risk as accurately without significantly
+increasing the cost or burden on the employer.
+
+                                             22
+(g) Compliance with Federal or State Laws, Regulations, or Licensing Requirements Requiring
+Consideration of Criminal History. In some instances, employers are subject to federal or state laws or
+regulations that prohibit individuals with certain criminal records from holding particular positions or
+occupations or mandate a screening process employers are required or permitted to utilize before
+employing individuals in such positions or occupations (e.g., 21 U.S.C. § 830(e)(1)(G); Labor Code
+sections 432.7). Examples include, but are not limited to, government agencies employing individuals as
+peace officers, employers employing individuals at health facilities where they will have regular access
+to patients, and employers employing individuals at health facilities or pharmacies where they will have
+access to medication or controlled substances. Some federal and state laws and regulations make
+criminal history a determining factor in eligibility for occupational licenses (e.g., 49 U.S.C. § 31310).
+Compliance with federal or state laws or regulations that mandate particular criminal history screening
+processes or requiring that an employee or applicant possess or obtain any required occupational
+licenses constitute rebuttable defenses to an adverse impact claim under the Act.
+
+(h) Claims under the Fair Chance Act, codified at Government Code section 12952, are subject to the
+procedures set forth in Article 1 of Chapter 7 of the Act, including Government Code section 12965, and
+the Department's procedural regulations. An individual may file a complaint for investigation by the
+Department or may obtain an immediate right-to-sue notice.
+
+(i) Employers Seeking the Work Opportunity Tax Credit. An employer who wishes to claim the Work
+Opportunity Tax Credit ("WOTC") provided for under federal law is not exempt from this section or
+Section 12952 of the Act.
+
+        (1) An employer may require an applicant to complete IRS form 8850 ("Pre-Screening Notice and
+        Certification Request for the Work Opportunity Credit"), as revised March 2016, or its
+        equivalent, before a conditional offer is made, so long as the information gathered is used solely
+        for the purpose of applying for the WOTC. In particular, no applicant may be asked the basis of
+        their qualification for the WOTC other than in the form of questions that do not encourage or
+        force an applicant to identify themselves as a person who has been convicted of a felony or
+        released from prison following a felony conviction rather than as a person who qualifies for the
+        WOTC under one of the several bases listed in Question 2 on form 8850. Information regarding
+        an applicant's criminal history obtained from the applicant's form 8850 may only be considered
+        as otherwise provided by law.
+
+        (2) An employer may require an applicant to complete U.S. Department of Labor Employment
+        and Training Administration form 9061 ("Individual Characteristics Form (ICF) Work Opportunity
+        Tax Credit"), as revised November 2016, or its equivalent, only after a conditional offer has been
+        made. Information regarding an applicant's criminal history obtained from the applicant's form
+        9061 may only be considered as otherwise provided by law.
+
+        (3) An employer must maintain any forms, documents, or information used to complete the
+        forms described in this subsection in confidential files separate from the applicant's general
+        personnel file and shall not use or disseminate these forms, documents, or information for any
+        purpose other than applying for the WOTC.
+
+(j) Definitions. For purposes of section 11017.1 of these regulations only:
+
+
+                                                    23
+        (1) "Applicant" includes, in addition to the individuals within the scope of the general definition
+        in section 11008(a) of these regulations, individuals who have been conditionally offered
+        employment, even if they have commenced employment when the employer undertakes a post-
+        conditional offer review and consideration of criminal history; existing employees who have
+        applied or indicated a specific desire to be considered for a different position with their current
+        employer; and an existing employee who is subjected to a review and consideration of criminal
+        history because of a change in ownership, management, policy, or practice. An employer cannot
+        evade the requirements of Government Code section 12952 or this regulation by having an
+        individual lose their status as an "applicant" by working before undertaking a post-conditional
+        offer review of the individual's criminal history.
+
+        (2) "Employer" includes a labor contractor and a client employer; any direct and joint employer;
+        any entity that evaluates the applicant's conviction history on behalf of an employer, or acts as
+        an agent of an employer, directly or indirectly; any staffing agency; and any entity that selects,
+        obtains, or is provided workers from a pool or availability list.
+
+        (3) "Client employer" means a business entity, regardless of its form, that selects workers from a
+        pool or availability list, or obtains or is provided workers to perform labor within its usual course
+        of business from a labor contractor.
+
+        (4) "Labor contractor" means an individual or entity, either with or without a contract, which
+        supplies a client employer with, or maintains a pool or availability list of, workers to perform
+        labor within the client employer's usual course of business. This definition is not intended to
+        include Farm Labor Contractors.
+
+        (5) "Hiring hall" means an agency or office operated by a union, by an employer and union, or by
+        a state or local employment service, to provide and place employees for specific jobs.
+
+        (6) "Pool or availability list" means applicants or employees admitted into entry in the hiring hall
+        or other hiring pool utilized by one or more employers and/or provided by a labor contractor for
+        use by prospective employers.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12946 and 12952, Government Code.
+
+                                       § 11020. Aiding and Abetting.
+
+(a) Prohibited Practices.
+
+        (1) It is unlawful to assist any person or individual in doing any act known to constitute unlawful
+        employment discrimination.
+
+        (2) It is unlawful to incite, solicit, or encourage any person or individual to violate the Act,
+        whether or not the Act is in fact violated.
+
+        (3) It is unlawful to coerce any person or individual to commit unlawful employment
+        discrimination with offers of cash, other consideration, or an employment benefit, or to impose
+        or threaten to impose any penalty, including denial of an employment benefit.
+
+                                                      24
+        (4) It is unlawful to conceal or destroy evidence relevant to investigations initiated by the
+        Department or its staff.
+
+        (5) It is unlawful to advertise for employment on a basis prohibited in the Act.
+
+        (6)
+                (i) The prohibited practices set forth in paragraphs (1)-(5) include any such practice
+                conducted in whole or in part through the use of an automated-decision system.
+
+                (ii) Relevant to a claim of employment discrimination or an available defense of that
+                claim is evidence, or the lack of evidence, of anti-bias testing or similar proactive efforts
+                to avoid unlawful discrimination, including the quality, efficacy, recency, and scope of
+                such effort, the results of such testing or other effort, and the response to the results.
+
+(b) Permissible Practices.
+
+        (1) It shall not be unlawful, without more, to have been present during the commission of acts
+        amounting to unlawful discrimination or to fail to prevent or report such acts, unless it is the
+        normal business duty of the person or individual to prevent or report such acts.
+
+        (2) It shall not be unlawful to maintain good faith lawful defenses or privileges to charges of
+        discrimination.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12941 and 12942, Government Code.
+
+                             Article 4. National Origin and Ancestry Discrimination
+
+                                    § 11028. Specific Employment Practices.
+
+(a) Language Restrictions.
+
+        (1) It is an unlawful employment practice for an employer or other covered entity to adopt or
+        enforce a policy that limits or prohibits the use of any language in the workplace, including, but
+        not limited to, an English-only rule, unless:
+
+        (A) The language restriction is justified by business necessity;
+
+        (B) The language restriction is narrowly tailored; and
+
+        (C) The employer has effectively notified its employees of the circumstances and time when the
+        language restriction is required to be observed and of the consequence for violating the
+        language restriction.
+
+        (2) For purposes of this subsection, “business necessity” means an overriding legitimate
+        business purpose, such that:
+
+
+                                                      25
+        (A) The language restriction is necessary to the safe and efficient operation of the business;
+
+        (B) The language restriction effectively fulfills the business purpose it is supposed to serve; and
+
+        (C) There is no alternative practice to the language restriction that would accomplish the
+        business purpose equally well with a lesser discriminatory impact.
+
+        (3) It is not sufficient that the employer’s language restriction merely promotes business
+        convenience or is due to customer or co-worker preference.
+
+        (4) English-only rules violate the Act unless the employer can prove the elements listed in
+        section 11028, subdivisions (a)(1)(A)-(C). English-only rules are never lawful during an
+        employee’s non-work time, e.g., breaks, lunch, unpaid employer-sponsored events, etc.
+
+(b) Employment dDiscrimination based on an applicant’s or employee’s accent is unlawful unless the
+employer proves that the individual’s accent interferes materially with the applicant’s or employee’s
+ability to perform the job in question. This prohibition also applies where such discrimination resulted,
+in whole or in part, from an employer’s or other covered entity’s use of an automated-decision system
+or selection criteria (including a qualification standard, employment test, or proxy).
+
+(c) Discrimination based on an applicant’s or employee’s English proficiency is unlawful unless the
+English proficiency requirement at issue is justified by business necessity (i.e., the level of proficiency
+required by the employer is necessary to effectively fulfill the job duties of the position.) In determining
+business necessity in this context, relevant factors include, but are not limited to, the type of proficiency
+required (e.g., spoken, written, aural, and/or reading comprehension), the degree of proficiency
+required, and the nature and job duties of the position. This prohibition also applies where such
+discrimination resulted, in whole or in part, from an employer’s or other covered entity’s use of an
+automated-decision system or selection criteria (including a qualification standard, employment test, or
+proxy).
+
+(d) It is not unlawful for an employer to request from an applicant or employee information regarding
+his or hertheir ability to speak, read, write, or understand any language, including languages other than
+English, if justified by business necessity.
+
+(e) Retaliation. It is an unlawful employment practice for an employer or other covered entity to
+retaliate against any individual because the individual has opposed discrimination or harassment on the
+basis of national origin, has participated in the filing of a complaint, or has testified, assisted, or
+participated in any other manner in a proceeding in which national origin discrimination or harassment
+has been alleged. Retaliation may include, but is not limited to:
+
+        (1) threatening to contact or contacting immigration authorities or a law enforcement agency
+        about the immigration status of the employee, former employee, applicant, or a family member
+        (e.g., spouse, domestic partner, parent, sibling, child, uncle, aunt, niece, nephew, cousin,
+        grandparent, great-grandparent, grandchild, or great-grandchild, by blood, adoption, marriage,
+        or domestic partnership) of the employee, former employee, or applicant; or
+
+
+
+
+                                                     26
+        (2) taking adverse action against an employee because the employee updates or attempts to
+        update personal information based on a change of name, social security number, or
+        government-issued employment documents.
+
+(f) Immigration-related Practices.
+
+        (1) All provisions of the Act and these regulations apply to undocumented applicants and
+        employees to the same extent that they apply to any other applicant or employee. An
+        employee’s or applicant’s immigration status is irrelevant during the liability phase of any
+        proceeding brought to enforce the Act.
+
+        (2) Discovery or other inquiry into an applicant’s or employee’s immigration status shall not be
+        permitted unless the person seeking discovery or making the inquiry has shown by clear and
+        convincing evidence that such inquiry is necessary to comply with federal immigration law.
+
+        (3) It is an unlawful practice for an employer or other covered entity to discriminate against an
+        employee because of the employee’s or applicant’s immigration status, unless the employer has
+        shown by clear and convincing evidence that it is required to do so in order to comply with
+        federal immigration law. This prohibition also applies where such discrimination resulted, in
+        whole or in part, from an employer’s or other covered entity’s use of an automated-decision
+        system or selection criteria (including a qualification standard, employment test, or proxy).
+
+        (4) It is an unlawful practice for an employer or other covered entity to retaliate, as described in
+        subdivision (e), against an employee for engaging in activity protected by the Act.
+
+(g) It is unlawful for an employer or other covered entity to discriminate against an applicant or
+employee because he or shethey holds or presents a driver’s license issued under section 12801.9 of the
+Vehicle Code. This prohibition also applies where such discrimination resulted, in whole or in part, from
+an employer’s or other covered entity’s use of an automated-decision system or selection criteria
+(including a qualification standard, employment test, or proxy).
+
+        (1) An employer or other covered entity may require an applicant or employee to hold or
+        present a license issued under the Vehicle Code only if:
+
+        (A) Possession of a driver’s license is required by state or federal law; or
+
+        (B) Possession of a driver’s license is required by the employer or other covered entity and is
+        otherwise permitted by law. An employer’s or other covered entity’s policy requiring applicants
+        or employees to present or hold a driver’s license may be evidence of a violation of the Act if the
+        policy is not uniformly applied or is inconsistent with legitimate business reasons (i.e.,
+        possessing a driver’s license is not needed in order to perform an essential function of the job).
+
+        (2) Nothing in this subsection shall limit or expand an employer’s authority to require an
+        applicant or employee to possess a driver’s license.
+
+        (3) Nothing in this subsection shall alter an employer’s or other covered entity’s rights or
+        obligations under federal immigration law.
+
+
+                                                     27
+(h) Citizenship requirements. Citizenship requirements that are a pretext for discrimination or have the
+purpose or effect of discriminating against applicants or employees on the basis of national origin or
+ancestry are unlawful, unless pursuant to a permissible defense. This prohibition also applies where
+such discrimination resulted, in whole or in part, from an employer’s or other covered entity’s use of an
+automated-decision system or selection criteria (including a qualification standard, employment test, or
+proxy).
+
+(i) Human Trafficking. It is an unlawful employment practice for an employer or other covered entity to
+use force, fraud, or coercion to compel the employment of, or subject to adverse treatment, applicants
+or employees on the basis of national origin.
+
+(j) Harassment. It is unlawful for an employer or other covered entity to harass an applicant or employee
+on the basis of national origin. (See generally section 11019(b).) The use of epithets, derogatory
+comments, slurs, or non-verbal conduct based on national origin, including, but not limited to, threats of
+deportation, derogatory comments about immigration status, or mockery of an accent or a language or
+its speakers may constitute harassment if the actions are severe or pervasive such that they alter the
+conditions of the employee’s employment and create an abusive working environment. A single
+unwelcome act of harassment may be sufficiently severe so as to create an unlawful hostile work
+environment. (See generally section 11034(f)(2)(A).)
+
+(k) Height and/or weight requirements. Such requirements may have the effect of creating an adverse
+disparate impact on the basis of national origin. Where an adverse impact is established, such
+requirements are unlawful, unless the employer can demonstrate that they are job related and justified
+by business necessity. Where such a requirement is job related and justified by business necessity, it is
+still unlawful if the applicant or employee can prove that the purpose of the requirement can be
+achieved as effectively through less discriminatory means. This prohibition also applies where such
+discrimination resulted, in whole or in part, from an employer’s or other covered entity’s use of an
+automated-decision system or selection criteria (including a qualification standard, employment test, or
+proxy).
+
+(l) Recruitment and job segregation. It is an unlawful employment practice for an employer or other
+covered entity to seek, request, or refer applicants or employees based on national origin or to assign
+positions, facilities, or geographical areas of employment based on national origin, unless pursuant to a
+permissible defense.
+
+(m) It is unlawful for an employer or other covered entity to use an automated-decision system or
+selection criteria (including a qualification standard, employment test, or proxy) that discriminates
+against an applicant or employee or a class of applicants or employees on the basis of national origin or
+a proxy of national origin, subject to any available defense. Relevant to any such claim or available
+defense is evidence, or the lack of evidence, of anti-bias testing or similar proactive efforts to avoid
+unlawful discrimination, including the quality, efficacy, recency, and scope of such effort, the results of
+such testing or other effort, and the response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12926, 12940 and
+12951, Government Code.
+
+
+
+
+                                                    28
+                                        Article 5. Sex Discrimination
+
+                                    § 11032. Pre-Employment Practices.
+
+(a) Recruitment and Advertising.
+
+        (1) Employers or other covered entities engaged in recruiting activity (see section 11015(a)) shall
+        recruit individuals of both sexes for all jobs unless pursuant to a permissible defense.
+
+        (2) It is unlawful for any publication or other media to separate listings of job openings into male
+        and female classifications.
+
+(b) Pre-Employment Inquiries and Applications.
+
+        (1) For all employers or other covered entities who provide, accept and consider applications, it
+        shall be unlawful to refuse to provide, accept and consider applications from individuals of one
+        sex unless pursuant to a permissible defense.
+
+        (2) It is unlawful for an employer or other covered entity to ask the sex of the applicant on an
+        application form or pre-employment questionnaire, unless the question is asked pursuant to a
+        permissible defense or for recordkeeping purposes. After an individual is hired, the employer or
+        other covered entity may record the employee’s sex for non-discriminatory personnel purposes.
+
+        (3) It is unlawful for an employer or other covered entity to ask questions regarding
+        childbearing, pregnancy, birth control, or familial responsibilities unless the questions are
+        related to specific and relevant working conditions of the job in question.
+
+        (4) It is unlawful for an employer or other covered entity to use an automated-decision system
+        or selection criteria (including a qualification standard, employment test, or proxy) that
+        discriminates against an applicant or employee or a class of applicants or employees on the
+        basis of sex, subject to any available defense. Relevant to any such claim or available defense is
+        evidence, or the lack of evidence, of anti-bias testing or similar proactive efforts to avoid
+        unlawful discrimination, including the quality, efficacy, recency, and scope of such effort, the
+        results of such testing or other effort, and the response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12943 and 12945, Government Code.
+
+                                        § 11033. Employee Selection.
+
+(a) Tests of Physical Agility or Strength. A test of physical agility or strength shall not be used unless the
+test is administered pursuant to a permissible defense. No applicant or employee shall be refused the
+opportunity to demonstrate that he or she hasthey have the requisite strength or agility to perform the
+job in question.
+
+(b) Height and Weight Standards.
+
+
+
+                                                      29
+        (1) Use of height or weight standards that discriminate against one sex or the other is unlawful
+        unless pursuant to a permissible defense.
+
+        (2) Use of separate height and/or separate weight standards for males and females is unlawful
+        unless pursuant to a permissible defense.
+
+(c) Hiring Applicants of Childbearing Age. It is unlawful to refuse to hire a female applicant because she
+is of childbearing age.
+
+(d) Prior Work Experience. If an employer or other covered entity considers prior work experience in the
+selection or assignment of an employee, the employer or other covered entity shall also consider prior
+unpaid or volunteer work experience.
+
+(e) Sex Stereotypes. Use of any criterion that is based exclusively or in part on a sex stereotype is
+unlawful unless pursuant to a permissible defense.
+
+(f) It is unlawful for an employer or other covered entity to use an automated-decision system or
+selection criteria (including a qualification standard, employment test, or proxy) that discriminates
+against an applicant or employee or a class of applicants or employees on the basis of sex or any basis
+prohibited in subsections in (a) through (e) of this section, subject to any available defense. Relevant to
+any such claim or available defense is evidence, or the lack of evidence, of anti-bias testing or similar
+proactive efforts to avoid unlawful discrimination, including the quality, efficacy, recency, and scope of
+such effort, the results of such testing or other effort, and the response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12940,
+12943 and 12945, Government Code.
+
+                     Article 6. Pregnancy, Childbirth or Related Medical Conditions
+
+                   § 11038. Responsibilities of Covered Entities Other than Employers.
+
+(a) Unless a permissible defense applies, discrimination because of pregnancy or perceived pregnancy by
+any covered entity other than employers constitutes discrimination because of sex under Government
+Code sections 12926, 12940, 12943 and 12944.
+
+(b) It is unlawful for an employer or other covered entity to use an automated-decision system or
+selection criteria (including a qualification standard, employment test, or proxy) that discriminates
+against an applicant or employee or a class of applicants or employees on the basis of pregnancy or
+perceived pregnancy, subject to any available defense. Relevant to any such claim or available defense is
+evidence, or the lack of evidence, of anti-bias testing or similar proactive efforts to avoid unlawful
+discrimination, including the quality, efficacy, recency, and scope of such effort, the results of such
+testing or other effort, and the response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12926, 12940, 12943,
+12944 and 12945, Government Code.
+
+                                  § 11039. Responsibilities of Employers.
+
+
+                                                     30
+(a) Employer Obligations
+
+       (1) Except as excused by a permissible defense, it is unlawful for any employer to:
+
+       (A) refuse to hire or employ an applicant because of pregnancy or perceived pregnancy;
+
+       (B) refuse to select an applicant or employee for a training program leading to employment or
+       promotion because of pregnancy or perceived pregnancy;
+
+       (C) refuse to promote an employee because of pregnancy or perceived pregnancy;
+
+       (D) bar or to discharge an applicant or employee from employment or from a training program
+       leading to employment or promotion because of pregnancy or perceived pregnancy;
+
+       (E) discriminate against an applicant or employee in terms, conditions or privileges of
+       employment because of pregnancy or perceived pregnancy;
+
+       (F) harass an applicant or employee because of pregnancy or perceived pregnancy, as set forth
+       in section 11036;
+
+       (G) transfer an employee affected by pregnancy over her objections to another position, except
+       as provided in section 11041(c). Nothing in this section prevents an employer from transferring
+       an employee for the employer’s legitimate operational needs unrelated to the employee’s
+       pregnancy or perceived pregnancy;
+
+       (H) require an employee to take a leave of absence because of pregnancy or perceived
+       pregnancy when the employee has not requested leave;
+
+       (I) retaliate, discharge, or otherwise discriminate against an applicant or employee because she
+       has opposed employment practices forbidden under the FEHA or because she has filed a
+       complaint, testified, or assisted in any proceeding under the FEHA; or
+
+       (J) use an automated-decision system or selection criteria (including a qualification standard,
+       employment test, or proxy) that discriminates against an applicant or employee or a class of
+       applicants or employees on the basis of pregnancy or perceived pregnancy, subject to any
+       available defense; or
+
+               (i) Relevant to any such claim or available defense is evidence, or the lack of evidence, of
+               anti-bias testing or similar proactive efforts to avoid unlawful discrimination, including
+               the quality, efficacy, recency, and scope of such effort, the results of such testing or
+               other effort, and the response to the results.
+
+       (J)(K) otherwise discriminate against an applicant or employee because of pregnancy or
+       perceived pregnancy by any practice that is prohibited on the basis of sex.
+
+       (2) Except as excused by a permissible defense, it is unlawful for any employer to:
+
+
+
+                                                   31
+        (A) refuse to provide employee benefits for pregnancy as set forth at section 11044, if the
+        employer provides such benefits for other temporary disabilities;
+
+        (B) refuse to maintain and to pay for coverage under a group health plan for an eligible
+        employee who takes pregnancy disability leave, as set forth at section 11044, under the same
+        terms and conditions that would have been provided if the employee had not taken leave;
+
+        (C) refuse to provide reasonable accommodation for an employee or applicant affected by
+        pregnancy as set forth at section 11040;
+
+        (D) refuse to transfer an employee affected by pregnancy as set forth at section 11041;
+
+        (E) refuse to grant an employee disabled by pregnancy a pregnancy disability leave, as set forth
+        at section 11042; or
+
+        (F) deny, interfere with, or restrain an employee’s rights to reasonable accommodation, to
+        transfer or to take pregnancy disability leave under Government Code section 12945, including
+        retaliating against the employee because she has exercised her right to reasonable
+        accommodation, to transfer or to take pregnancy disability leave.
+
+(b) Permissible defenses, as defined at section 11010, include a bona fide occupational qualification,
+business necessity or where the practice is otherwise required by law.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12926, 12940 and
+12945, Government Code; Pregnancy Discrimination Act of 1978 (P.L. 95-555, 42 U.S.C. §2000e,
+§701(k)), an amendment to Title VII of the federal Civil Rights Act of 1964 (42 U.S.C. §2000e et seq.); Cal.
+Federal Sav. and Loan Ass’n v. Guerra (1987) 479 U.S. 272.
+
+                                  Article 7. Marital Status Discrimination
+
+                                    § 11056. Pre-Employment Practices.
+
+(a) Impermissible Inquiries. It is unlawful to ask an applicant to disclose his or hertheir marital status as
+part of a pre-employment inquiry, including an inquiry made through the use of an automated-decision
+system, unless pursuant to a permissible defense.
+
+(b) Request for Names. For business reasons other than ascertaining marital status, an applicant may be
+asked whether he or she hasthey have ever used another name, e.g., to enable an employer or other
+covered entity to check the applicant’s past work record.
+
+(c) Employment of Spouse. It is lawful to ask an applicant to state whether he or she hasthey have a
+spouse who is presently employed by the employer, but this information may not be used as a basis for
+an employment decision except as stated below.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921 and
+12940, Government Code.
+
+                                 Article 8. Religious Creed Discrimination
+
+                                                     32
+                                    § 11063. Pre-Employment Practices.
+
+(a) Pre-employment inquiries regarding an applicant’s availability for work on weekends or evenings
+shall not be used to ascertain their religious creed, nor shall such inquiry be used to evade the
+requirement of reasonable accommodation. However, inquiries as to the availability for work on
+weekends or evenings are permissible where reasonably related to the normal business requirements of
+the job in question and in compliance with section 11016 of these regulations.
+
+(b) It is unlawful for an employer or other covered entity to use an automated-decision system or
+selection criteria (including a qualification standard, employment test, or proxy) that discriminates
+against an applicant or employee or a class of applicants or employees on the basis of religion, subject to
+any available defense. Relevant to any such claim or available defense is evidence, or the lack of
+evidence, of anti-bias testing or similar proactive efforts to avoid unlawful discrimination, including the
+quality, efficacy, recency, and scope of such effort, the results of such testing or other effort, and the
+response to the results.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921 and
+12940, Government Code.
+
+                                         Article 9. Disability Discrimination
+
+                                    § 11070. Pre-Employment Practices.
+
+(a) Recruitment and Advertising.
+
+        (1) Employers and other covered entities engaged in recruiting activities shall consider
+        applicants with or without disabilities or perceived disabilities on an equal basis for all jobs,
+        unless pursuant to a permissible defense.
+
+        (2) It is unlawful to advertise or publicize, including but not limited to through the use of an
+        automated-decision system, an employment benefit in any way that discourages or is designed
+        to discourage applicants with disabilities from applying to a greater extent than individuals
+        without disabilities.
+
+(b) Applications and disability-related inquiries.
+
+        (1) An employer or other covered entity must consider and accept applications from applicants
+        with or without disabilities equally.
+
+        (2) Prohibited Inquiries. It is unlawful to ask general questions on disability or questions likely to
+        elicit information about a disability in an application form, automated-decision system, or pre-
+        employment questionnaire or at any time before a job offer is made. Examples of prohibited
+        inquiries are:
+
+        (A) “Do you have any particular disabilities?”
+
+        (B) “Have you ever been treated for any of the following diseases or conditions?”
+
+                                                     33
+        (C) “Are you now receiving or have you ever received workers’ compensation?”
+
+        (D) “What prescription medications are you taking?”
+
+        (E) “Have you ever had a job-related injury or medical condition?”
+
+        (F) Have you ever left a job because of any physical or mental limitations?
+
+        (G) “Have you ever been hospitalized?”
+
+        (H) “Have you ever taken medical leave?”
+
+        (3) Permissible Job-Related Inquiry. Except as provided in the ADA, as amended by the ADA
+        Amendments Act of 2008 and the regulations adopted pursuant thereto, nothing in Government
+        Code Section 12940(d), or in this subdivision, shall prohibit any employer or other covered
+        entity, in connection with prospective employment, from inquiring whether the applicant can
+        perform the essential functions of the job. When an applicant requests reasonable
+        accommodation, or when an applicant has an obvious disability, and the employer or other
+        covered entity has a reasonable belief that the applicant needs a reasonable accommodation,
+        an employer or other covered entity may make limited inquiries regarding such reasonable
+        accommodation.
+
+(c) Interviews. An employer or other covered entity shall make reasonable accommodation to the needs
+of applicants with disabilities in interviewing situations, e.g., providing interpreters for the hearing-
+impaired, or scheduling the interview in a room accessible to wheelchairs.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12926,
+12926.1 and 12940, Government Code.
+
+                     § 11071. Medical and Psychological Examinations and Inquiries.
+
+(a) Pre-offer. It is unlawful for an employer or other covered entity to conduct a medical or psychological
+examination or inquiries of an applicant before an offer of employment is extended to that applicant. A
+medical or psychological examination includes a procedure or test that seeks information about an
+individual’s physical or mental conditions or health but does not include testing for current illegal drug
+use.
+
+(b) Post-Offer. An employer or other covered entity may condition a bona fide offer of employment on
+the results of a medical or psychological examination or inquiries conducted prior to the employee’s
+entrance on duty in order to determine fitness for the job in question. For a job offer to be bona fide, an
+employer must have either completed all non-medical components of its application process or be able
+to demonstrate that it could not reasonably have done so before issuing the offer, provided that:
+
+        (1) All entering employees in similar positions are subjected to such an examination.
+
+
+
+
+                                                    34
+        (2) Where the results of such medical or psychological examination would result in
+        disqualification, an applicant or employee may submit independent medical opinions for
+        consideration before a final determination on disqualification is made.
+
+        (3) The results are to be maintained on separate forms and shall be accorded confidentiality as
+        medical records.
+
+(c) Withdrawal of Offer. An employer or other covered entity may withdraw an offer of employment
+based on the results of a medical or psychological examination or inquiries only if it is determined that
+the applicant is unable to perform the essential duties of the job with or without reasonable
+accommodation, or that the applicant with or without reasonable accommodation would endanger the
+health or safety of the applicant or of others.
+
+(d) Medical and Psychological Examinations and Disability-Related Inquiries during Employment.
+
+        (1) An employer or other covered entity may make disability-related inquiries, including fitness
+        for duty exams, and require medical examinations of employees so long as the inquiries are
+        both job-related and consistent with business necessity.
+
+        (2) Drug or Alcohol Testing. An employer or other covered entity may maintain and enforce
+        rules prohibiting employees from being under the influence of alcohol or drugs in the workplace
+        and may conduct alcohol or drug testing for this purpose if they have a reasonable belief that an
+        employee may be under the influence of alcohol or drugs at work.
+
+        (A) Current Drug Use. An applicant or employee who currently engages in the use of illegal drugs
+        or uses medical marijuana is not protected as a qualified individual under the FEHA when the
+        employer acts on the basis of such use, and questions about current illegal drug use are not
+        disability-related inquiries.
+
+        (B) Past Addiction. Questions about past addiction to illegal drugs or questions about whether
+        an employee ever has participated in a rehabilitation program are disability-related because
+        past drug addiction generally is a disability. Individuals who were addicted to drugs, but are not
+        currently using illegal drugs are protected under the FEHA from discrimination because of their
+        disability.
+
+        (3) Other Acceptable Disability-Related Inquiries and Medical Examinations of Employees
+
+        (A) Employee Assistance Program. An Employee Assistance Program (EAP) counselor may ask an
+        employee seeking help for personal problems about any physical or mental condition(s) the
+        employee may have if the counselor: (1) does not act for or on behalf of the employer; (2) is
+        obligated to shield any information the employee reveals from decision makers; (3) has no
+        power to affect employment decisions; and (4) discloses these provisions to the employee.
+
+        (B) Compliance with another Federal or State Law or Regulation. An employer may make
+        disability-related inquiries and require employees to submit to medical examinations that are
+        mandated or necessitated by other federal and/or state laws or regulations, such as medical
+        examinations required at least once every two years under federal safety regulations for
+        interstate bus and truck drivers or medical requirements for airline pilots.
+
+                                                    35
+        (C) Voluntary Wellness Program. As part of a voluntary wellness program, employers may
+        conduct voluntary medical examinations and activities, including taking voluntary medical
+        histories, without having to show that they are job-related and consistent with business
+        necessity, as long as any medical records acquired as part of the wellness program are kept
+        confidential and separate from personnel records. These programs often include blood pressure
+        screening, cholesterol testing, glaucoma testing, and cancer detection screening. Employees
+        may be asked disability-related questions and may be given medical examinations pursuant to
+        such voluntary wellness programs. A wellness program is voluntary as long as an employer
+        neither requires participation nor penalizes employees who do not participate.
+
+        (4) Maintenance of Medical Files. Employers shall keep information obtained regarding the
+        medical or psychological condition or history of the employee confidential, as set forth at
+        section 11069(g).
+
+(e) As used in this article, “medical or psychological examination” (a term that is defined in section
+11065 of these regulations) or a disability-related inquiry includes any such examination or inquiry
+administered through the use of an automated-decision system. Such examination or inquiry may
+include a test, question, puzzle, game, or other challenge that is likely to elicit information about a
+disability.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12926,
+12926.1 and 12940, Government Code.
+
+                                       § 11072. Employee Selection.
+
+(a) Prospective Need for Reasonable Accommodation. An employer or other covered entity shall not
+deny an employment benefit because of the prospective need to make reasonable accommodation to
+an applicant or employee with a disability.
+
+(b) Qualification standards, tests, and other selection criteria.
+
+        (1) In general. It is unlawful for an employer or aother covered entity to use a qualification
+        standards, employment tests, proxy, or other selection criteria – including but not limited to
+        those administered through the use of an automated-decision system – that screens out, tends
+        to screen out, or otherwise has an adverse impact on an applicant or employee with a disability
+        or a class of individuals applicants or employees with disabilities, on the basis of disability,.
+        However, such standard, test, or other unless the standards, tests, or other selection criteria, as
+        used by the employer or other covered entity, are shown to be is not unlawful under this
+        subsection when job-related for the position in question, and are consistent with business
+        necessity and there is no less discriminatory standard, test, or other selection criteria that serves
+        the employer’s goals as effectively as the challenged standard, test, or other selection criteria.
+        Statistical comparisons between persons with disabilities and persons who are not disabled are
+        not required to show that an individual with a disability or a class of individuals with disabilities
+        is screened out by selection criteria.
+
+        (2) Qualification Standards and Tests Related to Uncorrected Vision or Uncorrected Hearing. An
+        employer or other covered entity shall not use a qualification standards, employment
+
+                                                      36
+testContractor Non-discrimination regs – status , proxy, or other selection criteria – including
+but not limited to those administered through the use of an automated-decision system – that
+discriminates against an applicant or employee based on an applicant’s or employee’s
+uncorrected vision or uncorrected hearing. However, such standard, test, or other selection
+criteria, as used by the employer or other covered entity, are shown to be is not unlawful under
+this subsection when job-related for the position in question and are consistent with business
+necessity and there is no less discriminatory standard, test, or other selection criteria that serves
+the employer’s goals as effectively as the challenged standard, test, or other selection criteria.
+
+(3) An employer or other covered entity shall not make use of any testing criterion, including but
+not limited to through the use of an automated-decision system, that discriminates against
+applicants or employees with disabilities, unless:
+
+(A) the test score or other selection criterion used is shown to be job-related for the position in
+question; and
+
+(B) an alternative job-related test or criterion that does not discriminate against applicants or
+employees with disabilities is unavailable or would impose an undue hardship on the employer.
+
+(4) Tests of physical agility or strength shall not be used as a basis for selection or retention of
+employment unless the physical agility or strength measured by such test is job-related. Such
+tests include but are not limited to those administered through the use of an automated-
+decision system.
+
+(5) An employer or other covered entity shall select and administer tests concerning
+employment so as to ensure that, when administered to any applicant or employee, including an
+applicant or employee with a disability, the test results accurately reflect the applicant’s or
+employee’s job skills, aptitude, or whatever other criteria the test purports to measure rather
+than reflecting the applicant’s or employee’s disability, except when those skills affected by
+disability are the criteria that the tests purport to measure. Tests concerning employment
+include, but are not limited to, those administered through the use of an automated-decision
+system. To accomplish this end, reasonable accommodation shall be made in testing conditions.
+For example:
+
+(A) The test site must be accessible to applicants and employees with a disability.
+
+(B) For applicants and employees who are blind or visually impaired, an employer or other
+covered entity may translate written tests into Braille or provide or allow enlarged print, real
+time captioning, digital format, the use of a human reader or a screen reader, the use of other
+computer technology, or oral presentation of the test.
+
+(C) For applicants or employees who are quadriplegic or have spinal cord injuries, an employer
+or other covered entity may provide or allow someone to write for the applicant or employee,
+or provide or allow voice recognition software or other computer technology, or allow oral
+responses to written test questions.
+
+(D) For applicants and employees who are hearing impaired, an employer or other covered
+entity may provide or allow the services of an interpreter.
+
+                                              37
+        (E) For applicants and employees whose disabilities interfere with their ability to read, process
+        information, communicate, an employer or other covered entity may allow additional time to
+        complete the examination.
+
+        (F) Alternate tests or individualized assessments may be necessary where test modification is
+        inappropriate. Competent expert advice may be sought before attempting such modification
+        since the validity of the test may be affected. The use of an automated-decision system, in the
+        absence of additional process or actions, does not constitute an individualized assessment.
+
+        (G) Where reasonable accommodation is appropriate, an employer or other covered entity may
+        permit the use of readers, interpreters, or similar supportive persons or instruments.
+
+(c) No testing for genetic information. It is unlawful for an employer or other covered entity to conduct a
+medical examination to test for the presence of a genetic characteristic, or to acquire genetic
+information, unless such testing or acquisition is authorized by federal law under the Genetic
+Information Nondiscrimination Act of 2008 (GINA), 42 U.S.C. § 2000ff-1(b).
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12921, 12926,
+12926.1 and 12940, Government Code; GINA, 42 U.S.C. §2000ff-1(b).
+
+                                      Article 10. Age Discrimination
+
+                                § 11076. Establishing Age Discrimination.
+
+(a) Employers. Discrimination on the basis of age may be established by showing that a job applicant’s or
+employee’s age of 40 or older was considered in the denial of employment or an employment benefit.
+There is a presumption of discrimination whenever a facially neutral practice, including but not limited
+to the use of an automated-decision system, has an adverse impact on an applicant(s) or employee(s)
+age 40 or older, unless the practice is job-related and consistent with business necessity as defined in
+section 11010(b). In the context of layoffs or salary reduction efforts that have an adverse impact on an
+employee(s) age 40 or older, an employer’s preference to retain a lower paid worker(s), alone, is
+insufficient to negate the presumption. The practice may still be impermissible, even where it is job-
+related and consistent with business necessity, where it is shown that an alternative practice could
+accomplish the business purpose equally well with a lesser discriminatory impact.
+
+(b) Employment Agencies, Labor Organizations, and Apprenticeship Training Programs in Which the
+State Participates. Discrimination on the basis of age may be established against employment agencies,
+labor organizations, and apprenticeship training programs in which the state participates upon a
+showing that they have engaged in recruitment, screening, advertising, training, job referral, placement
+or similar activities that discriminate against an individual(s) age 40 or older.
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12920, 12926 and
+12941, Government Code.
+
+  § 11079. Advertisements, Pre-employment Inquiries, Interviews and Applications. Pre-Employment
+                                           Practices.
+
+
+                                                    38
+(a) Advertisements. Unless age is a bona fide occupational qualification for the position at issue,
+advertisements for employment that a reasonable person would interpret as deterring or limiting
+employment of people age 40 and older are unlawful. (See section 11010(a) for the definition of bona
+fide occupational qualification.) Where there is no bona fide occupational qualification, examples of
+prohibited advertisements include those that designate a preferred applicant age range or that include
+terms such as young, college student, recent college graduate, boy, girl, or other terms that imply a
+preference for employees under the age of 40.
+
+(b) Pre-employment Inquiries. Unless age is a bona fide occupational qualification for the position at
+issue, pre-employment inquiries that would result in the direct or indirect identification of persons on
+the basis of age, including, but not limited to, inquiries made through the use of an automated-decision
+system, are unlawful. Examples of prohibited inquiries are requests for age, date of birth, or graduation
+dates, except where age is a bona fide occupational qualification. This provision applies to oral and
+written inquiries and interviews. (See section 11016(b), which is applicable and incorporated by
+reference herein.) Pre-employment inquiries that result in the identification of persons on the basis of
+age shall not be unlawful when made for purposes of applicable reporting requirements or to maintain
+applicant flow data provided that the inquiries are made in a manner consistent with Section 11013 (and
+particularly subsection (b)) of Article 1.
+
+(c) Applications. Unless age is a bona fide occupational qualification for the position at issue, it is
+discrimination on the basis of age for an employer or other covered entity to reject or refuse to provide
+equal consideration of the application form, pre-employment questionnaire, oral application, or the oral
+or written inquiry of an individual because the individual is age 40 or older. (See section 11016(c), which
+is applicable and incorporated by reference herein.)
+
+        (1) Subsection (c) prohibits the use of online job applications that require entry of age in order
+        to access or complete an application, or the use of drop-down menus that contain age-based
+        cut-off dates or utilize automated selection criteria or algorithms that have the effect of
+        screening out applicants age 40 and older. Use of online application technology or an
+        automated-decision system that limits or screens out older applicants is discriminatory unless
+        age is a bona fide occupational qualification. (See section 11010(a).)
+
+Note: Authority cited: Section 12935(a), Government Code. Reference: Sections 12940 and 12941,
+Government Code.
+
+
+
+
+                                                    39
+

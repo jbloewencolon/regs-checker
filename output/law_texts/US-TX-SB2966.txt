@@ -1,0 +1,162 @@
+Title: Texas SB2966 | 2025-2026 | 89th Legislature
+
+URL Source: http://legiscan.com/TX/text/SB2966
+
+Markdown Content:
+Bill Text: TX SB2966 | 2025-2026 | 89th Legislature | Introduced | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/TX/text/SB2966#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Bill Text: TX SB2966 | 2025-2026 | 89th Legislature | Introduced
+================================================================
+
+[](http://legiscan.com/TX/text/SB2966 "Share on Facebook")[](http://legiscan.com/TX/text/SB2966 "Share on Bluesky")[](http://legiscan.com/TX/text/SB2966 "Share on X")[](http://legiscan.com/TX/text/SB2966 "Share on LinkedIn")[](http://legiscan.com/TX/text/SB2966 "Share on reddit")[](http://legiscan.com/TX/text/SB2966 "Share on email")
+
+[Texas](http://legiscan.com/TX "View the Texas Legislative dashboard") Senate Bill 2966
+=======================================================================================
+
+[TX State Legislature page for SB2966](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB2966 "Texas State Legislature source page for SB2966")
+
+* * *
+
+*   [Summary](http://legiscan.com/TX/bill/SB2966/2025 "View Legislative Detail for Texas SB2966")
+*   [Sponsors](http://legiscan.com/TX/sponsors/SB2966/2025 "View Sponsors of Texas SB2966")
+*   [Texts](http://legiscan.com/TX/drafts/SB2966/2025 "View Bill Text Drafts for Texas SB2966")
+*   [Votes](http://legiscan.com/TX/votes/SB2966/2025 "View Roll Call Votes on Texas SB2966")
+*   [Research](http://legiscan.com/TX/research/SB2966/2025 "View Legislation Research Information on Texas SB2966")
+*   [Comments](http://legiscan.com/TX/comments/SB2966/2025 "View Social & PolitiCorps Commentary on Texas SB2966")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas SB2966 and other TX legislation")
+
+*   [Introduced](http://legiscan.com/TX/text/SB2966/id/3176083 "Read the full text of the Introduced draft for TX SB2966")
+
+* * *
+
+**Bill Title:** Relating to establishing a framework to govern the use of artificial intelligence systems in critical decision-making by private companies and ensure consumer protections; authorizing a civil penalty.
+
+**Spectrum:** Partisan Bill (Republican 1)
+
+**Status:**_(Introduced)_ 2025-04-07 - Referred to Business & Commerce [[SB2966 Detail]](http://legiscan.com/TX/bill/SB2966/2025 "Texas TX SB2966 legislative tracking detail and summary")
+
+**Download:**[Texas-2025-SB2966-Introduced.html](http://legiscan.com/TX/text/SB2966/id/3176083/Texas-2025-SB2966-Introduced.html "Download this draft of the Texas SB2966 bill text")
+
+* * *
+
+89R17835 SCR-D
+
+By:Schwertner S.B.No.2966
+
+A BILL TO BE ENTITLED
+AN ACT
+relating to establishing a framework to govern the use of
+artificial intelligence systems in critical decision-making by
+private companies and ensure consumer protections; authorizing a
+civil penalty.
+BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF TEXAS:
+SECTION 1.Subtitle C, Title 11, Business & Commerce Code,
+is amended by adding Chapter 551 to read as follows:
+CHAPTER 551. ALGORITHMIC ARTIFICIAL INTELLIGENCE SYSTEMS
+Sec.551.001.DEFINITIONS. In this chapter:
+(1)"Artificial intelligence system" means any
+machine learning-based system that, for any explicit or implicit
+objective, infers from the inputs such system receives how to
+generate outputs, including content, decisions, predictions, and
+recommendations, that can influence physical or virtual
+environments.
+(2)"Consequential decision" means any decision that
+has a material, legal, or similarly significant effect on a
+consumer.
+Sec.551.002.ARTIFICIAL INTELLIGENCE FRAMEWORK. A private
+company that uses an artificial intelligence system to make a
+consequential decision shall establish a framework to govern the
+use of the system to ensure protection of consumers.
+Sec.551.003.CIVIL PENALTY. A private company that
+violates this section is liable for a civil penalty not to exceed
+one dollar.
+SECTION 2.This Act takes effect September 1, 2025.
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

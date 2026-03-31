@@ -1,0 +1,280 @@
+Title: LegiScan | California State Legislative Dashboard
+
+URL Source: http://legiscan.com/CA/search?keyword=SB53
+
+Markdown Content:
+California Legislature | 2025-2026 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CA/search?keyword=SB53#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+California Legislature | 2025-2026 | Regular Session
+====================================================
+
+*   [AK](http://legiscan.com/AK "Legislative dashboard for Alaska")
+*   [AL](http://legiscan.com/AL "Legislative dashboard for Alabama")
+*   [AR](http://legiscan.com/AR "Legislative dashboard for Arkansas")
+*   [AZ](http://legiscan.com/AZ "Legislative dashboard for Arizona")
+*   [CA](http://legiscan.com/CA "Legislative dashboard for California")
+*   [CO](http://legiscan.com/CO "Legislative dashboard for Colorado")
+*   [CT](http://legiscan.com/CT "Legislative dashboard for Connecticut")
+*   [DE](http://legiscan.com/DE "Legislative dashboard for Delaware")
+*   [FL](http://legiscan.com/FL "Legislative dashboard for Florida")
+*   [GA](http://legiscan.com/GA "Legislative dashboard for Georgia")
+*   [HI](http://legiscan.com/HI "Legislative dashboard for Hawaii")
+*   [IA](http://legiscan.com/IA "Legislative dashboard for Iowa")
+*   [ID](http://legiscan.com/ID "Legislative dashboard for Idaho")
+*   [IL](http://legiscan.com/IL "Legislative dashboard for Illinois")
+*   [IN](http://legiscan.com/IN "Legislative dashboard for Indiana")
+*   [KS](http://legiscan.com/KS "Legislative dashboard for Kansas")
+*   [KY](http://legiscan.com/KY "Legislative dashboard for Kentucky")
+*   [LA](http://legiscan.com/LA "Legislative dashboard for Louisiana")
+*   [MA](http://legiscan.com/MA "Legislative dashboard for Massachusetts")
+*   [MD](http://legiscan.com/MD "Legislative dashboard for Maryland")
+*   [ME](http://legiscan.com/ME "Legislative dashboard for Maine")
+*   [MI](http://legiscan.com/MI "Legislative dashboard for Michigan")
+*   [MN](http://legiscan.com/MN "Legislative dashboard for Minnesota")
+*   [MO](http://legiscan.com/MO "Legislative dashboard for Missouri")
+*   [MS](http://legiscan.com/MS "Legislative dashboard for Mississippi")
+*   [MT](http://legiscan.com/MT "Legislative dashboard for Montana")
+*   [NC](http://legiscan.com/NC "Legislative dashboard for North Carolina")
+*   [ND](http://legiscan.com/ND "Legislative dashboard for North Dakota")
+*   [NE](http://legiscan.com/NE "Legislative dashboard for Nebraska")
+*   [NH](http://legiscan.com/NH "Legislative dashboard for New Hampshire")
+*   [NJ](http://legiscan.com/NJ "Legislative dashboard for New Jersey")
+*   [NM](http://legiscan.com/NM "Legislative dashboard for New Mexico")
+*   [NV](http://legiscan.com/NV "Legislative dashboard for Nevada")
+*   [NY](http://legiscan.com/NY "Legislative dashboard for New York")
+*   [OH](http://legiscan.com/OH "Legislative dashboard for Ohio")
+*   [OK](http://legiscan.com/OK "Legislative dashboard for Oklahoma")
+*   [OR](http://legiscan.com/OR "Legislative dashboard for Oregon")
+*   [PA](http://legiscan.com/PA "Legislative dashboard for Pennsylvania")
+*   [RI](http://legiscan.com/RI "Legislative dashboard for Rhode Island")
+*   [SC](http://legiscan.com/SC "Legislative dashboard for South Carolina")
+*   [SD](http://legiscan.com/SD "Legislative dashboard for South Dakota")
+*   [TN](http://legiscan.com/TN "Legislative dashboard for Tennessee")
+*   [TX](http://legiscan.com/TX "Legislative dashboard for Texas")
+*   [UT](http://legiscan.com/UT "Legislative dashboard for Utah")
+*   [VA](http://legiscan.com/VA "Legislative dashboard for Virginia")
+*   [VT](http://legiscan.com/VT "Legislative dashboard for Vermont")
+*   [WA](http://legiscan.com/WA "Legislative dashboard for Washington")
+*   [WI](http://legiscan.com/WI "Legislative dashboard for Wisconsin")
+*   [WV](http://legiscan.com/WV "Legislative dashboard for West Virginia")
+*   [WY](http://legiscan.com/WY "Legislative dashboard for Wyoming")
+*   [DC](http://legiscan.com/DC "Legislative dashboard for Washington D.C.")
+*   [US](http://legiscan.com/US "Legislative dashboard for US Congress")
+
+[](http://legiscan.com/CA/search?keyword=SB53 "Share on Facebook")[](http://legiscan.com/CA/search?keyword=SB53 "Share on Bluesky")[](http://legiscan.com/CA/search?keyword=SB53 "Share on X")[](http://legiscan.com/CA/search?keyword=SB53 "Share on LinkedIn")[](http://legiscan.com/CA/search?keyword=SB53 "Share on reddit")[](http://legiscan.com/CA/search?keyword=SB53 "Share on email")
+
+### [California Dashboard](http://legiscan.com/CA "Go to the legislative dashboard for California") - [California Legislation](http://legiscan.com/CA/legislation "View current legislation in California") - [California Datasets](http://legiscan.com/CA/datasets "Download data archives of California legislation") - [California Roster](http://legiscan.com/CA/roster "Roster of California legislators") - [California Trends](http://legiscan.com/CA/trends "Trending legislation in California")
+
+### Active California Bills ([Introduced](http://legiscan.com/CA/legislation?status=introduced "View other introduced legislation in California"), [Engrossed](http://legiscan.com/CA/legislation?status=engrossed "View other engrossed legislation in California"), [Enrolled](http://legiscan.com/CA/legislation?status=enrolled "View other enrolled legislation in California"), [Passed](http://legiscan.com/CA/legislation?status=passed "View other passed legislation in California"))
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| Bill | Summary | Action |
+| --- | --- | --- |
+
+| Bill | Summary | Action |
+| --- | --- | --- |
+| [SB1397](http://legiscan.com/CA/bill/SB1397/2025 "View detailed bill information for CA SB1397") | An act to add and repeal Sections 4811, 4811.2, 4811.4, and 4811.6 of the Fish and Game Code, relating to mountain lions. | 2026-02-20 [To Senate Rules Committee](http://legiscan.com/CA/pending/senate-rules-committee/id/489 "View other bills referred to California Senate Rules Committee") |
+| [SB1423](http://legiscan.com/CA/bill/SB1423/2025 "View detailed bill information for CA SB1423") | An act to amend Section 8654.10 of the Government Code, relating to wildfire prevention. | 2026-02-20 [To Senate Rules Committee](http://legiscan.com/CA/pending/senate-rules-committee/id/489 "View other bills referred to California Senate Rules Committee") |
+| [SB1256](http://legiscan.com/CA/bill/SB1256/2025 "View detailed bill information for CA SB1256") | An act to add Section 21080.14 to the Public Resources Code, relating to environmental quality. | 2026-02-20 [To Senate Rules Committee](http://legiscan.com/CA/pending/senate-rules-committee/id/489 "View other bills referred to California Senate Rules Committee") |
+| [SB1425](http://legiscan.com/CA/bill/SB1425/2025 "View detailed bill information for CA SB1425") | An act relating to high-speed rail. | 2026-02-20 [To Senate Rules Committee](http://legiscan.com/CA/pending/senate-rules-committee/id/489 "View other bills referred to California Senate Rules Committee") |
+| [AB2546](http://legiscan.com/CA/bill/AB2546/2025 "View detailed bill information for CA AB2546") | An act to amend Section 310 of the Business and Professions Code, relating to consumer affairs. | 2026-02-20 Read first time. To print. |
+| [AB2326](http://legiscan.com/CA/bill/AB2326/2025 "View detailed bill information for CA AB2326") | An act to amend Section 7440 of the Food and Agricultural Code, relating to weeds, and making an appropriation therefor. | 2026-02-20 From printer. May be heard in committee March 22. |
+| [AB2709](http://legiscan.com/CA/bill/AB2709/2025 "View detailed bill information for CA AB2709") | An act to amend Section 1250.6 of the Health and Safety Code, relating to health facilities. | 2026-02-20 Read first time. To print. |
+| [AB2183](http://legiscan.com/CA/bill/AB2183/2025 "View detailed bill information for CA AB2183") | An act to amend Section 11501 of the Food and Agricultural Code, relating to pest control. | 2026-02-20 From printer. May be heard in committee March 22. |
+| [AB2317](http://legiscan.com/CA/bill/AB2317/2025 "View detailed bill information for CA AB2317") | An act to amend Section 130010 of the Health and Safety Code, relating to hospitals. | 2026-02-20 From printer. May be heard in committee March 22. |
+| [AB2305](http://legiscan.com/CA/bill/AB2305/2025 "View detailed bill information for CA AB2305") | An act to amend Section 6155.1 of the Business and Professions Code, relating to attorneys. | 2026-02-20 From printer. May be heard in committee March 22. |
+
+### Top California Sponsors
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| House Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+
+| House Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Asm. Juan Alanis](http://legiscan.com/CA/people/juan-alanis/id/23203 "View other bills sponsored by Asm. Juan Alanis") [R] | 312 | [![Image 2: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/4faa903bd5d504767e93bfaabe679238.rss) |
+| [Asm. Ash Kalra](http://legiscan.com/CA/people/ash-kalra/id/18065 "View other bills sponsored by Asm. Ash Kalra") [D] | 294 | [![Image 3: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/0ef61b6a5e97b2943c4aef64e6f989e7.rss) |
+| [Asm. Jesse Gabriel](http://legiscan.com/CA/people/jesse-gabriel/id/19658 "View other bills sponsored by Asm. Jesse Gabriel") [D] | 289 | [![Image 4: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/56a403f01acd503e353ad391dc3f3256.rss) |
+| [Asm. Mark Gonzalez](http://legiscan.com/CA/people/mark-gonzalez/id/25338 "View other bills sponsored by Asm. Mark Gonzalez") [D] | 285 | [![Image 5: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/90290566c12cf8b260f8f9c70ef3ff76.rss) |
+| [Asm. John Harabedian](http://legiscan.com/CA/people/john-harabedian/id/25340 "View other bills sponsored by Asm. John Harabedian") [D] | 275 | [![Image 6: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/8bf6fe94aec10302ed66491cbc04a317.rss) |
+
+| Senate Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+
+| Senate Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Sen. Rosilicie Ochoa Bogh](http://legiscan.com/CA/people/rosilicie-ochoa-bogh/id/21728 "View other bills sponsored by Sen. Rosilicie Ochoa Bogh") [R] | 172 | [![Image 7: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/865946d8e29a2061aa7785a0c5e00f6a.rss) |
+| [Sen. Susan Rubio](http://legiscan.com/CA/people/susan-rubio/id/19733 "View other bills sponsored by Sen. Susan Rubio") [D] | 168 | [![Image 8: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/8326db0965a56b1bd4190dbdabed08e5.rss) |
+| [Sen. Scott Wiener](http://legiscan.com/CA/people/scott-wiener/id/18068 "View other bills sponsored by Sen. Scott Wiener") [D] | 154 | [![Image 9: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/abb90ea228e087d840afbc1f87948b73.rss) |
+| [Sen. Sasha Renee Perez](http://legiscan.com/CA/people/sasha-perez/id/25356 "View other bills sponsored by Sen. Sasha Renee Perez") [D] | 150 | [![Image 10: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/eb7b4fcc0f754e22ef50884bfc94ab3b.rss) |
+| [Sen. Sabrina Cervantes](http://legiscan.com/CA/people/sabrina-cervantes/id/18079 "View other bills sponsored by Sen. Sabrina Cervantes") [D] | 147 | [![Image 11: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/f87ab58051b25bdcd42efbca2be015ea.rss) |
+
+### Top California Committees
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| Assembly Committees | # Bills | RSS |
+| --- | --- | ---: |
+
+| Assembly Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Budget](http://legiscan.com/CA/pending/assembly-budget-committee/id/452 "View other bills referred to California Assembly Budget") | 89 | [![Image 12: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/ddf0b88c3b0bc69927082ae8fae8dcf0.rss) |
+| [Appropriations](http://legiscan.com/CA/pending/assembly-appropriations-committee/id/449 "View other bills referred to California Assembly Appropriations") | 72 | [![Image 13: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/efc9441e4fa82d447bab856bd69b3eeb.rss) |
+| [Public Safety](http://legiscan.com/CA/pending/assembly-public-safety-committee/id/468 "View other bills referred to California Assembly Public Safety") | 34 | [![Image 14: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/c8ea621fe49d528d7d1dc765fb6f4e38.rss) |
+| [Rules](http://legiscan.com/CA/pending/assembly-rules-committee/id/470 "View other bills referred to California Assembly Rules") | 25 | [![Image 15: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/6dcfbfca8d66bdef6999b13ce18bd8d0.rss) |
+| [Revenue and Taxation](http://legiscan.com/CA/pending/assembly-revenue-taxation-committee/id/469 "View other bills referred to California Assembly Revenue and Taxation") | 18 | [![Image 16: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/277dbc52ba167e0fdcb3fe3385cac329.rss) |
+
+| Senate Committees | # Bills | RSS |
+| --- | --- | ---: |
+
+| Senate Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Rules](http://legiscan.com/CA/pending/senate-rules-committee/id/489 "View other bills referred to California Senate Rules") | 524 | [![Image 17: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/584db694fb4cde9a71e0cd3899bbe5db.rss) |
+| [Budget and Fiscal Review](http://legiscan.com/CA/pending/senate-budget-fiscal-review-committee/id/476 "View other bills referred to California Senate Budget and Fiscal Review") | 87 | [![Image 18: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/66b2142f644b593cff42e4d68cf4ee58.rss) |
+| [Judiciary](http://legiscan.com/CA/pending/senate-judiciary-committee/id/482 "View other bills referred to California Senate Judiciary") | 22 | [![Image 19: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/257196483767f5e504fb76e7ce091c4e.rss) |
+| [Health](http://legiscan.com/CA/pending/senate-health-committee/id/480 "View other bills referred to California Senate Health") | 22 | [![Image 20: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/cfd271b7da8814b5f2ff08ccbef2022c.rss) |
+| [Transportation](http://legiscan.com/CA/pending/senate-transportation-committee/id/3948 "View other bills referred to California Senate Transportation") | 19 | [![Image 21: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/31d3c5778b6b8cf0f500df75f6539b48.rss) |
+
+### Most Viewed California Bills
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| Bill | Summary | Text |
+| --- | --- | :---: |
+
+| Bill | Summary | Text |
+| --- | --- | :---: |
+| [SB79](http://legiscan.com/CA/bill/SB79/2025 "View detailed bill information for CA SB79") | An act to add Chapter 4.1.5 (commencing with Section 65912.155) to Division 1 of Title 7 of the Government Code, relating to land use. | [Bill Text](http://legiscan.com/CA/text/SB79/2025 "View latest bill text for CA SB79") |
+| [AB495](http://legiscan.com/CA/bill/AB495/2025 "View detailed bill information for CA AB495") | An act to amend Section 234.7 of the Education Code, to amend Sections 6550 and 6552 of the Family Code, to add Chapter 3.62 (commencing with Section 1597.640) to Division 2 of the Health and Safety Code, and to amend Sections 1502 and 2105 of the Pr... | [Bill Text](http://legiscan.com/CA/text/AB495/2025 "View latest bill text for CA AB495") |
+| [SB712](http://legiscan.com/CA/bill/SB712/2025 "View detailed bill information for CA SB712") | An act to amend, repeal, and add Section 44011 of the Health and Safety Code, and to amend, repeal, and add Section 4000.1 of the Vehicle Code, relating to air pollution. | [Bill Text](http://legiscan.com/CA/text/SB712/2025 "View latest bill text for CA SB712") |
+| [AB1127](http://legiscan.com/CA/bill/AB1127/2025 "View detailed bill information for CA AB1127") | An act to amend Section 3273.50 of the Civil Code, and to amend Section 16880 of, and to add Sections 16885, 17015, 27595, 27595.1, and 32103 to, the Penal Code, relating to firearms. | [Bill Text](http://legiscan.com/CA/text/AB1127/2025 "View latest bill text for CA AB1127") |
+| [AB84](http://legiscan.com/CA/bill/AB84/2025 "View detailed bill information for CA AB84") | An act to amend Sections 1240, 14500, 14501, 14502.1, 14503, 14504, 14504.2, 14505, 14506, 14507, 14508, 14509, 41020, 41020.2, 41020.3, 41020.5, 41020.8, 41341, 41344.4, 42100, 44258.9, 45037, 45125.1, 47604.32, 47604.33, 47605, 47605.6, 47612.5, 47... | [Bill Text](http://legiscan.com/CA/text/AB84/2025 "View latest bill text for CA AB84") |
+| [SB296](http://legiscan.com/CA/bill/SB296/2025 "View detailed bill information for CA SB296") | An act to add and repeal Section 205.5.1 of the Revenue and Taxation Code, relating to taxation, to take effect immediately, tax levy. | [Bill Text](http://legiscan.com/CA/text/SB296/2025 "View latest bill text for CA SB296") |
+| [AB130](http://legiscan.com/CA/bill/AB130/2025 "View detailed bill information for CA AB130") | An act to amend Sections 714.3, 5850, and 5855 of, and to add Section 2924.13 to, the Civil Code, to amend Sections 12531, 54221, 65400, 65584.01, 65584.04, 65589.5, 65905.5, 65913.10, 65913.16, 65928, 65941.1, 65952, 65953, 65956, 66323, and 66499.4... | [Bill Text](http://legiscan.com/CA/text/AB130/2025 "View latest bill text for CA AB130") |
+| [SB53](http://legiscan.com/CA/bill/SB53/2025 "View detailed bill information for CA SB53") | An act to add Chapter 25.1 (commencing with Section 22757.10) to Division 8 of the Business and Professions Code, to add Section 11546.8 to the Government Code, and to add Chapter 5.1 (commencing with Section 1107) to Part 3 of Division 2 of the Labo... | [Bill Text](http://legiscan.com/CA/text/SB53/2025 "View latest bill text for CA SB53") |
+| [AB1333](http://legiscan.com/CA/bill/AB1333/2025 "View detailed bill information for CA AB1333") | An act to amend Section 197 of the Penal Code, relating to crimes. | [Bill Text](http://legiscan.com/CA/text/AB1333/2025 "View latest bill text for CA AB1333") |
+| [AB715](http://legiscan.com/CA/bill/AB715/2025 "View detailed bill information for CA AB715") | An act to amend Sections 244, 262.3, 48980, 51500, 51501, and 60151 of, to add Section 60152 to, to add Article 11 (commencing with Section 280) to Chapter 2 of Part 1 of Division 1 of Title 1 of, and to add Chapter 5 (commencing with Section 33800) ... | [Bill Text](http://legiscan.com/CA/text/AB715/2025 "View latest bill text for CA AB715") |
+
+### Most Monitored California Bills
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| Bill | Summary | Text |
+| --- | --- | --- |
+
+| Bill | Summary | Text |
+| --- | --- | --- |
+| [AB84](http://legiscan.com/CA/bill/AB84/2025 "View detailed bill information for CA AB84") | An act to amend Sections 1240, 14500, 14501, 14502.1, 14503, 14504, 14504.2, 14505, 14506, 14507, 14508, 14509, 41020, 41020.2, 41020.3, 41020.5, 41020.8, 41341, 41344.4, 42100, 44258.9, 45037, 45125.1, 47604.32, 47604.33, 47605, 47605.6, 47612.5, 47... | [Bill Text](http://legiscan.com/CA/text/AB84/2025 "View latest bill text for CA AB84") |
+| [SB296](http://legiscan.com/CA/bill/SB296/2025 "View detailed bill information for CA SB296") | An act to add and repeal Section 205.5.1 of the Revenue and Taxation Code, relating to taxation, to take effect immediately, tax levy. | [Bill Text](http://legiscan.com/CA/text/SB296/2025 "View latest bill text for CA SB296") |
+| [SB712](http://legiscan.com/CA/bill/SB712/2025 "View detailed bill information for CA SB712") | An act to amend, repeal, and add Section 44011 of the Health and Safety Code, and to amend, repeal, and add Section 4000.1 of the Vehicle Code, relating to air pollution. | [Bill Text](http://legiscan.com/CA/text/SB712/2025 "View latest bill text for CA SB712") |
+| [SB79](http://legiscan.com/CA/bill/SB79/2025 "View detailed bill information for CA SB79") | An act to add Chapter 4.1.5 (commencing with Section 65912.155) to Division 1 of Title 7 of the Government Code, relating to land use. | [Bill Text](http://legiscan.com/CA/text/SB79/2025 "View latest bill text for CA SB79") |
+| [SB672](http://legiscan.com/CA/bill/SB672/2025 "View detailed bill information for CA SB672") | An act to amend Section 3051 of the Penal Code, relating to parole. | [Bill Text](http://legiscan.com/CA/text/SB672/2025 "View latest bill text for CA SB672") |
+| [SB690](http://legiscan.com/CA/bill/SB690/2025 "View detailed bill information for CA SB690") | An act to amend Sections 631, 632, 632.7, 637.2, and 638.50 of the Penal Code, relating to crimes. | [Bill Text](http://legiscan.com/CA/text/SB690/2025 "View latest bill text for CA SB690") |
+| [AB495](http://legiscan.com/CA/bill/AB495/2025 "View detailed bill information for CA AB495") | An act to amend Section 234.7 of the Education Code, to amend Sections 6550 and 6552 of the Family Code, to add Chapter 3.62 (commencing with Section 1597.640) to Division 2 of the Health and Safety Code, and to amend Sections 1502 and 2105 of the Pr... | [Bill Text](http://legiscan.com/CA/text/AB495/2025 "View latest bill text for CA AB495") |
+| [AB942](http://legiscan.com/CA/bill/AB942/2025 "View detailed bill information for CA AB942") | An act to amend Section 748.5 of the Public Utilities Code, relating to electricity. | [Bill Text](http://legiscan.com/CA/text/AB942/2025 "View latest bill text for CA AB942") |
+| [AB1018](http://legiscan.com/CA/bill/AB1018/2025 "View detailed bill information for CA AB1018") | An act to add Chapter 24.6 (commencing with Section 22756) to Division 8 of the Business and Professions Code, to amend Section 51 of the Civil Code, and to add Article 3 (commencing with Section 12959) to Chapter 6 of Part 2.8 of Division 3 of Title... | [Bill Text](http://legiscan.com/CA/text/AB1018/2025 "View latest bill text for CA AB1018") |
+| [SB23](http://legiscan.com/CA/bill/SB23/2025 "View detailed bill information for CA SB23") | An act to add and repeal Section 205.5.1 of the Revenue and Taxation Code, relating to taxation, to take effect immediately, tax levy. | [Bill Text](http://legiscan.com/CA/text/SB23/2025 "View latest bill text for CA SB23") |
+
+### California Sessions
+
+[](http://legiscan.com/CA/search?keyword=SB53)
+| Year | Session | Introduced | Completed | Legislation | Search | Dataset |
+| --- | --- | --- | --- | --- | --- | --- |
+
+| Year | Session | Introduced | Completed | Legislation | Search | Dataset |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2025-2026 | Regular Session | 4725 | 1150 | [Browse](http://legiscan.com/CA/legislation/2025) | [Search](http://legiscan.com/gaits/search?sid=2172) | [Download](http://legiscan.com/CA/datasets) |
+| 2023-2024 | Regular Session | 5558 | 2536 | [Browse](http://legiscan.com/CA/legislation/2023) | [Search](http://legiscan.com/gaits/search?sid=2016) | [Download](http://legiscan.com/CA/datasets) |
+| 2021-2022 | Regular Session | 5129 | 2311 | [Browse](http://legiscan.com/CA/legislation/2021) | [Search](http://legiscan.com/gaits/search?sid=1791) | [Download](http://legiscan.com/CA/datasets) |
+| 2019-2020 | Regular Session | 5423 | 1626 | [Browse](http://legiscan.com/CA/legislation/2019) | [Search](http://legiscan.com/gaits/search?sid=1624) | [Download](http://legiscan.com/CA/datasets) |
+| 2017-2018 | Regular Session | 5617 | 2552 | [Browse](http://legiscan.com/CA/legislation/2017) | [Search](http://legiscan.com/gaits/search?sid=1400) | [Download](http://legiscan.com/CA/datasets) |
+| 2015-2016 | Regular Session | 5097 | 2194 | [Browse](http://legiscan.com/CA/legislation/2015) | [Search](http://legiscan.com/gaits/search?sid=1120) | [Download](http://legiscan.com/CA/datasets) |
+| 2013-2014 | Regular Session | 4795 | 2077 | [Browse](http://legiscan.com/CA/legislation/2013) | [Search](http://legiscan.com/gaits/search?sid=993) | [Download](http://legiscan.com/CA/datasets) |
+| 2011-2012 | Regular Session | 4810 | 1908 | [Browse](http://legiscan.com/CA/legislation/2011) | [Search](http://legiscan.com/gaits/search?sid=82) | [Download](http://legiscan.com/CA/datasets) |
+| 2009-2010 | Regular Session | 5248 | 1772 | [Browse](http://legiscan.com/CA/legislation/2009) | [Search](http://legiscan.com/gaits/search?sid=30) | [Download](http://legiscan.com/CA/datasets) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 22: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

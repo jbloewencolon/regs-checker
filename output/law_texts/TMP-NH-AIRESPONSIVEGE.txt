@@ -1,0 +1,131 @@
+                                               CHAPTER 270
+                                          HB 143 - FINAL VERSION
+6Mar2025... 0408h
+6Mar2025... 0774h
+06/05/2025 2608s
+06/05/2025 2581s
+06/05/2025 2583s
+06/05/2025 2510s
+26Jun2025... 2843CofC
+26Jun2025... 2922EBA
+
+
+
+                                                2025 SESSION
+                                                                                                   25-0332
+                                                                                                   09/11
+
+HOUSE BILL               143
+AN ACT              criminalizing and creating a private right of action for the facilitation, encouragement,
+                    offer, solicitation, or recommendation of certain acts or actions through a responsive
+                    generative communication to a child.
+
+
+SPONSORS:           Rep. Harvey-Bolia, Belk. 3; Rep. Osborne, Rock. 2; Rep. Pauer, Hills. 36; Rep.
+                    Peternel, Carr. 6; Rep. Terry, Belk. 7; Rep. Thibault, Merr. 25; Rep. Creighton, Hills.
+                    30; Sen. McGough, Dist 11
+
+COMMITTEE:          Criminal Justice and Public Safety
+
+─────────────────────────────────────────────────────────────────
+
+                                            AMENDED ANALYSIS
+
+     This bill criminalizes and creates a private right of action for the facilitation, encouragement, offer,
+solicitation, or recommendation of certain acts or actions through a responsive generative communication
+to a child.
+
+---------------------------------------------------------------------------
+
+Explanation:       Matter added to current law appears in bold italics.
+                   Matter removed from current law appears [in brackets and struckthrough.]
+                   Matter which is either (a) all new or (b) repealed and reenacted appears in regular type.
+                                                     CHAPTER 270
+                                                HB 143 - FINAL VERSION
+     6Mar2025... 0408h
+     6Mar2025... 0774h
+     06/05/2025 2608s
+     06/05/2025 2581s
+     06/05/2025 2583s
+     06/05/2025 2510s
+     26Jun2025... 2843CofC
+     26Jun2025... 2922EBA                                                                           25-0332
+                                                                                                    09/11
+
+                                              STATE OF NEW HAMPSHIRE
+
+                                   In the Year of Our Lord Two Thousand Twenty Five
+
+     AN ACT                 criminalizing and creating a private right of action for the facilitation, encouragement,
+                            offer, solicitation, or recommendation of certain acts or actions through a responsive
+                            generative communication to a child.
+
+
+              Be it Enacted by the Senate and House of Representatives in General Court convened:
+
+
+1        270:1   New Paragraph; Endangering Welfare of Child; Responsive Generative Communication.
+2    Amend RSA 639:3 by inserting after paragraph III the following new paragraph:
+3            III-a.(a) For the purposes of prosecution under this section, an owner or operator of a computer
+4    online service, Internet service, or bulletin board service, including a provider of an artificial intelligence
+5    (AI) chat program, large language model artificial intelligence bot, chat bot, character AI, or other
+6    computer application, the sole purpose of which is to provide responsive open-ended generative
+7    communication through the use of artificial intelligence, commits the offense of endangering the welfare of
+8    a child if the owner or operator knows at the time that they direct the communication to the child that the
+9    communication is made with the intent to facilitate, encourage, offer, solicit, or recommend that the child
+10   imminently engage in:
+11                    (1) Sexually explicit conduct.
+12                    (2) The production or participation in the production of a visual depiction of such conduct.
+13                    (3) The illegal use of drugs or alcohol.
+14                    (4) Acts of self-harm or suicide.
+15                    (5) Any crime of violence against another person.
+16               (b) This paragraph shall not apply to:
+17                    (1)     A cloud service provider, or a provider of a telecommunications service or an
+18   information service, as defined in 47 U.S.C. section 153, with respect to the provision of content created
+19   by or supplied on behalf of another person; or
+20                    (2) Any product, service, website, or application that provides an AI chat program or
+21   character that is integral or incidental to a video game, television, streaming, movie, or other similar
+22   interactive experience.
+23       270:2 New Section; Enforcement; Responsive Generative Communication with Children. Amend
+24   RSA 507 by inserting after section 8-j the following new section:
+                                                      CHAPTER 270
+                                                 HB 143 - FINAL VERSION
+                                                        - Page 2 -
+1        507:8-k         Enforcement Action for Solicitation of Children Through Responsive Generative
+2    Communication.
+3             I. Any owner or operator of a computer online service, Internet service, or bulletin board service,
+4    including a provider of an artificial intelligence (AI) chat program, large language model artificial
+5    intelligence bot, chat bot, character AI, or other computer application, the sole purpose of which is to
+6    provide responsive open-ended generative communication through the use of artificial intelligence, shall
+7    be liable to a child, parent of such child, or next friend of such child if the owner or operator knows at the
+8    time that they direct the communication to the child that the communication is made with the intent to
+9    facilitate, encourage, offer, solicit, or recommend that the child imminently engage in:
+10                       (a) Sexually explicit conduct.
+11                       (b) The production or participation in the production of a visual depiction of such conduct.
+12                       (c) The illegal use of drugs or alcohol.
+13                       (d) Acts of self-harm or suicide.
+14                       (e) Any crime of violence against another person.
+15            II. The attorney general may bring an action against an owner or operator that violates this
+16   section for damages proximately caused to a child, as provided in paragraph III, or for appropriate
+17   injunctive relief. Prior to initiating such action, the attorney general shall provide the owner or operator
+18   with written notice of each alleged violation and the factual basis thereof, and shall give the owner or
+19   operator 90 days to provide assurances satisfactory to the attorney general that the owner or operator has
+20   cured the violations and has taken adequate steps to prevent future violations. If such assurances
+21   satisfactory to the attorney general are provided, the attorney general shall not initiate an action against
+22   the owner or operator for such violations. The attorney general shall have the sole right of action for a
+23   violation of this section.
+24            III. An owner or operator of such service shall be liable to a child, or the parent or next friend of
+25   the child, for damages proximately caused by a violation of paragraph I, but in no instance liable for an
+26   amount less than liquidated damages in the amount of $1,000 per violation.
+27            IV. This section shall not apply to:
+28                 (a) A cloud service provider, or a provider of a telecommunications service or an information
+29   service, as defined in 47 U.S.C. section 153, with respect to the provision of content created by or
+30   supplied on behalf of another person; or
+31                 (b)    Any product, service, website, or application that provides an AI chat program or
+32   character that is integral or incidental to a video game, television, streaming, movie, or other similar
+33   interactive experience.
+         270:3 Effective Date. This act shall take effect January 1, 2026.
+
+     Approved: August 01, 2025
+     Effective Date: January 01, 2026
+

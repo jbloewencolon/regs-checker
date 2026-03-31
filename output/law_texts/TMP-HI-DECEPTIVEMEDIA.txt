@@ -1,0 +1,484 @@
+     THE SENATE
+     THIRTY-SECOND LEGISLATURE. 2024
+     STATE OF HAWAII
+                                              S.B. NO.          ^1
+                                                                H.D. 2
+                                                                C.D. 1
+
+
+                    A BILL FORAN ACT
+     RELATING TO ELECTIONS.
+
+
+     BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF HAWAII:
+
+ 1        SECTION 1.   The legislature finds that although artificial
+
+ 2   intelligence (AI) technology can greatly benefit certain aspects
+
+ 3   of society, it can also have dangerous consequences if applied
+
+ 4   maliciously.   For example, the use of deepfakes or generative AI
+
+ 5   in elections can be a powerful tool used to spread
+
+ 6   disinformation and misinformation, which can increase political
+
+ 7   tensions and result in electoral-related conflict and violence.
+
+ 8   Several states, including Michigan, Minnesota, and Washington,
+
+ 9   have enacted legislation governing the use of AI in elections.
+
+10   The legislature believes that regulating the use of deepfake and
+
+11   generative AI technologies to influence elections is necessary
+
+12   to protect the democratic process in the State.
+
+13        Accordingly, the purpose of this Act is to:
+
+14        (1)   Prohibit a person from recklessly distributing, or
+
+15              entering into an agreement with another person to
+
+16              distribute, materially deceptive media with
+
+17              exceptions;
+
+
+     2024-2702 SB2687 GDI SMA-2.docx
+     iiininniRiiinnniniiiiniiiiiiiiii
+     Page 2
+                                                   S.B. NO.
+                                                                     C.D. 1
+
+
+
+ 1         (2)      Establish criminal penalties for distributing
+
+ 2                  materially deceptive media; and
+
+ 3         (3)      Establish remedies for parties injured by the
+
+ 4                  distribution of materially deceptive media.
+
+ 5         SECTION 2.      Chapter 11, Hawaii Revised Statutes, is amended
+
+ 6   by adding two new sections to part XIII to be appropriately
+
+ 7   designated and to read as follows:
+
+ 8         "§11-A      Distribution of materially deceptive media;
+
+ 9   prohibited; penalties.        (a)   Except as provided in subsections
+
+10   (b) and (c), no person shall recklessly distribute, or enter
+
+11   into an agreement with another person to distribute, between the
+
+12   first working day of February in every even-numbered year
+
+13   through the next general election, materially deceptive media in
+
+14   reckless disregard of the risk of harming the reputation or
+
+15   electoral prospects of a candidate in an election or changing
+
+16   the voting behavior of voters in an election.
+
+17            (b)   Subsection (a) shall not apply to:
+
+18         (1)      A broadcaster, cable operator, or direct-to-home
+
+19                  satellite provider unless it was involved in the
+
+20                  creation of the materially deceptive media; or
+
+
+
+
+     2024-2702 SB2687 CDl SMA-2.docx                                          2
+
+     iiiniiiiiiiiiiiiiiiiiiiiiH
+     Page 3
+                                                  S.B. NO. s"
+                                                                    C.D. 1
+
+
+
+ 1         (2)    An interactive computer service, cloud service
+
+2                 provider, or streaming service for content provided by
+
+ 3                another person or a developer or provider of any
+
+ 4                technology used in the creation of materially
+
+ 5                deceptive media, unless the interactive computer
+
+ 6                service, cloud service provider, or streaming service
+
+ 7                has knowledge that the content is deceptive and
+
+ 8                intends to deceive a resident of the State.
+
+ 9          (c)   Subsection (a) shall not apply if the media includes a
+
+10   disclaimer informing the viewer that the media has been
+
+11   manipulated by technical means and depicts appearance, speech,
+
+12   or conduct that did not occur; provided that;
+
+13          (1)   If the media is a video, the disclaimer shall:
+
+14                (A)   Appear throughout the entirety of the video;
+
+15                (B)   Be clearly visible to and readable by an
+
+16                      observer;
+
+17                (C)   Be in letters at least as large as the largest
+
+18                      size of any text communication; and
+
+19                (D)   Be in the same language as the language used in
+
+20                      the video media;
+
+21          (2)   If the media is an image, the disclaimer shall:
+
+
+
+     2024-2702 SB2687 CDl SMA-2.docx                                         3
+
+     iHinDiiiiiiiiiiiiiiiiiiiHiiiiiiiniiniiiinH
+     Page 4
+                                               S.B. NO.
+                                                                   C.D. 1
+
+
+
+ 1              (A)   Be clearly visible to and readable by the
+
+ 2                    observer;
+
+ 3              (B)   Be in letters at least as large as the largest
+
+ 4                    text in the image if the media contains other
+
+ 5                    text; and
+
+ 6              (C)   Be in the same language as the language used in
+
+ 7                    the image media;
+
+ 8        (3)   If the media consists of only audio and contains no
+
+ 9              video or image, the disclaimer shall be read:
+
+10              2^    At the beginning and end of the media in a
+
+11                    clearly spoken manner;
+
+12              (B)   In a pitch that can be easily heard by the
+
+13                    listener; and
+
+14              (C)   In the same language as the audio media; and
+
+15        (4)   If the media was generated by editing or creating new
+
+16              media from an existing video, image, or audio, the
+
+17              media shall include a citation directing the viewer or
+
+18              listener to the original sources from which the
+
+19              unedited version of the existing videos, images, or
+
+20              audios were obtained or generated.
+
+
+
+
+     2024-2702 SB2687 GDI SMA-2.docx                                        4
+
+     lllllllnll■l■llllll■lll■lllinllllln
+     Page 5
+                                                S.B. NO.
+                                                                 C.D. 1
+
+
+
+ 1        (d)     Unless otherwise specified in this section, a person
+
+ 2   who violates this section shall be guilty of a petty
+
+ 3   misdemeanor.
+
+ 4        (e)     A person who violates this section within five years
+
+ 5   of a previous conviction for a violation of this section shall
+
+ 6   be guilty of a misdemeanor.
+
+ 7        (f)     A person who violates this section with the intent to
+
+ 8   cause violence or bodily harm shall be guilty of a class C
+
+ 9   felony.
+
+10        (g)     The commission may assess a fine for a violation of
+
+11   this section or refer a violation of this section for criminal
+
+12   prosecution under subpart I.
+
+13        (h)     For the purposes of this section:
+
+14        "Artificial intelligence" means a machine-based system that
+
+15   can, for a given set of human-defined objectives, make
+
+16   predictions, recommendations, or decisions influencing real or
+
+17   virtual environments, and that uses machine and human-based
+
+18   inputs to:
+
+19        (1)     Perceive real and virtual environments;
+
+
+
+
+     2024-2702 SB2687 GDI SMA-2.docx                                      5
+     Page 6
+                                              S.B. NO.            H.D. 2
+                                                                  C.D. 1
+
+
+
+ 1        (2)   Abstract perceptions of real and virtual environments
+
+ 2              into models through analysis in an automated manner;
+
+ 3              and
+
+ 4        (3)   Use model inference to formulate opinions for
+
+ 5              Information or action.
+
+ 6        "Cloud service provider" means a third-party company that
+
+ 7   provides scalable computing resources that businesses can access
+
+ 8   on demand over a network, including cloud-based computing,
+
+ 9   storage, platform, and application services.
+
+10        "Direct-to-home satellite provider" has the same meaning as
+
+11   defined in title 47 United States Code section 303(v).
+
+12        "Distribute" means to convey information by any means.
+
+13        "Interactive computer service" has the same meaning as
+
+14   defined in title 47 United States Code section 230(f)(2).
+
+15        "Materially deceptive media" means any information,
+
+16   including any video, image, or audio, that:
+
+17        (1)   Is an advertisement;
+
+18        (2)   Depicts an individual engaging in speech or conduct in
+
+19              which the depicted individual did not in fact engage;
+
+
+
+
+     2024-2702 SB2687 CDl SMA-2.docx                                       6
+
+     mill iiiiii III linn mil II iiiiiii
+      Page 7
+                                                   S.B. NO. sTi     H.D. 2
+                                                                    C.D. 1
+
+
+
+ 1         (3)     Would cause a reasonable viewer or listener to believe
+
+ 2                 that the depicted individual engaged in the speech or
+
+ 3                 conduct depicted; and
+
+ 4         (4)     Was created by;
+
+ 5                 (A)    Generative adversarial network techniques or
+
+ 6                        another technique that translates a source image
+
+ 7                        into another image using machine learning, deep
+
+ 8                        learning techniques, and convolutional neural
+
+ 9                        networks;
+
+10                 (B)    Artificial intelligence; or
+
+11                 (C)    Digital technology.
+
+12         §11-B     Distribution of materially deceptive media; civil
+
+13   remedies.      (a)   A depicted individual, including a candidate for
+
+14   election, whose appearance, speech, or conduct is altered or
+
+15   affected through the use of materially deceptive media, or any
+
+16   organization that represents the interest of voters likely to be
+
+17   deceived by the distribution of materially deceptive media, may
+
+18   bring an action for general or special damages against a person
+
+19   who violates section 11-A.
+
+20         The court, in its action and in addition to any judgment
+
+21   awarded to the plaintiff or plaintiffs, may award a prevailing
+
+
+
+     2024-2702 SB2687 GDI SMA-2.docx
+     I II IIIIIN.ilIllllllilllJIffHill mil II!
+      Page 8
+                                               S.B. NO.            H.D. 2
+                                                                   C.D. 1
+
+
+
+ 1   party reasonable attorney's fees and costs; provided that this
+
+ 2   subsection shall not limit or preclude a plaintiff from pursuing
+
+ 3   any other available remedy.
+
+ 4         (b)   A cause of action for injunctive or other equitable
+
+ 5   relief may be maintained against any person who is reasonably
+
+ 6   believed to violate or who is in the course of violating section
+
+ 7   11-A by:
+
+ 8         (1)   The attorney general;
+
+ 9         (2)   The campaign spending commission;
+
+10         (3)   A county attorney or county prosecutor;
+
+11         (4)   The depicted individual;
+
+12         (5)   A candidate for nomination or election to a public
+
+13               office who is injured or is likely to be injured by
+
+14               dissemination of materially deceptive media; or
+
+15         (6)   Any organization that represents the interest of
+
+16               voters likely to be deceived by the distribution of
+
+17               materially deceptive media.
+
+18         A court may issue a temporary or permanent injunction or
+
+19   restraining order to prevent further harm to the plaintiff.       If
+
+20   a plaintiff, other than the attorney general, campaign spending
+
+21   commission if represented by a state attorney, county attorney,
+
+
+
+     2024-2702 SB2687 CDl SMA-2.docx
+     IIIIHnillllHIliillllHIIIIIIIIIIIIIIIi
+      Page 9
+                                                 S.B. NO.           H.D. 2
+                                                                    C.D. 1
+
+
+
+ 1   or county prosecutor, is awarded permanent injunctive relief
+
+ 2   under this subsection, the court may award reasonable attorney's
+
+ 3   fees and costs to the plaintiff.
+
+ 4           The court may issue a civil fine for the violation of a
+
+ 5   court order issued under this subsection in an amount of not
+
+ 6   more than $1,000 per day.
+
+ 7           (c)   For the purposes of this section:
+
+ 8           "Distribute" has the same meaning as defined in section
+
+ 9   11-A.
+
+10           "Materially deceptive media" has the same meaning as
+
+11   defined in section 11-A."
+
+12           SECTION 3.   In codifying the new sections added by section
+
+13   2 of this Act, the revisor of statutes shall substitute
+
+14   appropriate section numbers for the letters used in designating
+
+15   the new sections in this Act.
+
+16           SECTION 4.   New statutory material is underscored.
+
+17           SECTION 5.   This Act shall take effect upon its approval.
+
+
+
+
+     2024-2702 SB2687 CDl SMA-2.docx                                         9
+
+     iiii raw III 11,111! iiM III mill
+                                                                 S.B. NO. sTi
+                                                                                              C.D. 1
+
+
+
+Report Title:
+Elections; Materially Deceptive Media; Artificial Intelligence;
+Deepfake Technology; Prohibition; Penalty; Remedies
+
+Description:
+Prohibits a person from recklessly distributing, or entering
+into an agreement with another person to distribute, materially
+deceptive media, subject to certain exceptions.  Establishes
+criminal penalties for distributing materially deceptive media.
+Establishes remedies for parties injured by the distribution of
+materially deceptive media.   (CDl)
+
+
+
+The summary description of iegisiation appearing on this page is for informational purposes only and is
+not legislation or evidence of legislative intent.
+
+
+
+
+2024-2702 SB2687 CDl SMA-2.docx
+illllllllllllll11lllllllll!llllllllllhlll
+

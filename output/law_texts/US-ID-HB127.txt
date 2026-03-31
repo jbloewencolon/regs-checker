@@ -1,0 +1,171 @@
+Title: Idaho H0127 | 2025 | Regular Session
+
+URL Source: http://legiscan.com/ID/bill/HB127
+
+Markdown Content:
+ID H0127 | 2025 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/ID/bill/HB127#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+ID H0127 | 2025 | Regular Session
+=================================
+
+[](http://legiscan.com/ID/bill/HB127 "Share on Facebook")[](http://legiscan.com/ID/bill/HB127 "Share on Bluesky")[](http://legiscan.com/ID/bill/HB127 "Share on X")[](http://legiscan.com/ID/bill/HB127 "Share on LinkedIn")[](http://legiscan.com/ID/bill/HB127 "Share on reddit")[](http://legiscan.com/ID/bill/HB127 "Share on email")
+
+[Idaho](http://legiscan.com/ID "View the Idaho Legislative dashboard") House Bill 127 _**([Prior Session Legislation](http://legiscan.com/ID/research/H0127/2025 "Right number, wrong year? View Idaho H0127 from current and past sessions"))**_
+=================================================================================================================================================================================================================================================
+
+[ID State Legislature page for H0127](https://legislature.idaho.gov/sessioninfo/2025/legislation/H0127/ "Idaho State Legislature source page for H0127")
+
+* * *
+
+*   [Summary](http://legiscan.com/ID/bill/H0127/2025 "View Legislative Detail for Idaho H0127")
+*   [Sponsors](http://legiscan.com/ID/sponsors/H0127/2025 "View Sponsors of Idaho H0127")
+*   [Texts](http://legiscan.com/ID/drafts/H0127/2025 "View Bill Text Drafts for Idaho H0127")
+*   [Votes](http://legiscan.com/ID/votes/H0127/2025 "View Roll Call Votes on Idaho H0127")
+*   [Research](http://legiscan.com/ID/research/H0127/2025 "View Legislation Research Information on Idaho H0127")
+*   [Comments](http://legiscan.com/ID/comments/H0127/2025 "View Social & PolitiCorps Commentary on Idaho H0127")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Idaho H0127 and other ID legislation")
+
+Status
+------
+
+Spectrum: Committee Bill
+
+Status: Introduced on February 4 2025 - 25% progression, died in committee
+
+Action: 2025-02-05 - Reported Printed and Referred to Business
+
+Pending: [House Business Committee](http://legiscan.com/ID/pending/house-business-committee/id/1520 "View other bills referred to ID House Business Committee")
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/ID/text/H0127/2025 "View latest bill text for Idaho H0127")
+
+Summary
+-------
+
+CONSUMER PROTECTION -- Adds to existing law to establish provisions regarding disclosure of artificial intelligence communications.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Idaho H0127 and other ID legislation") or view this same bill number from [multiple sessions](http://legiscan.com/ID/research/H0127/2025 "Research for ID H0127 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Idaho and national legislation").
+
+Title
+-----
+
+Adds to existing law to establish provisions regarding disclosure of artificial intelligence communications.
+
+Sponsors
+--------
+
+[House Judiciary, Rules and Administration Committee](http://legiscan.com/ID/people/house-judiciary-rules-administration-committee/id/14006 "View other legislation sponsored by Idaho Representative Judiciary, Rules and Administration Committee")
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-02-05 | House | Reported Printed and Referred to Business |
+| 2025-02-04 | House | Introduced, read first time, referred to JRA for Printing |
+
+Subjects
+--------
+
+[CONSUMER PROTECTION](http://legiscan.com/gaits/subject/341823 "View other legislative instruments with the CONSUMER PROTECTION subject")
+
+Idaho State Sources
+-------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://legislature.idaho.gov/sessioninfo/2025/legislation/H0127/](https://legislature.idaho.gov/sessioninfo/2025/legislation/H0127/) |
+| Text | [https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2025/legislation/H0127.pdf](https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2025/legislation/H0127.pdf) |
+| Supplement | [https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2025/legislation/H0127SOP.pdf](https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2025/legislation/H0127SOP.pdf) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

@@ -1,0 +1,1839 @@
+LB383                                                                     LB383
+2025                                                                       2025
+
+
+                     LEGISLATIVE BILL 383
+                     Approved by the Governor May 20, 2025
+
+
+Introduced by Storer, 43; at the request of the Governor; Ballard, 21; Bosn,
+              25; Clouse, 37; Dover, 19; Hardin, 48; Holdcroft, 36; Ibach, 44;
+              Kauth, 31; Lippincott, 34; Meyer, 17; Prokop, 27; Murman, 38.
+
+
+A BILL FOR AN ACT relating to minors; to amend sections 25-21,291, 25-21,302,
+     27-1301, 28-116, 28-320.02, 28-813.02, 28-833, 28-1463.01, 28-1463.02,
+     28-1463.06, 28-1601, 28-1602, 83-174.02, 84-205, and 87-302, Reissue
+     Revised Statutes of Nebraska, and sections 28-813.01, 28-1354, 28-1463.03,
+     28-1463.05, 28-1701, 29-110, 29-119, 29-4003, 29-4309, and 29-4316,
+     Revised Statutes Cumulative Supplement, 2024; to adopt the Parental Rights
+     in Social Media Act; change the name of the Child Pornography Prevention
+     Act to the Child Sexual Abuse Material Prevention Act; to prohibit conduct
+     involving computer-generated child pornography; to prohibit receipt of
+     child pornography; to transfer provisions of the Nebraska Criminal Code
+     and the Child Pornography Prevention Act; to provide enhanced penalties;
+     to define and redefine terms; to eliminate obsolete provisions; to
+     harmonize provisions; to provide operative dates; to provide severability;
+     to repeal the original sections; and to outright repeal section
+     28-1463.04, Reissue Revised Statutes of Nebraska.
+Be it enacted by the people of the State of Nebraska,
+
+     Section 1. Section 28-1463.01, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     28-1463.01 Sections 1 to 6 of this act 28-1463.01 to 28-1463.06 shall be
+known and may be cited as the Child Sexual Abuse Material Child Pornography
+Prevention Act.
+     Sec. 2. Section 28-1463.02, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     28-1463.02 As used in the Child Sexual Abuse Material Pornography
+Prevention Act, unless the context otherwise requires:
+     (1) Child , in the case of a participant, means an individual any person
+under the age of eighteen years other than the defendant and, in the case of a
+portrayed observer, means any person under the age of sixteen years;
+     (2) Child sexual abuse material means any visual depiction of sexually
+explicit conduct that:
+     (a) Depicts a child as a participant or portrayed observer, regardless of
+whether the visual depiction is obscene;
+     (b) Depicts a person with identifiable physical features of a child as a
+participant or portrayed observer, regardless of whether the visual depiction
+is obscene; or
+     (c) Is obscene and depicts a person or a computer-generated person as a
+participant or portrayed observer, and such person:
+     (i) Is a child;
+     (ii) Would appear to a reasonable person to be a child; or
+     (iii) Is depicted with physical features of a child;
+     (3) Computer-generated means that a visual depiction has been created,
+adapted, or modified by using a computer, digital program or process,
+artificial intelligence, or any similar device or means;
+     (4) Computer-generated person means a computer-generated image that
+appears to depict a human being, or a human being whose image has been morphed,
+altered, or modified, whether or not that human being exists or existed in the
+natural world;
+     (5)(a) Conviction or convicted includes a plea or verdict of guilty or a
+conviction following a plea of nolo contendere.
+     (b) Conviction or convicted includes a conviction that has been set aside
+under section 29-2264.
+     (c) Conviction or convicted does not include a conviction for which a
+pardon has been obtained;
+     (6) Covered offense means a violation of section 28-308, 28-309, 28-310,
+28-311, 28-313, 28-314, 28-315, 28-319, 28-319.01, 28-320.01, 28-833, or
+section 3, 4, or 5 of this act, or subsection (1) or (2) of section 28-320;
+     (7) Electronic communication device has the same meaning as in section
+28-833;
+     (8) (2) Erotic fondling means touching a person's clothed or unclothed
+genitals or pubic area, breasts if the person is a female, or developing breast
+area if the person is a female child, for the purpose of real or simulated
+overt sexual gratification or sexual stimulation of one or more persons
+involved. Erotic fondling shall not be construed to include physical contact,
+even if affectionate, which is not for the purpose of real or simulated overt
+sexual gratification or sexual stimulation of one or more of the persons
+involved;
+     (9) (3) Erotic nudity means the display of the human male or female
+genitals or pubic area, the human female breasts, or the developing breast area
+of the human female child, for the purpose of real or simulated overt sexual
+gratification or sexual stimulation of one or more of the persons involved in
+                                      -1-
+LB383                                                                     LB383
+2025                                                                       2025
+the visual depiction or for the sexual gratification or stimulation of the
+viewer;
+     (10) Obscene has the same meaning as in section 28-807;
+     (11) Person, with respect to the subject of a visual depiction, includes
+an actual person or any visual depiction that appears to be such person or an
+actual person whose image has been morphed, altered, or modified;
+     (12) (4) Sadomasochistic abuse means flagellation or torture by or upon a
+nude person or a person clad in undergarments, a mask, or bizarre costume, or
+the condition of being fettered, bound, or otherwise physically restrained when
+performed to predominantly appeal to the morbid interest;
+     (13) (5) Sexually explicit conduct means: (a) Real or simulated
+intercourse, whether genital-genital, oral-genital, anal-genital, or oral-anal
+between persons of the same or opposite sex or between a human and an animal or
+with an artificial genital; (b) real or simulated masturbation; (c) real or
+simulated sadomasochistic abuse; (d) erotic fondling; (e) erotic nudity; or (f)
+real or simulated defecation or urination for the purpose of sexual
+gratification or sexual stimulation of one or more of the persons involved; and
+     (14) (6) Visual depiction means live performance or photographic
+representation, whether of actual persons or events, computer-generated persons
+or events, or any combination thereof, and includes any undeveloped film or
+videotape or data stored on a computer disk or by other electronic means which
+is capable of conversion into a visual image and also includes any photograph,
+film, video, picture, digital image, or computer-displayed image, video, or
+picture, whether made, or produced, morphed, altered, or modified by
+electronic, mechanical, computer-generated, computer, digital, or other means.
+     Sec. 3. Section 28-813.01, Revised Statutes Cumulative Supplement, 2024,
+is amended to read:
+     28-813.01 (1) It shall be unlawful for a person nineteen years of age or
+older to knowingly possess or receive any child sexual abuse material visual
+depiction of sexually explicit conduct which has a child as one of its
+participants or portrayed observers. Violation of this subsection is a Class
+IIA felony.
+     (2)(a) (2) It shall be unlawful for a person under nineteen years of age
+to knowingly and intentionally possess or receive any child sexual abuse
+material visual depiction of sexually explicit conduct which has a child other
+than the defendant as one of its participants or portrayed observers.
+     (b) Violation of this subsection is a Class I misdemeanor. A second or
+subsequent conviction under this subsection is a Class IV felony.
+     (3) For a defendant who was eighteen years of age or older but under
+nineteen years of age at the time of the offense, it It shall be an affirmative
+defense to a charge made pursuant to subsection (2) of this section that:
+     (a)(i) The defendant was less than nineteen years of age;
+     (a) The visual depiction:
+     (i) Portrays (ii) the visual depiction of sexually explicit conduct
+portrays a child who is fifteen years of age or older;
+     (ii) Was (iii) the visual depiction was knowingly and voluntarily
+generated by the child depicted therein;
+     (iii) Was (iv) the visual depiction was knowingly and voluntarily provided
+by such the child depicted in the visual depiction; and
+     (iv) Portrays (v) the visual depiction contains only one child other than
+the defendant;
+     (b) The (vi) the defendant has not provided or made available the visual
+depiction to another person except such the child depicted who originally sent
+the visual depiction to the defendant; and
+     (c) The (vii) the defendant did not coerce such the child in the visual
+depiction to either create or send the visual depiction. ; or
+     (4) For a defendant who was under eighteen years of age at the time of the
+offense, it shall be an affirmative defense to a charge made pursuant to
+subsection (2) of this section that:
+     (b)(i) The defendant was less than eighteen years of age;
+     (a) The (ii) the difference in age between the defendant and the child
+portrayed is less than four years;
+     (b) The visual depiction:
+     (i) Was (iii) the visual depiction was knowingly and voluntarily generated
+by the child depicted therein;
+     (ii) Was (iv) the visual depiction was knowingly and voluntarily provided
+by such the child depicted in the visual depiction; and
+     (iii) Portrays (v) the visual depiction contains only one child other than
+the defendant;
+     (c) The (vi) the defendant has not provided or made available the visual
+depiction to another person except such the child depicted who originally sent
+the visual depiction to the defendant; and
+     (d) The (vii) the defendant did not coerce such the child in the visual
+depiction to either create or send the visual depiction.
+     (5) Except as provided in subdivision (2)(b) of this section, any (4) Any
+person who violates subsection (1) or (2) of this section and who has
+previously been convicted of a covered offense violation of this section or
+section 28-308, 28-309, 28-310, 28-311, 28-313, 28-314, 28-315, 28-319,
+28-319.01, 28-320.01, 28-833, 28-1463.03, or 28-1463.05 or subsection (1) or
+(2) of section 28-320 shall be guilty of a Class IC felony for each offense.
+     (5) In addition to the penalties provided in this section, a sentencing
+court may order that any money, securities, negotiable instruments, firearms,
+conveyances, or electronic communication devices as defined in section 28-833
+                                      -2-
+LB383                                                                     LB383
+2025                                                                       2025
+or any equipment, components, peripherals, software, hardware, or accessories
+related to electronic communication devices be forfeited as a part of the
+sentence imposed if it finds by clear and convincing evidence adduced at a
+separate hearing in the same prosecution, conducted pursuant to section
+28-1601, that any or all such property was derived from, used, or intended to
+be used to facilitate a violation of this section.
+     (6) The definitions in section 28-1463.02 shall apply to this section.
+     Sec. 4. Section 28-1463.05, Revised Statutes Cumulative Supplement, 2024,
+is amended to read:
+     28-1463.05 (1) It shall be unlawful for a person to knowingly possess with
+intent to rent, sell, deliver, distribute, trade, or provide to any person any
+child sexual abuse material visual depiction of sexually explicit conduct which
+has a child other than the defendant as one of its participants or portrayed
+observers.
+     (2)(a) Any person who is under nineteen years of age at the time he or she
+violates this section shall be guilty of a Class IIIA felony for each offense.
+     (b) Any person who is nineteen years of age or older at the time he or she
+violates this section shall be guilty of a Class II IIA felony for each
+offense.
+     (c) Any person who violates this section and who has previously been
+convicted of a covered offense violation of this section or section 28-308,
+28-309, 28-310, 28-311, 28-313, 28-314, 28-315, 28-319, 28-319.01, 28-320.01,
+28-813, 28-833, or 28-1463.03 or subsection (1) or (2) of section 28-320 shall
+be guilty of a Class IC felony for each offense.
+     Sec. 5. Section 28-1463.03, Revised Statutes Cumulative Supplement, 2024,
+is amended to read:
+     28-1463.03 (1) It shall be unlawful for a person to knowingly make,
+publish, direct, create, provide, or in any manner generate any child sexual
+abuse material visual depiction of sexually explicit conduct which has a child
+other than the defendant as one of its participants or portrayed observers.
+     (2) It shall be unlawful for a person knowingly to purchase, rent, sell,
+deliver, distribute, display for sale, advertise, trade, publish, circulate, or
+provide to any person any child sexual abuse material visual depiction of
+sexually explicit conduct which has a child other than the defendant as one of
+its participants or portrayed observers.
+     (3) It shall be unlawful for a person to knowingly employ, force,
+authorize, induce, or otherwise cause a child to appear or be depicted in any
+child sexual abuse material engage in any visual depiction of sexually explicit
+conduct which has a child as one of its participants or portrayed observers.
+     (4) It shall be unlawful for a parent, stepparent, legal guardian, or any
+person with custody and control of a child, knowing the content thereof, to
+consent to such child appearing or being depicted in any child sexual abuse
+material engaging in any visual depiction of sexually explicit conduct which
+has a child as one of its participants or portrayed observers.
+     (5) For a defendant who was eighteen years of age or older but under
+nineteen years of age at the time of the offense, it shall be an affirmative
+defense to a charge made pursuant to subsection (1) of this section that:
+     (a) The visual depiction:
+     (i) Portrays a child who is fifteen years of age or older;
+     (ii) Was knowingly and voluntarily generated by the child depicted
+therein;
+     (iii) Was knowingly and voluntarily provided by such child; and
+     (iv) Portrays only one child other than the defendant;
+     (b) The defendant has not provided or made available the visual depiction
+to another person except such child; and
+     (c) The defendant did not coerce such child to either create or send the
+visual depiction.
+     (6) For a defendant who was under eighteen years of age at the time of the
+offense, it shall be an affirmative defense to a charge made pursuant to
+subsection (1) of this section that:
+     (a) The difference in age between the defendant and the child portrayed is
+less than four years;
+     (b) The visual depiction:
+     (i) Was knowingly and voluntarily generated by the child depicted therein;
+     (ii) Was knowingly and voluntarily provided by such child; and
+     (iii) Portrays only one child other than the defendant;
+     (c) The defendant has not provided or made available the visual depiction
+to another person except such child; and
+     (d) The defendant did not coerce such child to either create or send the
+visual depiction.
+     (7) Any person who is under nineteen years of age at the time he or she
+violates this section shall be guilty of a Class III felony for each offense.
+     (8) Any person who is nineteen years of age or older at the time he or she
+violates this section shall be guilty of a Class ID felony for each offense.
+     (9) Any person who violates this section and who has previously been
+convicted of a covered offense shall be guilty of a Class IC felony for each
+offense.
+     Sec. 6. Section 28-1463.06, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     28-1463.06 In addition to the penalties provided in the Child Sexual Abuse
+Material Child Pornography Prevention Act, a sentencing court may order
+forfeiture as provided in sections 28-1601 to 28-1603. that any money,
+securities, negotiable instruments, firearms, conveyances, or electronic
+                                      -3-
+LB383                                                                     LB383
+2025                                                                       2025
+communication devices as defined in section 28-833 or any equipment,
+components, peripherals, software, hardware, or accessories related to
+electronic communication devices be forfeited as a part of the sentence imposed
+if it finds by clear and convincing evidence adduced at a separate hearing in
+the same prosecution, conducted pursuant to section 28-1601, that any or all
+such property was derived from, used, or intended to be used to facilitate a
+violation of the Child Pornography Prevention Act.
+     Sec. 7. Section 25-21,291, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     25-21,291 For purposes of the Exploited Children's Civil Remedy Act:
+     (1) Access software provider means a provider of software, including
+client or server software, or enabling tools that do any one or more of the
+following: (a) Filter, screen, allow, or disallow content; (b) pick, choose,
+analyze, or digest content; or (c) transmit, receive, display, forward, cache,
+search, subset, organize, reorganize, or translate content;
+     (2) Aid or assist another with the creation, distribution, or active
+acquisition of child sexual abuse material child pornography means help a
+principal in some appreciable manner with the creation, distribution, or active
+acquisition of a visual depiction of sexually explicit conduct which has a
+child as one of its participants or portrayed observers. The term also includes
+knowingly employing, forcing, authorizing, inducing, or otherwise causing a
+child to engage in any visual depiction of sexually explicit conduct which has
+a child as one of its participants or portrayed observers. No parent,
+stepparent, legal guardian, or person with custody and control of a child,
+knowing the content thereof, may consent to such child engaging in any visual
+depiction of sexually explicit conduct which has a child as one of its
+participants or portrayed observers;
+     (3) Cable operator means any person or group of persons (a) who provides
+cable service over a cable system and directly or through one or more
+affiliates owns a significant interest in such cable system or (b) who
+otherwise controls or is responsible for, through any arrangement, the
+management and operation of such a cable system;
+     (4) Child has the same meaning as in section 2 of this act 28-1463.02;
+     (5) Create means to knowingly create, make, manufacture, direct, publish,
+finance, or in any manner generate;
+     (6) Distribute means the actual, constructive, or attempted transfer from
+one person, source, or location to another person, source, or location. The
+term includes, but is not limited to, renting, selling, delivering, displaying,
+advertising, trading, mailing, procuring, circulating, lending, exhibiting,
+transmitting,   transmuting,   transferring,   disseminating,   presenting,  or
+providing any visual depiction of sexually explicit conduct which has a child
+as one of its participants or portrayed observers;
+     (7) Interactive computer service means any information service system or
+access software provider that provides or enables computer access by multiple
+users to a computer server, including specifically a service or system that
+provides access to the Internet and such systems operated or services offered
+by libraries or educational institutions;
+     (8) Participant means a child who appears in any visual depiction of
+sexually explicit conduct and is portrayed or actively engaged in acts of
+sexually explicit conduct appearing therein;
+     (9) Portrayed observer means a child who appears in any visual depiction
+where sexually explicit conduct is likewise portrayed or occurring within the
+child's presence or in the child's proximity;
+     (10) Sexually explicit conduct has the same meaning as in section 2 of
+this act 28-1463.02;
+     (11) Telecommunications service means the offering of telecommunications
+for a fee directly to the public, or to such classes of users as to be
+effectively available directly to the public, regardless of the facilities
+used; and
+     (12) Visual depiction has the same meaning as in section 2 of this act
+28-1463.02.
+     Sec. 8. Section 25-21,302, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     25-21,302 (1)(a) In addition to any other civil or criminal penalties
+provided by law, any property used in the commission of a violation of the
+Child Sexual Abuse Material Child Pornography Prevention Act or section 28-813,
+28-831, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107 may be
+forfeited through a proceeding as provided in this section.
+     (b) The following property shall be subject to forfeiture if used or
+intended for use as an instrumentality in or used in furtherance of a violation
+of the Child Sexual Abuse Material Child Pornography Prevention Act or section
+28-813, 28-831, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107:
+     (i) Conveyances, including aircraft, vehicles, or vessels;
+     (ii) Books, records, telecommunication equipment, or computers;
+     (iii) Money or weapons;
+     (iv) Everything of value furnished, or intended to be furnished, in
+exchange for an act in violation and all proceeds traceable to the exchange;
+     (v) Negotiable instruments and securities;
+     (vi) Any property, real or personal, directly or indirectly acquired or
+received in a violation or as an inducement to violate;
+     (vii) Any property traceable to proceeds from a violation; and
+     (viii) Any real property, including any right, title, and interest in the
+whole of or any part of any lot or tract of land, used in furtherance of a
+                                      -4-
+LB383                                                                     LB383
+2025                                                                       2025
+violation of the Child Sexual Abuse Material Child Pornography Prevention Act
+or section 28-813, 28-831, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or
+28-1107.
+     (c)(i) No property used by any person as a common carrier in the
+transaction of business as a common carrier is subject to forfeiture under this
+section unless it appears that the owner or other person in charge of the
+property is a consenting party or privy to a violation of the Child Sexual
+Abuse Material Child Pornography Prevention Act or section 28-813, 28-831,
+28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107.
+     (ii) No property is subject to forfeiture under this section by reason of
+any act or omission proved by the owner thereof to have been committed or
+omitted without his or her actual knowledge or consent. If the confiscating
+authority has reason to believe that the property is leased or rented property,
+then the confiscating authority shall notify the owner of the property within
+five days after the confiscation or within five days after forming reason to
+believe that the property is leased or rented property.
+     (iii) Forfeiture of property encumbered by a bona fide security interest
+is subject to the interest of the secured party if such party neither had
+actual knowledge of nor consented to the act or omission.
+     (2) No property shall be forfeited under this section, to the extent of
+the interest of an owner, by reason of any act or omission established by the
+owner to have been committed or omitted without his or her actual knowledge or
+consent.
+     (3) Seizure without process may be made if the seizure is incident to an
+arrest or a search under a search warrant.
+     (4)(a) When any property is seized under this section, proceedings shall
+be instituted within a reasonable period of time from the date of seizure or
+the subject property shall be immediately returned to the party from whom
+seized.
+     (b) A petition for forfeiture shall be filed by the Attorney General or a
+county attorney in the name of the State of Nebraska and may be filed in the
+county in which the seizure is made, the county in which the criminal
+prosecution is brought, or the county in which the owner of the seized property
+is found. Forfeiture proceedings may be brought in the district court or the
+county court. A copy of the petition shall be served upon the following persons
+by service of process in the same manner as in civil cases:
+     (i) The owner of the property if the owner's address is known;
+     (ii) Any secured party who has registered a lien or filed a financing
+statement as provided by law if the identity of the secured party can be
+ascertained by the entity filing the petition by making a good faith effort to
+ascertain the identity of the secured party;
+     (iii) Any other bona fide lienholder or secured party or other person
+holding an interest in the property in the nature of a security interest of
+whom the seizing law enforcement agency has actual knowledge; and
+     (iv) Any person in possession of property subject to forfeiture at the
+time that it was seized.
+     (5) If the property is a motor vehicle subject to titling under the Motor
+Vehicle Certificate of Title Act or a vessel subject to titling under the State
+Boat Act, and if there is any reasonable cause to believe that the motor
+vehicle or vessel has been titled, inquiry of the Department of Motor Vehicles
+shall be made as to what the records of the department show as to who is the
+record owner of the motor vehicle or vessel and who, if anyone, holds any lien
+or security interest that affects the motor vehicle or vessel.
+     (6) If the property is a motor vehicle or vessel and is not titled in the
+State of Nebraska, then an attempt shall be made to ascertain the name and
+address of the person in whose name the motor vehicle or vessel is licensed,
+and if the motor vehicle or vessel is licensed in a state which has in effect a
+certificate of title law, inquiry of the appropriate agency of that state shall
+be made as to what the records of the agency show as to who is the record owner
+of the motor vehicle or vessel and who, if anyone, holds any lien, security
+interest, or other instrument in the nature of a security device that affects
+the motor vehicle or vessel.
+     (7) If the property is of a nature that a financing statement is required
+by the laws of this state to be filed to perfect a security interest affecting
+the property and if there is any reasonable cause to believe that a financing
+statement covering the security interest has been filed under the laws of this
+state, inquiry shall be made as to what the records show as to who is the
+record owner of the property and who, if anyone, has filed a financing
+statement affecting the property.
+     (8) If the property is an aircraft or part thereof and if there is any
+reasonable cause to believe that an instrument in the nature of a security
+device affects the property, inquiry shall be made as to what the records of
+the Federal Aviation Administration show as to who is the record owner of the
+property and who, if anyone, holds an instrument in the nature of a security
+device which affects the property.
+     (9) If the answer to an inquiry states that the record owner of the
+property is any person other than the person who was in possession of it when
+it was seized or states that any person holds any lien, encumbrance, security
+interest, other interest in the nature of a security interest, mortgage, or
+deed of trust that affects the property, the record owner and also any
+lienholder, secured party, other person who holds an interest in the property
+in the nature of a security interest, or holder of an encumbrance, mortgage, or
+deed of trust that affects the property is to be named in the petition of
+                                      -5-
+LB383                                                                     LB383
+2025                                                                       2025
+forfeiture and is to be served with process in the same manner as in civil
+cases.
+     (10) If the owner of the property cannot be found and served with a copy
+of the petition of forfeiture or if no person was in possession of the property
+subject to forfeiture at the time that it was seized and the owner of the
+property is unknown, there shall be filed with the clerk of the court in which
+the proceeding is pending an affidavit to such effect, whereupon the clerk of
+the court shall publish notice of the hearing addressed to "the Unknown Owner
+of ............," filling in the blank space with a reasonably detailed
+description of the property subject to forfeiture. Service by publication shall
+be completed in the same manner as is provided in the code of civil procedure
+for the service of process in civil actions in the district courts of this
+state.
+     (11) No proceedings instituted pursuant to this section shall proceed to
+hearing unless the judge conducting the hearing is satisfied that this section
+has been complied with. Any answer received from an inquiry required by this
+section shall be introduced into evidence at the hearing.
+     (12)(a) An owner of property that has been seized shall file an answer
+within thirty days after the completion of service of process. If an answer is
+not filed, the court shall hear evidence that the property is subject to
+forfeiture and forfeit the property to the seizing law enforcement agency. If
+an answer is filed, a time for hearing on forfeiture shall be set within thirty
+days after filing the answer or at the succeeding term of court if court would
+not be in session within thirty days after filing the answer. The court may
+postpone the forfeiture hearing to a date past the time any criminal action is
+pending against the owner upon request of any party.
+     (b) If the owner of the property has filed an answer denying that the
+property is subject to forfeiture, then the burden is on the petitioner to
+prove that the property is subject to forfeiture. However, if an answer has not
+been filed by the owner of the property, the petition for forfeiture may be
+introduced into evidence and is prima facie evidence that the property is
+subject to forfeiture. The burden of proof placed upon the petitioner in regard
+to property forfeited under this section shall be by clear and convincing
+evidence.
+     (c) At the hearing any claimant of any right, title, or interest in the
+property may prove his or her lien, encumbrance, security interest, other
+interest in the nature of a security interest, mortgage, or deed of trust to be
+bona fide and created without actual knowledge or consent that the property was
+to be used so as to cause the property to be subject to forfeiture.
+     (d) If it is found that the property is subject to forfeiture, then the
+judge shall forfeit the property. However, if proof at the hearing discloses
+that the interest of any bona fide lienholder, any secured party, any other
+person holding an interest in the property in the nature of a security
+interest, or any holder of a bona fide encumbrance, mortgage, or deed of trust
+is greater than or equal to the present value of the property, the court shall
+order the property released to him or her. If the interest is less than the
+present value of the property and if the proof shows that the property is
+subject to forfeiture, the court shall order the property forfeited.
+     (13) Unless otherwise provided in this section, all personal property
+which is forfeited under this section shall be liquidated and, after deduction
+of court costs and the expense of liquidation, the proceeds shall be remitted
+to the county treasurer of the county in which the seizure was made. The county
+treasurer shall remit all such proceeds from property forfeited pursuant to
+this section to the State Treasurer for distribution in accordance with Article
+VII, section 5, of the Constitution of Nebraska.
+     (14) All money forfeited under this section shall be remitted in the same
+manner as provided in subsection (13) of this section.
+     (15) All real estate forfeited under this section shall be sold to the
+highest bidder at a public auction for cash, the auction to be conducted by the
+county sheriff or his or her designee at such place, on such notice, and in
+accordance with the same procedure, as far as practicable, as is required in
+the case of sales of land under execution at law. The proceeds of the sale
+shall first be applied to the cost and expense in administering and conducting
+the sale, then to the satisfaction of all mortgages, deeds of trust, liens, and
+encumbrances of record on the property. The remaining proceeds shall be
+remitted in the same manner as provided in subsection (13) of this section.
+     (16) The forfeiture procedure set forth in this section is the sole remedy
+of any claimant, and no court shall have jurisdiction to interfere therewith by
+replevin, by injunction, by supersedeas, or by any other manner.
+     Sec. 9. Section 27-1301, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     27-1301 (1) In any judicial or administrative proceeding, any property or
+material that constitutes child sexual abuse material a visual depiction of
+sexually explicit conduct, as defined in section 2 of this act 28-1463.02, and
+which has a child, as defined in such section, as one of its participants or
+portrayed observers, shall remain constantly and continuously in the care,
+custody, and control of law enforcement, the prosecuting attorney, or the court
+having properly received it into evidence, except as provided in subsection (3)
+of this section.
+     (2) All courts and administrative agencies shall unequivocally deny any
+request by the defendant, his or her attorney, or any other person, agency, or
+organization, regardless of whether such defendant, attorney, or other person,
+agency, or organization is a party in interest or not, to acquire possession
+                                      -6-
+LB383                                                                     LB383
+2025                                                                       2025
+of, copy, photograph, duplicate, or otherwise reproduce any property or
+material that constitutes child sexual abuse material a visual depiction of
+sexually explicit conduct, as defined in section 2 of this act 28-1463.02, and
+which has a child, as defined in such section, as one of its participants or
+portrayed observers, so long as the state makes the property or material
+reasonably available to the defendant in a criminal proceeding. Nothing in this
+section shall be deemed to prohibit the review of the proscribed materials or
+property by a federal court when considering a habeas corpus claim.
+     (3)(a) For purposes of this section, property or material are deemed to be
+reasonably available to a defendant if the state provides ample opportunity for
+inspection, viewing, examination, and analysis of the property or material, at
+a law enforcement or state-operated facility, to the defendant, his or her
+attorney, and any individual the defendant seeks to use for the purpose of
+furnishing expert testimony.
+     (b) Notwithstanding the provisions of this subsection, a court may order a
+copy of the property or material to be delivered to a person identified as a
+defense expert for the purpose of evaluating the evidence, subject to the same
+restrictions placed upon law enforcement. The defense expert shall return all
+copies and materials to law enforcement upon completion of the evaluation.
+     (4) The On or before July 1, 2009, the Supreme Court shall adopt and
+promulgate rules and regulations regarding the proper control, care, custody,
+transfer, and disposition of property or material that constitutes child sexual
+abuse material a visual depiction of sexually explicit conduct, as defined in
+section 2 of this act 28-1463.02, and which has a child, as defined in such
+section, as one of its participants or portrayed observers, that has been
+received into evidence at any judicial or administrative proceeding. Among the
+issues addressed by these rules and regulations, the Supreme Court should
+devise procedures regarding the preparation and delivery of bills of exception
+containing evidence as described in this section, as well as procedures for
+storing, accessing, and disposing of such bills of exception after preparation
+and receipt.
+     Sec. 10. Section 28-116, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     28-116 The changes made to the sections listed in this section by Laws
+2015, LB605, shall not apply to any offense committed prior to August 30, 2015.
+Any such offense shall be construed and punished according to the provisions of
+law existing at the time the offense was committed. For purposes of this
+section, an offense shall be deemed to have been committed prior to August 30,
+2015, if any element of the offense occurred prior to such date. The following
+sections are subject to this provision: Sections 9-262, 9-352, 9-434, 9-652,
+23-135.01, 28-105, 28-106, 28-201, 28-204, 28-305, 28-306, 28-309, 28-310.01,
+28-311,   28-311.01,  28-311.04,   28-311.08,  28-320,   28-322.02,  28-322.03,
+28-322.04, 28-323, 28-393, 28-394, 28-397, 28-416, 28-504, 28-507, 28-514,
+28-518, 28-519, 28-603, 28-604, 28-611, 28-611.01, 28-620, 28-621, 28-622,
+28-627, 28-631, 28-638, 28-639, 28-703, 28-707, 28-813.01, 28-912, 28-932,
+28-1005, 28-1009, 28-1102, 28-1103, 28-1104, 28-1212.03, 28-1222, 28-1224,
+28-1344, 28-1345, 28-1463.05, 29-1816, 29-2204, 29-2260, 29-2308, 29-4011,
+60-6,197.03, 60-6,197.06, 68-1017, 68-1017.01, 71-2228, and 71-2229 and
+sections 3 and 4 of this act.
+     Sec. 11. Section 28-320.02, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     28-320.02 (1) No person shall knowingly solicit, coax, entice, or lure (a)
+a child sixteen years of age or younger or (b) a peace officer who is believed
+by such person to be a child sixteen years of age or younger, by means of an
+electronic communication device as that term is defined in section 28-833, to
+engage in an act which would be in violation of section 28-319, 28-319.01, or
+28-320.01 or subsection (1) or (2) of section 28-320. A person shall not be
+convicted of both a violation of this subsection and a violation of section
+28-319, 28-319.01, or 28-320.01 or subsection (1) or (2) of section 28-320 if
+the violations arise out of the same set of facts or pattern of conduct and the
+individual solicited, coaxed, enticed, or lured under this subsection is also
+the victim of the sexual assault under section 28-319, 28-319.01, or 28-320.01
+or subsection (1) or (2) of section 28-320.
+     (2) A person who violates this section is guilty of a Class ID felony. If
+a person who violates this section has previously been convicted of a covered
+offense as defined in section 2 of this act violation of this section or
+section 28-308, 28-309, 28-310, 28-311, 28-313, 28-314, 28-315, 28-319,
+28-319.01, 28-320.01, 28-813.01, 28-833, 28-1463.03, or 28-1463.05 or
+subsection (1) or (2) of section 28-320, the person is guilty of a Class IC
+felony.
+     Sec. 12. Section 28-813.02, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     28-813.02 Any commercial film and photographic print processor who has
+knowledge of or observes, within the scope of his or her professional capacity
+or employment, and who participates in an investigation or the making of any
+report pertaining to any film, photograph, videotape, negative, or slide
+depicting child sexual abuse material a child under the age of eighteen years
+engaged in an act of sexually explicit conduct, as defined in section 2 of this
+act 28-1463.02, or participates in a judicial proceeding resulting from such
+participation shall be immune from any liability, civil or criminal, that might
+otherwise be incurred or imposed, except for maliciously false statements.
+     Sec. 13. Section 28-833, Reissue Revised Statutes of Nebraska, is amended
+to read:
+                                      -7-
+LB383                                                                     LB383
+2025                                                                       2025
+     28-833 (1) A person commits the offense of enticement by electronic
+communication device if he or she is nineteen years of age or over and
+knowingly and intentionally utilizes an electronic communication device to
+contact a child under sixteen years of age or a peace officer who is believed
+by such person to be a child under sixteen years of age and in so doing:
+     (a) Uses or transmits any indecent, lewd, lascivious, or obscene language,
+writing, or sound;
+     (b) Transmits or otherwise disseminates any visual depiction of sexually
+explicit conduct as defined in section 28-1463.02; or
+     (c) Offers or solicits any indecent, lewd, or lascivious act.
+     (2) Enticement by electronic communication device is a Class IV felony.
+     (3) Enticement by electronic communication device is deemed to have been
+committed either at the place where the communication was initiated or where it
+was received.
+     (4) For purposes of this section: ,
+     (a) Electronic electronic communication device means any device which, in
+its ordinary and intended use, transmits by electronic means writings, sounds,
+visual images, or data of any nature to another electronic communication
+device; .
+     (b) Sexually explicit conduct has the same meaning as in section 2 of this
+act; and
+     (c) Visual depiction has the same meaning as in section 2 of this act.
+     Sec. 14. Section 28-1354, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     28-1354 For purposes of the Public Protection Act:
+     (1) Enterprise means any individual, sole proprietorship, partnership,
+corporation, trust, association, or any legal entity, union, or group of
+individuals associated in fact although not a legal entity, and shall include
+illicit as well as licit enterprises as well as other entities;
+     (2) Pattern of racketeering activity means a cumulative loss for one or
+more victims or gains for the enterprise of not less than one thousand five
+hundred dollars resulting from at least two acts of racketeering activity, one
+of which occurred after August 30, 2009, and the last of which occurred within
+ten years, excluding any period of imprisonment, after the commission of a
+prior act of racketeering activity;
+     (3) Until January 1, 2017, person means any individual or entity, as
+defined in section 21-2014, holding or capable of holding a legal, equitable,
+or beneficial interest in property. Beginning January 1, 2017, person means any
+individual or entity, as defined in section 21-214, holding or capable of
+holding a legal, equitable, or beneficial interest in property;
+     (4) Prosecutor includes the Attorney General of the State of Nebraska, the
+deputy attorney general, assistant attorneys general, a county attorney, a
+deputy county attorney, or any person so designated by the Attorney General, a
+county attorney, or a court of the state to carry out the powers conferred by
+the act;
+     (5) Racketeering activity includes the commission of, criminal attempt to
+commit, conspiracy to commit, aiding and abetting in the commission of, aiding
+in the consummation of, acting as an accessory to the commission of, or the
+solicitation, coercion, or intimidation of another to commit or aid in the
+commission of any of the following:
+     (a) Offenses against the person which include: Murder in the first degree
+under section 28-303; murder in the second degree under section 28-304;
+manslaughter under section 28-305; assault in the first degree under section
+28-308; assault in the second degree under section 28-309; assault in the third
+degree under section 28-310; terroristic threats under section 28-311.01;
+kidnapping under section 28-313; false imprisonment in the first degree under
+section 28-314; false imprisonment in the second degree under section 28-315;
+sexual assault in the first degree under section 28-319; and robbery under
+section 28-324;
+     (b) Offenses relating to controlled substances which include: To
+unlawfully manufacture, distribute, deliver, dispense, or possess with intent
+to manufacture, distribute, deliver, or dispense a controlled substance under
+subsection (1) of section 28-416; possession of marijuana weighing more than
+one pound under subsection (12) of section 28-416; possession of money used or
+intended to be used to facilitate a violation of subsection (1) of section
+28-416 prohibited under subsection (17) of section 28-416; any violation of
+section 28-418; to unlawfully manufacture, distribute, deliver, or possess with
+intent to distribute or deliver an imitation controlled substance under section
+28-445; possession of anhydrous ammonia with the intent to manufacture
+methamphetamine   under   section   28-451;   and   possession   of  ephedrine,
+pseudoephedrine, or phenylpropanolamine with the intent to manufacture
+methamphetamine under section 28-452;
+     (c) Offenses against property which include: Arson in the first degree
+under section 28-502; arson in the second degree under section 28-503; arson in
+the third degree under section 28-504; burglary under section 28-507; theft by
+unlawful taking or disposition under section 28-511; theft by shoplifting under
+section 28-511.01; theft by deception under section 28-512; theft by extortion
+under section 28-513; theft of services under section 28-515; theft by
+receiving stolen property under section 28-517; criminal mischief under section
+28-519; and unlawfully depriving or obtaining property or services using a
+computer under section 28-1344;
+     (d) Offenses involving fraud which include: Burning to defraud an insurer
+under section 28-505; forgery in the first degree under section 28-602; forgery
+                                      -8-
+LB383                                                                     LB383
+2025                                                                       2025
+in the second degree under section 28-603; criminal possession of a forged
+instrument under section 28-604; criminal possession of written instrument
+forgery devices under section 28-605; criminal impersonation under section
+28-638; identity theft under section 28-639; identity fraud under section
+28-640; false statement or book entry under section 28-612; tampering with a
+publicly exhibited contest under section 28-614; issuing a false financial
+statement for purposes of obtaining a financial transaction device under
+section 28-619; unauthorized use of a financial transaction device under
+section 28-620; criminal possession of a financial transaction device under
+section 28-621; unlawful circulation of a financial transaction device in the
+first degree under section 28-622; unlawful circulation of a financial
+transaction device in the second degree under section 28-623; criminal
+possession of a blank financial transaction device under section 28-624;
+criminal sale of a blank financial transaction device under section 28-625;
+criminal possession of a financial transaction forgery device under section
+28-626; unlawful manufacture of a financial transaction device under section
+28-627; laundering of sales forms under section 28-628; unlawful acquisition of
+sales form processing services under section 28-629; unlawful factoring of a
+financial transaction device under section 28-630; and fraudulent insurance
+acts under section 28-631;
+     (e) Offenses involving governmental operations which include: Abuse of
+public records under section 28-911; perjury or subornation of perjury under
+section 28-915; bribery under section 28-917; bribery of a witness under
+section 28-918; tampering with a witness or informant or jury tampering under
+section 28-919; bribery of a juror under section 28-920; assault on an officer,
+an emergency responder, a state correctional employee, a Department of Health
+and Human Services employee, or a health care professional in the first degree
+under section 28-929; assault on an officer, an emergency responder, a state
+correctional employee, a Department of Health and Human Services employee, or a
+health care professional in the second degree under section 28-930; assault on
+an officer, an emergency responder, a state correctional employee, a Department
+of Health and Human Services employee, or a health care professional in the
+third degree under section 28-931; and assault on an officer, an emergency
+responder, a state correctional employee, a Department of Health and Human
+Services employee, or a health care professional using a motor vehicle under
+section 28-931.01;
+     (f) Offenses involving gambling which include: Promoting gambling in the
+first degree under section 28-1102; possession of gambling records under
+section 28-1105; gambling debt collection under section 28-1105.01; and
+possession of a gambling device under section 28-1107;
+     (g) Offenses relating to firearms, weapons, and explosives which include:
+Carrying a concealed weapon under section 28-1202; transportation or possession
+of machine guns, short rifles, or short shotguns under section 28-1203;
+unlawful possession of a handgun under section 28-1204; unlawful transfer of a
+firearm to a juvenile under section 28-1204.01; possession of a firearm by a
+prohibited juvenile offender under section 28-1204.05; using a deadly weapon to
+commit a felony, possession of a deadly weapon during the commission of a
+felony, or carrying a firearm or destructive device during the commission of a
+dangerous misdemeanor under section 28-1205; possession of a deadly weapon by a
+prohibited person under section 28-1206; possession of a defaced firearm under
+section 28-1207; defacing a firearm under section 28-1208; unlawful discharge
+of a firearm under section 28-1212.02; possession, receipt, retention, or
+disposition of a stolen firearm under section 28-1212.03; unlawful possession
+of explosive materials in the first degree under section 28-1215; unlawful
+possession of explosive materials in the second degree under section 28-1216;
+unlawful sale of explosives under section 28-1217; use of explosives without a
+permit under section 28-1218; obtaining an explosives permit through false
+representations under section 28-1219; possession of a destructive device under
+section 28-1220; threatening the use of explosives or placing a false bomb
+under section 28-1221; using explosives to commit a felony under section
+28-1222; using explosives to damage or destroy property under section 28-1223;
+and using explosives to kill or injure any person under section 28-1224;
+     (h) Any violation of the Securities Act of Nebraska pursuant to section
+8-1117;
+     (i) Any violation of the Nebraska Revenue Act of 1967 pursuant to section
+77-2713;
+     (j) Offenses relating to public health and morals which include:
+Prostitution under section 28-801; pandering under section 28-802; keeping a
+place of prostitution under section 28-804; labor trafficking, sex trafficking,
+labor trafficking of a minor, or sex trafficking of a minor under section
+28-831; a violation of section 28-1005; and any act relating to the visual
+depiction of sexually explicit conduct prohibited in the Child Sexual Abuse
+Material Child Pornography Prevention Act; and
+     (k) A violation of the Computer Crimes Act;
+     (6) State means the State of Nebraska or any political subdivision or any
+department, agency, or instrumentality thereof; and
+     (7) Unlawful debt means a debt of at least one thousand five hundred
+dollars:
+     (a) Incurred or contracted in gambling activity which was in violation of
+federal law or the law of the state or which is unenforceable under state or
+federal law in whole or in part as to principal or interest because of the laws
+relating to usury; or
+     (b) Which was incurred in connection with the business of gambling in
+                                      -9-
+LB383                                                                     LB383
+2025                                                                       2025
+violation of federal law or the law of the state or the business of lending
+money or a thing of value at a rate usurious under state law if the usurious
+rate is at least twice the enforceable rate.
+     Sec. 15. Section 28-1601, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     28-1601 (1) For purposes of sections 28-1601 to 28-1603:
+     (a) Covered offense means a violation of the Child Sexual Abuse Material
+Prevention Act, subsection (1) of section 28-416, or section 28-1102, 28-1103,
+28-1104, 28-1105, 28-1105.01, or 28-1107;
+     (b) Electronic communication device has the same meaning as in section
+28-833; and
+     (c) Gambling device has the same meaning as in section 28-1101.
+     (2) (1) In addition to existing penalties for a violation of a covered
+offense the Child Pornography Prevention Act, subsection (1) of section 28-416,
+or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or
+28-1107, a court may order forfeiture of any money, securities, negotiable
+instruments, firearms, conveyances, or electronic communication devices; as
+defined in section 28-833, any equipment, components, peripherals, software,
+hardware, or accessories related to electronic communication devices; , or any
+gambling devices as defined in section 28-1101 if:
+     (a) The owner or possessor of the property has been convicted of a covered
+offense violation of the Child Pornography Prevention Act, subsection (1) of
+section 28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105,
+28-1105.01, or 28-1107;
+     (b) The information charging such violation specifically requests the
+forfeiture of property upon conviction and is prepared pursuant to section
+28-1602; and
+     (c) It The property is found by clear and convincing evidence that such
+property was to have been derived from, used, or intended to be used to
+facilitate a covered offense violation of the Child Pornography Prevention Act,
+subsection (1) of section 28-416, or section 28-813.01, 28-1102, 28-1103,
+28-1104, 28-1105, 28-1105.01, or 28-1107.
+     (3) (2) Following the filing of an information charging a violation of a
+covered offense the Child Pornography Prevention Act, subsection (1) of section
+28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01,
+or 28-1107 that specifically seeks forfeiture of any property listed in
+subsection (2) (1) of this section, the defendant may request a pretrial
+hearing to determine the existence of probable cause to believe that the
+property specifically sought to be forfeited was derived from, used, or
+intended to be used to facilitate a covered offense violation of the Child
+Pornography Prevention Act, subsection (1) of section 28-416, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107. The
+request for a hearing pursuant to this section must be filed with the district
+court in which the criminal proceeding is pending within thirty days after the
+filing of the information.
+     (4)(a) (3) At any time after the filing of the information in district
+court and prior to final disposition of the criminal case, any person or
+entity, other than the defendant, with a claimed legal interest in the property
+may petition to intervene in the district court with jurisdiction over the
+criminal case for the specific and limited purpose of demonstrating such
+person's his, her, or its legal interest in the property and such person's his,
+her, or its lack of actual knowledge that such property was derived from, used,
+or intended to be used to facilitate a covered offense in violation of the
+Child Pornography Prevention Act, subsection (1) of section 28-416, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107.
+     (b) In the petition to intervene, the intervening person or entity shall,
+at a minimum, state facts demonstrating such person's his, her, or its legal
+interest in the property and such person's his, her, or its lack of actual
+knowledge regarding the use or intended use of the property.
+     (5) Within thirty days after filing a motion to intervene, the district
+court shall conduct an evidentiary hearing on the matter. At the conclusion of
+such hearing, the court may order that any or all of the property be returned
+to the intervening claimant after it is no longer needed as evidence in the
+criminal case upon a showing by the claimant by a preponderance of the
+evidence:
+     (a) That the claimant that he, she, or it has a legally recognized
+interest in the property; and
+     (b) Either either (i) that such property was acquired by the claimant in
+good faith and the claimant he, she, or it did not have actual knowledge that
+such property was derived from, used, or intended to be used to facilitate a
+covered offense violation of the Child Pornography Prevention Act, subsection
+(1) of section 28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104,
+28-1105, 28-1105.01, or 28-1107 or (ii) that the property seized was not
+derived from, used, or intended to be used to facilitate a covered offense
+violation of the Child Pornography Prevention Act, subsection (1) of section
+28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01,
+or 28-1107.
+     (6) The court, on its own motion or upon application of the intervening
+claimant, may permit the claimant such person to proceed in forma pauperis
+under sections 25-2301 to 25-2310. The court, on its own motion or upon
+application of the intervening claimant, may appoint counsel to represent the
+claimant such person if the claimant such person is indigent. If the claimant
+he or she asserts indigency, the court shall make a reasonable inquiry to
+                                      -10-
+LB383                                                                     LB383
+2025                                                                       2025
+determine the claimant's such person's financial condition and may require the
+claimant him or her to execute an affidavit of indigency for filing with the
+clerk of the court.
+     (7) (4) After conviction but prior to sentencing for a covered offense
+violation of the Child Pornography Prevention Act, subsection (1) of section
+28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01,
+or 28-1107 in cases in which the prosecuting authority has specifically
+requested forfeiture of property, the district court shall conduct an
+evidentiary hearing at which the prosecuting authority must prove by clear and
+convincing evidence what specific amount or portion of the property
+specifically enumerated in the criminal information was derived from, used, or
+intended for use in furtherance of a covered offense violation of the Child
+Pornography Prevention Act, subsection (1) of section 28-416, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107. At the
+conclusion of such hearing, the court shall make specific findings of fact
+indicating what amount or portion of the property sought to be forfeited by the
+state was derived from, used, or intended to be used to facilitate a covered
+offense violation of the Child Pornography Prevention Act, subsection (1) of
+section 28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105,
+28-1105.01, or 28-1107. The court shall order any amount or portion of the
+property not proven by the state to be derived from, used, or intended to be
+used to facilitate a covered offense violation of the Child Pornography
+Prevention Act, subsection (1) of section 28-416, or section 28-813.01,
+28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107 or the fair market
+value of the legally recognized interest in such property be returned to its
+rightful and legal owner or interest holder.
+     (8)(a) (5)(a) The court shall order that any amount or portion of property
+proven by the state by clear and convincing evidence to be derived from, used,
+or intended to be used to facilitate a covered offense violation of the Child
+Pornography Prevention Act, subsection (1) of section 28-416, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107 be
+forfeited to the state and disposition of such property be conducted in
+accordance with this subsection and section 28-1439.02 at such time as the
+property is no longer required as evidence in any criminal proceeding.
+     (b) As part of any disposition of property, the court may order that: (i)
+Any money, securities, or negotiable instruments be distributed as provided in
+Article VII, section 5, of the Constitution of Nebraska; (ii) any conveyances
+be sold or put to official use by the seizing agency for a period of not more
+than one year and when such property is no longer necessary for official use or
+at the end of two years, whichever comes first, such property shall be sold.
+Proceeds from the sale of any conveyance shall be distributed as provided in
+Article VII, section 5, of the Constitution of Nebraska; (iii) any electronic
+communication devices as defined in section 28-833, any equipment, components,
+peripherals, software, hardware, or accessories related to electronic
+communication devices, or any gambling devices as defined in section 28-1101 be
+destroyed by a law enforcement agency; and (iv) the disposition of firearms
+shall be effectuated pursuant to section 29-820.
+     (c) As used in this subsection, official use means use directly in
+connection with enforcement of the Child Sexual Abuse Material Child
+Pornography Prevention Act, the Uniform Controlled Substances Act, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107.
+     (9) (6) Any money, securities, negotiable instruments, firearms,
+conveyances, or electronic communication devices; as defined in section 28-833,
+any equipment, components, peripherals, software, hardware, or accessories
+related to electronic communication devices; , or any gambling devices as
+defined in section 28-1101 may be forfeited pursuant to a plea agreement
+between the state and the defendant subject to notice to or approval of the
+court.
+     (10) (7) Subdivision (2)(a) (1)(a) of this section does not apply if the
+owner or possessor of the property dies or is removed from the United States
+before charges are filed or a conviction obtained.
+     (11) (8) Subdivision (2)(b) (1)(b) of this section does not apply if the
+owner or possessor of the property dies or is removed from the United States
+before charges are filed so long as the statute of limitations for a covered
+offense violation of the Child Pornography Prevention Act, subsection (1) of
+section 28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105,
+28-1105.01, or 28-1107 has not expired.
+     (12) (9) Subdivision (2)(a) (1)(a) of this section does not apply if the
+owner or possessor of the property is unknown or incapable of being determined
+for some legitimate reason or fails to appear in court as ordered after
+prosecution for a covered offense violation of the Child Pornography Prevention
+Act, subsection (1) of section 28-416, or section 28-813.01, 28-1102, 28-1103,
+28-1104, 28-1105, 28-1105.01, or 28-1107 is commenced and is not apprehended
+within twelve months after the failure to appear order was issued by the court.
+     (13) (10) If the owner or possessor of the property fails to appear in
+court as ordered after prosecution for a covered offense violation of the Child
+Pornography Prevention Act, subsection (1) of section 28-416, or section
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107 is
+commenced but appears or is apprehended within twelve months after the failure
+to appear order was issued by the court, the court may order the owner or
+possessor of the property, as a part of any sentence imposed for either the
+failure to appear or the conviction for a covered offense of the Child
+Pornography Prevention Act, subsection (1) of section 28-416, or section
+                                      -11-
+LB383                                                                     LB383
+2025                                                                       2025
+28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01, or 28-1107, to pay a
+storage fee of one hundred dollars per month for each month the property was
+held following the issuance of the failure to appear order.
+     Sec. 16. Section 28-1602, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     28-1602 (1) The prosecuting authority must specifically plead its intent
+to seek forfeiture of any property upon a conviction for a covered offense
+violation of the Child Pornography Prevention Act, subsection (1) of section
+28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105, 28-1105.01,
+or 28-1107 in the same criminal information charging the underlying covered
+offense violation of the Child Pornography Prevention Act, subsection (1) of
+section 28-416, or section 28-813.01, 28-1102, 28-1103, 28-1104, 28-1105,
+28-1105.01, or 28-1107.
+     (2) In pleading its intent to seek forfeiture, the information shall
+specifically (a) state the date the property was seized, (b) state the place
+the property was seized from, (c) describe the property sought to be forfeited,
+and (d) if known, state the name of the owner of the property, the name of the
+person or persons in possession of the property or in physical proximity to the
+property when it was seized, and the name of any other person or entity that
+may have a claim or interest in the property.
+     Sec. 17. Section 28-1701, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     28-1701 (1) A person shall not be arrested or prosecuted for an eligible
+alcohol or drug offense if such person witnessed or was the victim of a sexual
+assault and such person:
+     (a) Either:
+     (i) In good faith, reported such sexual assault to law enforcement; or
+     (ii) Requested emergency medical assistance for the victim of the sexual
+assault; and
+     (b) Evidence supporting the arrest or prosecution of the eligible alcohol
+or drug offense was obtained or discovered as a result of such person reporting
+such sexual assault to law enforcement or requesting emergency medical
+assistance.
+     (2) A person shall not be arrested or prosecuted for an eligible alcohol
+or drug offense if:
+     (a) Evidence supporting the arrest or prosecution of the person for the
+offense was obtained or discovered as a result of the investigation or
+prosecution of a sexual assault; and
+     (b) Such person cooperates with law enforcement in the investigation or
+prosecution of the sexual assault.
+     (3) For purposes of this section:
+     (a) Eligible alcohol or drug offense means:
+     (i) A violation of subsection (3) or (13) of section 28-416 or of section
+28-441;
+     (ii) A violation of section 53-180.02 committed by a person older than
+eighteen years of age and under the age of twenty-one years, as described in
+subdivision (4)(a) of section 53-180.05;
+     (iii) A violation of a city or village ordinance similar to subdivision
+(3)(a)(i) or (ii) of this section; or
+     (iv) Attempt, conspiracy, solicitation, being an accessory to, aiding and
+abetting, aiding the consummation of, or compounding a felony with any of the
+offenses in subdivision (3)(a)(i), (ii), or (iii) of this section as the
+underlying offense; and
+     (b) Sexual assault means:
+     (i) A violation of section 28-316.01, 28-319, 28-319.01, 28-320,
+28-320.01, 28-320.02, 28-322.01, 28-322.02, 28-322.03, 28-322.04, 28-322.05, or
+28-703, or section 5 of this act 28-1463.03, sex trafficking or sex trafficking
+of a minor under section 28-831, or subdivision (1)(c) or (g) of section 28-386
+or subdivision (1)(d), (e), or (f) of section 28-707; or
+     (ii) Attempt, conspiracy, solicitation, being an accessory to, aiding and
+abetting, aiding the consummation of, or compounding a felony with any of the
+offenses listed in subdivision (3)(b)(i) of this section as the underlying
+offense.
+     Sec. 18. Section 29-110, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     29-110 (1) Except as otherwise provided by law, no person shall be
+prosecuted for any felony unless the indictment is found by a grand jury within
+three years next after the offense has been done or committed or unless a
+complaint for the same is filed before the magistrate within three years next
+after the offense has been done or committed and a warrant for the arrest of
+the defendant has been issued.
+     (2) Except as otherwise provided by law, no person shall be prosecuted,
+tried, or punished for any misdemeanor or other indictable offense below the
+grade of felony or for any fine or forfeiture under any penal statute unless
+the suit, information, or indictment for such offense is instituted or found
+within one year and six months from the time of committing the offense or
+incurring the fine or forfeiture or within one year for any offense the
+punishment of which is restricted by a fine not exceeding one hundred dollars
+and to imprisonment not exceeding three months.
+     (3) Except as otherwise provided by law, no person shall be prosecuted for
+kidnapping under section 28-313, false imprisonment under section 28-314 or
+28-315, child abuse under section 28-707, pandering under section 28-802,
+debauching a minor under section 28-805, or an offense under section 28-813
+                                      -12-
+LB383                                                                     LB383
+2025                                                                       2025
+when the victim is under sixteen years of age at the time of the offense (a)
+unless the indictment for such offense is found by a grand jury within seven
+years next after the offense has been committed or within seven years next
+after the victim's sixteenth birthday, whichever is later, or (b) unless a
+complaint for such offense is filed before the magistrate within seven years
+next after the offense has been committed or within seven years next after the
+victim's sixteenth birthday, whichever is later, and a warrant for the arrest
+of the defendant has been issued.
+     (4) Except as otherwise provided by law, no person shall be prosecuted for
+a violation of subsection (2) or (3) of section 28-831 (a) unless the
+indictment for such offense is found by a grand jury within seven years next
+after the offense has been committed or within seven years next after the
+victim's eighteenth birthday, whichever is later, or (b) unless a complaint for
+such offense is filed before the magistrate within seven years next after the
+offense has been committed or within seven years next after the victim's
+eighteenth birthday, whichever is later, and a warrant for the arrest of the
+defendant has been issued.
+     (5) Except as otherwise provided by law, no person shall be prosecuted for
+an offense under section 3 or 4 of this act 28-813.01 or 28-1463.05 (a) unless
+the indictment for such offense is found by a grand jury within seven years
+next after the offense has been committed or within seven years next after the
+victim's eighteenth birthday, whichever is later, or (b) unless a complaint for
+such offense is filed before the magistrate within seven years next after the
+offense has been committed or within seven years next after the victim's
+eighteenth birthday, whichever is later, and a warrant for the arrest of the
+defendant has been issued.
+     (6) No person shall be prosecuted for a violation of the Securities Act of
+Nebraska under section 8-1117 unless the indictment for such offense is found
+by a grand jury within five years next after the offense has been done or
+committed or unless a complaint for such offense is filed before the magistrate
+within five years next after the offense has been done or committed and a
+warrant for the arrest of the defendant has been issued.
+     (7) No person shall be prosecuted for criminal impersonation under section
+28-638, identity theft under section 28-639, or identity fraud under section
+28-640 unless the indictment for such offense is found by a grand jury within
+five years next after the offense has been done or committed or unless a
+complaint for such offense is filed before the magistrate within five years
+next after the offense has been done or committed and a warrant for the arrest
+of the defendant has been issued.
+     (8) No person shall be prosecuted for a violation of section 68-1017 if
+the aggregate value of all funds and other benefits obtained or attempted to be
+obtained is five hundred dollars or more unless the indictment for such offense
+is found by a grand jury within five years next after the offense has been done
+or committed or unless a complaint for such offense is filed before the
+magistrate within five years next after the offense has been done or committed
+and a warrant for the arrest of the defendant has been issued.
+     (9) No person shall be prosecuted for knowing and intentional abuse,
+neglect, or exploitation of a vulnerable adult or senior adult under section
+28-386 unless the indictment for such offense is found by a grand jury within
+six years next after the offense has been done or committed or unless a
+complaint for such offense is filed before the magistrate within six years next
+after the offense has been done or committed and a warrant for the arrest of
+the defendant has been issued.
+     (10) Except as otherwise provided by law, no person shall be prosecuted
+for an offense under section 28-717 (a) unless the indictment for such offense
+is found by a grand jury within one year and six months next after the offense
+has been committed or within one year and six months next after the child
+reaches the age of majority, whichever is later, or (b) unless a complaint for
+such offense is filed before the magistrate within one year and six months next
+after the offense has been committed or within one year and six months next
+after the child reaches the age of majority, whichever is later, and a warrant
+for the arrest of the defendant has been issued.
+     (11) There shall not be any time limitations for prosecution or punishment
+for treason, murder, arson, forgery, sexual assault in the first or second
+degree under section 28-319 or 28-320, sexual assault of a child in the second
+or third degree under section 28-320.01, incest under section 28-703, sexual
+assault of a child in the first degree under section 28-319.01, labor
+trafficking of a minor or sex trafficking of a minor under subsection (1) of
+section 28-831, or an offense under section 5 of this act 28-1463.03; nor shall
+there be any time limitations for prosecution or punishment for sexual assault
+in the third degree under section 28-320 when the victim is under sixteen years
+of age at the time of the offense.
+     (12) The time limitations prescribed in this section shall include all
+inchoate offenses pursuant to the Nebraska Criminal Code and compounding a
+felony pursuant to section 28-301.
+     (13) The time limitations prescribed in this section shall not extend to
+any person fleeing from justice.
+     (14) When any suit, information, or indictment for any crime or
+misdemeanor is limited by any statute to be brought or exhibited within any
+other time than is limited by this section, then the suit, information, or
+indictment shall be brought or exhibited within the time limited by such
+statute.
+     (15) If any suit, information, or indictment is quashed or the proceedings
+                                      -13-
+LB383                                                                     LB383
+2025                                                                       2025
+set aside or reversed on writ of error, the time during the pendency of such
+suit, information, or indictment so quashed, set aside, or reversed shall not
+be reckoned within this statute so as to bar any new suit, information, or
+indictment for the same offense.
+     (16) The changes made to this section by Laws 2004, LB 943, shall apply to
+offenses committed prior to April 16, 2004, for which the statute of
+limitations has not expired as of such date and to offenses committed on or
+after such date.
+     (17) The changes made to this section by Laws 2005, LB 713, shall apply to
+offenses committed prior to September 4, 2005, for which the statute of
+limitations has not expired as of such date and to offenses committed on or
+after such date.
+     (18) The changes made to this section by Laws 2009, LB 97, and Laws 2006,
+LB 1199, shall apply to offenses committed prior to May 21, 2009, for which the
+statute of limitations has not expired as of such date and to offenses
+committed on or after such date.
+     (19) The changes made to this section by Laws 2010, LB809, shall apply to
+offenses committed prior to July 15, 2010, for which the statute of limitations
+has not expired as of such date and to offenses committed on or after such
+date.
+     (20) The changes made to this section by Laws 2016, LB934, shall apply to
+offenses committed prior to April 19, 2016, for which the statute of
+limitations has not expired as of such date and to offenses committed on or
+after such date.
+     (21) The changes made to this section by Laws 2019, LB519, shall apply to
+offenses committed prior to September 1, 2019, for which the statute of
+limitations has not expired as of such date and to offenses committed on or
+after such date.
+     Sec. 19. Section 29-119, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     29-119 For purposes of this section and sections 23-1201, 29-120, and
+29-2261, unless the context otherwise requires:
+     (1) A plea agreement means that as a result of a discussion between the
+defense counsel and the prosecuting attorney:
+     (a) A charge is to be dismissed or reduced; or
+     (b) A defendant, if he or she pleads guilty to a charge, may receive less
+than the maximum penalty permitted by law; and
+     (2)(a) Victim means a person who has had a personal confrontation with an
+offender as a result of a homicide under sections 28-302 to 28-306, a first
+degree assault under section 28-308, a second degree assault under section
+28-309, a third degree assault under section 28-310 when the victim is an
+intimate partner as defined in section 28-323, a first degree false
+imprisonment under section 28-314, a first degree sexual assault under section
+28-319, a sexual assault of a child in the first degree under section
+28-319.01, a second or third degree sexual assault under section 28-320, a
+sexual assault of a child in the second or third degree under section
+28-320.01, domestic assault in the first, second, or third degree under section
+28-323, or a robbery under section 28-324. Victim also includes a person who
+has suffered serious bodily injury as defined in section 28-109 as a result of
+a motor vehicle accident when the driver was charged with a violation of
+section 60-6,196 or 60-6,197 or with a violation of a city or village ordinance
+enacted in conformance with either section.
+     (b) In the case of a homicide, victim means the nearest surviving relative
+under the law as provided by section 30-2303 but does not include the alleged
+perpetrator of the homicide.
+     (c) In the case of a violation of the Child Sexual Abuse Material
+Prevention Act section 28-813.01, 28-1463.03, 28-1463.04, or 28-1463.05, victim
+means a person who was a child as defined in section 2 of this act 28-1463.02
+and a participant or portrayed observer in the child sexual abuse material that
+visual depiction of sexually explicit conduct which is the subject of the
+violation and who has been identified and can be reasonably notified and the
+parents, guardians, or duly appointed legal representative of the child victim
+but does not include the alleged perpetrator of the crime.
+     (d) In the case of a sexual assault of a child , a possession offense of a
+visual depiction of sexually explicit conduct, or a distribution offense of a
+visual depiction of sexually explicit conduct, victim means the child victim
+and the parents, guardians, or duly appointed legal representative of the child
+victim but does not include the alleged perpetrator of the crime.
+     (e) Victim also includes a person who was the victim of a theft under
+section 28-511, 28-512, 28-513, or 28-517 when (i) the value of the thing
+involved is five thousand dollars or more and (ii) the victim and perpetrator
+were intimate partners as defined in section 28-323.
+     (f) Victim also includes a sexual assault victim as defined in section
+29-4309.
+     Sec. 20. Section 29-4003, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     29-4003 (1)(a) The Sex Offender Registration Act applies to any person who
+on or after January 1, 1997:
+     (i) Has ever pled guilty to, pled nolo contendere to, or been found guilty
+of any of the following:
+     (A) Kidnapping of a minor pursuant to section 28-313, except when the
+person is the parent of the minor and was not convicted of any other offense in
+this section;
+                                      -14-
+LB383                                                                     LB383
+2025                                                                       2025
+     (B) False imprisonment of a minor pursuant to section 28-314 or 28-315;
+     (C) Sexual assault pursuant to section 28-319 or 28-320;
+     (D) Sexual abuse by a school employee pursuant to section 28-316.01;
+     (E) Sexual assault of a child in the second or third degree pursuant to
+section 28-320.01;
+     (F) Sexual assault of a child in the first degree pursuant to section
+28-319.01;
+     (G) Sexual abuse of a vulnerable adult or senior adult pursuant to
+subdivision (1)(c) of section 28-386;
+     (H) Incest of a minor pursuant to section 28-703;
+     (I) Pandering of a minor pursuant to section 28-802;
+     (J) Conduct relating to child sexual abuse material under section 5 of
+this act Visual depiction of sexually explicit conduct of a child pursuant to
+section 28-1463.03 or subdivision (2)(b) or (c) of section 4 of this act
+28-1463.05;
+     (K) Knowingly possessing or receiving any child sexual abuse material
+visual depiction of sexually explicit conduct which has a child as one of its
+participants or portrayed observers pursuant to subsection (1) or (5) (4) of
+section 3 of this act 28-813.01;
+     (L) Criminal child enticement pursuant to section 28-311;
+     (M) Child enticement by means of an electronic communication device
+pursuant to section 28-320.02;
+     (N) Debauching a minor pursuant to section 28-805; or
+     (O) Attempt, solicitation, aiding or abetting, being an accessory, or
+conspiracy to commit an offense listed in subdivisions (1)(a)(i)(A) through (1)
+(a)(i)(N) of this section;
+     (ii) Has ever pled guilty to, pled nolo contendere to, or been found
+guilty of any offense that is substantially equivalent to a registrable offense
+under subdivision (1)(a)(i) of this section by any village, town, city, state,
+territory, commonwealth, or other jurisdiction of the United States, by the
+United States Government, by court-martial or other military tribunal, or by a
+foreign jurisdiction, notwithstanding a procedure comparable in effect to that
+described under section 29-2264 or any other procedure to nullify a conviction
+other than by pardon;
+     (iii) Is incarcerated in a jail, a penal or correctional facility, or any
+other public or private institution or is under probation or parole as a result
+of pleading guilty to or being found guilty of a registrable offense under
+subdivision (1)(a)(i) or (ii) of this section prior to January 1, 1997; or
+     (iv) Enters the state and is required to register as a sex offender under
+the laws of another village, town, city, state, territory, commonwealth, or
+other jurisdiction of the United States.
+     (b) In addition to the registrable offenses under subdivision (1)(a) of
+this section, the Sex Offender Registration Act applies to any person who on or
+after January 1, 2010:
+     (i)(A) Except as provided in subdivision (1)(b)(i)(B) of this section, has
+ever pled guilty to, pled nolo contendere to, or been found guilty of any of
+the following:
+     (I) Murder in the first degree pursuant to section 28-303;
+     (II) Murder in the second degree pursuant to section 28-304;
+     (III) Manslaughter pursuant to section 28-305;
+     (IV) Assault in the first degree pursuant to section 28-308;
+     (V) Assault in the second degree pursuant to section 28-309;
+     (VI) Assault in the third degree pursuant to section 28-310;
+     (VII) Stalking pursuant to section 28-311.03;
+     (VIII) Violation of section 28-311.08 requiring registration under the act
+pursuant to subsection (6) of section 28-311.08;
+     (IX) Kidnapping pursuant to section 28-313;
+     (X) False imprisonment pursuant to section 28-314 or 28-315;
+     (XI) Sexual abuse of an inmate or parolee in the first degree pursuant to
+section 28-322.02;
+     (XII) Sexual abuse of an inmate or parolee in the second degree pursuant
+to section 28-322.03;
+     (XIII) Sexual abuse of a protected individual pursuant to section
+28-322.04;
+     (XIV) Incest pursuant to section 28-703;
+     (XV) Child abuse pursuant to subdivision (1)(d) or (e) of section 28-707;
+     (XVI) Enticement by electronic communication device pursuant to section
+28-833; or
+     (XVII) Attempt, solicitation, aiding or abetting, being an accessory, or
+conspiracy to commit an offense listed in subdivisions (1)(b)(i)(A)(I) through
+(1)(b)(i)(A)(XVI) of this section.
+     (B) In order for the Sex Offender Registration Act to apply to the
+offenses listed in subdivisions (1)(b)(i)(A)(I), (II), (III), (IV), (V), (VI),
+(VII), (IX), and (X) of this section, a court shall have found that evidence of
+sexual penetration or sexual contact, as those terms are defined in section
+28-318, was present in the record, which shall include consideration of the
+factual basis for a plea-based conviction and information contained in the
+presentence report;
+     (ii) Has ever pled guilty to, pled nolo contendere to, or been found
+guilty of any offense that is substantially equivalent to a registrable offense
+under subdivision (1)(b)(i) of this section by any village, town, city, state,
+territory, commonwealth, or other jurisdiction of the United States, by the
+United States Government, by court-martial or other military tribunal, or by a
+                                      -15-
+LB383                                                                     LB383
+2025                                                                       2025
+foreign jurisdiction, notwithstanding a procedure comparable in effect to that
+described under section 29-2264 or any other procedure to nullify a conviction
+other than by pardon; or
+     (iii) Enters the state and is required to register as a sex offender under
+the laws of another village, town, city, state, territory, commonwealth, or
+other jurisdiction of the United States.
+     (c) In addition to the registrable offenses under subdivisions (1)(a) and
+(b) of this section, the Sex Offender Registration Act applies to any person
+who on or after January 1, 2020:
+     (i) Has ever pled guilty to, pled nolo contendere to, or been found guilty
+of sexual abuse of a detainee under section 28-322.05; or
+     (ii) Has ever pled guilty to, pled nolo contendere to, or been found
+guilty of any offense that is substantially equivalent to a registrable offense
+under subdivision (1)(c)(i) of this section by any village, town, city, state,
+territory, commonwealth, or other jurisdiction of the United States, by the
+United States Government, by court-martial or other military tribunal, or by a
+foreign jurisdiction, notwithstanding a procedure comparable in effect to that
+described under section 29-2264 or any other procedure to nullify a conviction
+other than by pardon.
+     (d) In addition to the registrable offenses under subdivisions (1)(a),
+(b), and (c) of this section, the Sex Offender Registration Act applies to any
+person who on or after January 1, 2023:
+     (i) Has ever pled guilty to, pled nolo contendere to, or been found guilty
+of human trafficking under subsection (1) or (2) of section 28-831, and the
+court determines either by notification of sex offender registration
+responsibilities or notation in the sentencing order that the human trafficking
+was sex trafficking or sex trafficking of a minor and not solely labor
+trafficking or labor trafficking of a minor; or
+     (ii) Has ever pled guilty to, pled nolo contendere to, or been found
+guilty of any offense that is substantially equivalent to a registrable offense
+under subdivision (1)(d)(i) of this section by any village, town, city, state,
+territory, commonwealth, or other jurisdiction of the United States, by the
+United States Government, by court-martial or other military tribunal, or by a
+foreign jurisdiction, notwithstanding a procedure comparable in effect to that
+described under section 29-2264 or any other procedure to nullify a conviction
+other than by pardon.
+     (2) A person appealing a conviction of a registrable offense under this
+section shall be required to comply with the act during the appeals process.
+     Sec. 21. Section 29-4309, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     29-4309 For the purposes of the Sexual Assault Victims' Bill of Rights
+Act:
+     (1)(a) Advocate means:
+     (i) Any employee or supervised volunteer of a domestic violence and sexual
+assault victim assistance program or of any other agency, business, or
+organization that is not affiliated with a law enforcement or prosecutor's
+office, whose primary purpose is assisting domestic violence and sexual assault
+victims. This includes employees or supervised volunteers of an Indian tribe or
+a postsecondary educational institution;
+     (ii) A representative from a victim and witness assistance center as
+established in sections 81-1845 to 81-1847 or a similar entity affiliated with
+a law enforcement agency or prosecutor's office; or
+     (iii) An advocate who is employed by a child advocacy center that meets
+the requirements of subsection (2) of section 28-728.
+     (b) If reasonably possible, an advocate shall speak the victim's preferred
+language or use the services of a qualified interpreter;
+     (2) Health care provider means any individual who is licensed, certified,
+or registered to perform specified health services consistent with state law;
+     (3) Sexual assault means a violation of section 28-319, 28-319.01, 28-320,
+28-320.01, 28-320.02, 28-322.01, 28-322.02, 28-322.03, 28-322.04, 28-322.05, or
+28-703, or section 5 of this act 28-1463.03, sex trafficking or sex trafficking
+of a minor under section 28-831, or subdivision (1)(c) or (g) of section 28-386
+or subdivision (1)(d), (e), or (f) of section 28-707;
+     (4) Sexual assault forensic evidence means evidence collected by a health
+care provider contained within any sexual assault forensic evidence collection
+kit, including a toxicology kit, or any forensic evidence collected by law
+enforcement through the course of an investigation; and
+     (5)(a) Sexual assault victim or victim means any person who is a victim of
+sexual assault who reports such sexual assault:
+     (i) To a health care provider, law enforcement, or an advocate, including
+anonymous reporting as provided in section 28-902; and
+     (ii) In the case of a victim who is under eighteen years of age, to the
+Department of Health and Human Services.
+     (b) Sexual assault victim or victim also includes, if the victim described
+in subdivision (5)(a) of this section is incompetent, deceased, or a minor who
+is unable to consent to counseling services, such victim's parent, guardian, or
+spouse, unless such person is the reported assailant.
+     Sec. 22. Section 29-4316, Revised Statutes Cumulative Supplement, 2024, is
+amended to read:
+     29-4316 (1) For purposes of this section:
+     (a) Criminal justice agency has the same meaning as in section 29-3509;
+     (b) Sex trafficking means sex trafficking or sex trafficking of a minor in
+violation of section 28-831; and
+                                      -16-
+LB383                                                                     LB383
+2025                                                                       2025
+     (c) Sexual assault means a violation of section 28-319, 28-319.01, 28-320,
+28-320.01, 28-320.02, 28-322.01, 28-322.02, 28-322.03, 28-322.04, 28-322.05, or
+28-703, or section 5 of this act 28-1463.03 or subdivision (1)(c) or (g) of
+section 28-386 or subdivision (1)(d), (e), or (f) of section 28-707.
+     (2) Except as provided in subsection (3) of this section, and unless
+otherwise required by statute, a criminal justice agency and any attorney
+involved in the investigation or prosecution of an alleged sexual assault or
+sex trafficking violation shall maintain the confidentiality of the identity
+and personal identifying information of the alleged victim. Such information
+may be shared by such criminal justice agencies and between such criminal
+justice agencies and attorneys as necessary to carry out their duties.
+     (3) The confidentiality required by subsection (2) of this section does
+not apply:
+     (a) To the extent waived by the alleged victim;
+     (b) If criminal charges involving the alleged sexual assault or sex
+trafficking are filed;
+     (c) If the victim has died as a result of, or in connection with, the
+alleged sexual assault or sex trafficking;
+     (d) In cases where personal identifying information or the identity of the
+victim are released as part of a child abduction alert system used by law
+enforcement agencies, such as the AMBER Alert system;
+     (e) To a person making a report of suspected child abuse or neglect as
+required in section 28-711;
+     (f) To the sharing of reports and information regarding child abuse and
+neglect with a child abuse and neglect investigation team or child abuse and
+neglect treatment team provided for in section 28-728;
+     (g) To the Department of Health and Human Services and other assisting
+agencies as necessary to carry out their duties in investigations of child
+abuse or neglect;
+     (h) To communication with an individual that an educational entity, as
+defined in section 79-1201.01, has designated:
+     (i) As a Title IX coordinator; or
+     (ii) To receive reports related to sexual assault or sex trafficking or to
+provide supportive measures related to such reports; or
+     (i) To communication with advocates and health care providers as defined
+in section 29-4309.
+     Sec. 23. Section 83-174.02, Reissue Revised Statutes of Nebraska, is
+amended to read:
+     83-174.02 (1) The Department of Correctional Services shall order an
+evaluation of the following individuals by a mental health professional to
+determine whether or not the individual is a dangerous sex offender:
+     (a) Individuals who have been convicted of (i) sexual assault of a child
+in the first degree pursuant to section 28-319.01 or (ii) sexual assault in the
+first degree pursuant to section 28-319;
+     (b) Individuals who have been convicted of two or more offenses requiring
+registration as a sex offender under section 29-4003 if one of the convictions
+was for any of the following offenses: (i) Kidnapping of a minor pursuant to
+section 28-313, except when the person is the parent of the minor and was not
+convicted of any other offense; (ii) sexual assault in the first degree
+pursuant to section 28-319 or sexual assault in the second degree pursuant to
+section 28-320; (iii) sexual assault of a child pursuant to section 28-320.01;
+(iv) sexual assault of a child in the first degree pursuant to section
+28-319.01; (v) sexual assault of a child in the second or third degree pursuant
+to section 28-320.01; (vi) sexual assault of a vulnerable adult or senior adult
+pursuant to subdivision (1)(c) of section 28-386; (vii) incest of a minor
+pursuant to section 28-703; (viii) conduct relating to child sexual abuse
+material under section 5 of this act visual depiction of sexually explicit
+conduct of a child pursuant to section 28-1463.03; or (ix) any offense that is
+substantially equivalent to an offense listed in this section by any state,
+territory, commonwealth, or other jurisdiction of the United States, by the
+United States Government, or by court-martial or other military tribunal,
+notwithstanding a procedure comparable in effect to that described in section
+29-2264 or any other procedure to nullify a conviction other than by pardon;
+     (c) Individuals convicted of a sex offense against a minor who have
+refused to participate in or failed to successfully complete the sex offender
+treatment program offered by the Department of Correctional Services or the
+Department of Health and Human Services during the term of incarceration. The
+failure to successfully complete a treatment program due to time constraints or
+the unavailability of treatment programming shall not constitute a refusal to
+participate in treatment; and
+     (d) Individuals convicted of failure to comply with the registration
+requirements of the Sex Offender Registration Act who have previously been
+convicted for failure to comply with the registration requirements of the act
+or a similar registration requirement in another state.
+     (2) The evaluation required by this section shall be ordered at least one
+hundred eighty days before the scheduled release of the individual. Upon
+completion of the evaluation, and not later than one hundred fifty days prior
+to the scheduled release of the individual, the department shall send written
+notice to the Attorney General, the county attorney of the county where the
+offender is incarcerated, and the prosecuting county attorney. The notice shall
+contain an affidavit of the mental health professional describing his or her
+findings with respect to whether or not the individual is a dangerous sex
+offender.
+                                      -17-
+LB383                                                                     LB383
+2025                                                                       2025
+     Sec. 24. Section 84-205, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     84-205 The duties of the Attorney General shall be:
+     (1) To appear and defend actions and claims against the state;
+     (2) To investigate, commence, and prosecute any and all actions resulting
+from violations of sections 32-1401 to 32-1417;
+     (3) To consult with and advise the county attorneys, when requested by
+them, in all criminal matters and in matters relating to the public revenue. He
+or she shall have authority to require aid and assistance of the county
+attorney in all matters pertaining to the duties of the Attorney General in the
+county of such county attorney and may, in any case brought to the Court of
+Appeals or Supreme Court from any county, demand and receive the assistance of
+the county attorney from whose county such case is brought;
+     (4) To give, when required, without fee, his or her opinion in writing
+upon all questions of law submitted to him or her by the Governor, head of any
+executive department, Secretary of State, State Treasurer, Auditor of Public
+Accounts, Board of Educational Lands and Funds, State Department of Education,
+Public Service Commission, or Legislature;
+     (5) At the request of the Governor, head of any executive department,
+Secretary of State, State Treasurer, Auditor of Public Accounts, Board of
+Educational Lands and Funds, State Department of Education, or Public Service
+Commission, to prosecute any official bond or any contract in which the state
+is interested which is deposited with any of them and to prosecute or defend
+for the state all civil or criminal actions and proceedings relating to any
+matter   connected  with   any   of  such   officers'   departments  if,  after
+investigation, he or she is convinced there is sufficient legal merit to
+justify the proceeding. Such officers shall not pay or contract to pay from the
+funds of the state any money for special attorneys or counselors-at-law unless
+the employment of such special counsel is made upon the written authorization
+of the Governor or the Attorney General;
+     (6) To enforce the proper application of money appropriated by the
+Legislature to the various funds of the state and prosecute breaches of trust
+in the administration of such funds;
+     (7) To prepare, when requested by the Governor, Secretary of State, State
+Treasurer, or Auditor of Public Accounts or any other executive department,
+proper drafts for contracts, forms, or other writings which may be wanted for
+the use of the state and report to the Legislature, whenever requested, upon
+any business pertaining to the duties of his or her office. The report
+submitted to the Legislature shall be submitted electronically;
+     (8) To pay all money received, belonging to the people of the state,
+immediately upon receipt thereof, into the state treasury;
+     (9) To keep a record in proper books provided for that purpose at the
+expense of the state, a register of all actions and demands prosecuted or
+defended by him or her in behalf of the state and all proceedings had in
+relation thereto, and deliver the same to his or her successor in office;
+     (10) To appear for the state and prosecute and defend all civil or
+criminal actions and proceedings in the Court of Appeals or Supreme Court in
+which the state is interested or a party. When requested by the Governor or the
+Legislature, the Attorney General shall appear for the state and prosecute or
+defend any action or conduct any investigation in which the state is interested
+or a party before any court, officer, board, tribunal, or commission;
+     (11) To prepare and promulgate model rules of procedure appropriate for
+use by as many agencies as possible. The Attorney General shall add to, amend,
+or revise the model rules as necessary for the proper guidance of agencies;
+     (12) To include within the budget of the office sufficient funding to
+assure oversight and representation of the State of Nebraska for district court
+appeals of administrative license revocation proceedings under section
+60-498.04;
+     (13)(a) To create a Child Protection Division to be staffed by at least
+three assistant attorneys general who each have five or more years of
+experience in the prosecution or defense of felonies or misdemeanors, including
+two years in the prosecution or defense of crimes against children. Upon the
+written request of a county attorney, the division shall provide consultation
+and advise and assist in the preparation of the trial of any case involving a
+crime against a child, including, but not limited to, the following offenses:
+     (i) Murder as defined in sections 28-303 and 28-304;
+     (ii) Manslaughter as defined in section 28-305;
+     (iii) Kidnapping as defined in section 28-313;
+     (iv) False imprisonment as defined in sections 28-314 and 28-315;
+     (v) Child abuse as defined in section 28-707;
+     (vi) Pandering as defined in section 28-802;
+     (vii) Debauching a minor as defined in section 28-805; and
+     (viii) Offenses listed in the Child Sexual Abuse Material Prevention Act
+or section sections 28-813 , 28-813.01, and 28-1463.03.
+     (b) Any offense listed in subdivisions (13)(a)(i) through (viii) of this
+section shall include all inchoate offenses pursuant to the Nebraska Criminal
+Code and compounding a felony pursuant to section 28-301. Such crimes shall not
+include matters involving dependent and neglected children, infraction
+violations, custody, parenting time, visitation, or other access matters, or
+child support. If the county attorney declines in writing to prosecute a case
+involving a crime against a child because of an ethical consideration,
+including the presence or appearance of a conflict of interest, or for any
+other reason, the division shall, upon the receipt of a written request of the
+                                      -18-
+LB383                                                                     LB383
+2025                                                                       2025
+county attorney, the Department of Health and Human Services, the minor child,
+the parents of the minor child, or any other interested party, investigate the
+matter and either decline to prosecute the matter or initiate the appropriate
+criminal proceedings in a court of proper jurisdiction.
+     (c) For purposes of this subdivision (13), child or children shall mean an
+individual or individuals sixteen years of age or younger; and
+     (14) To enforce the Foreign-owned Real Estate National Security Act.
+     Sec. 25. Section 87-302, Reissue Revised Statutes of Nebraska, is amended
+to read:
+     87-302 (a) A person engages in a deceptive trade practice when, in the
+course of his or her business, vocation, or occupation, he or she:
+     (1) Passes off goods or services as those of another;
+     (2) Causes likelihood of confusion or of misunderstanding as to the
+source, sponsorship, approval, or certification of goods or services;
+     (3) Causes likelihood of confusion or of misunderstanding as to
+affiliation, connection, or association with, or certification by, another;
+     (4) Uses deceptive representations or designations of geographic origin in
+connection with goods or services;
+     (5) Represents that goods or services have sponsorship, approval,
+characteristics, ingredients, uses, benefits, or quantities that they do not
+have or that a person has a sponsorship, approval, status, affiliation, or
+connection that he or she does not have;
+     (6) Represents that goods or services do not have sponsorship, approval,
+characteristics, ingredients, uses, benefits, or quantities that they have or
+that a person does not have a sponsorship, approval, status, affiliation, or
+connection that he or she has;
+     (7) Represents that goods are original or new if they are deteriorated,
+altered, reconditioned, reclaimed, used, or secondhand, except that sellers may
+repair damage to and make adjustments on or replace parts of otherwise new
+goods in an effort to place such goods in compliance with factory
+specifications;
+     (8) Represents that goods or services are of a particular standard,
+quality, or grade, or that goods are of a particular style or model, if they
+are of another;
+     (9) Disparages the goods, services, or business of another by false or
+misleading representation of fact;
+     (10) Advertises goods or services with intent not to sell them as
+advertised or advertises the price in any manner calculated or tending to
+mislead or in any way deceive a person;
+     (11) Advertises goods or services with intent not to supply reasonably
+expectable public demand, unless the advertisement discloses a limitation of
+quantity;
+     (12) Makes false or misleading statements of fact concerning the reasons
+for, existence of, or amounts of price reductions;
+     (13) Uses or promotes the use of or establishes, operates, or participates
+in a pyramid promotional scheme in connection with the solicitation of such
+scheme to members of the public. This subdivision shall not be construed to
+prohibit a plan or operation, or to define a plan or operation as a pyramid
+promotional scheme, based on the fact that participants in the plan or
+operation give consideration in return for the right to receive compensation
+based upon purchases of goods, services, or intangible property by participants
+for personal use, consumption, or resale so long as the plan or operation does
+not promote or induce inventory loading and the plan or operation implements an
+appropriate inventory repurchase program;
+     (14) With respect to a sale or lease to a natural person of goods or
+services purchased or leased primarily for personal, family, household, or
+agricultural purposes, uses or employs any referral or chain referral sales
+technique, plan, arrangement, or agreement;
+     (15) Knowingly makes a false or misleading statement in a privacy policy,
+published on the Internet or otherwise distributed or published, regarding the
+use of personal information submitted by members of the public;
+     (16) Uses any scheme or device to defraud by means of:
+     (i) Obtaining money or property by knowingly false or fraudulent
+pretenses, representations, or promises; or
+     (ii) Selling, distributing, supplying, furnishing, or procuring any
+property for the purpose of furthering such scheme;
+     (17) Offers an unsolicited check, through the mail or by other means, to
+promote goods or services if the cashing or depositing of the check obligates
+the endorser or payee identified on the check to pay for goods or services.
+This subdivision does not apply to an extension of credit or an offer to lend
+money;
+     (18) Mails or causes to be sent an unsolicited billing statement, invoice,
+or other document that appears to obligate the consumer to make a payment for
+services or merchandise he or she did not order;
+     (19)(i) Installs, offers to install, or makes available for installation
+or download a covered file-sharing program on a computer not owned by such
+person without providing clear and conspicuous notice to the owner or
+authorized user of the computer that files on that computer will be made
+available to the public and without requiring intentional and affirmative
+activation of the file-sharing function of such covered file-sharing program by
+the owner or authorized user of the computer; or
+     (ii) Prevents reasonable efforts to block the installation, execution, or
+disabling of a covered file-sharing program;
+                                      -19-
+LB383                                                                     LB383
+2025                                                                       2025
+     (20) Violates any provision of the Nebraska Foreclosure Protection Act;
+     (21) In connection with the solicitation of funds or other assets for any
+charitable purpose, or in connection with any solicitation which represents
+that funds or assets will be used for any charitable purpose, uses or employs
+any deception, fraud, false pretense, false promise, misrepresentation, unfair
+practice, or concealment, suppression, or omission of any material fact;
+     (22)(i) In the manufacture, production, importation, distribution,
+promotion, display for sale, offer for sale, attempt to sell, or sale of a
+substance:
+     (A) Makes a deceptive or misleading representation or designation, or
+omits material information, about a substance or fails to identify the contents
+of the package or the nature of the substance contained inside the package; or
+     (B) Causes confusion or misunderstanding as to the effects a substance
+causes when ingested, injected, inhaled, or otherwise introduced into the human
+body.
+     (ii) A person shall be deemed to have committed a violation of the Uniform
+Deceptive Trade Practices Act for each individually packaged product that is
+either manufactured, produced, imported, distributed, promoted, displayed for
+sale, offered for sale, attempted to sell, or sold in violation of this
+section. A violation under this subdivision (a)(22) shall be treated as a
+separate and distinct violation from any other offense arising out of acts
+alleged to have been committed while the person was in violation of this
+section;
+     (23)(i)   Manufactures,  produces,    publishes,  distributes,  monetizes,
+promotes, or otherwise makes publicly available any visual depiction of
+sexually explicit conduct, any obscene material, or any material that is
+harmful to minors in which any person depicted as a participant or observer:
+     (A) Is under eighteen years of age;
+     (B) Is a trafficking victim;
+     (C) Has not expressly and voluntarily consented to such person's
+depiction; or
+     (D) Participated in any act depicted without consent.
+     (ii) This subdivision (a)(23) does not apply to any telecommunications
+service.
+     (iii) For purposes of this subdivision (a)(23):
+     (A) Harmful to minors has the same meaning as in 47 U.S.C. 254, as such
+section existed on January 1, 2024;
+     (B) Obscene material has the same meaning as in section 28-807;
+     (C) Promote means to use any mechanism or publication, or take any action,
+that suggests, highlights, advertises, markets, curates, backlinks, hashtags,
+or otherwise directs, attempts to direct, or encourages traffic toward specific
+materials, including acts carried out affirmatively, through automation,
+algorithmically, and via other technical means both known and unknown at this
+time;
+     (D) Publish means to communicate or make information available to another
+person via an Internet website, regardless of whether the person consuming,
+viewing, or receiving the material gives any consideration for the published
+material;
+     (E) Trafficking victim has the same meaning as in section 28-830;
+     (F) Visual depiction of sexually explicit conduct has the same meaning as
+in section 2 of this act 28-1463.02; and
+     (G) Without consent has the same meaning as in section 28-318; or
+     (24) Offers or enters into a right-to-list home sale agreement as defined
+in section 81-885.01.
+     (b) In order to prevail in an action under the Uniform Deceptive Trade
+Practices Act, a complainant need not prove competition between the parties.
+     (c) This section does not affect unfair trade practices otherwise
+actionable at common law or under other statutes of this state.
+     Sec. 26. Sections 26 to 30 of this act shall be known and may be cited as
+the Parental Rights in Social Media Act.
+     Sec. 27. For purposes of the Parental Rights in Social Media Act:
+     (1) Account holder means a person who, on or after the operative date of
+this section, creates an account or profile on a social media platform;
+     (2) Content includes a text, an image, or a video;
+     (3) Digitized identification card means a data file that contains all of
+the data elements visible on the face and back of a government-issued
+operator's license or government-issued identification document and displays
+the current status of the license or document;
+     (4)(a) Interactive computer service means an information service as
+defined in 47 U.S.C. 153, an information system, or an information access
+software that:
+     (i) Provides or enables access by multiple users to a computer server; and
+     (ii) Provides access to the Internet.
+     (b) An interactive computer service includes an Internet service, an
+Internet system, an Internet application, an Internet portal, and a website;
+     (5) Minor means an individual who is:
+     (a) Known or reasonably believed by a social media platform to be under
+eighteen years of age;
+     (b) Not emancipated; and
+     (c) A resident of this state;
+     (6) Parent means the parent or legal guardian of a minor;
+     (7) Person means an individual or entity;
+     (8) Post means content that an account holder makes available on a social
+                                      -20-
+LB383                                                                     LB383
+2025                                                                       2025
+media platform for other account holders and users to view;
+     (9) Reasonable age verification method includes requiring presentation of
+a digitized identification card or any commercially reasonable age verification
+method to confirm an individual's age;
+     (10) Social media company means a person that is an interactive computer
+service and that provides a social media platform;
+     (11)(a) Social media platform means a website or Internet application
+that:
+     (i) Allows a person to create an account; and
+     (ii) Enables an account holder to communicate with other account holders
+and users through posts.
+     (b) Social media platform does not include:
+     (i) A broadband Internet access service, as defined in 47 C.F.R. 8.1(b);
+     (ii) An email service;
+     (iii) An Internet service, Internet application, or website:
+     (A) That consists primarily of content that is not generated by account
+holders, but rather is preselected by the service, application, or website
+provider; and
+     (B) For which interactive functionality is incidental to, directly related
+to, or dependent upon, such preselected content;
+     (iv) Online shopping, if the interaction with other account holders or
+users is predominantly limited to the ability to (A) send, receive, request, or
+settle funds, (B) comment on transactions, (C) display goods for sale, (D)
+engage as consumers about products and reviews, or (E) post a wish list;
+     (v) An Internet service, Internet application, or website that primarily
+provides career development opportunities;
+     (vi) A cloud storage or cloud computing service;
+     (vii) An online service, application, or website in which interaction
+between users is predominately (A) used for technical support or (B) limited to
+reviewing products offered for sale by means of electronic commerce or
+commenting on such reviews posted by other users; or
+     (viii) Peer-to-peer payment platforms, if the interaction with other users
+or account holders is generally limited to the ability to send, receive, or
+request funds and to like or comment on such transactions, or other functions
+that are focused on sending, receiving, requesting, or settling payments
+between users or account holders; and
+     (12) User means a person who consumes posts on a social media platform but
+who is not an account holder.
+     Sec. 28. (1)(a) Except as provided in subsection (2) of this section, a
+social media company shall not permit a minor to become an account holder. A
+social media platform shall use a reasonable age verification method to verify
+the age of an individual seeking to become an account holder on the company's
+social media platform. A social media company may use a third-party vendor to
+perform such verification.
+     (b) A social media company or third-party vendor conducting such
+verification shall not retain any identifying information of an individual
+after verification is complete.
+     (2) A social media company may allow a minor to become an account holder
+if the parent of such minor provides express parental consent authorizing such
+minor to become an account holder. A social media company or third-party vendor
+shall verify the express parental consent which shall include:
+     (a) Age verification of the parent through a reasonable age verification
+method; and
+     (b) An oath, affirmation, or form signed by the parent and returned to the
+social media company or third-party vendor by common carrier, facsimile, or
+electronic scan stating that the consenting adult is the minor user's parent
+and authorizes such minor to become an account holder.
+     (3)(a) Once age and parental consent, if applicable, are verified, the
+social media company may permit the minor to become an account holder.
+Reverification of an account holder is not required unless parental consent is
+revoked by a parent.
+     (b) A social media company shall develop a method for a parent to revoke
+consent for a minor to be an account holder. If consent is revoked, a social
+media company shall remove the account of such parent's minor and prohibit such
+minor from becoming an account holder until additional express parental consent
+is provided.
+     (4) A social media company shall provide a parent of a minor account
+holder with methods for the parent to supervise the minor's account. Such
+methods shall include options for the parent to:
+     (a) View all posts the minor account holder makes under the social media
+platform account;
+     (b) View all responses and messages sent to or by the minor account holder
+in the social media platform account;
+     (c) Control the minor's privacy and account settings; and
+     (d) Monitor and limit the amount of time the minor account holder spends
+using the social media platform.
+     Sec. 29. (1) A person aggrieved by a violation of section 28 of this act
+may bring a civil action against the social media company or third-party vendor
+which engaged in the violation to recover such relief as may be appropriate.
+     (2) In an action under this section, appropriate relief includes:
+     (a) Such preliminary and other equitable or declaratory relief as may be
+appropriate;
+     (b) Damages under subsection (3) of this section; and
+                                      -21-
+LB383                                                                    LB383
+2025                                                                      2025
+     (c) At the discretion of the court, reasonable attorney's fees and other
+litigation costs reasonably incurred.
+     (3)(a) An individual whose information was retained in violation of
+subdivision (1)(b) of section 28 of this act may recover actual damages caused
+by such violation.
+     (b) A minor or a parent of such minor aggrieved by any other violation of
+section 28 of this act may recover actual damages caused by such violation.
+     Sec. 30. The Attorney General shall enforce the Parental Rights in Social
+Media Act and may impose a penalty of up to two thousand five hundred dollars
+per violation. All penalties collected pursuant to this section shall be
+remitted to the State Treasurer for distribution in accordance with Article
+VII, section 5, of the Constitution of Nebraska.
+     Sec. 31. Sections 26, 27, 28, 29, and 30 of this act become operative on
+July 1, 2026. The other sections of this act become operative on their
+effective date.
+     Sec. 32.   If any section in this act or any part of any section is
+declared invalid or unconstitutional, the declaration shall not affect the
+validity or constitutionality of the remaining portions.
+     Sec. 33.     Original sections 25-21,291, 25-21,302, 27-1301, 28-116,
+28-320.02, 28-813.02, 28-833, 28-1463.01, 28-1463.02, 28-1463.06, 28-1601,
+28-1602, 83-174.02, 84-205, and 87-302, Reissue Revised Statutes of Nebraska,
+and sections 28-813.01, 28-1354, 28-1463.03, 28-1463.05, 28-1701, 29-110,
+29-119, 29-4003, 29-4309, and 29-4316, Revised Statutes Cumulative Supplement,
+2024, are repealed.
+     Sec. 34. The following section is outright repealed: Section 28-1463.04,
+Reissue Revised Statutes of Nebraska.
+
+
+
+
+                                     -22-
+

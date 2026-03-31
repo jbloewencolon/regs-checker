@@ -1,0 +1,186 @@
+Title: Illinois SB1792 | 2025-2026 | 104th General Assembly
+
+URL Source: http://legiscan.com/IL/bill/SB1792
+
+Markdown Content:
+IL SB1792 | 2025-2026 | 104th General Assembly | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/IL/bill/SB1792#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+IL SB1792 | 2025-2026 | 104th General Assembly
+==============================================
+
+[](http://legiscan.com/IL/bill/SB1792 "Share on Facebook")[](http://legiscan.com/IL/bill/SB1792 "Share on Bluesky")[](http://legiscan.com/IL/bill/SB1792 "Share on X")[](http://legiscan.com/IL/bill/SB1792 "Share on LinkedIn")[](http://legiscan.com/IL/bill/SB1792 "Share on reddit")[](http://legiscan.com/IL/bill/SB1792 "Share on email")
+
+[Illinois](http://legiscan.com/IL "View the Illinois Legislative dashboard") Senate Bill 1792
+=============================================================================================
+
+[IL State Legislature page for SB1792](https://www.ilga.gov/Legislation/BillStatus?DocNum=1792&GAID=18&DocTypeID=SB&SessionID=114&GA=104 "Illinois State Legislature source page for SB1792")
+
+* * *
+
+*   [Summary](http://legiscan.com/IL/bill/SB1792/2025 "View Legislative Detail for Illinois SB1792")
+*   [Sponsors](http://legiscan.com/IL/sponsors/SB1792/2025 "View Sponsors of Illinois SB1792")
+*   [Texts](http://legiscan.com/IL/drafts/SB1792/2025 "View Bill Text Drafts for Illinois SB1792")
+*   [Votes](http://legiscan.com/IL/votes/SB1792/2025 "View Roll Call Votes on Illinois SB1792")
+*   [Research](http://legiscan.com/IL/research/SB1792/2025 "View Legislation Research Information on Illinois SB1792")
+*   [Comments](http://legiscan.com/IL/comments/SB1792/2025 "View Social & PolitiCorps Commentary on Illinois SB1792")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Illinois SB1792 and other IL legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Democrat 1)
+
+Status: Introduced on February 6 2025 - 25% progression
+
+Action: 2025-04-11 - Rule 3-9(a) / Re-referred to Assignments
+
+Pending: [Senate Assignments Committee](http://legiscan.com/IL/pending/senate-assignments-committee/id/254 "View other bills referred to IL Senate Assignments Committee")
+
+Text: [Latest bill text (Introduced) [HTML]](http://legiscan.com/IL/text/SB1792/2025 "View latest bill text for Illinois SB1792")
+
+Summary
+-------
+
+Amends the Consumer Fraud and Deceptive Business Practices Act. Provides that the owner, licensee, or operator of a generative artificial intelligence system shall conspicuously display a warning on the system's user interface that is reasonably calculated to consistently apprise the user that the outputs of the generative artificial intelligence system may be inaccurate or inappropriate. Provides that a violation of the provision constitutes an unlawful practice within the meaning of the Act.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Illinois SB1792 and other IL legislation") or view this same bill number from [multiple sessions](http://legiscan.com/IL/research/SB1792 "Research for IL SB1792 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Illinois and national legislation").
+
+Title
+-----
+
+FRAUD-ARTIFICIAL INTELLIGENCE
+
+Sponsors
+--------
+
+[Sen. Laura Ellman](http://legiscan.com/IL/people/laura-ellman/id/20391 "View other legislation sponsored by Illinois Senator Laura Ellman")[D]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-04-11 | Senate | Rule 3-9(a) / Re-referred to Assignments |
+| 2025-03-21 | Senate | Rule 2-10 Committee Deadline Established As April 11, 2025 |
+| 2025-03-19 | Senate | To AI and Social Media |
+| 2025-03-12 | Senate | Assigned to Executive |
+| 2025-02-06 | Senate | Referred to Assignments |
+| 2025-02-06 | Senate | First Reading |
+| 2025-02-06 | Senate | Filed with Secretary by Sen. Laura Ellman |
+
+Code Citations
+--------------
+
+| Chapter | Article | Section | Citation Type | Statute Text |
+| --- | --- | --- | --- | --- |
+
+| Chapter | Article | Section | Citation Type | Statute Text |
+| --- | --- | --- | --- | --- |
+| [815](http://legiscan.com/gaits/citation/83833 "Find other legislation referencing Illinois Chapter 815") | [505](http://legiscan.com/gaits/citation/83834 "Find other legislation referencing Illinois Chapter 815 Article 505") | [2HHHH](http://legiscan.com/gaits/citation/891640 "Find other legislation referencing Illinois Chapter 815 Article 505 Section 2HHHH") | New Code | See Bill Text |
+
+Illinois State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://www.ilga.gov/Legislation/BillStatus?DocNum=1792&GAID=18&DocTypeID=SB&SessionID=114&GA=104](https://www.ilga.gov/Legislation/BillStatus?DocNum=1792&GAID=18&DocTypeID=SB&SessionID=114&GA=104) |
+| Text | [https://www.ilga.gov/Legislation/BillStatus/FullText?LegDocId=200728&DocName=10400SB1792&DocNum=1792&DocTypeID=SB&LegID=160941&GAID=18&SessionID=114&SpecSess=&Session=](https://www.ilga.gov/Legislation/BillStatus/FullText?LegDocId=200728&DocName=10400SB1792&DocNum=1792&DocTypeID=SB&LegID=160941&GAID=18&SessionID=114&SpecSess=&Session=) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

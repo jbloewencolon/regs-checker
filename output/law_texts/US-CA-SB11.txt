@@ -1,0 +1,317 @@
+Title: California SB11 | 2025-2026 | Regular Session
+
+URL Source: http://legiscan.com/CA/text/SB11
+
+Markdown Content:
+Bill Text: CA SB11 | 2025-2026 | Regular Session | Enrolled | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/CA/text/SB11#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+Bill Text: CA SB11 | 2025-2026 | Regular Session | Enrolled
+===========================================================
+
+[](http://legiscan.com/CA/text/SB11 "Share on Facebook")[](http://legiscan.com/CA/text/SB11 "Share on Bluesky")[](http://legiscan.com/CA/text/SB11 "Share on X")[](http://legiscan.com/CA/text/SB11 "Share on LinkedIn")[](http://legiscan.com/CA/text/SB11 "Share on reddit")[](http://legiscan.com/CA/text/SB11 "Share on email")
+
+[California](http://legiscan.com/CA "View the California Legislative dashboard") Senate Bill 11
+===============================================================================================
+
+[CA State Legislature page for SB11](https://leginfo.legislature.ca.gov/faces/billStatusClient.xhtml?bill_id=202520260SB11 "California State Legislature source page for SB11")
+
+* * *
+
+*   [Summary](http://legiscan.com/CA/bill/SB11/2025 "View Legislative Detail for California SB11")
+*   [Sponsors](http://legiscan.com/CA/sponsors/SB11/2025 "View Sponsors of California SB11")
+*   [Texts](http://legiscan.com/CA/drafts/SB11/2025 "View Bill Text Drafts for California SB11")
+*   [Votes](http://legiscan.com/CA/votes/SB11/2025 "View Roll Call Votes on California SB11")
+*   [Research](http://legiscan.com/CA/research/SB11/2025 "View Legislation Research Information on California SB11")
+*   [Comments](http://legiscan.com/CA/comments/SB11/2025 "View Social & PolitiCorps Commentary on California SB11")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for California SB11 and other CA legislation")
+
+*   [Introduced](http://legiscan.com/CA/text/SB11/id/3029633 "Read the full text of the Introduced draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3209300 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3224919 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3245299 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3257062 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3261329 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3262205 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3267101 "Read the full text of the Amended draft for CA SB11")
+*   [Amended](http://legiscan.com/CA/text/SB11/id/3267371 "Read the full text of the Amended draft for CA SB11")
+*   [Enrolled](http://legiscan.com/CA/text/SB11/id/3269991 "Read the full text of the Enrolled draft for CA SB11")
+
+* * *
+
+**Bill Title:** Artificial intelligence technology.
+
+**Spectrum:** Partisan Bill (Democrat 1)
+
+**Status:**_(Vetoed)_ 2025-10-13 - In Senate. Consideration of Governor's veto pending. [[SB11 Detail]](http://legiscan.com/CA/bill/SB11/2025 "California CA SB11 legislative tracking detail and summary")
+
+**Download:**[California-2025-SB11-Enrolled.html](http://legiscan.com/CA/text/SB11/id/3269991/California-2025-SB11-Enrolled.html "Download this draft of the California SB11 bill text")
+
+* * *
+
+Enrolled September 17,2025
+Passed IN Senate September 13,2025
+Passed IN Assembly September 12,2025
+Amended IN Assembly September 03,2025
+Amended IN Assembly September 02,2025
+Amended IN Assembly July 17,2025
+Amended IN Assembly July 10,2025
+Amended IN Assembly June 18,2025
+Amended IN Senate May 23,2025
+Amended IN Senate April 29,2025
+Amended IN Senate April 10,2025
+
+ CALIFORNIA LEGISLATURE— 2025–2026 REGULAR SESSION
+
+**Senate Bill**
+
+**No. 11**
+
+* * *
+
+Introduced by Senator Ashby
+December 02,2024
+
+* * *
+
+ An act to add Chapter 22.6 (commencing with Section 22650) to Division 8 of the Business and Professions Code, to amend Section 3344 of the Civil Code, to add Article 2.5 (commencing with Section 1425) to Chapter 1 of Division 11 of the Evidence Code, and to add Chapter 9 (commencing with Section 540) to Title 13 of Part 1 of the Penal Code, relating to artificial intelligence technology. 
+
+LEGISLATIVE COUNSEL'S DIGEST
+----------------------------
+
+SB 11, Ashby. Artificial intelligence technology.
+
+(1)Existing law prohibits the false impersonation of another person in either their personal or official capacity with the intent to steal or defraud, as specified.
+
+This bill would define various terms related to artificial intelligence and digital replication, and would clarify that false impersonation includes the use of a digital replica with the intent to impersonate another for purposes of these and other criminal provisions.
+
+(2)Existing law creates a civil cause of action against any person who knowingly uses the name, voice, signature, photograph, or likeness of another person, without their consent, for specified purposes. When a photograph or likeness of an employee of the person using the photograph or likeness appearing in an advertisement or other publication is incidental and not essential to the purpose of the publication, existing law establishes a rebuttable presumption affecting the burden of producing evidence that failure to obtain the consent of an employee was not a knowing use of an employee’s photograph or likeness. 
+
+This bill would clarify that, for purposes of this cause of action, a voice or likeness includes a digital replica, as defined. The bill would also remove the provisions establishing the rebuttable presumption when an employee’s likeness or photograph appears in an advertisement or other publication.
+
+(3)Existing law governs the admissibility of evidence in court proceedings. Existing law prescribes procedures for the authentication of photographs and audio and video recordings.
+
+This bill would require the Judicial Council, by no later than January 1, 2027, to review the impact of artificial intelligence on the admissibility of proffered evidence in court proceedings and develop any necessary rules of court to assist courts in assessing claims that proffered evidence has been generated by or manipulated by artificial intelligence and determining whether such evidence is admissible.
+
+(4)Existing law, the Unfair Competition Law, establishes a statutory cause of action for unfair competition, including any unlawful, unfair, or fraudulent business act or practice and unfair, deceptive, untrue, or misleading advertising, and establishes remedies and penalties in that regard, including civil penalties.
+
+This bill would require, by December 1, 2026, and except as provided, any person or entity that makes available to consumers any artificial intelligence technology that enables a user to create a digital replica, as defined, to provide a consumer warning that unlawful use of the technology to depict another person without prior consent may result in civil or criminal liability for the user. The bill would require the warning to be hyperlinked on any page or screen where the consumer may input a prompt to the technology and included in the terms and conditions for use of the technology. The bill would also impose a civil penalty for violations of the requirement.
+
+This bill would incorporate additional changes to Section 3344 of the Civil Code proposed by SB 683 to be operative only if this bill and SB 683 are enacted and this bill is enacted last.
+
+Digest Key
+----------
+
+ Vote: MAJORITY Appropriation: NO Fiscal Committee: YES Local Program: NO
+
+* * *
+
+Bill Text
+---------
+
+The people of the State of California do enact as follows:
+----------------------------------------------------------
+
+### SECTION 1.
+
+Chapter 22.6 (commencing with Section 22650) is added to Division 8 of the Business and Professions Code, to read:
+
+##### CHAPTER 22.6.Artificial Intelligence Technology Providers
+
+###### 22650.
+
+(a)By December 1, 2026, any person or entity that makes available to consumers any artificial intelligence technology that enables a user to create a digital replica shall provide the following consumer warning:
+
+“Unlawful use of this technology to depict another person without prior consent may result in civil or criminal liability for the user.”
+
+(b)The warning shall be hyperlinked on any page or screen where the consumer may input a prompt to the artificial intelligence technology. The warning shall also be included in the terms and conditions for use of the artificial intelligence technology. All warnings shall be displayed in a manner that is clear and conspicuous.
+
+(c)Failure to comply with subdivision (a) or (b) is punishable by a civil penalty not to exceed ten thousand dollars ($10,000) for each day that the technology is provided to or offered to the public without a consumer warning. A public prosecutor may enforce this section by bringing a civil action in any court of competent jurisdiction.
+
+(d)The warning shall not be required for a digital replica created in a video game where the digital replica is used solely in game play and is not distributed outside of the game.
+
+(e)As used in this section, the following terms have the following meanings:
+
+(1)“Artificial intelligence” has the same meaning as in Section 3110 of the Civil Code.
+
+(2)“Digital replica” has the same meaning as in Section 3344.1 of the Civil Code.
+
+(3)“Public prosecutor” means the Attorney General, a city attorney, county counsel, district attorney, or any other city or county prosecutor.
+
+(4)“Video game” has the same meaning as in Section 1746 of the Civil Code.
+
+### SEC. 2.
+
+Section 3344 of the Civil Code is amended to read:
+
+###### 3344.
+
+(a)Any person who knowingly uses another’s name, voice, signature, photograph, or likeness, in any manner, on or in products, merchandise, or goods, or for purposes of advertising or selling, or soliciting purchases of, products, merchandise, goods or services, without such person’s prior consent, or, in the case of a minor, the prior consent of their parent or legal guardian, shall be liable for any damages sustained by the person or persons injured as a result thereof. In addition, in any action brought under this section, the person who violated the section shall be liable to the injured party or parties in an amount equal to the greater of seven hundred fifty dollars ($750) or the actual damages suffered by them as a result of the unauthorized use, and any profits from the unauthorized use that are attributable to the use and are not taken into account in computing the actual damages. In establishing these profits, the injured party or parties are required to present proof only of the gross revenue attributable to the unauthorized use, and the person who violated this section is required to prove their deductible expenses. Punitive damages may also be awarded to the injured party or parties. The prevailing party in any action under this section shall also be entitled to attorney’s fees and costs.
+
+(b)As used in this section, “photograph” means any photograph or photographic reproduction, still or moving, or any videotape or live television transmission, of any person, such that the person is readily identifiable.
+
+(1)A person shall be deemed to be readily identifiable from a photograph when one who views the photograph with the naked eye can reasonably determine that the person depicted in the photograph is the same person who is complaining of its unauthorized use.
+
+(2)If the photograph includes more than one person so identifiable, then the person or persons complaining of the use shall be represented as individuals rather than solely as members of a definable group represented in the photograph. A definable group includes, but is not limited to, the following examples: a crowd at any sporting event, a crowd in any street or public building, the audience at any theatrical or stage production, a glee club, or a baseball team.
+
+(3)A person or persons shall be considered to be represented as members of a definable group if they are represented in the photograph solely as a result of being present at the time the photograph was taken and have not been singled out as individuals in any manner. 
+
+(c)For purposes of this section, a use of a name, voice, signature, photograph, or likeness in connection with any news, public affairs, or sports broadcast or account, or any political campaign, shall not constitute a use for which consent is required under subdivision (a).
+
+(d)The use of a name, voice, signature, photograph, or likeness in a commercial medium shall not constitute a use for which consent is required under subdivision (a) solely because the material containing such use is commercially sponsored or contains paid advertising. Rather it shall be a question of fact whether or not the use of the person’s name, voice, signature, photograph, or likeness was so directly connected with the commercial sponsorship or with the paid advertising as to constitute a use for which consent is required under subdivision (a).
+
+(e)Nothing in this section shall apply to the owners or employees of any medium used for advertising, including, but not limited to, newspapers, magazines, radio and television networks and stations, cable television systems, billboards, and transit ads, by whom any advertisement or solicitation in violation of this section is published or disseminated, unless it is established that those owners or employees had knowledge of the unauthorized use of the person’s name, voice, signature, photograph, or likeness as prohibited by this section.
+
+(f)For the purposes of this section, a voice or likeness includes a digital replica, as defined in Section 3344.1.
+
+(g)The remedies provided for in this section are cumulative and shall be in addition to any others provided for by law.
+
+### SEC. 2.5.
+
+Section 3344 of the Civil Code is amended to read:
+
+###### 3344.
+
+(a)(1)Any person who knowingly uses another’s name, voice, signature, photograph, or likeness, in any manner, on or in products, merchandise, or goods, or for purposes of advertising or selling, or soliciting purchases of, products, merchandise, goods, or services, without that person’s prior consent, or, in the case of a minor, the prior consent of their parent or legal guardian, shall be liable for any damages sustained by the person or persons injured as a result thereof. In addition, in any action brought under this section, the person who violated the section shall be liable to the injured party or parties in an amount equal to the greater of seven hundred fifty dollars ($750) or the actual damages suffered by them as a result of the unauthorized use, and any profits from the unauthorized use that are attributable to the use and are not taken into account in computing the actual damages. In establishing these profits, the injured party or parties are required to present proof only of the gross revenue attributable to the unauthorized use, and the person who violated this section is required to prove their deductible expenses. Punitive damages may also be awarded to the injured party or parties. The prevailing party in any action under this section shall also be entitled to attorney’s fees and costs.
+
+(2)In addition to the remedies available in paragraph (1), a party may seek an injunction or temporary restraining order pursuant to Section 527 of the Code of Civil Procedure. If the court grants the applicant an order under subdivision (c) of Section 527 of the Code of Civil Procedure that requires the respondent to remove, recall, or otherwise cease the publication or distribution of the petitioner’s name, voice, signature, photograph, or likeness, the respondent shall complete the removal or recall, or cease the publication or distribution, within two business days from the day the order is served, unless otherwise required by the order.
+
+(b)As used in this section, “photograph” means any photograph or photographic reproduction, still or moving, or any videotape or live television transmission, of any person, such that the person is readily identifiable.
+
+(1)A person shall be deemed to be readily identifiable from a photograph when one who views the photograph with the naked eye can reasonably determine that the person depicted in the photograph is the same person who is complaining of its unauthorized use.
+
+(2)If the photograph includes more than one person so identifiable, then the person or persons complaining of the use shall be represented as individuals rather than solely as members of a definable group represented in the photograph. A definable group includes, but is not limited to, the following examples: a crowd at any sporting event, a crowd in any street or public building, the audience at any theatrical or stage production, a glee club, or a baseball team.
+
+(3)A person or persons shall be considered to be represented as members of a definable group if they are represented in the photograph solely as a result of being present at the time the photograph was taken and have not been singled out as individuals in any manner.
+
+(c)For purposes of this section, a use of a name, voice, signature, photograph, or likeness in connection with any news, public affairs, or sports broadcast or account, or any political campaign, shall not constitute a use for which consent is required under subdivision (a).
+
+(d)The use of a name, voice, signature, photograph, or likeness in a commercial medium shall not constitute a use for which consent is required under subdivision (a) solely because the material containing the use is commercially sponsored or contains paid advertising. Rather it shall be a question of fact whether or not the use of the person’s name, voice, signature, photograph, or likeness was so directly connected with the commercial sponsorship or with the paid advertising as to constitute a use for which consent is required under subdivision (a).
+
+(e)Nothing in this section shall apply to the owners or employees of any medium used for advertising, including, but not limited to, newspapers, magazines, radio and television networks and stations, cable television systems, billboards, and transit ads, by whom any advertisement or solicitation in violation of this section is published or disseminated, unless it is established that those owners or employees had knowledge of the unauthorized use of the person’s name, voice, signature, photograph, or likeness as prohibited by this section.
+
+(f)For the purposes of this section, a voice or likeness includes a digital replica, as defined in Section 3344.1.
+
+(g)The remedies provided for in this section are cumulative and shall be in addition to any others provided for by law.
+
+### SEC. 3.
+
+Article 2.5 (commencing with Section 1425) is added to Chapter 1 of Division 11 of the Evidence Code, to read:
+
+##### Article 2.5.Screening of Writings for Synthetic Content
+
+###### 1425.
+
+(a)By no later than January 1, 2027, the Judicial Council shall review the impact of artificial intelligence on the admissibility of proffered evidence in court proceedings and develop any necessary rules of court to assist courts in assessing claims that proffered evidence has been generated by or manipulated by artificial intelligence and determining whether such evidence is admissible.
+
+(b)As used in this section, “artificial intelligence” has the same meaning as in Section 3110 of the Civil Code.
+
+### SEC. 4.
+
+Chapter 9 (commencing with Section 540) is added to Title 13 of Part 1 of the Penal Code, to read:
+
+##### CHAPTER 9.Offense Involving the Use of Artificial Intelligence Technology
+
+###### 540.
+
+For purposes of this chapter, the following definitions apply:
+
+(a)“Artificial intelligence” or “AI” has the same meaning as in Section 3110 of the Civil Code.
+
+(b)“Digital replica” has the same meaning as in Section 3344.1 of the Civil Code.
+
+###### 541.
+
+For the purposes of any provision of this code in which the false impersonation of another is a required element, including, without limitation, Sections 528.5, 529, and 530, false impersonation includes the use of a digital replica with the intent to impersonate another.
+
+### SEC. 5.
+
+Section 2.5 of this bill incorporates amendments to Section 3344 of the Civil Code proposed by both this bill and Senate Bill 683. That section of this bill shall only become operative if (1) both bills are enacted and become effective on or before January 1, 2026, (2) each bill amends Section 3344 of the Civil Code, and (3) this bill is enacted after Senate Bill 683, in which case Section 2 of this bill shall not become operative.
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

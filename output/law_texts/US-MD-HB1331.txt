@@ -1,0 +1,274 @@
+Title: Maryland HB1331 | 2026 | Regular Session
+
+URL Source: http://legiscan.com/MD/bill/HB1331
+
+Markdown Content:
+MD HB1331 | 2026 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/MD/bill/HB1331#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+MD HB1331 | 2026 | Regular Session
+==================================
+
+[](http://legiscan.com/MD/bill/HB1331 "Share on Facebook")[](http://legiscan.com/MD/bill/HB1331 "Share on Bluesky")[](http://legiscan.com/MD/bill/HB1331 "Share on X")[](http://legiscan.com/MD/bill/HB1331 "Share on LinkedIn")[](http://legiscan.com/MD/bill/HB1331 "Share on reddit")[](http://legiscan.com/MD/bill/HB1331 "Share on email")
+
+[Maryland](http://legiscan.com/MD "View the Maryland Legislative dashboard") House Bill 1331
+============================================================================================
+
+[MD State Legislature page for HB1331](https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB1331?ys=2026RS "Maryland State Legislature source page for HB1331")
+
+* * *
+
+*   [Summary](http://legiscan.com/MD/bill/HB1331/2026 "View Legislative Detail for Maryland HB1331")
+*   [Sponsors](http://legiscan.com/MD/sponsors/HB1331/2026 "View Sponsors of Maryland HB1331")
+*   [Texts](http://legiscan.com/MD/drafts/HB1331/2026 "View Bill Text Drafts for Maryland HB1331")
+*   [Votes](http://legiscan.com/MD/votes/HB1331/2026 "View Roll Call Votes on Maryland HB1331")
+*   [Research](http://legiscan.com/MD/research/HB1331/2026 "View Legislation Research Information on Maryland HB1331")
+*   [Comments](http://legiscan.com/MD/comments/HB1331/2026 "View Social & PolitiCorps Commentary on Maryland HB1331")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Maryland HB1331 and other MD legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Republican 7)
+
+Status: Introduced on February 12 2026 - 25% progression
+
+Action: 2026-02-17 - Hearing 3/19 at 1:00 p.m. (Appropriations) and Hearing canceled (Health)
+
+Pending: [House Appropriations Committee](http://legiscan.com/MD/pending/house-appropriations-committee/id/1922 "View other bills referred to MD House Appropriations Committee")
+
+Hearing: Mar 19 @ 1:00 pm House Appropriations Hearing
+
+Text: [Latest bill text (Introduced) [PDF]](http://legiscan.com/MD/text/HB1331/2026 "View latest bill text for Maryland HB1331")
+
+Summary
+-------
+
+Requiring the Maryland Department of Health and the Department of Human Services to enter into certain data-sharing agreements with certain agencies to conduct certain reviews related to eligibility for and use of certain public benefits; establishing requirements related to redeterminations of eligibility, a waiver for a certain lockout period, retroactive eligibility, and work requirements under the Maryland Medical Assistance Program; etc.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Maryland HB1331 and other MD legislation") or view this same bill number from [multiple sessions](http://legiscan.com/MD/research/HB1331 "Research for MD HB1331 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Maryland and national legislation").
+
+Title
+-----
+
+Maryland Department of Health and Department of Human Services - Public Benefits - Eligibility and Prohibitions
+
+Sponsors
+--------
+
+[Del. Robin Grammer](http://legiscan.com/MD/people/robin-grammer/id/17423 "View other legislation sponsored by Maryland Delegate Robin Grammer")[R][Del. Lauren Arikan](http://legiscan.com/MD/people/lauren-arikan/id/20964 "View other legislation sponsored by Maryland Delegate Lauren Arikan")[R][Del. Brian Chisholm](http://legiscan.com/MD/people/brian-chisholm/id/20530 "View other legislation sponsored by Maryland Delegate Brian Chisholm")[R][Del. Mark Fisher](http://legiscan.com/MD/people/mark-fisher/id/11554 "View other legislation sponsored by Maryland Delegate Mark Fisher")[R]
+[Del. Matt Morgan](http://legiscan.com/MD/people/matt-morgan/id/17239 "View other legislation sponsored by Maryland Delegate Matt Morgan")[R][Del. Ryan Nawrocki](http://legiscan.com/MD/people/ryan-nawrocki/id/24718 "View other legislation sponsored by Maryland Delegate Ryan Nawrocki")[R][Del. Kathy Szeliga](http://legiscan.com/MD/people/kathy-szeliga/id/11766 "View other legislation sponsored by Maryland Delegate Kathy Szeliga")[R]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2026-02-17 | House | Hearing 3/19 at 1:00 p.m. (Appropriations) and Hearing canceled (Health) |
+| 2026-02-13 | House | Hearing canceled (Health) |
+| 2026-02-13 | House | Hearing 2/24 at 1:00 p.m. (Health) |
+| 2026-02-12 | House | First Reading Appropriations and Health |
+
+Subjects
+--------
+
+[Addresses](http://legiscan.com/gaits/subject/404871 "View other legislative instruments with the Addresses subject")
+
+[Administrative Agencies](http://legiscan.com/gaits/subject/3203 "View other legislative instruments with the Administrative Agencies subject")
+
+[Applicants and Applications](http://legiscan.com/gaits/subject/404848 "View other legislative instruments with the Applicants and Applications subject")
+
+[Data](http://legiscan.com/gaits/subject/175715 "View other legislative instruments with the Data subject")
+
+[Death](http://legiscan.com/gaits/subject/3150 "View other legislative instruments with the Death subject")
+
+[Disabilities](http://legiscan.com/gaits/subject/3151 "View other legislative instruments with the Disabilities subject")
+
+[Disclosure](http://legiscan.com/gaits/subject/3112 "View other legislative instruments with the Disclosure subject")
+
+[Electronic Government](http://legiscan.com/gaits/subject/3280 "View other legislative instruments with the Electronic Government subject")
+
+[Evaluations and Reviews](http://legiscan.com/gaits/subject/404870 "View other legislative instruments with the Evaluations and Reviews subject")
+
+[Evidence](http://legiscan.com/gaits/subject/3341 "View other legislative instruments with the Evidence subject")
+
+[Exemptions](http://legiscan.com/gaits/subject/3127 "View other legislative instruments with the Exemptions subject")
+
+[Federal Government](http://legiscan.com/gaits/subject/3340 "View other legislative instruments with the Federal Government subject")
+
+[Fraud](http://legiscan.com/gaits/subject/3414 "View other legislative instruments with the Fraud subject")
+
+[Health](http://legiscan.com/gaits/subject/3277 "View other legislative instruments with the Health subject")
+
+[Health Insurance](http://legiscan.com/gaits/subject/3210 "View other legislative instruments with the Health Insurance subject")
+
+[Health, Department of](http://legiscan.com/gaits/subject/255963 "View other legislative instruments with the Health, Department of subject")
+
+[Human Services, Department of](http://legiscan.com/gaits/subject/255964 "View other legislative instruments with the Human Services, Department of subject")
+
+[Immigrants and Citizenship](http://legiscan.com/gaits/subject/81361 "View other legislative instruments with the Immigrants and Citizenship subject")
+
+[Incarcerated Individuals](http://legiscan.com/gaits/subject/383813 "View other legislative instruments with the Incarcerated Individuals subject")
+
+[Independent Contractors](http://legiscan.com/gaits/subject/334475 "View other legislative instruments with the Independent Contractors subject")
+
+[Information Technology](http://legiscan.com/gaits/subject/404857 "View other legislative instruments with the Information Technology subject")
+
+[Intergovernmental Cooperation](http://legiscan.com/gaits/subject/374946 "View other legislative instruments with the Intergovernmental Cooperation subject")
+
+[internet](http://legiscan.com/gaits/subject/318525 "View other legislative instruments with the internet subject")
+
+[Interstate Affairs](http://legiscan.com/gaits/subject/3166 "View other legislative instruments with the Interstate Affairs subject")
+
+[Lottery](http://legiscan.com/gaits/subject/3725 "View other legislative instruments with the Lottery subject")
+
+[Medical Assistance](http://legiscan.com/gaits/subject/3337 "View other legislative instruments with the Medical Assistance subject")
+
+[Mental and Behavioral Health](http://legiscan.com/gaits/subject/175450 "View other legislative instruments with the Mental and Behavioral Health subject")
+
+[Procurement](http://legiscan.com/gaits/subject/3527 "View other legislative instruments with the Procurement subject")
+
+[Public Benefits](http://legiscan.com/gaits/subject/374900 "View other legislative instruments with the Public Benefits subject")
+
+[Public Health](http://legiscan.com/gaits/subject/22396 "View other legislative instruments with the Public Health subject")
+
+[Reports](http://legiscan.com/gaits/subject/3162 "View other legislative instruments with the Reports subject")
+
+[Revenue and Taxes](http://legiscan.com/gaits/subject/3276 "View other legislative instruments with the Revenue and Taxes subject")
+
+[Rules and Regulations](http://legiscan.com/gaits/subject/3117 "View other legislative instruments with the Rules and Regulations subject")
+
+[Salaries and Compensation](http://legiscan.com/gaits/subject/28917 "View other legislative instruments with the Salaries and Compensation subject")
+
+[Social Security](http://legiscan.com/gaits/subject/3556 "View other legislative instruments with the Social Security subject")
+
+[Social Services - Generally](http://legiscan.com/gaits/subject/22426 "View other legislative instruments with the Social Services - Generally subject")
+
+[State Government - Agencies, Offices, and Officials](http://legiscan.com/gaits/subject/22371 "View other legislative instruments with the State Government - Agencies, Offices, and Officials subject")
+
+[Substance Abuse Treatment](http://legiscan.com/gaits/subject/374882 "View other legislative instruments with the Substance Abuse Treatment subject")
+
+[Supplemental Nutrition Assistance Program](http://legiscan.com/gaits/subject/404861 "View other legislative instruments with the Supplemental Nutrition Assistance Program subject")
+
+[Tax Returns](http://legiscan.com/gaits/subject/255965 "View other legislative instruments with the Tax Returns subject")
+
+[Vital Records](http://legiscan.com/gaits/subject/14720 "View other legislative instruments with the Vital Records subject")
+
+[Waivers](http://legiscan.com/gaits/subject/374881 "View other legislative instruments with the Waivers subject")
+
+[Work, Labor, and Employment](http://legiscan.com/gaits/subject/340532 "View other legislative instruments with the Work, Labor, and Employment subject")
+
+Code Citations
+--------------
+
+| Chapter | Article | Section | Citation Type | Statute Text |
+| --- | --- | --- | --- | --- |
+| [Health - General](http://legiscan.com/gaits/citation/594882 "Find other legislation referencing Maryland Chapter ghg") | [15](http://legiscan.com/gaits/citation/596161 "Find other legislation referencing Maryland Chapter ghg Article 15") | [101](http://legiscan.com/gaits/citation/603396 "Find other legislation referencing Maryland Chapter ghg Article 15 Section 101") | (n/a) | See Bill Text |
+| [Health - General](http://legiscan.com/gaits/citation/594882 "Find other legislation referencing Maryland Chapter ghg") | [15](http://legiscan.com/gaits/citation/596161 "Find other legislation referencing Maryland Chapter ghg Article 15") | [123.1](http://legiscan.com/gaits/citation/913770 "Find other legislation referencing Maryland Chapter ghg Article 15 Section 123.1") | (n/a) | See Bill Text |
+| [Health - General](http://legiscan.com/gaits/citation/594882 "Find other legislation referencing Maryland Chapter ghg") | [15](http://legiscan.com/gaits/citation/596161 "Find other legislation referencing Maryland Chapter ghg Article 15") | [123.2](http://legiscan.com/gaits/citation/1011162 "Find other legislation referencing Maryland Chapter ghg Article 15 Section 123.2") | (n/a) | See Bill Text |
+| [Health - General](http://legiscan.com/gaits/citation/594882 "Find other legislation referencing Maryland Chapter ghg") | [15](http://legiscan.com/gaits/citation/596161 "Find other legislation referencing Maryland Chapter ghg Article 15") | [123.3](http://legiscan.com/gaits/citation/1011163 "Find other legislation referencing Maryland Chapter ghg Article 15 Section 123.3") | (n/a) | See Bill Text |
+| [Health - General](http://legiscan.com/gaits/citation/594882 "Find other legislation referencing Maryland Chapter ghg") | [15](http://legiscan.com/gaits/citation/596161 "Find other legislation referencing Maryland Chapter ghg Article 15") | [123.4](http://legiscan.com/gaits/citation/1011164 "Find other legislation referencing Maryland Chapter ghg Article 15 Section 123.4") | (n/a) | See Bill Text |
+| [Human Services](http://legiscan.com/gaits/citation/594680 "Find other legislation referencing Maryland Chapter ghu") | [5](http://legiscan.com/gaits/citation/595674 "Find other legislation referencing Maryland Chapter ghu Article 5") | [101](http://legiscan.com/gaits/citation/718206 "Find other legislation referencing Maryland Chapter ghu Article 5 Section 101") | (n/a) | See Bill Text |
+| [Human Services](http://legiscan.com/gaits/citation/594680 "Find other legislation referencing Maryland Chapter ghu") | [5](http://legiscan.com/gaits/citation/595674 "Find other legislation referencing Maryland Chapter ghu Article 5") | [501](http://legiscan.com/gaits/citation/595675 "Find other legislation referencing Maryland Chapter ghu Article 5 Section 501") | (n/a) | See Bill Text |
+| [Human Services](http://legiscan.com/gaits/citation/594680 "Find other legislation referencing Maryland Chapter ghu") | [5](http://legiscan.com/gaits/citation/595674 "Find other legislation referencing Maryland Chapter ghu Article 5") | [503](http://legiscan.com/gaits/citation/595676 "Find other legislation referencing Maryland Chapter ghu Article 5 Section 503") | (n/a) | See Bill Text |
+| [Human Services](http://legiscan.com/gaits/citation/594680 "Find other legislation referencing Maryland Chapter ghu") | [5](http://legiscan.com/gaits/citation/595674 "Find other legislation referencing Maryland Chapter ghu Article 5") | [503.1](http://legiscan.com/gaits/citation/718989 "Find other legislation referencing Maryland Chapter ghu Article 5 Section 503.1") | (n/a) | See Bill Text |
+
+Maryland State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB1331?ys=2026RS](https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/HB1331?ys=2026RS) |
+| Text | [https://mgaleg.maryland.gov/2026RS/bills/hb/hb1331f.pdf](https://mgaleg.maryland.gov/2026RS/bills/hb/hb1331f.pdf) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

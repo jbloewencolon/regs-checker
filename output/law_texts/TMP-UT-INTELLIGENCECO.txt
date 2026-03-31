@@ -1,0 +1,204 @@
+     02-04 13:28                                                                                     S.B. 226
+
+
+ 1                      Artificial Intelligence Consumer Protection Amendments
+                                              2025 GENERAL SESSION
+                                                 STATE OF UTAH
+                                       Chief Sponsor: Kirk A. Cullimore
+                                                     House Sponsor:
+ 2
+ 3     LONG TITLE
+ 4     General Description:
+ 5         This bill enacts provisions related to the use of generative artificial intelligence in consumer
+ 6     transactions and regulated services.
+ 7     Highlighted Provisions:
+ 8         This bill:
+ 9         ▸ defines terms;
+10         ▸ requires certain disclosures when generative artificial intelligence is used in consumer
+11     transactions and regulated services;
+12         ▸ establishes liability for violations of consumer protection laws involving artificial
+13     intelligence;
+14         ▸ provides a safe harbor for certain disclosures;
+15         ▸ grants rulemaking and enforcement authority to the Division of Consumer Protection; and
+16         ▸ establishes penalties for violations.
+17     Money Appropriated in this Bill:
+18         None
+19     Other Special Clauses:
+20         None
+21     Utah Code Sections Affected:
+22     ENACTS:
+23         13-75-101, Utah Code Annotated 1953
+                                                                                                                S.B. 226
+24         13-75-102, Utah Code Annotated 1953
+25         13-75-103, Utah Code Annotated 1953
+26         13-75-104, Utah Code Annotated 1953
+27         13-75-105, Utah Code Annotated 1953
+28         13-75-106, Utah Code Annotated 1953
+29     REPEALS:
+30         13-2-12, as enacted by Laws of Utah 2024, Chapter 186
+     S.B. 226                                                                                    02-04 13:28
+
+
+31
+32    Be it enacted by the Legislature of the state of Utah:
+33          Section 1. Section 13-75-101 is enacted to read:
+34          13-75-101 . Definitions.
+35       As used in this chapter:
+36    (1) "Artificial intelligence technology" means the same as that term is defined in Section
+37        13-72-101.
+38    (2) "Consumer transaction" means the same as that term is defined in Section 13-11-3.
+39    (3) "Division" means the Division of Consumer Protection created in Section 13-2-1.
+40    (4) "Generative artificial intelligence" means an artificial intelligence technology system
+41        that:
+42        (a) is trained on data;
+43        (b) is designed to simulate human communication with a consumer through one or more
+44              of the following:
+45              (i) text;
+46              (ii) audio; or
+47              (iii) visual communication; and
+48        (c) generates non-scripted outputs similar to outputs created by a human, with limited or
+49              no human oversight.
+50    (5) "High-risk artificial intelligence interaction" means an interaction with generative
+51        artificial intelligence that involves:
+52        (a) the collection of sensitive personal information, including:
+53              (i) health data;
+54              (ii) financial data; or
+55              (iii) biometric data;
+56        (b) the provision of personalized recommendations, advice, or information that could
+57              reasonably be relied upon to make significant personal decisions;
+58        (c) the provision of:
+59              (i) financial advice or services;
+60              (ii) legal advice or services;
+61              (iii) medical advice or services; or
+62              (iv) mental health advice or services; or
+63        (d) other applications as defined by division rule.
+64    (6) "License" means a state-granted authorization for an individual to engage in a specified
+
+                                                       -2-
+     02-04 13:28                                                                                       S.B. 226
+
+
+65         occupation:
+66         (a) based on the individual meeting personal qualifications established under state law;
+67             and
+68         (b) that is required before the individual may lawfully engage in the occupation for
+69             compensation.
+70     (7) "Regulated occupation" means an occupation that:
+71         (a) is regulated by the Department of Commerce; and
+72         (b) requires an individual to obtain a license or state certification to practice the
+73             occupation.
+74     (8) "State certification" means a state-granted authorization that:
+75         (a) permits an individual to use the term "state certified" as part of a designated title
+76             related to a specified occupation:
+77             (i) based on the individual meeting personal qualifications established under state
+78                   law; and
+79             (ii) where state law prohibits a noncertified individual from using the term "state
+80                   certified" as part of a designated title; and
+81         (b) does not prohibit a noncertified individual from engaging in the occupation for
+82             compensation.
+83     (9) "Supplier" means the same as that term is defined in Section 13-11-3.
+84           Section 2. Section 13-75-102 is enacted to read:
+85           13-75-102 . Liability for violation of consumer protection law.
+86        It is not a defense to the violation of any statute administered and enforced by the
+87     division under Section 13-2-1 that generative artificial intelligence:
+88     (1) made the violative statement;
+89     (2) undertook the violative act; or
+90     (3) was used in furtherance of the violation.
+91           Section 3. Section 13-75-103 is enacted to read:
+92           13-75-103 . Required disclosures.
+93     (1)(a) A supplier that uses generative artificial intelligence to interact with an individual
+94         in connection with a consumer transaction shall clearly and conspicuously disclose to
+95         the individual that the individual is interacting with generative artificial intelligence
+96         and not a human if the individual asks or otherwise prompts the supplier about
+97         whether artificial intelligence is being used.
+98         (b) The individual's prompt or question under Subsection (1)(a) must be a clear and
+
+                                                        -3-
+      S.B. 226                                                                                      02-04 13:28
+
+
+ 99              unambiguous request to determine whether the interaction is with generative artificial
+100              intelligence rather than a human.
+101    (2) An individual providing services in a regulated occupation shall:
+102        (a) prominently disclose when an individual is interacting with generative artificial
+103              intelligence in the provision of regulated services if the use of generative artificial
+104              intelligence constitutes a high-risk artificial intelligence interaction; and
+105        (b) comply with all requirements of the regulated occupation when providing services
+106              through generative artificial intelligence.
+107    (3) A disclosure required under Subsection (2) shall be provided:
+108        (a) verbally at the start of a verbal interaction; and
+109        (b) in writing before the start of a written interaction.
+110          Section 4. Section 13-75-104 is enacted to read:
+111          13-75-104 . Safe harbor.
+112    (1) A person is not subject to an enforcement action for violating Section 13-75-103 if the
+113        person's generative artificial intelligence clearly and conspicuously discloses:
+114        (a) at the outset of any interaction with an individual in connection with:
+115              (i) a consumer transaction; or
+116              (ii) the provision of regulated services; and
+117        (b) throughout the interaction that it:
+118              (i) is generative artificial intelligence;
+119              (ii) is not human; or
+120              (iii) is an artificial intelligence assistant.
+121    (2) In accordance with Title 63G, Chapter 3, Utah Administrative Rulemaking Act, the
+122        division may make rules specifying forms and methods of disclosure that:
+123        (a) satisfy the requirements of Subsection (1); or
+124        (b) do not satisfy the requirements of Subsection (1).
+125          Section 5. Section 13-75-105 is enacted to read:
+126          13-75-105 . Enforcement.
+127    (1) A violation of this chapter constitutes a violation of Subsection 13-11-4(1).
+128    (2) The division shall administer and enforce this chapter in accordance with Chapter 2,
+129        Division of Consumer Protection.
+130    (3) The attorney general shall:
+131        (a) give legal advice to the division regarding the division's responsibilities under this
+132              chapter; and
+
+                                                          -4-
+      02-04 13:28                                                                                        S.B. 226
+
+
+133         (b) act as counsel for the division in the exercise of the division's responsibilities under
+134             this chapter.
+135     (4) In addition to the division's enforcement powers under Chapter 2, Division of Consumer
+136         Protection:
+137         (a) the division director may impose an administrative fine of up to $2,500 for each
+138             violation of this chapter; and
+139         (b) the division may bring an action in court to enforce this chapter.
+140     (5) In an action brought by the division to enforce this chapter, the court may:
+141         (a) declare that an act or practice violates this chapter;
+142         (b) issue an injunction for a violation of this chapter;
+143         (c) order disgorgement of money received in violation of this chapter;
+144         (d) order payment of disgorged money to an individual injured by a violation of this
+145             chapter;
+146         (e) impose a fine of up to $2,500 for each violation of this chapter; or
+147         (f) award other reasonable and necessary relief.
+148     (6) If a court of competent jurisdiction grants judgment or injunctive relief to the division,
+149         the court shall award the division:
+150         (a) reasonable attorney fees;
+151         (b) court costs; and
+152         (c) investigative fees.
+153     (7)(a) A person who violates an administrative or court order issued for a violation of
+154         this chapter is subject to a civil penalty of up to $5,000 for each violation.
+155         (b) The attorney general may impose a civil penalty authorized under this section in any
+156             civil action brought on behalf of the division.
+157           Section 6. Section 13-75-106 is enacted to read:
+158           13-75-106 . Scope.
+159         This chapter does not displace any other remedy or right authorized under:
+160     (1) the laws of this state; or
+161     (2) federal law.
+162           Section 7. Repealer.
+163           This bill repeals:
+164           Section 13-2-12, Generative artificial intelligence -- Impact on liability for violation of
+165     consumer protection law.
+166           Section 8. Effective Date.
+
+                                                       -5-
+      S.B. 226                                        02-04 13:28
+
+
+167    This bill takes effect on May 7, 2025.
+
+
+
+
+                                                -6-
+

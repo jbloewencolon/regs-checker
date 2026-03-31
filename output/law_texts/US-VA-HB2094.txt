@@ -1,0 +1,261 @@
+Title: Virginia HB2094 | 2025 | Regular Session
+
+URL Source: http://legiscan.com/VA/bill/HB2094
+
+Markdown Content:
+VA HB2094 | 2025 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/VA/bill/HB2094#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+VA HB2094 | 2025 | Regular Session
+==================================
+
+[](http://legiscan.com/VA/bill/HB2094 "Share on Facebook")[](http://legiscan.com/VA/bill/HB2094 "Share on Bluesky")[](http://legiscan.com/VA/bill/HB2094 "Share on X")[](http://legiscan.com/VA/bill/HB2094 "Share on LinkedIn")[](http://legiscan.com/VA/bill/HB2094 "Share on reddit")[](http://legiscan.com/VA/bill/HB2094 "Share on email")
+
+[Virginia](http://legiscan.com/VA "View the Virginia Legislative dashboard") House Bill 2094 _**([Prior Session Legislation](http://legiscan.com/VA/research/HB2094/2025 "Right number, wrong year? View Virginia HB2094 from current and past sessions"))**_
+=============================================================================================================================================================================================================================================================
+
+[VA State Legislature page for HB2094](https://lis.virginia.gov/bill-details/20251/HB2094 "Virginia State Legislature source page for HB2094")
+
+* * *
+
+*   [Summary](http://legiscan.com/VA/bill/HB2094/2025 "View Legislative Detail for Virginia HB2094")
+*   [Sponsors](http://legiscan.com/VA/sponsors/HB2094/2025 "View Sponsors of Virginia HB2094")
+*   [Texts](http://legiscan.com/VA/drafts/HB2094/2025 "View Bill Text Drafts for Virginia HB2094")
+*   [Votes](http://legiscan.com/VA/votes/HB2094/2025 "View Roll Call Votes on Virginia HB2094")
+*   [Research](http://legiscan.com/VA/research/HB2094/2025 "View Legislation Research Information on Virginia HB2094")
+*   [Comments](http://legiscan.com/VA/comments/HB2094/2025 "View Social & PolitiCorps Commentary on Virginia HB2094")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Virginia HB2094 and other VA legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Democrat 24)
+
+Status: Vetoed on March 24 2025 - 100% progression
+
+Action: 2025-04-02 - House sustained Governor's veto
+
+Text: [Latest bill text (Enrolled) [HTML]](http://legiscan.com/VA/text/HB2094/2025 "View latest bill text for Virginia HB2094")
+
+Summary
+-------
+
+High-risk artificial intelligence; development, deployment, and use; civil penalties. Creates requirements for the development, deployment, and use of high-risk artificial intelligence systems, defined in the bill, and civil penalties for noncompliance, to be enforced by the Attorney General. The bill has a delayed effective date of July 1, 2026.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Virginia HB2094 and other VA legislation") or view this same bill number from [multiple sessions](http://legiscan.com/VA/research/HB2094/2025 "Research for VA HB2094 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Virginia and national legislation").
+
+Title
+-----
+
+High-risk artificial intelligence; definitions, development, deployment, and use, civil penalties.
+
+Sponsors
+--------
+
+[Del. Michelle Maldonado](http://legiscan.com/VA/people/michelle-lopes-maldonado/id/23031 "View other legislation sponsored by Virginia Delegate Michelle Maldonado")[D][Del. Jackie Glass](http://legiscan.com/VA/people/jackie-glass/id/23040 "View other legislation sponsored by Virginia Delegate Jackie Glass")[D][Del. C.E. Hayes](http://legiscan.com/VA/people/ce-hayes/id/18551 "View other legislation sponsored by Virginia Delegate C.E. Hayes")[D][Del. Irene Shin](http://legiscan.com/VA/people/irene-shin/id/23037 "View other legislation sponsored by Virginia Delegate Irene Shin")[D]
+[Del. Bonita Anthony](http://legiscan.com/VA/people/bonita-anthony/id/24986 "View other legislation sponsored by Virginia Delegate Bonita Anthony")[D][Del. Alex Askew](http://legiscan.com/VA/people/alex-askew/id/21450 "View other legislation sponsored by Virginia Delegate Alex Askew")[D][Del. Katrina Callsen](http://legiscan.com/VA/people/katrina-callsen/id/24978 "View other legislation sponsored by Virginia Delegate Katrina Callsen")[D][Del. Nadarius Clark](http://legiscan.com/VA/people/nadarius-clark/id/23034 "View other legislation sponsored by Virginia Delegate Nadarius Clark")[D]
+[Del. Laura Jane Cohen](http://legiscan.com/VA/people/laura-jane-cohen/id/24979 "View other legislation sponsored by Virginia Delegate Laura Jane Cohen")[D][Del. Joshua Cole](http://legiscan.com/VA/people/joshua-cole/id/24977 "View other legislation sponsored by Virginia Delegate Joshua Cole")[D][Del. Kelly Convirs-Fowler](http://legiscan.com/VA/people/kelly-convirs-fowler/id/19454 "View other legislation sponsored by Virginia Delegate Kelly Convirs-Fowler")[D][Del. Michael Feggans](http://legiscan.com/VA/people/michael-feggans/id/24973 "View other legislation sponsored by Virginia Delegate Michael Feggans")[D]
+[Del. Rozia Henson](http://legiscan.com/VA/people/rozia-henson/id/24980 "View other legislation sponsored by Virginia Delegate Rozia Henson")[D][Del. Phil Hernandez](http://legiscan.com/VA/people/phil-hernandez/id/24975 "View other legislation sponsored by Virginia Delegate Phil Hernandez")[D][Del. Charniele Herring](http://legiscan.com/VA/people/charniele-herring/id/894 "View other legislation sponsored by Virginia Delegate Charniele Herring")[D][Del. Karen Keys-Gamarra](http://legiscan.com/VA/people/karen-keys-gamarra/id/25009 "View other legislation sponsored by Virginia Delegate Karen Keys-Gamarra")[D]
+[Del. Amy Laufer](http://legiscan.com/VA/people/amy-laufer/id/24988 "View other legislation sponsored by Virginia Delegate Amy Laufer")[D][Del. Destiny LeVere Bolling](http://legiscan.com/VA/people/destiny-levere-bolling/id/24989 "View other legislation sponsored by Virginia Delegate Destiny LeVere Bolling")[D][Del. Adele McClure](http://legiscan.com/VA/people/adele-mcclure/id/24976 "View other legislation sponsored by Virginia Delegate Adele McClure")[D][Del. Marcia Price](http://legiscan.com/VA/people/marcia-price/id/17806 "View other legislation sponsored by Virginia Delegate Marcia Price")[D]
+[Del. Holly Seibold](http://legiscan.com/VA/people/holly-seibold/id/24377 "View other legislation sponsored by Virginia Delegate Holly Seibold")[D][Del. Shelly Simonds](http://legiscan.com/VA/people/shelly-simonds/id/21444 "View other legislation sponsored by Virginia Delegate Shelly Simonds")[D][Del. Kathy Tran](http://legiscan.com/VA/people/kathy-tran/id/19508 "View other legislation sponsored by Virginia Delegate Kathy Tran")[D][Del. Rodney Willett](http://legiscan.com/VA/people/rodney-willett/id/21409 "View other legislation sponsored by Virginia Delegate Rodney Willett")[D]
+
+Roll Calls
+----------
+
+2025-02-20 - _House_ - [Senate substitute agreed to by House (52-Y 46-N)](http://legiscan.com/VA/rollcall/HB2094/id/1496800 "View roll call details for HB2094 vote Senate substitute agreed to by House (52-Y 46-N)") (Y: 52 N: 46 NV: 0 Abs: 2) [PASS]
+
+2025-02-19 - _Senate_ - [Passed Senate with substitute (21-Y 19-N)](http://legiscan.com/VA/rollcall/HB2094/id/1493628 "View roll call details for HB2094 vote Passed Senate with substitute (21-Y 19-N)") (Y: 21 N: 19 NV: 0 Abs: 0) [PASS]
+
+2025-02-17 - _Senate_ - [Constitutional reading dispensed (on 2nd reading) (39-Y 0-N)](http://legiscan.com/VA/rollcall/HB2094/id/1492143 "View roll call details for HB2094 vote Constitutional reading dispensed (on 2nd reading) (39-Y 0-N)") (Y: 39 N: 0 NV: 0 Abs: 1) [PASS]
+
+2025-02-14 - _Senate_ - [Reported from Finance and Appropriations (9-Y 4-N)](http://legiscan.com/VA/rollcall/HB2094/id/1490157 "View roll call details for HB2094 vote Reported from Finance and Appropriations (9-Y 4-N)") (Y: 9 N: 4 NV: 0 Abs: 2) [PASS]
+
+2025-02-12 - _Senate_ - [Reported from General Laws and Technology with substitute and rereferred to Finance and Appropriations (9-Y 3-N 3-A)](http://legiscan.com/VA/rollcall/HB2094/id/1488064 "View roll call details for HB2094 vote Reported from General Laws and Technology with substitute and rereferred to Finance and Appropriations (9-Y 3-N 3-A)") (Y: 9 N: 3 NV: 3 Abs: 0) [PASS]
+
+2025-02-04 - _House_ - [Read third time and passed House (51-Y 47-N)](http://legiscan.com/VA/rollcall/HB2094/id/1482455 "View roll call details for HB2094 vote Read third time and passed House (51-Y 47-N)") (Y: 51 N: 47 NV: 0 Abs: 2) [PASS]
+
+2025-01-31 - _House_ - [Reported from Appropriations with substitute (12-Y 10-N)](http://legiscan.com/VA/rollcall/HB2094/id/1478199 "View roll call details for HB2094 vote Reported from Appropriations with substitute (12-Y 10-N)") (Y: 12 N: 10 NV: 0 Abs: 0) [PASS]
+
+2025-01-27 - _House_ - [Reported from Communications, Technology and Innovation with substitute and referred to Appropriations (12-Y 10-N)](http://legiscan.com/VA/rollcall/HB2094/id/1474826 "View roll call details for HB2094 vote Reported from Communications, Technology and Innovation with substitute and referred to Appropriations (12-Y 10-N)") (Y: 12 N: 10 NV: 0 Abs: 0) [PASS]
+
+2025-01-27 - _House_ - [Subcommittee recommends reporting with substitute and referring to Appropriations (6-Y 4-N)](http://legiscan.com/VA/rollcall/HB2094/id/1474665 "View roll call details for HB2094 vote Subcommittee recommends reporting with substitute and referring to Appropriations (6-Y 4-N)") (Y: 6 N: 4 NV: 0 Abs: 1) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-04-02 | House | House sustained Governor's veto |
+| 2025-03-24 |  | Vetoed by Governor |
+| 2025-03-11 |  | Governor's Action Deadline 11:59 p.m., March 24, 2025 |
+| 2025-03-11 | House | Enrolled Bill communicated to Governor on March 11, 2025 |
+| 2025-03-10 | Senate | Signed by President |
+| 2025-03-07 | House | Signed by Speaker |
+| 2025-03-07 | House | Fiscal Impact Statement from Department of Planning and Budget (HB2094) |
+| 2025-03-07 | House | Bill text as passed House and Senate (HB2094ER) |
+| 2025-03-07 | House | Enrolled |
+| 2025-02-20 | House | Senate substitute agreed to by House (52-Y 46-N) |
+| 2025-02-19 | Senate | Passed Senate with substitute (21-Y 19-N) |
+| 2025-02-19 | Senate | Engrossed by Senate - committee substitute |
+| 2025-02-19 | Senate | General Laws and Technology Substitute agreed to |
+| 2025-02-19 | Senate | Reading of substitute waived |
+| 2025-02-19 | Senate | Read third time |
+| 2025-02-18 | Senate | Passed by for the day |
+| 2025-02-17 | Senate | Passed by for the day |
+| 2025-02-17 | Senate | Constitutional reading dispensed (on 2nd reading) (39-Y 0-N) |
+| 2025-02-17 | Senate | Rules suspended |
+| 2025-02-17 | House | Fiscal Impact Statement from Department of Planning and Budget (HB2094) |
+| 2025-02-14 | Senate | Reported from Finance and Appropriations (9-Y 4-N) |
+| 2025-02-12 | Senate | Committee substitute printed 25107123D-S1 |
+| 2025-02-12 | Senate | Reported from General Laws and Technology with substitute and rereferred to Finance and Appropriations (9-Y 3-N 3-A) |
+| 2025-02-06 | House | Fiscal Impact Statement from Department of Planning and Budget (HB2094) |
+| 2025-02-05 | Senate | Referred to Committee on General Laws and Technology |
+| 2025-02-05 | Senate | Constitutional reading dispensed (on 1st reading) |
+| 2025-02-04 | House | Read third time and passed House (51-Y 47-N) |
+| 2025-02-03 | House | Printed as engrossed 25106626D-EH2 |
+| 2025-02-03 | House | Engrossed by House - committee substitute as amended |
+| 2025-02-03 | House | Delegate Maldonado Amendments agreed to |
+| 2025-02-03 | House | Appropriations Substitute agreed to |
+| 2025-02-03 | House | Communications, Technology and Innovation Substitute rejected |
+| 2025-02-03 | House | Read second time |
+| 2025-02-03 | House | Passed by temporarily |
+| 2025-02-03 | House | Read second time |
+| 2025-02-02 | House | Read first time |
+| 2025-01-31 | House | Committee substitute printed 25106626D-H2 |
+| 2025-01-31 | House | Reported from Appropriations with substitute (12-Y 10-N) |
+| 2025-01-27 | House | Assigned Approps sub: General Government and Capital Outlay |
+| 2025-01-27 | House | Committee substitute printed 25105027D-H1 |
+| 2025-01-27 | House | Reported from Communications, Technology and Innovation with substitute and referred to Appropriations (12-Y 10-N) |
+| 2025-01-27 | House | Subcommittee recommends reporting with substitute and referring to Appropriations (6-Y 4-N) |
+| 2025-01-23 | House | Assigned CT & I sub: Communications |
+| 2025-01-22 | House | Fiscal Impact Statement from Department of Planning and Budget (HB2094) |
+| 2025-01-07 | House | Referred to Committee on Communications, Technology and Innovation |
+| 2025-01-07 | House | Prefiled and ordered printed; Offered 01-13-2025 25104439D |
+
+Virginia State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://lis.virginia.gov/bill-details/20251/HB2094](https://lis.virginia.gov/bill-details/20251/HB2094) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094H1](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094H1) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094H2](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094H2) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094EH2](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094EH2) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094SC1](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094SC1) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094S1](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094S1) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094ER](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094ER) |
+| Amendment | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094AH1](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094AH1) |
+| Amendment | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094AH2](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094AH2) |
+| Supplement | [https://lis.blob.core.windows.net/files/1026457.PDF](https://lis.blob.core.windows.net/files/1026457.PDF) |
+| Supplement | [https://lis.blob.core.windows.net/files/1043197.PDF](https://lis.blob.core.windows.net/files/1043197.PDF) |
+| Supplement | [https://lis.blob.core.windows.net/files/1054861.PDF](https://lis.blob.core.windows.net/files/1054861.PDF) |
+| Supplement | [https://lis.blob.core.windows.net/files/1069776.PDF](https://lis.blob.core.windows.net/files/1069776.PDF) |
+| Supplement | [https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094VG](https://lis.virginia.gov/bill-details/20251/HB2094/text/HB2094VG) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/H21001V2511161](https://lis.virginia.gov/vote-details/HB2094/20251/H21001V2511161) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/H21V2511181](https://lis.virginia.gov/vote-details/HB2094/20251/H21V2511181) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/H02V2512184](https://lis.virginia.gov/vote-details/HB2094/20251/H02V2512184) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/2518489](https://lis.virginia.gov/vote-details/HB2094/20251/2518489) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/S12V1617](https://lis.virginia.gov/vote-details/HB2094/20251/S12V1617) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/S05V1822](https://lis.virginia.gov/vote-details/HB2094/20251/S05V1822) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/SV567](https://lis.virginia.gov/vote-details/HB2094/20251/SV567) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/SV702](https://lis.virginia.gov/vote-details/HB2094/20251/SV702) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2094/20251/2519039](https://lis.virginia.gov/vote-details/HB2094/20251/2519039) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

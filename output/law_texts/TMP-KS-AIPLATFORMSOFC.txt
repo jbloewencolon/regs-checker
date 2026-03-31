@@ -1,0 +1,134 @@
+                SENATE Substitute for HOUSE BILL No. 2313
+
+AN ACT concerning technology produced by certain foreign countries; relating to artificial
+   intelligence platforms; prohibiting the use of artificial intelligence platforms of
+   concern on state-issued devices and networks; prohibiting medical and research
+   facilities from using genetic sequencers or operational software used for genetic
+   analysis that is produced in or by a foreign adversary.
+
+Be it enacted by the Legislature of the State of Kansas:
+    Section 1. (a) No electronic device that is owned or issued to an
+employee by a state agency shall be used to access an artificial
+intelligence platform of concern. Any network that is operated by a
+state agency shall prohibit the use of artificial intelligence platforms of
+concern by users who access the network.
+    (b) Any state agency that utilizes an artificial intelligence platform
+of concern or has an account with an artificial intelligence platform of
+concern shall deactivate and delete such account and shall no longer
+use the artificial intelligence platform.
+    (c) The provisions of this section shall not apply to state agencies
+that are using an electronic device owned or issued to an employee by a
+state agency to access an artificial intelligence platform of concern for
+the purposes of law enforcement activities or cybersecurity
+investigations.
+    (d) As used in this section:
+    (1) "Artificial intelligence platform of concern" means:
+    (A) The artificial intelligence model commonly referred to as
+DeepSeek and any artificial intelligence model that is owned or
+controlled, directly or indirectly, by Hangzhou DeepSeek Artificial
+Intelligence Basic Technology Research Company or a subsidiary or
+successor company of such company; or
+    (B) an artificial intelligence model that is controlled, directly or
+indirectly, by a country of concern;
+    (2) (A) "country of concern" means the following:
+    (i) People's republic of China, including the Hong Kong special
+administrative region;
+    (ii) republic of Cuba;
+    (iii) islamic republic of Iran;
+    (iv) democratic people's republic of Korea;
+    (v) Russian federation; and
+    (vi) Bolivarian republic of Venezuela.
+    (B) "Country of concern" does not include the republic of China
+(Taiwan); and
+    (3) "state agency" means any state office or officers, department,
+board, commission, institution or bureau or any agency, division or unit
+thereof.
+    Sec. 2. (a) As used in this section:
+    (1) "DNA" means deoxyribonucleic acid, ribonucleic acid and
+chromosomes that may be analyzed to detect heritable diseases or
+conditions, including the identification of carriers, predicting risk of
+disease or establishing a clinical diagnosis.
+    (2) "Foreign adversary" means the people's republic of China, the
+Russian federation, the Islamic republic of Iran, the democratic people's
+republic of Korea, the republic of Cuba, the Venezuelan regime of
+Nicolas Maduro or the Syrian Arab republic, including any agent of or
+any other entity under significant control of such foreign adversary, or
+any other entity deemed to be a foreign adversary by the governor in
+consultation with the adjutant general.
+    (3) "Genetic sequencer" means any device or platform used to
+conduct genetic analysis, resequencing, isolation or other genetic
+research.
+    (4) "Human genome" means DNA or ribonucleic acid that is
+found in human cells.
+    (5) "Medical facility" means a facility for the delivery of health
+services that receives state moneys, including interagency pass-through
+appropriations from the federal government, and conducts research or
+testing on, with or relating to genetic analysis or the human genome.
+    (6) "Operational or research software" means computer programs
+         SENATE Substitute for HOUSE BILL No. 2313—page 2
+
+used for the operation, control, analysis or other necessary functions of
+genetic analysis or genetic sequencers.
+    (7) "Research facility" means a facility that receives state moneys,
+including interagency pass-through appropriations from the federal
+government and conducts research on, with or relating to genetic
+analysis or the human genome.
+    (b) No medical facility or research facility in this state shall utilize
+genetic sequencers or operational or research software used for genetic
+analysis produced in or by a foreign adversary, a state-owned enterprise
+of a foreign adversary, a company domiciled within a foreign adversary
+or a company-owned or company-controlled subsidiary of a company
+domiciled within a foreign adversary for the purpose of conducting
+genetic analysis.
+    (c) All genetic sequencers and operational and research software
+used for genetic sequencers or genetic analysis devices prohibited
+under subsection (b) that is not permanently disabled shall be removed
+and replaced with genetic sequencers and operational and research
+software used for genetic sequencers or genetic analysis that is not
+prohibited under subsection (b).
+    (d) Subject to appropriations, a medical facility or research facility
+in this state may request a reimbursement from the state treasurer up to
+the cost of replacement of the equipment and software prohibited under
+subsection (b) from the state treasurer, provided the request includes
+purchase orders and is submitted prior to October 1, 2025.
+    (e) The provisions of this section are severable. If any provision of
+this section is declared unconstitutional or invalid, or the application of
+any portion of the act to any person or circumstance is held
+unconstitutional or invalid, the invalidity shall not affect other portions
+of the act that can be given effect without the invalid portion or
+application, and the applicability of such other portions of the act to any
+person or circumstance shall remain valid and enforceable.
+    Sec. 3. This act shall take effect and be in force from and after its
+publication in the statute book.
+
+I hereby certify that the above BILL originated in the House, and passed
+that body
+
+
+
+
+HOUSE concurred in
+SENATE amendments __________________________________________________________________
+
+
+                                                               Speaker of the House.
+
+
+
+                                                            Chief Clerk of the House.
+
+Passed the SENATE
+         as amended
+
+
+                                                                 President of the Senate.
+
+
+
+                                                                 Secretary of the Senate.
+
+APPROVED _______________________________________________
+
+
+                                                                              Governor.
+

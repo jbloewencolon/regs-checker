@@ -1,0 +1,206 @@
+               Sixty-ninth Legislative Assembly of North Dakota
+           In Regular Session Commencing Tuesday, January 7, 2025
+
+                                      HOUSE BILL NO. 1613
+               (Representatives Hendrix, Christianson, Koppelman, VanWinkle, Toman)
+                              (Senators Castaneda, Magrum, Paulson)
+
+
+AN ACT to amend and reenact sections 29-29.4-01, 29-29.4-02, 29-29.4-03, 29-29.4-04, 29-29.4-05,
+     and 29-29.4-06 of the North Dakota Century Code, relating to law enforcement use of a robot.
+
+BE IT ENACTED BY THE LEGISLATIVE ASSEMBLY OF NORTH DAKOTA:
+
+    SECTION 1. AMENDMENT. Section 29-29.4-01 of the North Dakota Century Code is amended and
+reenacted as follows:
+   29-29.4-01. Definitions.
+   As used in this chapter:
+    1.   "Autonomously" means to operate or govern itself without direct human control.
+    2.   "Flight data" means imaging or other observation recording.
+  2.3.   "Flight information" means flight duration, flight path, and mission objective.
+  3.4.   "Law enforcement agency or agents" has the meaning provided for law enforcement officer in
+         section 12.1-01-04.
+  4.5.   "Less than lethal weapon" means a designed and manufactured object, substance, or weapon
+         that does not create a substantial risk of serious bodily injury or death when used by an
+         individual with proper training.
+    6.   "Lethal weapon" means an object, substance, or device designed to cause serious bodily
+         injury or death.
+    7.   "Remotely" means directly controlled by human action and decisions.
+    8.   "Robot" means a powered artificial machine or system that upon activation will operate in
+         whole or in part autonomously to perform physical tasks or decisionmaking without real-time
+         human control. The term includes a system capable of using force, conducting surveillance, or
+         moving independent of direct human input. The term does not include a law enforcement
+         body-worn camera, a law enforcement in-car camera or license plate reader, or any other law
+         enforcement camera that does not require a search warrant.
+    9.   "Unmanned aerial vehicle" means any aerial vehicle that is operated without the possibility of
+         direct human intervention within or on the aerial vehicle. The term does not include satellites.
+ 5.10.   "Unmanned aerial vehicle system" means an unmanned aerial vehicle and associated
+         elements, including communication links and the components that control the unmanned
+         aerial vehicle, which are required for the pilot in command to operate safely and efficiently in
+         state airspace.
+    SECTION 2. AMENDMENT. Section 29-29.4-02 of the North Dakota Century Code is amended and
+reenacted as follows:
+                                        H. B. NO. 1613 - PAGE 2
+
+
+    29-29.4-02. Limitations on use of unmanned aerial vehicle systemsystems and robots.
+    1.   Information obtained from an unmanned aerial vehicle or robot is not admissible in a
+         prosecution or proceeding within the state unless the information was obtained:
+         a.   Pursuant to the authority of a search warrant; or
+         b.   In accordance with exceptions to the warrant requirement.
+    2.   Information obtained from the operation of an unmanned aerial vehicle or robot may not be
+         used in an affidavit of probable cause in an effort to obtain a search warrant, unless the
+         information was obtained under the circumstances described in subdivision a or b of
+         subsection 1 or was obtained through the monitoring of public lands or international borders.
+    SECTION 3. AMENDMENT. Section 29-29.4-03 of the North Dakota Century Code is amended and
+reenacted as follows:
+    29-29.4-03. Warrant requirements.
+     A warrant for the use of an unmanned aerial vehicle or robot for the purpose of surveillance must
+satisfy the requirements of the Constitution of North Dakota. In addition, the warrant must contain a
+data collection statement that includes:
+    1.   The persons that will have the power to authorize the use of the unmanned aerial vehicle or
+         robot;
+    2.   The locations in which the unmanned aerial vehicle system or robot will operate;
+    3.   The maximum period for which the unmanned aerial vehicle system will operate in each flight
+         or deployment; and
+    4.   Whether the unmanned aerial vehicle system or robot will collect information or data about
+         individuals or groups of individuals, and if so:
+         a.   The circumstances under which the unmanned aerial vehicle system or robot will be
+              used; and
+         b.   The specific kinds of information or data the unmanned aerial vehicle system or robot will
+              collect about individuals and how that information or data, as well as conclusions drawn
+              from that information or data, will be used, disclosed, and otherwise handled, including:
+              (1)   The period for which the information or data will be retained; and
+              (2)   Whether the information or data will be destroyed, and if so, when and how the
+                    information or data will be destroyed.
+    SECTION 4. AMENDMENT. Section 29-29.4-04 of the North Dakota Century Code is amended and
+reenacted as follows:
+    29-29.4-04. Exceptions.
+    This chapter does not prohibit any use of an unmanned aerial vehicle or robot for surveillance
+during the course of:
+    1.   Patrol of national borders. The use of an unmanned aerial vehicle or robot to patrol within
+         twenty-five miles [40.23 kilometers] of a national border, for purposes of policing that border to
+         prevent or deter the illegal entry of any individual, illegal substance, or contraband.
+    2.   Exigent circumstances. The use of an unmanned aerial vehicle or robot by a law enforcement
+         agency is permitted when exigent circumstances exist. For the purposes of this subsection,
+                                       H. B. NO. 1613 - PAGE 3
+
+
+        exigent circumstances exist when a law enforcement agency possesses reasonable suspicion
+        that absent swift preventative action, there is an imminent danger to life or bodily harm.
+   3.   An environmental or weather-related catastrophe. The use of an unmanned aerial vehicle or
+        robot by state or local authorities to preserve public safety, protect property, survey
+        environmental damage to determine if a state of emergency should be declared, or conduct
+        surveillance for the assessment and evaluation of environmental or weather-related damage,
+        erosion, flood, or contamination.
+   4.   Research, education, training, testing, or development efforts undertaken by or in conjunction
+        with a school or institution of higher education within the state and its political subdivisions, nor
+        to public and private collaborators engaged in mutually supported efforts involving research,
+        education, training, testing, or development related to unmanned aerial vehicle systems or,
+        unmanned aerial vehicle system technologies, or robot and potential applications.
+    SECTION 5. AMENDMENT. Section 29-29.4-05 of the North Dakota Century Code is amended and
+reenacted as follows:
+   29-29.4-05. Prohibited use - Exceptions.
+   1.   A law enforcement agency may not authorize the use of, including granting a permit to use, an
+        unmanned aerial vehicle armed with any lethal weapons.
+   2.   This chapter prohibits any use of an unmanned aerial vehicle or robot for:
+        a.   Domestic use in private surveillance. A law enforcement agency may not authorize the
+             use of, including granting a permit to use, an unmanned aerial vehicle or robot to permit
+             any private person to conduct surveillance on any other private person without the
+             express, informed consent of that other person or the owner of any real property on
+             which that other private person is present.
+        b.   Surveillance of the lawful exercise of constitutional rights, unless the surveillance is
+             otherwise allowed under this chapter.
+   3.   A law enforcement agency may not authorize the use of a robot to deploy a lethal weapon,
+        unless the weapon is controlled remotely, cannot be activated autonomously, and is used to:
+        a.   Neutralize an inanimate object at risk of exploding or causing an immediate threat to
+             public safety or property; or
+        b.   Prevent an imminent and substantial risk of serious bodily injury or death to a law
+             enforcement officer or another individual, in a circumstance where the use of lethal force
+             by an officer would be legally justified.
+   4.   A law enforcement agency may not authorize the use of an unmanned aerial vehicle or robot
+        to deploy a less than lethal weapon, unless the weapon is controlled remotely and cannot be
+        activated autonomously.
+   5.   A law enforcement agency, before authorizing any use of force, shall adopt a policy on the use
+        of force by an unmanned aerial vehicle or robot, which includes the individuals with authority
+        to authorize the use of force by an unmanned aerial vehicle or robot.
+    SECTION 6. AMENDMENT. Section 29-29.4-06 of the North Dakota Century Code is amended and
+reenacted as follows:
+                                   H. B. NO. 1613 - PAGE 4
+
+
+29-29.4-06. Documentation of unmanned aerial vehicle or robot use.
+1.   The person authorized to conduct the surveillance under this chapter shall document all use of
+     an unmanned aerial vehicle or robot for surveillance. The person shall document all
+     surveillance flights as to duration, flight path, and mission objectives.
+2.   The flight information must be verified as accurate and complete by the supervising person
+     authorized by a court to conduct the surveillance.
+3.   The flight information required under this section must be retained for five years.
+4.   Any imaging or any other forms of data lawfully obtained under this chapter which are not
+     accompanied by a reasonable and articulable suspicion that the images or data contain
+     evidence of a crime, or are relevant to an ongoing investigation or trial, may not be retained for
+     more than ninety days.
+5.   Except for the operational capabilities of the unmanned aerial vehicle system or robot and
+     other operational information strictly related to the technical conduct and physical security of
+     the surveillance operation, a person accused of a crime that includes evidence gathered
+     through the use of an unmanned aerial vehicle system or robot surveillance may obtain all
+     information relating to the person acquired in the course of the surveillance through subpoena
+     and discovery proceedings available in criminal proceedings.
+6.   A law enforcement agency deploying a robot armed with a lethal weapon shall document the
+     requirements provided in section 29-29.4-05.
+7.   Any other person that has an interest in obtaining the documentation required by this section
+     may obtain that documentation pursuant to chapter 44-04.
+                                         H. B. NO. 1613 - PAGE 5
+
+
+
+
+                        ____________________________                  ____________________________
+                        Speaker of the House                          President of the Senate
+
+
+
+
+                        ____________________________                  ____________________________
+                        Chief Clerk of the House                      Secretary of the Senate
+
+
+
+
+This certifies that the within bill originated in the House of Representatives of the Sixty-ninth Legislative
+Assembly of North Dakota and is known on the records of that body as House Bill No. 1613.
+
+
+House Vote:       Yeas 91           Nays 0              Absent 3
+
+Senate Vote:      Yeas 46           Nays 0              Absent 1
+
+
+
+                                                                      ____________________________
+                                                                      Chief Clerk of the House
+
+
+Received by the Governor at ________M. on _____________________________________, 2025.
+
+Approved at ________M. on __________________________________________________, 2025.
+
+
+
+
+                                                                      ____________________________
+                                                                      Governor
+
+
+
+
+Filed in this office this ___________day of _______________________________________, 2025,
+
+at ________ o’clock ________M.
+
+
+
+
+                                                                      ____________________________
+                                                                      Secretary of State
+

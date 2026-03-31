@@ -1,0 +1,368 @@
+ - 2025
+69th Legislature 2025                                                                                               SB 25
+
+
+
+
+       AN ACT REGULATING THE USE OF DEEPFAKES IN ELECTION COMMUNICATIONS AND
+
+       ELECTIONEERING COMMUNICATIONS; PROVIDING DEFINITIONS; PROVIDING EXCEPTIONS;
+
+       PROVIDING FOR INJUNCTIVE RELIEF, ACTUAL DAMAGES, AND PUNITIVE DAMAGES; PROVIDING FOR
+
+       THE FILING OF A COMPLAINT WITH THE COMMISSIONER OF POLITICAL PRACTICES; AND PROVIDING
+
+       PENALTIES.”
+
+
+
+               WHEREAS, the revolutionary innovations in generative artificial intelligence systems capable of
+
+       producing image, audio, video, text, and multimedia content pose a threat to free and fair elections in the State
+
+       of Montana; and
+
+               WHEREAS, AI-generated content may be used to create deepfakes that falsely depict a candidate's
+
+       speech or action in order to spread misinformation and disinformation at scale and with unprecedented speed;
+
+       and
+
+               WHEREAS, a deepfake is comparable to forcing a person to say or do something in a video recorded
+
+       under threat, in which the person appears to say or do something the person would not normally say or do; and
+
+               WHEREAS, a voter's opinion of a candidate may be irreparably tainted by a fabricated representation
+
+       of an officeholder, incumbent, or candidate saying or doing something the person did not say or do; and
+
+               WHEREAS, these false, negative portrayals may exist indefinitely once posted on the Internet and
+
+       permanently damage an officeholder, incumbent, or candidate's reputation and even put the person's safety at
+
+       risk.
+
+
+
+       BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF MONTANA:
+
+
+
+               Section 1.    Definitions. As used in [sections 1 through 4], unless the context clearly indicates
+
+       otherwise, the following definitions apply:
+
+                                                              -1-                      Authorized Print Version – SB 25
+
+                                                                                                       ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                    SB 25
+
+
+                 (1)     (a) "AI-generated content" means image, video, audio, multimedia, or text content that is
+
+       substantially created or modified by generative artificial intelligence in a manner that materially alters the
+
+       meaning or significance that a reasonable person understands from the content.
+
+                 (b)     The term does not include image, video, audio, multimedia, or text content that is minimally
+
+       edited, adjusted, or enhanced by generative artificial intelligence in a manner that does not materially alter the
+
+       meaning or significance that a reasonable person understands from the content.
+
+                 (2)     "Candidate" has the same meaning as provided in 13-1-101(8) and, for the purposes of
+
+       [sections 1 through 4], also includes an incumbent or current officeholder.
+
+                 (3)     "Deepfake" means AI-generated content or synthetic media that depicts a candidate or political
+
+       party with the intent to injure the reputation of the candidate or party or otherwise deceive a voter. A deepfake:
+
+                 (a)     appears to a reasonable person to depict an individual saying or doing something that did not
+
+       occur in reality; or
+
+                 (b)     provides a reasonable person a fundamentally different understanding or impression of the
+
+       appearance, action, or speech than a reasonable person would have from the unaltered, original version of the
+
+       image, audio recording, or video recording.
+
+                 (4)     "Generative artificial intelligence" means an artificial intelligence system capable of generating
+
+       novel image, video, audio, multimedia, or text content based on prompts or other forms of data provided by a
+
+       person.
+
+                 (5)     "Synthetic media" means an image, audio recording, or video recording of an individual's
+
+       appearance, speech, or conduct that has been created or intentionally manipulated with the use of generative
+
+       artificial intelligence or other digital technology to create a realistic but false image, audio, or video.
+
+
+
+                 Section 2.   Use of deepfakes in election communications and electioneering communications --
+
+       disclosure requirements -- exceptions. (1) (a) Except as provided in subsection (1)(b), a person, corporation,
+
+       committee, political party, or other entity, working in an official election capacity, may not, within 60 days of the
+
+       initiation of voting in an election at which a candidate for elective office appears on the ballot, distribute,
+
+       disseminate, publish, broadcast, transmit, or display pay for or sponsor the production, creation, or distribution
+
+       of an election communication or an electioneering communication that the person, corporation, committee,
+
+
+                                                                 -2-                       Authorized Print Version – SB 25
+
+                                                                                                            ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                   SB 25
+
+
+       political party, or other entity knew or should have known is a deepfake of a candidate or political party on the
+
+       ballot.
+
+                 (b)     The prohibition in subsection (1)(a) does not apply to an election communication or
+
+       electioneering communication that includes a disclosure stating, "This _____ (image/audio/video/multimedia)
+
+       has been significantly edited by artificial intelligence and depicts speech or conduct that falsely appears to be
+
+       authentic or truthful".
+
+                 (c)     The disclosure required in subsection (1)(b) must:
+
+                 (i)     for a printed communication, be stated in bold font with a font size of at least 12 points;
+
+                 (ii)    for a television or video communication, be clearly readable throughout the communication and
+
+       occupy at least 4% of the vertical picture height;
+
+                 (iii)   for a public internet communication that includes text or graphic components, be viewable
+
+       without the user taking any action and be large enough to be clearly readable; or
+
+                 (iv)    for an audio component of a communication, be at least 10 seconds 8 seconds in length and
+
+       be spoken in a clearly audible and intelligible manner at either the beginning or the end of the audio component
+
+       of the communication.
+
+                 (2)     The following exceptions apply to this section prohibition in subsection (1)(a) and the penalties
+
+       in [sections 3 and 4] do not apply to the following:
+
+                 (a)     A a radio or television broadcasting station, including a cable television, satellite television, or
+
+       streaming service operator, or website, or programmer, or producer, may broadcast an advertisement or
+
+       transmit a deepfake as part of a bona fide newscast, news interview, news documentary, or on-the-spot
+
+       coverage of a bona fide news event if the broadcast clearly acknowledges through content context or a
+
+       disclaimer, in a manner that can be easily read or heard, that the advertisement was content being broadcast or
+
+       transmitted may be generated in whole or in part by using artificial intelligence and does may not accurately
+
+       represent the speech or conduct of the depicted individual. ;
+
+                 (b)     A a radio or television broadcasting station, including a cable television, satellite television, or
+
+       streaming service operator, or website, or programmer, or producer, may broadcast an advertisement that the
+
+       station or streaming service is paid to broadcast if the station or streaming service shows that its disclosure
+
+       requirements are consistent with the requirements provided in subsections (1)(b) and (1)(c) and that it provided
+
+
+                                                                 -3-                       Authorized Print Version – SB 25
+
+                                                                                                            ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                    SB 25
+
+
+       those disclosure requirements to each person that purchased the broadcast or streaming of the advertisement
+
+       when it is paid to broadcast a deepfake ,, or in cases in which federal law requires broadcasters to air
+
+       advertisements from legally qualified candidates. ;
+
+                (c)      An advertisement a deepfake that reasonably constitutes satire or parody may be published,
+
+       posted, or distributed if the advertisement includes a disclaimer consistent with the requirements provided in
+
+       subsections (1)(b) and (1)(c). ;
+
+                (d)      A a distribution platform may publish, post, or distribute an advertisement or a prerecorded
+
+       phone message if the distribution platform shows that its disclaimer requirements are consistent with the
+
+       requirements provided in subsections (1)(b) and (1)(c) and that it provided those disclaimer requirements to the
+
+       person that purchased the distribution of the advertisement or prerecorded phone message by or on the
+
+       distribution platform. ; or
+
+                (e)      a provider of an interactive computer service as defined in 47 U.S.C. 230, or an information
+
+       service or a telecommunications service, both as defined in 47 U.S.C. 153, for content provided by another
+
+       party.
+
+
+
+                Section 3.    Injunctive and civil relief. (1) In addition to any other penalties or remedies provided by
+
+       law, a candidate or political party representing the candidate aggrieved by a violation of [section 2] may
+
+       maintain an action against any violator in any court of equitable jurisdiction to prevent, restrain, or enjoin the
+
+       violation.
+
+                (2)      An action commenced pursuant to subsection (1) must be expedited by the district court and
+
+       given preference over all other matters currently before the district court upon showing of present or ongoing
+
+       harm.
+
+                (3)      If a violation of [section 2] is established, the court shall enjoin and restrain to otherwise prohibit
+
+       the violation and, in addition, shall assess in favor of the plaintiff and against the defendant the costs of the suit
+
+       and reasonable attorney fees.
+
+                (4)      In the action, it is not necessary that actual damages to the plaintiff be alleged or proved, but
+
+       when alleged and proved, the plaintiff in the action, in addition to injunctive relief and fees and costs of suit, is
+
+       entitled to recover from the defendant the amount of actual damages sustained by the plaintiff and up to
+
+
+                                                                 -4-                       Authorized Print Version – SB 25
+
+                                                                                                            ENROLLED BILL
+ - 2025
+69th Legislature 2025                                                                                                      SB 25
+
+
+       $10,000 in punitive damages.
+
+               (5)        In any civil action alleging a violation of [section 2], the plaintiff bears the burden of establishing
+
+       the violation by clear and convincing evidence.
+
+
+
+               Section 4.      Penalties. (1) A complaint of [section 2] may be filed with the commissioner of political
+
+       practices pursuant to 13-37-111. A sufficiency finding from the commissioner of an investigation into a
+
+       complaint filed under 13-37-111 is subject to civil penalties under 13-37-128 imposed by the commissioner or
+
+       county attorney.
+
+               (2)        A second sufficiency finding by the commissioner must be referred to the county attorney for
+
+       misdemeanor prosecution. Upon conviction, a violation is punishable by a fine of not more than $500,
+
+       imprisonment in county jail for not more than 6 months, or both.
+
+               (3)        A third sufficiency finding by the commissioner must be referred to the attorney general or
+
+       county attorney for felony prosecution. Upon conviction, a violation is punishable by a fine of not more than
+
+       $5,000, imprisonment in the state prison for not more than 2 years, or both.
+
+               (4)        All penalties accruing under this section are cumulative to each other, and a suit for or recovery
+
+       of one is not a bar to the recovery of any other penalty.
+
+               (5)        A prosecution under this section is not a bar to enforcement by injunction or other appropriate
+
+       civil or administrative remedies.
+
+
+
+               Section 5.      Codification instruction. [Sections 1 through 4] are intended to be codified as a new part
+
+       of Title 13, chapter 35, and the provisions of Title 13, chapter 35, apply to [sections 1 through 4].
+
+
+
+               Section 6.      Severability. If a part of [this act] is invalid, all valid parts that are severable from the
+
+       invalid part remain in effect. If a part of [this act] is invalid in one or more of its applications, the part remains in
+
+       effect in all valid applications that are severable from the invalid applications.
+
+
+
+                                                                 - END -
+
+
+
+
+                                                                   -5-                       Authorized Print Version – SB 25
+
+                                                                                                              ENROLLED BILL
+I hereby certify that the within bill,
+
+SB 25, originated in the Senate.
+
+
+
+
+___________________________________________
+
+Secretary of the Senate
+
+
+
+
+___________________________________________
+
+President of the Senate
+
+
+
+Signed this _______________________________day
+
+of____________________________________, 2025.
+
+
+
+
+___________________________________________
+
+Speaker of the House
+
+
+
+Signed this _______________________________day
+of____________________________________, 2025.
+                                       SENATE BILL NO. 25
+
+
+
+                                     INTRODUCED BY J. ELLIS
+
+
+
+     BY REQUEST OF THE STATE ADMINISTRATION AND VETERANS' AFFAIRS INTERIM COMMITTEE
+
+AN    ACT   REGULATING   THE   USE    OF    DEEPFAKES    IN   ELECTION   COMMUNICATIONS   AND
+
+ELECTIONEERING     COMMUNICATIONS;         PROVIDING    DEFINITIONS;   PROVIDING   EXCEPTIONS;
+
+PROVIDING FOR INJUNCTIVE RELIEF, ACTUAL DAMAGES, AND PUNITIVE DAMAGES; PROVIDING FOR
+
+THE FILING OF A COMPLAINT WITH THE COMMISSIONER OF POLITICAL PRACTICES; AND PROVIDING
+
+PENALTIES.”
+

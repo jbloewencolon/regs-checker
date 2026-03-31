@@ -1,0 +1,361 @@
+     Enrolled Copy                                                                               H.B. 452
+ 1                                    Artificial Intelligence Amendments
+                                              2025 GENERAL SESSION
+                                                  STATE OF UTAH
+                                            Chief Sponsor: Jefferson Moss
+                                       Senate Sponsor: Kirk A. Cullimore
+ 2
+ 3    LONG TITLE
+ 4    General Description:
+ 5        This bill enacts provisions relating to the regulation of mental health chatbots that use
+ 6    artificial intelligence technology.
+ 7    Highlighted Provisions:
+ 8        This bill:
+ 9        ▸ defines terms;
+10        ▸ establishes protections for users of mental health chatbots that use artificial intelligence
+11    technology;
+12        ▸ prohibits certain uses of personal information by a mental health chatbot;
+13        ▸ requires a mental health chatbot to make certain disclosures to users;
+14        ▸ provides enforcement authority to the Division of Consumer Protection;
+15        ▸ establishes requirements for creating and maintaining policies for mental health chatbots;
+16        ▸ creates rebuttable presumptions for suppliers who comply with policy requirements; and
+17        ▸ provides a severability clause.
+18    Money Appropriated in this Bill:
+19        None
+20    Other Special Clauses:
+21        None
+22    Utah Code Sections Affected:
+23    AMENDS:
+24        13-2-1, as last amended by Laws of Utah 2024, Chapter 132
+25    ENACTS:
+26        13-72a-101, Utah Code Annotated 1953
+27        13-72a-201, Utah Code Annotated 1953
+     H.B. 452                                                                       Enrolled Copy
+
+
+28         13-72a-202, Utah Code Annotated 1953
+29         13-72a-203, Utah Code Annotated 1953
+30         13-72a-204, Utah Code Annotated 1953
+31         13-72a-301, Utah Code Annotated 1953
+32         58-60-118, Utah Code Annotated 1953
+33
+34     Be it enacted by the Legislature of the state of Utah:
+35           Section 1. Section 13-2-1 is amended to read:
+36           13-2-1 . Consumer protection division established -- Functions.
+37     (1) There is established within the Department of Commerce the Division of Consumer
+38         Protection.
+39     (2) The division shall administer and enforce the following:
+40         (a) Chapter 10a, Music Licensing Practices Act;
+41         (b) Chapter 11, Utah Consumer Sales Practices Act;
+42         (c) Chapter 15, Business Opportunity Disclosure Act;
+43         (d) Chapter 20, New Motor Vehicle Warranties Act;
+44         (e) Chapter 21, Credit Services Organizations Act;
+45         (f) Chapter 22, Charitable Solicitations Act;
+46         (g) Chapter 23, Health Spa Services Protection Act;
+47         (h) Chapter 25a, Telephone and Facsimile Solicitation Act;
+48         (i) Chapter 26, Telephone Fraud Prevention Act;
+49         (j) Chapter 28, Prize Notices Regulation Act;
+50         (k) Chapter 32a, Pawnshop, Secondhand Merchandise, and Catalytic Converter
+51              Transaction Information Act;
+52         (l) Chapter 34, Utah Postsecondary School and State Authorization Act;
+53         (m) Chapter 41, Price Controls During Emergencies Act;
+54         (n) Chapter 42, Uniform Debt-Management Services Act;
+55         (o) Chapter 49, Immigration Consultants Registration Act;
+56         (p) Chapter 51, Transportation Network Company Registration Act;
+57         (q) Chapter 52, Residential Solar Energy Disclosure Act;
+58         (r) Chapter 53, Residential, Vocational and Life Skills Program Act;
+59         (s) Chapter 54, Ticket Website Sales Act;
+60         (t) Chapter 56, Ticket Transferability Act;
+61         (u) Chapter 57, Maintenance Funding Practices Act;
+
+                                                     -2-
+     Enrolled Copy                                                                                 H.B. 452
+
+
+62        (v) Chapter 61, Utah Consumer Privacy Act;
+63        [(w) Chapter 63, Utah Social Media Regulation Act;]
+64        [(x)] (w) Chapter 64, Vehicle Value Protection Agreement Act;
+65        [(y)] (x) Chapter 65, Utah Commercial Email Act;
+66        [(z)] (y) Chapter 67, Online Dating Safety Act;
+67        [(aa)] (z) Chapter 68, Lawyer Referral Consultants Registration Act;
+68        [(bb)] (aa) Chapter 70, Automatic Renewal Contracts Act[; and] ;
+69        [(cc)] (bb) Chapter 71, Utah Minor Protection in Social Media Act[.] ; and
+70        (cc) Chapter 72a, Artificial Intelligence Applications Relating to Mental Health.
+71    (3) In accordance with Title 63G, Chapter 3, Utah Administrative Rulemaking Act, the
+72        division may make rules to establish:
+73        (a) a public list that identifies a person who:
+74            (i) violates a chapter described in Subsection (2);
+75            (ii) without proper legal justification, fails to comply with an order, subpoena,
+76                judgment, or other legal process issued by:
+77                (A) the division; or
+78                (B) a court of competent jurisdiction; or
+79            (iii) breaches a settlement agreement, stipulation, assurance of voluntary compliance,
+80                or similar instrument signed by the person and the division; and
+81        (b) a process by which a person may be removed from the list the division establishes as
+82            described in Subsection (3)(a).
+83          Section 2. Section 13-72a-101 is enacted to read:
+84           CHAPTER 72a. ARTIFICIAL INTELLIGENCE APPLICATIONS RELATING TO
+
+85
+                                                  MENTAL HEALTH
+
+86                                            Part 1. General Provisions
+
+87          13-72a-101 . Definitions.
+88       As used in this chapter:
+89    (1) "Artificial intelligence" means the same as that term is defined in Section 13-72-101.
+90    (2) "Artificial intelligence technology" means the same as that term is defined in Section
+91        13-72-101.
+92    (3) "Confidential communications" means the same as that term is defined in Section
+93        58-60-102.
+
+                                                     -3-
+      H.B. 452                                                                                Enrolled Copy
+
+
+ 94     (4) "Covered entity" means the same as that term is defined in 45 C.F.R. Sec. 160.103.
+ 95     (5) "Division" means the Division of Consumer Protection created in Section 13-2-1.
+ 96     (6) "Generative artificial intelligence" means an artificial intelligence technology system
+ 97         that:
+ 98         (a) is trained on data;
+ 99         (b) is designed to simulate human conversation with a consumer through one or more of
+100              the following:
+101              (i) text;
+102              (ii) audio; or
+103              (iii) visual communication; and
+104         (c) generates non-scripted outputs similar to outputs created by a human, with limited or
+105              no human oversight.
+106     (7) "Health care provider" means the same as that term is defined in 45 C.F.R. Sec. 160.103.
+107     (8) "Health plan" means the same as that term is defined in 45 C.F.R. Sec. 160.103.
+108     (9) "Individually identifiable health information" means any information, whether oral or
+109         recorded in any form or medium, that relates to the physical or mental health or
+110         condition of an individual.
+111     (10)(a) "Mental health chatbot" means an artificial intelligence technology that:
+112              (i) uses generative artificial intelligence to engage in interactive conversations with a
+113                  user of the mental health chatbot similar to the confidential communications that
+114                  an individual would have with a licensed mental health therapist; and
+115              (ii) a supplier represents, or a reasonable person would believe, can or will provide
+116                  mental health therapy or help a user manage or treat mental health conditions.
+117         (b) "Mental health chatbot" does not include artificial intelligence technology that only:
+118              (i) provides scripted output, such as guided meditations or mindfulness exercises; or
+119              (ii) analyzes an individual's input for the purpose of connecting the individual with a
+120                  human mental health therapist.
+121     (11) "Mental health therapist" means the same as that term is defined in Section 58-60-102.
+122     (12) "Personal data" means the same as that term is defined in Section 63A-19-101.
+123     (13) "Scientific research development" means research:
+124         (a) conducted by a researcher affiliated with:
+125              (i) an institution of higher education;
+126              (ii) a research organization; or
+127              (iii) a healthcare facility; and
+
+                                                       -4-
+      Enrolled Copy                                                                                  H.B. 452
+
+
+128        (b) that is:
+129            (i) approved by an institutional review board; and
+130            (ii) conducted in accordance with applicable ethics requirements for human subject
+131                 research.
+132    (14) "Supplier" means the same as that term is defined in Section 13-11-3.
+133    (15) "Utah user" means an individual located in the state at the time the individual accesses
+134        or uses a mental health chatbot.
+135    (16) "User input" means content provided to a mental health chatbot by a Utah user.
+136          Section 3. Section 13-72a-201 is enacted to read:
+137                             Part 2. Protections for Users of Mental Health Chatbots
+
+138          13-72a-201 . Protection of personal information.
+139    (1) A supplier of a mental health chatbot may not sell to or share with any third party any:
+140        (a) individually identifiable health information of a Utah user; or
+141        (b) user input of a Utah user.
+142    (2) Subsection (1) does not apply to individually identifiable health information:
+143        (a) requested by a health care provider with the consent of the Utah user;
+144        (b) provided to a health plan of a Utah user upon request of the Utah user; or
+145        (c) shared in compliance with Subsection (3).
+146    (3)(a) A supplier may share individually identifiable health information necessary to
+147        ensure the effective functionality of the mental health chatbot with another party with
+148        which the supplier has a contract related to such functionality.
+149        (b) When sharing information under Subsection (3)(a), the supplier and the other entity
+150            shall comply with all applicable privacy and security provisions of 45 C.F.R. Part
+151            160 and 45 C.F.R. Part 164, Subparts A and E, as if the supplier were a covered
+152            entity and the other entity were a business associate, as such terms are defined in 45
+153            C.F.R. 160.103.
+154          Section 4. Section 13-72a-202 is enacted to read:
+155          13-72a-202 . Restrictions on advertising.
+156    (1) A supplier may not use a mental health chatbot to advertise a specific product or service
+157        to a Utah user in a conversation between the Utah user and the mental health chatbot
+158        unless the mental health chatbot:
+159        (a) clearly and conspicuously identifies the advertisement as an advertisement; and
+160        (b) clearly and conspicuously discloses to the Utah user any:
+161            (i) sponsorship;
+                                                     -5-
+      H.B. 452                                                                                Enrolled Copy
+
+
+162              (ii) business affiliation; or
+163              (iii) agreement that the supplier has with a third party to promote, advertise, or
+164                  recommend the product or service.
+165     (2) A supplier of a mental health chatbot may not use a Utah user's input to:
+166         (a) determine whether to display an advertisement for a product or service to the Utah
+167              user, unless the advertisement is for the mental health chatbot itself;
+168         (b) determine a product, service, or category of product or service, to advertise to the
+169              Utah user; or
+170         (c) customize how an advertisement is presented to the Utah user.
+171     (3) This section does not prohibit a mental health chatbot from recommending that a Utah
+172         user seek counseling, therapy, or other assistance from a licensed professional, including
+173         a specific licensed professional.
+174           Section 5. Section 13-72a-203 is enacted to read:
+175           13-72a-203 . Disclosure requirements.
+176     (1) A supplier of a mental health chatbot shall cause the mental health chatbot to clearly
+177         and conspicuously disclose to a Utah user that the mental health chatbot is an artificial
+178         intelligence technology and not a human.
+179     (2) The disclosure described in Subsection (1) shall be made:
+180         (a) before the Utah user may access the features of the mental health chatbot;
+181         (b) at the beginning of any interaction with the Utah user if the Utah user has not
+182              accessed the mental health chatbot within the previous seven days; and
+183         (c) any time a Utah user asks or otherwise prompts the mental health chatbot about
+184              whether artificial intelligence is being used.
+185           Section 6. Section 13-72a-204 is enacted to read:
+186           13-72a-204 . Violations -- Enforcement authority.
+187     (1) The division shall administer and enforce the provisions of this chapter in accordance
+188         with Chapter 2, Division of Consumer Protection.
+189     (2) The attorney general shall:
+190         (a) upon request, give legal advice to the division; and
+191         (b) act as counsel for the division in the exercise of the division's responsibilities under
+192              this chapter.
+193     (3) In addition to the division's enforcement powers under Chapter 2, Division of Consumer
+194         Protection:
+195         (a) the division director may impose an administrative fine of up to $2,500 for each
+
+                                                       -6-
+      Enrolled Copy                                                                                     H.B. 452
+
+
+196            violation of this chapter; and
+197        (b) the division may bring an action in a court of competent jurisdiction to enforce a
+198            provision of this chapter.
+199    (4) In a court action by the division to enforce a provision of this chapter, the court may:
+200        (a) declare that an act or practice violates a provision of this chapter;
+201        (b) issue an injunction for a violation of this part;
+202        (c) order disgorgement of money received in violation of this chapter;
+203        (d) order payment of disgorged money to an injured purchaser or consumer;
+204        (e) impose a fine of up to $2,500 for each violation of this chapter; or
+205        (f) award other relief that the court determines reasonable and necessary.
+206    (5) If a court awards judgment or injunctive relief to the division, the court shall award the
+207        division:
+208        (a) reasonable attorney fees;
+209        (b) court costs; and
+210        (c) investigative fees.
+211    (6) A court may impose a civil penalty of no more than $5,000 for each violation of an
+212        administrative or court order issued for a violation of this chapter.
+213    (7) The attorney general may bring a civil action on behalf of the division to collect a civil
+214        penalty imposed under this section.
+215    (8) The division shall deposit all fines and civil penalties collected under this section into
+216        the Consumer Protection Education and Training Fund created in Section 13-2-8.
+217          Section 7. Section 13-72a-301 is enacted to read:
+218                                                Part 3. Severability
+
+219          13-72a-301 . Severability.
+220    (1) If any provision of this chapter or the application of any provision of this chapter to any
+221        person or circumstance is held invalid by a final decision of a court of competent
+222        jurisdiction, the remainder of this chapter shall be given effect without the invalid
+223        provision or application.
+224    (2) The provisions of this chapter are severable.
+225          Section 8. Section 58-60-118 is enacted to read:
+226          58-60-118 . Mental health chatbots -- Affirmative defense.
+227    (1) As used in this section:
+228        (a) "Mental health chatbot" means the same as that term is defined in Section 13-72a-101.
+229        (b) "Supplier" means the same as that term is defined in Section 13-11-3.
+                                                      -7-
+      H.B. 452                                                                                Enrolled Copy
+
+
+230     (2) It is an affirmative defense to liability in an action brought under Subsection 58-1-501(1)
+231         or Subsection 58-1-501(2) if the supplier demonstrates that the supplier:
+232         (a) created, maintained, and implemented a policy that meets the requirements of
+233              Subsection (3);
+234         (b) maintains documentation regarding the development and implementation of the
+235              mental health chatbot that describes:
+236              (i) foundation models used in development;
+237              (ii) training data used;
+238              (iii) compliance with federal health privacy regulations;
+239              (iv) user data collection and sharing practices; and
+240              (v) ongoing efforts to ensure accuracy, reliability, fairness, and safety;
+241         (c) filed the policy with the division as described in Subsection (4); and
+242         (d) complied with all requirements of the filed policy at the time of the alleged violation.
+243     (3) A policy described in Subsection (2)(a) must:
+244         (a) be in writing;
+245         (b) clearly state:
+246              (i) the intended purposes of the mental health chatbot; and
+247              (ii) the abilities and limitations of the mental health chatbot; and
+248         (c) describe the procedures by which the supplier:
+249              (i) ensures that licensed mental health therapists are involved in the development and
+250                  review process;
+251              (ii) ensures the mental health chatbot is developed and monitored in a manner
+252                  consistent with clinical best practices;
+253              (iii) conducts testing, prior to making the mental health chatbot publicly available and
+254                  regularly thereafter, to ensure that the output of the mental health chatbot poses no
+255                  greater risk to a user than that posed to an individual in therapy with a licensed
+256                  mental health therapist;
+257              (iv) identifies reasonably foreseeable adverse outcomes to, and potentially harmful
+258                  interactions with, users that could result from using the mental health chatbot;
+259              (v) provides a mechanism for a user to report any potentially harmful interactions
+260                  from use of the mental health chatbot;
+261              (vi) implements protocols to assess and respond to risk of harm to users or other
+262                  individuals;
+263              (vii) details actions taken to prevent or mitigate any such adverse outcomes or
+
+                                                         -8-
+      Enrolled Copy                                                                                  H.B. 452
+
+
+264                   potentially harmful interactions;
+265            (viii) implements protocols to respond in real time to acute risk of physical harm;
+266            (ix) reasonably ensures regular, objective reviews of safety, accuracy, and efficacy,
+267                   which may include internal or external audits;
+268            (x) provides users any necessary instructions on the safe use of the mental health
+269                   chatbot;
+270            (xi) ensures users understand they are interacting with artificial intelligence;
+271            (xii) ensures users understand the intended purpose, capabilities, and limitations of
+272                   the mental health chatbot;
+273            (xiii) prioritizes user mental health and safety over engagement metrics or profit;
+274            (xiv) implements measures to prevent discriminatory treatment of users; and
+275            (xv) ensures compliance with the security and privacy provisions of 45 C.F.R. Part
+276                   160 and 45 C.F.R. Part 164, Subparts A, C, and E, as if the supplier were a
+277                   covered entity, and applicable consumer protection requirements, including
+278                   Sections 13-72a-201, 13-72a-202, and 13-72a-203.
+279    (4) To file a policy with the division under this section, a supplier of a mental health
+280        chatbot:
+281        (a) shall provide to the division:
+282            (i) the name and address of the supplier;
+283            (ii) the name of the mental health chatbot supplied by the supplier;
+284            (iii) the written policy described in Subsection (3); and
+285            (iv) a fee set in accordance with Section 63J-1-504;
+286        (b) shall file in a manner established by the division; and
+287        (c) may provide to the division:
+288            (i) any revisions to a policy filed under this section; or
+289            (ii) any other documentation the supplier elects to provide.
+290    (5) The division:
+291        (a) shall provide a means for a supplier of a mental health chatbot to file under this
+292            section; and
+293        (b) may impose an annual filing fee set in accordance with Section 63J-1-504.
+294    (6) The affirmative defense described in this section applies only in an administrative or
+295        civil action alleging a violation of:
+296        (a) Subsection 58-1-501(1); or
+297        (b) Subsection 58-1-501(2).
+
+                                                          -9-
+      H.B. 452                                                                             Enrolled Copy
+
+
+298     (7) Nothing in this section shall be construed to:
+299         (a) bar the division from bringing an action under Subsection 58-1-501(1) or Subsection
+300              58-1-501(2) against the supplier of a mental health chatbot; or
+301         (b) recognize a mental health chatbot as a licensed mental health therapist.
+302           Section 9. Effective Date.
+303     This bill takes effect on May 7, 2025.
+
+
+
+
+                                                     - 10 -
+

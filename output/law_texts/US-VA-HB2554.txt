@@ -1,0 +1,176 @@
+Title: Virginia HB2554 | 2025 | Regular Session
+
+URL Source: http://legiscan.com/VA/bill/HB2554
+
+Markdown Content:
+VA HB2554 | 2025 | Regular Session | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/VA/bill/HB2554#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+VA HB2554 | 2025 | Regular Session
+==================================
+
+[](http://legiscan.com/VA/bill/HB2554 "Share on Facebook")[](http://legiscan.com/VA/bill/HB2554 "Share on Bluesky")[](http://legiscan.com/VA/bill/HB2554 "Share on X")[](http://legiscan.com/VA/bill/HB2554 "Share on LinkedIn")[](http://legiscan.com/VA/bill/HB2554 "Share on reddit")[](http://legiscan.com/VA/bill/HB2554 "Share on email")
+
+[Virginia](http://legiscan.com/VA "View the Virginia Legislative dashboard") House Bill 2554 _**([Prior Session Legislation](http://legiscan.com/VA/research/HB2554/2025 "Right number, wrong year? View Virginia HB2554 from current and past sessions"))**_
+=============================================================================================================================================================================================================================================================
+
+[VA State Legislature page for HB2554](https://lis.virginia.gov/bill-details/20251/HB2554 "Virginia State Legislature source page for HB2554")
+
+* * *
+
+*   [Summary](http://legiscan.com/VA/bill/HB2554/2025 "View Legislative Detail for Virginia HB2554")
+*   [Sponsors](http://legiscan.com/VA/sponsors/HB2554/2025 "View Sponsors of Virginia HB2554")
+*   [Texts](http://legiscan.com/VA/drafts/HB2554/2025 "View Bill Text Drafts for Virginia HB2554")
+*   [Votes](http://legiscan.com/VA/votes/HB2554/2025 "View Roll Call Votes on Virginia HB2554")
+*   [Research](http://legiscan.com/VA/research/HB2554/2025 "View Legislation Research Information on Virginia HB2554")
+*   [Comments](http://legiscan.com/VA/comments/HB2554/2025 "View Social & PolitiCorps Commentary on Virginia HB2554")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Virginia HB2554 and other VA legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Democrat 1)
+
+Status: Introduced on January 11 2025 - 25% progression, died in committee
+
+Action: 2025-02-04 - Left in Communications, Technology and Innovation
+
+Pending: [House Communications, Technology and Innovation Committee](http://legiscan.com/VA/pending/house-communications-technology-innovation-committee/id/4168 "View other bills referred to VA House Communications, Technology and Innovation Committee")
+
+Text: [Latest bill text (Introduced) [HTML]](http://legiscan.com/VA/text/HB2554/2025 "View latest bill text for Virginia HB2554")
+
+Summary
+-------
+
+Artificial Intelligence Transparency Act established. Requires developers of generative artificial intelligence systems made available in the Commonwealth to ensure that any generative artificial intelligence system that produces audio, images, text, or video content includes on such AI-generated content a clear and conspicuous disclosure that meets certain requirements specified in the bill. The bill also requires developers of generative artificial intelligence systems to implement reasonable procedures to prevent downstream use of such system without the required disclosures and requires any third-party licensee of a generative artificial intelligence system to also implement such procedures. The bill provides that a violation of the disclosure requirements constitutes a prohibited practice under the Virginia Consumer Protection Act. The bill allows the Attorney General to offer developers a right to cure noncompliance that is noticed by the Attorney General and provides that a person or entity claiming to be injured due to a violation of the disclosure requirements shall be entitled to initiate an action for monetary damages or equitable relief.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Virginia HB2554 and other VA legislation") or view this same bill number from [multiple sessions](http://legiscan.com/VA/research/HB2554/2025 "Research for VA HB2554 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Virginia and national legislation").
+
+Title
+-----
+
+Artificial Intelligence Transparency Act; established.
+
+Sponsors
+--------
+
+[Del. Rozia Henson](http://legiscan.com/VA/people/rozia-henson/id/24980 "View other legislation sponsored by Virginia Delegate Rozia Henson")[D]
+
+Roll Calls
+----------
+
+2025-01-22 - _House_ - [Subcommittee recommends laying on the table (8-Y 1-N)](http://legiscan.com/VA/rollcall/HB2554/id/1472907 "View roll call details for HB2554 vote Subcommittee recommends laying on the table (8-Y 1-N)") (Y: 8 N: 1 NV: 0 Abs: 2) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-02-04 | House | Left in Communications, Technology and Innovation |
+| 2025-01-22 | House | Subcommittee recommends laying on the table (8-Y 1-N) |
+| 2025-01-22 | House | Fiscal Impact Statement from Department of Planning and Budget (HB2554) |
+| 2025-01-20 | House | Assigned CT & I sub: Technology and Innovation |
+| 2025-01-11 | House | Referred to Committee on Communications, Technology and Innovation |
+| 2025-01-11 | House | Prefiled and ordered printed; Offered 01-13-2025 25103710D |
+
+Virginia State Sources
+----------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://lis.virginia.gov/bill-details/20251/HB2554](https://lis.virginia.gov/bill-details/20251/HB2554) |
+| Text | [https://lis.virginia.gov/bill-details/20251/HB2554/text/HB2554](https://lis.virginia.gov/bill-details/20251/HB2554/text/HB2554) |
+| Supplement | [https://lis.blob.core.windows.net/files/1025661.PDF](https://lis.blob.core.windows.net/files/1025661.PDF) |
+| Roll Call | [https://lis.virginia.gov/vote-details/HB2554/20251/H21002V2510662](https://lis.virginia.gov/vote-details/HB2554/20251/H21002V2510662) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

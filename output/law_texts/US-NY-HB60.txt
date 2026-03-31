@@ -1,0 +1,280 @@
+Title: LegiScan | New York State Legislative Dashboard
+
+URL Source: http://legiscan.com/NY/search?keyword=HB60
+
+Markdown Content:
+New York Legislature | 2025-2026 | General Assembly | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/NY/search?keyword=HB60#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+New York Legislature | 2025-2026 | General Assembly
+===================================================
+
+*   [AK](http://legiscan.com/AK "Legislative dashboard for Alaska")
+*   [AL](http://legiscan.com/AL "Legislative dashboard for Alabama")
+*   [AR](http://legiscan.com/AR "Legislative dashboard for Arkansas")
+*   [AZ](http://legiscan.com/AZ "Legislative dashboard for Arizona")
+*   [CA](http://legiscan.com/CA "Legislative dashboard for California")
+*   [CO](http://legiscan.com/CO "Legislative dashboard for Colorado")
+*   [CT](http://legiscan.com/CT "Legislative dashboard for Connecticut")
+*   [DE](http://legiscan.com/DE "Legislative dashboard for Delaware")
+*   [FL](http://legiscan.com/FL "Legislative dashboard for Florida")
+*   [GA](http://legiscan.com/GA "Legislative dashboard for Georgia")
+*   [HI](http://legiscan.com/HI "Legislative dashboard for Hawaii")
+*   [IA](http://legiscan.com/IA "Legislative dashboard for Iowa")
+*   [ID](http://legiscan.com/ID "Legislative dashboard for Idaho")
+*   [IL](http://legiscan.com/IL "Legislative dashboard for Illinois")
+*   [IN](http://legiscan.com/IN "Legislative dashboard for Indiana")
+*   [KS](http://legiscan.com/KS "Legislative dashboard for Kansas")
+*   [KY](http://legiscan.com/KY "Legislative dashboard for Kentucky")
+*   [LA](http://legiscan.com/LA "Legislative dashboard for Louisiana")
+*   [MA](http://legiscan.com/MA "Legislative dashboard for Massachusetts")
+*   [MD](http://legiscan.com/MD "Legislative dashboard for Maryland")
+*   [ME](http://legiscan.com/ME "Legislative dashboard for Maine")
+*   [MI](http://legiscan.com/MI "Legislative dashboard for Michigan")
+*   [MN](http://legiscan.com/MN "Legislative dashboard for Minnesota")
+*   [MO](http://legiscan.com/MO "Legislative dashboard for Missouri")
+*   [MS](http://legiscan.com/MS "Legislative dashboard for Mississippi")
+*   [MT](http://legiscan.com/MT "Legislative dashboard for Montana")
+*   [NC](http://legiscan.com/NC "Legislative dashboard for North Carolina")
+*   [ND](http://legiscan.com/ND "Legislative dashboard for North Dakota")
+*   [NE](http://legiscan.com/NE "Legislative dashboard for Nebraska")
+*   [NH](http://legiscan.com/NH "Legislative dashboard for New Hampshire")
+*   [NJ](http://legiscan.com/NJ "Legislative dashboard for New Jersey")
+*   [NM](http://legiscan.com/NM "Legislative dashboard for New Mexico")
+*   [NV](http://legiscan.com/NV "Legislative dashboard for Nevada")
+*   [NY](http://legiscan.com/NY "Legislative dashboard for New York")
+*   [OH](http://legiscan.com/OH "Legislative dashboard for Ohio")
+*   [OK](http://legiscan.com/OK "Legislative dashboard for Oklahoma")
+*   [OR](http://legiscan.com/OR "Legislative dashboard for Oregon")
+*   [PA](http://legiscan.com/PA "Legislative dashboard for Pennsylvania")
+*   [RI](http://legiscan.com/RI "Legislative dashboard for Rhode Island")
+*   [SC](http://legiscan.com/SC "Legislative dashboard for South Carolina")
+*   [SD](http://legiscan.com/SD "Legislative dashboard for South Dakota")
+*   [TN](http://legiscan.com/TN "Legislative dashboard for Tennessee")
+*   [TX](http://legiscan.com/TX "Legislative dashboard for Texas")
+*   [UT](http://legiscan.com/UT "Legislative dashboard for Utah")
+*   [VA](http://legiscan.com/VA "Legislative dashboard for Virginia")
+*   [VT](http://legiscan.com/VT "Legislative dashboard for Vermont")
+*   [WA](http://legiscan.com/WA "Legislative dashboard for Washington")
+*   [WI](http://legiscan.com/WI "Legislative dashboard for Wisconsin")
+*   [WV](http://legiscan.com/WV "Legislative dashboard for West Virginia")
+*   [WY](http://legiscan.com/WY "Legislative dashboard for Wyoming")
+*   [DC](http://legiscan.com/DC "Legislative dashboard for Washington D.C.")
+*   [US](http://legiscan.com/US "Legislative dashboard for US Congress")
+
+[](http://legiscan.com/NY/search?keyword=HB60 "Share on Facebook")[](http://legiscan.com/NY/search?keyword=HB60 "Share on Bluesky")[](http://legiscan.com/NY/search?keyword=HB60 "Share on X")[](http://legiscan.com/NY/search?keyword=HB60 "Share on LinkedIn")[](http://legiscan.com/NY/search?keyword=HB60 "Share on reddit")[](http://legiscan.com/NY/search?keyword=HB60 "Share on email")
+
+### [New York Dashboard](http://legiscan.com/NY "Go to the legislative dashboard for New York") - [New York Legislation](http://legiscan.com/NY/legislation "View current legislation in New York") - [New York Datasets](http://legiscan.com/NY/datasets "Download data archives of New York legislation") - [New York Roster](http://legiscan.com/NY/roster "Roster of New York legislators") - [New York Trends](http://legiscan.com/NY/trends "Trending legislation in New York")
+
+### Active New York Bills ([Introduced](http://legiscan.com/NY/legislation?status=introduced "View other introduced legislation in New York"), [Engrossed](http://legiscan.com/NY/legislation?status=engrossed "View other engrossed legislation in New York"), [Enrolled](http://legiscan.com/NY/legislation?status=enrolled "View other enrolled legislation in New York"), [Passed](http://legiscan.com/NY/legislation?status=passed "View other passed legislation in New York"))
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| Bill | Summary | Action |
+| --- | --- | --- |
+
+| Bill | Summary | Action |
+| --- | --- | --- |
+| [A06341](http://legiscan.com/NY/bill/A06341/2025 "View detailed bill information for NY A06341") | Requires the collection of certain demographic information by state agencies, boards, departments and commissions. | 2026-02-23 [To Assembly Governmental Operations Committee](http://legiscan.com/NY/pending/assembly-governmental-operations-committee/id/368 "View other bills referred to New York Assembly Governmental Operations Committee") |
+| [A09629](http://legiscan.com/NY/bill/A09629/2025 "View detailed bill information for NY A09629") | Establishes the right to inspection of homes by buyers; provides for a 10-day inspection period where the buyer has the right to have a home inspected and cancel the contract if the buyer is not satisfied with the inspection results; makes related pr... | 2026-02-23 [To Assembly Judiciary Committee](http://legiscan.com/NY/pending/assembly-judiciary-committee/id/373 "View other bills referred to New York Assembly Judiciary Committee") |
+| [A07996](http://legiscan.com/NY/bill/A07996/2025 "View detailed bill information for NY A07996") | Relates to creating the Neighborhood Small Business Rent Increase Exemption; provides a tax abatement for limiting rent increases on small businesses in a city of one million or more persons. | 2026-02-23 [To Assembly Real Property Taxation Committee](http://legiscan.com/NY/pending/assembly-real-property-taxation-committee/id/380 "View other bills referred to New York Assembly Real Property Taxation Committee") |
+| [S09275](http://legiscan.com/NY/bill/S09275/2025 "View detailed bill information for NY S09275") | Requires Medicaid to cover gender-affirming care regardless of federal funding; prohibits discriminatory practices by health care entities including hospitals, certain professionals, and insurers; requires insurance coverage for services or treatment... | 2026-02-23 [To Senate Health Committee](http://legiscan.com/NY/pending/senate-health-committee/id/429 "View other bills referred to New York Senate Health Committee") |
+| [S09276](http://legiscan.com/NY/bill/S09276/2025 "View detailed bill information for NY S09276") | Permits an eligible retirement system member to receive, in lieu of an ordinary death benefit, a death benefit such member would otherwise be entitled to receive provided such member is a state-paid judge or justice of the unified court system or a h... | 2026-02-23 [To Senate Civil Service and Pensions Committee](http://legiscan.com/NY/pending/senate-civil-service-pensions-committee/id/416 "View other bills referred to New York Senate Civil Service and Pensions Committee") |
+| [S06845](http://legiscan.com/NY/bill/S06845/2025 "View detailed bill information for NY S06845") | Requires third-party food delivery services to verify that limited-use motorcycles operated by workers in the course of making deliveries for such third-party delivery service are legally registered; requires that a third-party food delivery service ... | 2026-02-23 [To Senate Consumer Affairs and Protection Committee](http://legiscan.com/NY/pending/senate-consumer-affairs-protection-committee/id/419 "View other bills referred to New York Senate Consumer Affairs and Protection Committee") |
+| [S00655](http://legiscan.com/NY/bill/S00655/2025 "View detailed bill information for NY S00655") | Enacts the accountability for development assistance act; standardizes applications for state development assistance; requires submission of certain development assistance agreements to the department of taxation and finance; requires recipients of c... | 2026-02-23 [To Senate Corporations, Authorities and Commissions Committee](http://legiscan.com/NY/pending/senate-corporations-authorities-commissions-committee/id/420 "View other bills referred to New York Senate Corporations, Authorities and Commissions Committee") |
+| [S09240](http://legiscan.com/NY/bill/S09240/2025 "View detailed bill information for NY S09240") | Establishes a pilot program for schools with active aging programs or specializations in place; creates a curriculum team that shall identify areas that are most relevant to persons working with older adults currently, and/or represent emerging and e... | 2026-02-23 [To Senate Higher Education Committee](http://legiscan.com/NY/pending/senate-higher-education-committee/id/430 "View other bills referred to New York Senate Higher Education Committee") |
+| [S09274](http://legiscan.com/NY/bill/S09274/2025 "View detailed bill information for NY S09274") | Includes prior service with certain agencies in creditable service for the purposes of the New York city police pension fund. | 2026-02-23 [To Senate Civil Service and Pensions Committee](http://legiscan.com/NY/pending/senate-civil-service-pensions-committee/id/416 "View other bills referred to New York Senate Civil Service and Pensions Committee") |
+| [K00963](http://legiscan.com/NY/bill/K00963/2025 "View detailed bill information for NY K00963") | Memorializing Governor Kathy Hochul to proclaim February 21-28, 2026, as FFA Organization Week in the State of New York | 2026-02-23 referred to calendar |
+
+### Top New York Sponsors
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| House Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+
+| House Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Asm. Jo Simon](http://legiscan.com/NY/people/jo-simon/id/16762 "View other bills sponsored by Asm. Jo Simon") [D] | 1328 | [![Image 2: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/a7eddd542a69f5f43ec1a2cb9c637a85.rss) |
+| [Asm. Linda Rosenthal](http://legiscan.com/NY/people/linda-rosenthal/id/1375 "View other bills sponsored by Asm. Linda Rosenthal") [D] | 1172 | [![Image 3: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/bbd4c95b916a050d14e78db619380acd.rss) |
+| [Asm. Joseph DeStefano](http://legiscan.com/NY/people/joseph-destefano/id/20680 "View other bills sponsored by Asm. Joseph DeStefano") [R] | 1090 | [![Image 4: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/c314b5af1b24d9c6f05e911bc6dea167.rss) |
+| [Asm. Angelo Santabarbara](http://legiscan.com/NY/people/angelo-santabarbara/id/14214 "View other bills sponsored by Asm. Angelo Santabarbara") [D] | 1031 | [![Image 5: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/fa0d9470a213e26062fbc5e2b778fc67.rss) |
+| [Asm. Dana Levenberg](http://legiscan.com/NY/people/dana-levenberg/id/24297 "View other bills sponsored by Asm. Dana Levenberg") [D] | 1031 | [![Image 6: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/2c895be3f207f117acaec16516e22032.rss) |
+
+| Senate Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+
+| Senate Sponsors | # Bills | RSS |
+| --- | --- | ---: |
+| [Sen. Robert Jackson](http://legiscan.com/NY/people/robert-jackson/id/20165 "View other bills sponsored by Sen. Robert Jackson") [D] | 1410 | [![Image 7: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/69a9cc8401d5e9486250c419264ebcbc.rss) |
+| [Sen. Leroy Comrie](http://legiscan.com/NY/people/leroy-comrie/id/16653 "View other bills sponsored by Sen. Leroy Comrie") [D] | 1146 | [![Image 8: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/97bf15207f4e43410c84badfec2ef6f9.rss) |
+| [Sen. Kevin Parker](http://legiscan.com/NY/people/kevin-parker/id/1442 "View other bills sponsored by Sen. Kevin Parker") [D] | 1128 | [![Image 9: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/bdee2b71366c8edab3e931ced98969ce.rss) |
+| [Sen. Cordell Cleare](http://legiscan.com/NY/people/cordell-cleare/id/23020 "View other bills sponsored by Sen. Cordell Cleare") [D] | 986 | [![Image 10: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/d1de4ff82a1638d1bfe1b7e22b75545c.rss) |
+| [Sen. Brad Hoylman-Sigal](http://legiscan.com/NY/people/brad-hoylman-sigal/id/14220 "View other bills sponsored by Sen. Brad Hoylman-Sigal") [D] | 943 | [![Image 11: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/8c7bc7b550f6076affa2f6709e2528dc.rss) |
+
+### Top New York Committees
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| Assembly Committees | # Bills | RSS |
+| --- | --- | ---: |
+
+| Assembly Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Codes](http://legiscan.com/NY/pending/assembly-codes-committee/id/357 "View other bills referred to New York Assembly Codes") | 763 | [![Image 12: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/16951ce0a59c130345248fa28a00c1f1.rss) |
+| [Ways and Means](http://legiscan.com/NY/pending/assembly-ways-means-committee/id/387 "View other bills referred to New York Assembly Ways and Means") | 685 | [![Image 13: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/ec538f93d380e719e6e2f84184d1befd.rss) |
+| [Governmental Operations](http://legiscan.com/NY/pending/assembly-governmental-operations-committee/id/368 "View other bills referred to New York Assembly Governmental Operations") | 623 | [![Image 14: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/8901ced2472b9414672bdb12ddaf3152.rss) |
+| [Transportation](http://legiscan.com/NY/pending/assembly-transportation-committee/id/385 "View other bills referred to New York Assembly Transportation") | 574 | [![Image 15: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/63e69df831ade95dfa2eb0546d75c0c6.rss) |
+| [Health](http://legiscan.com/NY/pending/assembly-health-committee/id/369 "View other bills referred to New York Assembly Health") | 567 | [![Image 16: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/033acbf90d81a4987da3b150be82dc4c.rss) |
+
+| Senate Committees | # Bills | RSS |
+| --- | --- | ---: |
+
+| Senate Committees | # Bills | RSS |
+| --- | --- | ---: |
+| [Codes](http://legiscan.com/NY/pending/senate-codes-committee/id/417 "View other bills referred to New York Senate Codes") | 695 | [![Image 17: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/98e2c6edf18db06b12d6ab9687d0192d.rss) |
+| [Finance](http://legiscan.com/NY/pending/senate-finance-committee/id/428 "View other bills referred to New York Senate Finance") | 643 | [![Image 18: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/9bfa967c1feabf70fecc3e7e65920d88.rss) |
+| [Transportation](http://legiscan.com/NY/pending/senate-transportation-committee/id/441 "View other bills referred to New York Senate Transportation") | 638 | [![Image 19: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/afb2d347696ac7f1ccbc325231238283.rss) |
+| [Health](http://legiscan.com/NY/pending/senate-health-committee/id/429 "View other bills referred to New York Senate Health") | 495 | [![Image 20: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/2e3f57e03d60c4ef96ecdd9a6781371b.rss) |
+| [Education](http://legiscan.com/NY/pending/senate-education-committee/id/423 "View other bills referred to New York Senate Education") | 359 | [![Image 21: Syndicate content](https://acme.legiscan.com/images/feed.png)](http://legiscan.com/gaits/feed/16b35411e4ecb76261982629932c45f4.rss) |
+
+### Most Viewed New York Bills
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| Bill | Summary | Text |
+| --- | --- | :---: |
+
+| Bill | Summary | Text |
+| --- | --- | :---: |
+| [S06211](http://legiscan.com/NY/bill/S06211/2025 "View detailed bill information for NY S06211") | Provides tax abatements for building owners in a city having a population of one million or more who complete exterior repairs to covered buildings. | [Bill Text](http://legiscan.com/NY/text/S06211/2025 "View latest bill text for NY S06211") |
+| [S05445](http://legiscan.com/NY/bill/S05445/2025 "View detailed bill information for NY S05445") | Creates a private right of action by a tenant against a landlord in a city having a population of one million or more persons over sidewalk sheds. | [Bill Text](http://legiscan.com/NY/text/S05445/2025 "View latest bill text for NY S05445") |
+| [S03008](http://legiscan.com/NY/bill/S03008/2025 "View detailed bill information for NY S03008") | Enacts into law major components of legislation necessary to implement the state transportation, economic development and environmental conservation budget for the 2025-2026 state fiscal year; relates to the waterfront commission act; makes amendment... | [Bill Text](http://legiscan.com/NY/text/S03008/2025 "View latest bill text for NY S03008") |
+| [S00342](http://legiscan.com/NY/bill/S00342/2025 "View detailed bill information for NY S00342") | Establishes the "earned time act" providing for time allowances against the term or maximum term of sentences imposed by the court to be credited on an annual pro rata basis. | [Bill Text](http://legiscan.com/NY/text/S00342/2025 "View latest bill text for NY S00342") |
+| [S00335](http://legiscan.com/NY/bill/S00335/2025 "View detailed bill information for NY S00335") | Relates to actions or practices that establish or maintain a monopoly, monopsony or restraint of trade; authorizes a class action lawsuit in the state anti-trust law. | [Bill Text](http://legiscan.com/NY/text/S00335/2025 "View latest bill text for NY S00335") |
+| [S01183](http://legiscan.com/NY/bill/S01183/2025 "View detailed bill information for NY S01183") | Establishes a real property tax exemption for the primary residence of veterans with a 100 percent service connected disability. | [Bill Text](http://legiscan.com/NY/text/S01183/2025 "View latest bill text for NY S01183") |
+| [S06953](http://legiscan.com/NY/bill/S06953/2025 "View detailed bill information for NY S06953") | Relates to the training and use of artificial intelligence frontier models; defines terms; establishes remedies for violations. | [Bill Text](http://legiscan.com/NY/text/S06953/2025 "View latest bill text for NY S06953") |
+| [A07684](http://legiscan.com/NY/bill/A07684/2025 "View detailed bill information for NY A07684") | Establishes an age 55/25 temporary retirement incentive for certain public employees who are members of the teachers' retirement system. | [Bill Text](http://legiscan.com/NY/text/A07684/2025 "View latest bill text for NY A07684") |
+| [S01169](http://legiscan.com/NY/bill/S01169/2025 "View detailed bill information for NY S01169") | Regulates the development and use of certain artificial intelligence systems to prevent algorithmic discrimination; requires independent audits of high risk AI systems; provides for enforcement by the attorney general as well as a private right of ac... | [Bill Text](http://legiscan.com/NY/text/S01169/2025 "View latest bill text for NY S01169") |
+| [A04034](http://legiscan.com/NY/bill/A04034/2025 "View detailed bill information for NY A04034") | Establishes kratom, otherwise known as mitragyna speciosa korth, as a schedule I controlled substance. | [Bill Text](http://legiscan.com/NY/text/A04034/2025 "View latest bill text for NY A04034") |
+
+### Most Monitored New York Bills
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| Bill | Summary | Text |
+| --- | --- | --- |
+
+| Bill | Summary | Text |
+| --- | --- | --- |
+| [S01169](http://legiscan.com/NY/bill/S01169/2025 "View detailed bill information for NY S01169") | Regulates the development and use of certain artificial intelligence systems to prevent algorithmic discrimination; requires independent audits of high risk AI systems; provides for enforcement by the attorney general as well as a private right of ac... | [Bill Text](http://legiscan.com/NY/text/S01169/2025 "View latest bill text for NY S01169") |
+| [S00342](http://legiscan.com/NY/bill/S00342/2025 "View detailed bill information for NY S00342") | Establishes the "earned time act" providing for time allowances against the term or maximum term of sentences imposed by the court to be credited on an annual pro rata basis. | [Bill Text](http://legiscan.com/NY/text/S00342/2025 "View latest bill text for NY S00342") |
+| [A00768](http://legiscan.com/NY/bill/A00768/2025 "View detailed bill information for NY A00768") | Enacts the "New York artificial intelligence consumer protection act", in relation to preventing the use of artificial intelligence algorithms to discriminate against protected classes. | [Bill Text](http://legiscan.com/NY/text/A00768/2025 "View latest bill text for NY A00768") |
+| [S01962](http://legiscan.com/NY/bill/S01962/2025 "View detailed bill information for NY S01962") | Enacts the "New York artificial intelligence consumer protection act", in relation to preventing the use of artificial intelligence algorithms to discriminate against protected classes. | [Bill Text](http://legiscan.com/NY/text/S01962/2025 "View latest bill text for NY S01962") |
+| [A03356](http://legiscan.com/NY/bill/A03356/2025 "View detailed bill information for NY A03356") | Enacts the "advanced artificial intelligence licensing act"; providing for regulation of advanced artificial intelligence systems (Part A); requires registration and licensing of high-risk advanced artificial intelligence systems and related provisio... | [Bill Text](http://legiscan.com/NY/text/A03356/2025 "View latest bill text for NY A03356") |
+| [S04276](http://legiscan.com/NY/bill/S04276/2025 "View detailed bill information for NY S04276") | Enacts the "digital fairness act"; requires any entity that conducts business in New York and maintains the personal information of 500 or more individuals to provide meaningful notice about their use of personal information; establishes unlawful dis... | [Bill Text](http://legiscan.com/NY/text/S04276/2025 "View latest bill text for NY S04276") |
+| [S03044](http://legiscan.com/NY/bill/S03044/2025 "View detailed bill information for NY S03044") | Enacts the New York privacy act to require companies to disclose their methods of de-identifying personal information, to place special safeguards around data sharing and to allow consumers to obtain the names of all entities with whom their informat... | [Bill Text](http://legiscan.com/NY/text/S03044/2025 "View latest bill text for NY S03044") |
+| [A04947](http://legiscan.com/NY/bill/A04947/2025 "View detailed bill information for NY A04947") | Enacts the NY privacy act to require companies to disclose their methods of de-identifying personal information, to place special safeguards around data sharing and to allow consumers to obtain the names of all entities with whom their information is... | [Bill Text](http://legiscan.com/NY/text/A04947/2025 "View latest bill text for NY A04947") |
+| [A03265](http://legiscan.com/NY/bill/A03265/2025 "View detailed bill information for NY A03265") | Enacts the New York artificial intelligence bill of rights to provide residents of the state with rights and protections to ensure that any system making decisions without human intervention impacting their lives do so lawfully, properly, and with me... | [Bill Text](http://legiscan.com/NY/text/A03265/2025 "View latest bill text for NY A03265") |
+| [S08524](http://legiscan.com/NY/bill/S08524/2025 "View detailed bill information for NY S08524") | Enacts the New York privacy act to require companies to disclose their methods of de-identifying personal information, to place special safeguards around data sharing and to allow consumers to obtain the names of all entities with whom their informat... | [Bill Text](http://legiscan.com/NY/text/S08524/2025 "View latest bill text for NY S08524") |
+
+### New York Sessions
+
+[](http://legiscan.com/NY/search?keyword=HB60)
+| Year | Session | Introduced | Completed | Legislation | Search | Dataset |
+| --- | --- | --- | --- | --- | --- | --- |
+
+| Year | Session | Introduced | Completed | Legislation | Search | Dataset |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2025-2026 | General Assembly | 21220 | 3167 | [Browse](http://legiscan.com/NY/legislation/2025) | [Search](http://legiscan.com/gaits/search?sid=2188) | [Download](http://legiscan.com/NY/datasets) |
+| 2023-2024 | General Assembly | 24195 | 5395 | [Browse](http://legiscan.com/NY/legislation/2023) | [Search](http://legiscan.com/gaits/search?sid=2031) | [Download](http://legiscan.com/NY/datasets) |
+| 2021-2022 | General Assembly | 23570 | 5386 | [Browse](http://legiscan.com/NY/legislation/2021) | [Search](http://legiscan.com/gaits/search?sid=1813) | [Download](http://legiscan.com/NY/datasets) |
+| 2019-2020 | General Assembly | 23979 | 6422 | [Browse](http://legiscan.com/NY/legislation/2019) | [Search](http://legiscan.com/gaits/search?sid=1644) | [Download](http://legiscan.com/NY/datasets) |
+| 2017-2018 | General Assembly | 20053 | 1027 | [Browse](http://legiscan.com/NY/legislation/2017) | [Search](http://legiscan.com/gaits/search?sid=1420) | [Download](http://legiscan.com/NY/datasets) |
+| 2015-2016 | General Assembly | 18534 | 1108 | [Browse](http://legiscan.com/NY/legislation/2015) | [Search](http://legiscan.com/gaits/search?sid=1143) | [Download](http://legiscan.com/NY/datasets) |
+| 2013-2014 | General Assembly | 17992 | 1107 | [Browse](http://legiscan.com/NY/legislation/2013) | [Search](http://legiscan.com/gaits/search?sid=1013) | [Download](http://legiscan.com/NY/datasets) |
+| 2011-2012 | General Assembly | 18451 | 1113 | [Browse](http://legiscan.com/NY/legislation/2011) | [Search](http://legiscan.com/gaits/search?sid=93) | [Download](http://legiscan.com/NY/datasets) |
+| 2009-2010 | General Assembly | 13110 | 672 | [Browse](http://legiscan.com/NY/legislation/2009) | [Search](http://legiscan.com/gaits/search?sid=27) | [Download](http://legiscan.com/NY/datasets) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 22: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

@@ -1,0 +1,282 @@
+                             HB172 ENROLLED
+
+
+
+1   HB172
+
+2   L84TWYW-3
+
+3   By Representatives Chestnut, Almond, Tillman, Gray, Robbins,
+
+4   Daniels, Shaw, Pringle
+
+5   RFD: Judiciary
+
+6   First Read: 15-Feb-24
+
+
+
+
+                                 Page 0
+                            HB172 Enrolled
+
+ 1   Enrolled, An Act,
+ 2
+ 3         Relating to elections; to provide that the distribution
+ 4   of materially deceptive media in an attempt to influence an
+ 5   upcoming election is a crime; to authorize certain parties to
+ 6   seek permanent injunctive relief against anyone who
+ 7   distributes materially deceptive media in an attempt to
+ 8   influence an upcoming election; to provide definitions; and to
+ 9   provide exceptions.
+10   BE IT ENACTED BY THE LEGISLATURE OF ALABAMA:
+11         Section 1. For the purposes of this bill, the following
+12   terms have the following meanings:
+13         (1) ARTIFICIAL INTELLIGENCE. Any artificial system or
+14   generative artificial intelligence system that performs tasks
+15   under varying and unpredictable circumstances without
+16   significant human oversight or that can learn from experience
+17   and improve performance when exposed to data sets.
+18         (2) CREATOR. Any candidate, candidate campaign
+19   committee, political party, political action committee, other
+20   political committee or entity, any employee, representative,
+21   or agent of the foregoing, or any other person who prepares,
+22   creates, or causes the preparation or creation and the
+23   dissemination of any political advertising, material, or media
+24   produced by generative artificial intelligence. The term does
+25   not include a broadcaster, cable provider, digital newspaper,
+26   online service, Internet service provider, streaming platform,
+27   provider, or developer of any technology in the generation of
+28   media by artificial intelligence, or any employee,
+
+                                 Page 1
+                            HB172 Enrolled
+
+29   representative, or agent thereof, solely for the distribution
+30   of a creator, sponsor, or purchaser's political advertising,
+31   material, or media
+32         (3) DEPICTED INDIVIDUAL. An individual who is falsely
+33   represented in a materially deceptive media.
+34         (4) ELECTION. A federal, state, legislative, judicial,
+35   countywide, local, general, primary, runoff, or special
+36   election.
+37         (5) MATERIALLY DECEPTIVE MEDIA. Any image, audio, or
+38   video that meets all of the following requirements:
+39         a. The media falsely depicts an individual engaging in
+40   speech or conduct in which the depicted individual did not in
+41   fact engage.
+42         b. A reasonable viewer or listener would incorrectly
+43   believe that the depicted individual engaged in the speech or
+44   conduct depicted.
+45         c. The media was produced by artificial intelligence.
+46         (6) SPONSOR. A person at whose request or on whose
+47   behalf any political advertisement, material, or media is
+48   created, prepared, placed, published, or disseminated.
+49         Section 2. (a) Except as provided in subsection (b), a
+50   person shall not distribute, or enter into an agreement with
+51   another person to distribute, materially deceptive media if
+52   all of the following apply:
+53         (1) The person knows the media falsely represents a
+54   depicted individual.
+55         (2) The distribution occurs within 90 days before an
+56   election.
+
+                                   Page 2
+                            HB172 Enrolled
+
+57         (3) The person intends the distribution to harm the
+58   reputation or electoral prospects of a candidate in the coming
+59   election, and the distribution is reasonably likely to cause
+60   that result.
+61         (4) The person intends the distribution to change the
+62   voting patterns of electors in the coming election by
+63   deceiving the electors into incorrectly believing that the
+64   depicted individual in fact engaged in the speech or conduct
+65   depicted, and the distribution is reasonably likely to cause
+66   that result.
+67         (b) The prohibition in subsection (a) does not apply if
+68   all of the following conditions are met:
+69         (1) The creator, sponsor, or purchaser includes a
+70   disclaimer in any presentation of the media informing the
+71   viewer both that the media has been manipulated by technical
+72   means and depicts speech or conduct that did not occur. The
+73   following disclaimer is sufficient, but not necessary, to
+74   satisfy the requirements of this subdivision:
+75         "This media has been manipulated by technical means and
+76   depicts speech or conduct that did not occur."
+77         (2) If the media is a video, the disclaimer meets all
+78   of the following requirements:
+79         a. Appears throughout the entirety of the video.
+80         b. Is clearly visible to and readable by the average
+81   viewer.
+82         c. Is in letters in a size that is easily readable by
+83   the average viewer.
+84         d. Is in the same language as the language used in the
+
+                                 Page 3
+                             HB172 Enrolled
+
+ 85   video media.
+ 86         (3) If the media consists only of audio and contains no
+ 87   image or video, the disclaimer is read at the beginning and
+ 88   end of the media in a clearly spoken manner, in a pitch that
+ 89   can be easily heard by the average listener, and in the same
+ 90   language as the audio media.
+ 91         (4) If the media is an image, the disclaimer meets all
+ 92   of the following requirements:
+ 93         a. Is clearly visible to and readable by the average
+ 94   viewer.
+ 95         b. Is in the same language as the language used in the
+ 96   image media.
+ 97         (5) If the media was generated by editing an existing
+ 98   image, audio, or video, the media includes a citation
+ 99   directing the viewer or listener to the original source from
+100   which the unedited version of the existing image, audio, or
+101   video was obtained.
+102         (c) A violation of this section is a Class A
+103   misdemeanor, except that a second or subsequent conviction
+104   within five years is a Class D felony.
+105         (d)(1) Distribution of material that is prohibited by
+106   this section shall not be a violation of this section if the
+107   distributor does not have actual knowledge that the material
+108   is prohibited, the distributor does not intend to injure or
+109   harm the reputation or prospects of the depicted individual,
+110   influence an election, the results of an election, or the
+111   voting patterns in an election, or deter any individual from
+112   voting in an election, and the distributor is: a. an Internet
+
+                                     Page 4
+                             HB172 Enrolled
+
+113   website, interactive computer service, or radio or television
+114   broadcasting station, including, but not limited to, a cable
+115   or satellite television operator; b. a regularly published
+116   newspaper, magazine, or other periodical, including, but not
+117   limited to, an Internet or electronic publication, programmer,
+118   or producer; or c. a website or streaming service, including,
+119   but not limited to, an information service as defined in 47
+120   U.S.C. § 153.
+121         (2) This act shall not be construed to alter any
+122   rights, obligations, or immunities created by 47 U.S.C.
+123   Chapter 5 or under the regulations of the Federal
+124   Communications Commission pertaining to the broadcast or
+125   distribution of political programming or campaign advertising,
+126   or under any other federal law.
+127         (3) This act shall not be construed to alter any
+128   rights, obligations, or immunities created by 47 U.S.C. § 230.
+129         (4) This act shall not apply to content that
+130   constitutes satire or parody which is substantially dependent
+131   on the ability of an individual to impersonate a candidate
+132   physically or verbally and not upon technology or artificial
+133   intelligence.
+134         (5) This act shall not apply to a radio or television
+135   broadcasting station, including a cable or satellite
+136   television operator, programmer, or producer, streaming
+137   provider, Internet website, or a regularly published
+138   newspaper, magazine, or other periodical of general
+139   circulation, including an Internet or electronic publication,
+140   that routinely carries news and commentary of general interest
+
+                                  Page 5
+                                HB172 Enrolled
+
+141   that distributes any materially deceptive media prohibited by
+142   this act as part of a bona fide newscast, news interview, news
+143   documentary, or on-the-spot coverage of a bona fide news event
+144   if the broadcast or publication clearly acknowledges, through
+145   content or disclosure, in a manner that can easily be heard
+146   and understood by the average listener or viewer, that there
+147   are questions about the authenticity of the media.
+148         (e) A distributor shall not intentionally remove a
+149   disclaimer included with any media by the creator, sponsor, or
+150   purchaser of the media.
+151         Section 3. (a) All of the following may seek permanent
+152   injunctive relief against a person that violates this section:
+153         (1) The Attorney General.
+154         (2) A depicted individual.
+155         (3) A candidate for office who has been injured or is
+156   likely to be injured by the distribution of materially
+157   deceptive media.
+158         (4) Any entity that represents the interests of voters
+159   likely to be deceived by the distribution of materially
+160   deceptive media.
+161         (b)(1) If a court determines that a complaint for
+162   permanent injunctive relief filed pursuant to subsection (a)
+163   is frivolous, the court shall issue an order suspending the
+164   defendant's obligation to respond to the complaint and shall
+165   order the plaintiff to show cause why the complaint should not
+166   be dismissed. If the plaintiff fails to respond to the court
+167   or the plaintiff's response to the court confirms that the
+168   complaint is frivolous, the court shall dismiss the complaint
+
+                                    Page 6
+                              HB172 Enrolled
+
+169   and may award costs and attorney fees to the defendant and may
+170   issue any appropriate sanctions against the plaintiff and the
+171   plaintiff's attorney.
+172         (2) If the plaintiff's response to the court assures
+173   the court that the complaint is not frivolous, the court shall
+174   direct the defendant to answer the complaint.
+175         (c) A plaintiff seeking permanent injunctive relief
+176   under subsection (a) must prove by clear and convincing
+177   evidence that the defendant against whom the injunction is
+178   sought knew the media at issue falsely represented the
+179   depicted individual.
+180         (d) If a plaintiff, other than the Attorney General, is
+181   awarded permanent injunctive relief under this section, the
+182   court may award costs and attorney fees to the plaintiff.
+183         Section 4. Although this bill would have as its purpose
+184   or effect the requirement of a new or increased expenditure of
+185   local funds, the bill is excluded from further requirements
+186   and application under Section 111.05 of the Constitution of
+187   Alabama of 2022, because the bill defines a new crime or
+188   amends the definition of an existing crime.
+189         Section 5. This act shall become effective on October
+190   1, 2024.
+
+
+
+
+                                  Page 7
+                               HB172 Enrolled
+
+191
+192
+193
+194
+195
+196
+197            ________________________________________________
+198                 Speaker of the House of Representatives
+199
+200
+201
+202            ________________________________________________
+203              President and Presiding Officer of the Senate
+204
+205
+206                        House of Representatives
+207
+208          I hereby certify that the within Act originated in and
+209   was passed by the House 21-Mar-24, as amended.
+210
+211                                      John Treadwell
+212                                      Clerk
+213
+214
+215
+216
+217
+218   Senate               08-May-24                   Amended and Passed
+219
+220   House                09-May-24                  Concurred in Senate
+221                                                             Amendment
+222
+223
+
+
+
+
+                                    Page 8
+

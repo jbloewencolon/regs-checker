@@ -1,0 +1,216 @@
+Title: Texas SB668 | 2025-2026 | 89th Legislature
+
+URL Source: http://legiscan.com/TX/bill/SB668
+
+Markdown Content:
+TX SB668 | 2025-2026 | 89th Legislature | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/TX/bill/SB668#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+TX SB668 | 2025-2026 | 89th Legislature
+=======================================
+
+[](http://legiscan.com/TX/bill/SB668 "Share on Facebook")[](http://legiscan.com/TX/bill/SB668 "Share on Bluesky")[](http://legiscan.com/TX/bill/SB668 "Share on X")[](http://legiscan.com/TX/bill/SB668 "Share on LinkedIn")[](http://legiscan.com/TX/bill/SB668 "Share on reddit")[](http://legiscan.com/TX/bill/SB668 "Share on email")
+
+[Texas](http://legiscan.com/TX "View the Texas Legislative dashboard") Senate Bill 668
+======================================================================================
+
+[TX State Legislature page for SB668](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB668 "Texas State Legislature source page for SB668")
+
+* * *
+
+*   [Summary](http://legiscan.com/TX/bill/SB668/2025 "View Legislative Detail for Texas SB668")
+*   [Sponsors](http://legiscan.com/TX/sponsors/SB668/2025 "View Sponsors of Texas SB668")
+*   [Texts](http://legiscan.com/TX/drafts/SB668/2025 "View Bill Text Drafts for Texas SB668")
+*   [Votes](http://legiscan.com/TX/votes/SB668/2025 "View Roll Call Votes on Texas SB668")
+*   [Research](http://legiscan.com/TX/research/SB668/2025 "View Legislation Research Information on Texas SB668")
+*   [Comments](http://legiscan.com/TX/comments/SB668/2025 "View Social & PolitiCorps Commentary on Texas SB668")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas SB668 and other TX legislation")
+
+Status
+------
+
+Spectrum: Partisan Bill (Republican 1)
+
+Status: Engrossed on April 24 2025 - 50% progression
+
+Action: 2025-04-28 - Referred to Delivery of Government Efficiency
+
+Pending: [House Delivery of Government Efficiency Committee](http://legiscan.com/TX/pending/house-delivery-of-government-efficiency-committee/id/5185 "View other bills referred to TX House Delivery of Government Efficiency Committee")
+
+Text: [Latest bill text (Engrossed) [HTML]](http://legiscan.com/TX/text/SB668/2025 "View latest bill text for Texas SB668")
+
+Summary
+-------
+
+Relating to the disclosure of information with regard to artificial intelligence.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Texas SB668 and other TX legislation") or view this same bill number from [multiple sessions](http://legiscan.com/TX/research/SB668 "Research for TX SB668 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Texas and national legislation").
+
+Title
+-----
+
+Relating to the disclosure of information with regard to artificial intelligence.
+
+Sponsors
+--------
+
+[Sen. Bryan Hughes](http://legiscan.com/TX/people/bryan-hughes/id/5921 "View other legislation sponsored by Texas Senator Bryan Hughes")[R]
+
+Roll Calls
+----------
+
+2025-04-24 - _Senate_ - [Read 3rd time](http://legiscan.com/TX/rollcall/SB668/id/1557808 "View roll call details for SB668 vote Read 3rd time") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+2025-04-24 - _Senate_ - [Three day rule suspended](http://legiscan.com/TX/rollcall/SB668/id/1557807 "View roll call details for SB668 vote Three day rule suspended") (Y: 31 N: 0 NV: 0 Abs: 0) [PASS]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-04-28 | House | Referred to Delivery of Government Efficiency |
+| 2025-04-28 | House | Read first time |
+| 2025-04-25 | House | Received from the Senate |
+| 2025-04-24 | Senate | Reported engrossed |
+| 2025-04-24 | Senate | Record vote |
+| 2025-04-24 | Senate | Passed |
+| 2025-04-24 | Senate | Read 3rd time |
+| 2025-04-24 | Senate | Record vote |
+| 2025-04-24 | Senate | Three day rule suspended |
+| 2025-04-24 | Senate | Vote recorded in Journal |
+| 2025-04-24 | Senate | Read 2nd time & passed to engrossment |
+| 2025-04-24 | Senate | Laid before the Senate |
+| 2025-04-24 | Senate | Placed on local & uncontested calendar |
+| 2025-04-09 | Senate | Committee report printed and distributed |
+| 2025-04-09 | Senate | Recommended for local & uncontested calendar |
+| 2025-04-09 | Senate | Reported favorably w/o amendments |
+| 2025-04-08 | Senate | Vote taken in committee |
+| 2025-04-08 | Senate | Considered in public hearing |
+| 2025-04-03 | Senate | Left pending in committee |
+| 2025-04-03 | Senate | Testimony taken in committee |
+| 2025-04-03 | Senate | Considered in public hearing |
+| 2025-04-03 | Senate | Scheduled for public hearing on . . . |
+| 2025-02-03 | Senate | Referred to Business & Commerce |
+| 2025-02-03 | Senate | Read first time |
+| 2024-12-19 | Senate | Filed |
+| 2024-12-19 | Senate | Received by the Secretary of the Senate |
+
+Subjects
+--------
+
+[ARTIFICIAL INTELLIGENCE](http://legiscan.com/gaits/subject/383508 "View other legislative instruments with the ARTIFICIAL INTELLIGENCE subject")
+
+[ATTORNEY GENERAL](http://legiscan.com/gaits/subject/5514 "View other legislative instruments with the ATTORNEY GENERAL subject")
+
+[Business & Commerce](http://legiscan.com/gaits/subject/5271 "View other legislative instruments with the Business & Commerce subject")
+
+[Business & Commerce--General](http://legiscan.com/gaits/subject/5272 "View other legislative instruments with the Business & Commerce--General subject")
+
+[DISCRIMINATION](http://legiscan.com/gaits/subject/5615 "View other legislative instruments with the DISCRIMINATION subject")
+
+[Electronic Information Systems](http://legiscan.com/gaits/subject/5345 "View other legislative instruments with the Electronic Information Systems subject")
+
+Texas State Sources
+-------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB668](https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB668) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668I.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668I.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668S.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668S.htm) |
+| Text | [https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668E.htm](https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00668E.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/analysis/html/SB00668I.htm](https://capitol.texas.gov/tlodocs/89R/analysis/html/SB00668I.htm) |
+| Supplement | [https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/SB00668I.htm](https://capitol.texas.gov/tlodocs/89R/fiscalnotes/html/SB00668I.htm) |
+| Roll Call | [https://journals.senate.texas.gov/sjrnl/89r/pdf/89RSJ04-24-F.PDF#page=35](https://journals.senate.texas.gov/sjrnl/89r/pdf/89RSJ04-24-F.PDF#page=35) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

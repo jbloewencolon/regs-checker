@@ -1,0 +1,175 @@
+Title: Nevada SB199 | 2025 | 83rd Legislature
+
+URL Source: http://legiscan.com/NV/bill/SB199
+
+Markdown Content:
+NV SB199 | 2025 | 83rd Legislature | LegiScan
+===============
+
+[Jump to Navigation](http://legiscan.com/NV/bill/SB199#main-menu)
+
+[![Image 1: Home](https://acme.legiscan.com/images/logo.png)](http://legiscan.com/ "Home")
+
+Main menu
+---------
+
+*   [Register](http://legiscan.com/user/register "Register for a LegiScan account")
+*   [About](http://legiscan.com/about "Learn more about LegiScan")
+*   [Features](http://legiscan.com/features "Overview of LegiScan features")
+*   [Datasets](http://legiscan.com/datasets "Weekly session data snapshots")
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API Data Services")
+*   [Bill Tracking](http://legiscan.com/gaits "Government Affairs Information Tracking System")
+*   [Search](http://legiscan.com/gaits/search "National Legislative Search Engine")
+*   [VOTE!](http://legiscan.com/voter-registration "Visit your state voter registration information")
+*   [Login](http://legiscan.com/user/login "Login to your LegiScan account")
+
+NV SB199 | 2025 | 83rd Legislature
+==================================
+
+[](http://legiscan.com/NV/bill/SB199 "Share on Facebook")[](http://legiscan.com/NV/bill/SB199 "Share on Bluesky")[](http://legiscan.com/NV/bill/SB199 "Share on X")[](http://legiscan.com/NV/bill/SB199 "Share on LinkedIn")[](http://legiscan.com/NV/bill/SB199 "Share on reddit")[](http://legiscan.com/NV/bill/SB199 "Share on email")
+
+[Nevada](http://legiscan.com/NV "View the Nevada Legislative dashboard") Senate Bill 199
+========================================================================================
+
+[NV State Legislature page for SB199](https://www.leg.state.nv.us/App/NELIS/REL/83rd2025/Bill/12246/Overview "Nevada State Legislature source page for SB199")
+
+* * *
+
+*   [Summary](http://legiscan.com/NV/bill/SB199/2025 "View Legislative Detail for Nevada SB199")
+*   [Sponsors](http://legiscan.com/NV/sponsors/SB199/2025 "View Sponsors of Nevada SB199")
+*   [Texts](http://legiscan.com/NV/drafts/SB199/2025 "View Bill Text Drafts for Nevada SB199")
+*   [Votes](http://legiscan.com/NV/votes/SB199/2025 "View Roll Call Votes on Nevada SB199")
+*   [Research](http://legiscan.com/NV/research/SB199/2025 "View Legislation Research Information on Nevada SB199")
+*   [Comments](http://legiscan.com/NV/comments/SB199/2025 "View Social & PolitiCorps Commentary on Nevada SB199")
+*   [Track](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Nevada SB199 and other NV legislation")
+
+Status
+------
+
+**Completed Legislative Action**
+
+Spectrum: Partisan Bill (Democrat 1)
+
+Status: Failed on June 3 2025 - 100% progression
+
+Action: 2025-06-03 - (No further action taken.)
+
+Text: [Latest bill text (Amended) [PDF]](http://legiscan.com/NV/text/SB199/2025 "View latest bill text for Nevada SB199")
+
+Summary
+-------
+
+AN ACT relating to artificial intelligence systems; providing for the registration and regulation of artificial intelligence companies by the Bureau of Consumer Protection in the Office of the Attorney General; imposing certain requirements and restrictions upon certain persons engaged in certain activities relating to artificial intelligence systems; requiring the Department of Employment, Training and Rehabilitation to develop a survey and report certain information relating to artificial intelligence systems; requiring a county recorder to develop, implement and maintain certain policies, procedures and protocols; revising the list of activities that constitute an unlawful contract, combination or conspiracy in restraint of trade; requiring the Superintendent of Public Instruction to establish the Working Group on the Use of Artificial Intelligence Systems in Education; providing penalties; and providing other matters properly relating thereto.
+
+**Tracking Information**
+
+[**Register now**](http://legiscan.com/user/register "Signup for your free OneVote or GAITS Pro trial account") for our free OneVote public service or GAITS Pro trial account and you can begin tracking this and other legislation, all driven by the real-time data of the LegiScan API. Providing tools allowing you to research pending legislation, stay informed with email alerts, content feeds, and share dynamic reports. Use our new PolitiCorps to join with friends and collegaues to monitor & discuss bills through the process.
+
+[Monitor Legislation](http://legiscan.com/gaits/monitor "Monitor and receive alerts for Nevada SB199 and other NV legislation") or view this same bill number from [multiple sessions](http://legiscan.com/NV/research/SB199/2025 "Research for NV SB199 across prior sessions") or take advantage of our national [legislative search](http://legiscan.com/gaits/search "Advanced full text search engine for Nevada and national legislation").
+
+Title
+-----
+
+Enacts provisions relating to artificial intelligence systems. (BDR 52-583)
+
+Sponsors
+--------
+
+[Sen. Dina Neal](http://legiscan.com/NV/people/dina-neal/id/12213 "View other legislation sponsored by Nevada Senator Dina Neal")[D]
+
+History
+-------
+
+| Date | Chamber | Action |
+| --- | --- | --- |
+| 2025-06-03 | Senate | (No further action taken.) |
+| 2025-04-23 | Senate | To committee. |
+| 2025-04-23 | Senate | From printer. To engrossment. Engrossed. First reprint. |
+| 2025-04-21 | Senate | Taken from General File. Re-referred to Committee on Finance. Exemption effective. To printer. |
+| 2025-04-21 | Senate | Read second time. Amended. (Amend. No. 304.) |
+| 2025-04-21 | Senate | Placed on Second Reading File. |
+| 2025-04-21 | Senate | From committee: Amend, and do pass as amended. |
+| 2025-04-07 | Senate | Notice of eligibility for exemption. |
+| 2025-02-12 | Senate | From printer. To committee. |
+| 2025-02-11 | Senate | Read first time. Referred to Committee on Commerce and Labor. To printer. |
+
+Nevada State Sources
+--------------------
+
+| Type | Source |
+| --- | --- |
+| Summary | [https://www.leg.state.nv.us/App/NELIS/REL/83rd2025/Bill/12246/Overview](https://www.leg.state.nv.us/App/NELIS/REL/83rd2025/Bill/12246/Overview) |
+| Text | [https://www.leg.state.nv.us/Session/83rd2025/Bills/SB/SB199.pdf](https://www.leg.state.nv.us/Session/83rd2025/Bills/SB/SB199.pdf) |
+| Text | [https://www.leg.state.nv.us/Session/83rd2025/Bills/SB/SB199_R1.pdf](https://www.leg.state.nv.us/Session/83rd2025/Bills/SB/SB199_R1.pdf) |
+| Amendment | [https://www.leg.state.nv.us/Session/83rd2025/Bills/Amendments/A_SB199_304.pdf](https://www.leg.state.nv.us/Session/83rd2025/Bills/Amendments/A_SB199_304.pdf) |
+
+LegiScan Search
+---------------
+
+[View Top 50 Searches](http://legiscan.com/trends/search "Top 50 legislative searches")
+
+State:  
+
+Select area of search.
+
+Bill Number:  
+
+Find an exact bill number.
+
+Full Text Search:  
+
+Search bill text and data. [[**help**]](http://legiscan.com/fulltext-search "Read about search engine query features")
+
+[Reset](http://legiscan.com/gaits/search/reset)
+
+LegiScan Info
+-------------
+
+*   [2026 Schedules](http://legiscan.com/schedules/2026 "Session calendar for 2026")
+
+*   [Price List](http://legiscan.com/pricing "Detailed service fee information")
+
+*   [LegiScan API](http://legiscan.com/legiscan "LegiScan API data services")
+*   [Weekly Datasets](http://legiscan.com/datasets "Weekly bill &amp; vote data snapshots")
+
+*   [Documentation](http://legiscan.com/documentation "User manuals for LegiScan GAITS &amp; LegiScan API")
+*   [Search Help](http://legiscan.com/fulltext-search "Help for search engine syntax")
+
+*   [Voter Registration](http://legiscan.com/voter-registration "Voter registration information")
+
+*   [Governor Deadlines & Effective Dates](http://legiscan.com/governor-deadlines-effective-dates)
+
+*   [Legislation 101](http://legiscan.com/legislation-101 "Overview of the legislative process")
+*   [On Bill Numbers](http://legiscan.com/bill-numbers "Information on bill numbers across jurisdictions")
+*   [State Support](http://legiscan.com/legiscan-states "State support information")
+
+LegiScan Trends
+---------------
+
+[View Top 50 National](http://legiscan.com/trends "Current trending national legislation")
+
+[CA AB2619](http://legiscan.com/CA/bill/AB2619/2025 "View detailed bill information for CA AB2619") Water resources: data centers.
+
+[OK SB2158](http://legiscan.com/OK/bill/SB2158/2026 "View detailed bill information for OK SB2158") Income tax; creating the Health Care Sharing Ministry Tax Parity Act; providing...
+
+[VA SB173](http://legiscan.com/VA/bill/SB173/2026 "View detailed bill information for VA SB173") Weapons; possession prohibited in hospital that provides mental health...
+
+[SD SB19](http://legiscan.com/SD/bill/SB19/2026 "View detailed bill information for SD SB19") Revise certain references to the Internal Revenue Code.
+
+[OK SB1561](http://legiscan.com/OK/bill/SB1561/2026 "View detailed bill information for OK SB1561") Emergency medical services; modifying certain disciplinary actions. Effective...
+
+[IL HB5116](http://legiscan.com/IL/bill/HB5116/2025 "View detailed bill information for IL HB5116") CONTROLLED SUB-PMP DATA
+
+[CA AB2466](http://legiscan.com/CA/bill/AB2466/2025 "View detailed bill information for CA AB2466") Strong Workforce Program: work-based learning opportunities: regional...
+
+[CO HB1122](http://legiscan.com/CO/bill/HB1122/2026 "View detailed bill information for CO HB1122") Mandatory Coverage Hormone Replacement Therapy
+
+[CA SB970](http://legiscan.com/CA/bill/SB970/2025 "View detailed bill information for CA SB970") Military or overseas voters.
+
+[OK SB1767](http://legiscan.com/OK/bill/SB1767/2026 "View detailed bill information for OK SB1767") Alcoholic beverages; prohibiting retailer from shipping alcoholic beverages;...
+
+LegiScan LLC is an impartial and nonpartisan legislative tracking, reporting and data service utilizing LegiScan GAITS and LegiScan API
+
+[Contact Us](http://legiscan.com/feedback "Contact LegiScan via Email") · [Terms](http://legiscan.com/terms-of-service "LegiScan Terms of Service") · [Privacy](http://legiscan.com/privacy "LegiScan Privacy Policy") · [800-618-2750](tel:+18006182750 "Contact LegiScan via Phone")
+
+[![Image 2: feedback](blob:http://localhost/6cb5f0332fdc9ad15098e98ae1744483)](http://legiscan.com/feedback)

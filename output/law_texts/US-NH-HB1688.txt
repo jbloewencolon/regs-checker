@@ -1,0 +1,138 @@
+Title: New Hampshire HB1688 | 2024 | Regular Session
+
+URL Source: http://legiscan.com/NH/text/HB1688/id/2864315
+
+Published Time: Sat, 28 Sep 2024 00:48:35 GMT
+
+Markdown Content:
+**Bill Title:** Relative to the use of artificial intelligence by state agencies.
+
+**Status:**_(Passed)_ 2024-07-22 - Signed by Governor Sununu 07/12/2024; Chapter 209; eff. 07/01/2024 [[HB1688 Detail]](https://legiscan.com/NH/bill/HB1688/2024 "New Hampshire NH HB1688 legislative tracking detail and summary")
+
+HB 1688-FN - AS INTRODUCED
+
+2024 SESSION
+
+24-2510
+
+02/10
+
+HOUSE BILL 1688-FN
+
+AN ACT [relative to the use of artificial intelligence by state agencies.](http://legiscan.com/NH/text/HB1688/id/2864315)
+
+SPONSORS: Rep. Cormen, Graf. 15; Rep. Summers, Rock. 20; Rep. Preece, Hills. 17; Rep. Muns, Rock. 29; Rep. Ming, Hills. 35; Rep. Brennan, Merr. 9; Rep. Santonastaso, Ches. 18; Rep. D. McGuire, Merr. 14; Rep. Donnelly, Rock. 25; Sen. Watters, Dist 4; Sen. Prentiss, Dist 5
+
+COMMITTEE: Executive Departments and Administration
+
+-----------------------------------------------------------------
+
+ANALYSIS
+
+This bill prohibits state agencies from using artificial intelligence to manipulate, discriminate, or surveil members of the public.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Explanation: Matter added to current law appears in bold italics.
+
+Matter removed from current law appears [in brackets and struckthrough.]
+
+Matter which is either (a) all new or (b) repealed and reenacted appears in regular type.
+
+24-2510
+
+02/10
+
+STATE OF NEW HAMPSHIRE
+
+In the Year of Our Lord Two Thousand Twenty Four
+
+AN ACT [relative to the use of artificial intelligence by state agencies.](http://legiscan.com/NH/text/HB1688/id/2864315)
+
+Be it Enacted by the Senate and House of Representatives in General Court convened:
+
+[](http://legiscan.com/NH/text/HB1688/id/2864315)1 New Chapter; Use of Artificial Intelligence by State Agencies. Amend RSA by inserting after chapter 5-C the following new chapter:
+
+CHAPTER 5-D
+
+USE OF ARTIFICIAL INTELLIGENCE BY STATE AGENCIES
+
+5-D:1 Definitions. In this chapter:
+
+I. "Artificial intelligence" or "AI" is the ability of a machine to display human-like capabilities for cognitive tasks such as reasoning, learning, planning and creativity. AI systems can adapt their behavior to a certain degree by analyzing the effects of previous actions and operating under varying and unpredictable circumstances without significant human oversight.
+
+II. "Generative AI" is AI that can generate text, images, or other media in response to prompts.
+
+III. "Deepfake" means a video of a person in which their face or body has been digitally altered so that they appear to be someone else, they appear to be saying something that they have never said, or they appear to be doing something that they have never done. A deepfake is typically used maliciously or to spread false information.
+
+IV. "State agency" means any department, commission, board, institution, bureau, office, law enforcement, or other entity, by whatever name called, including the legislative and judicial branches of state government, established in the state constitution, statutes, session laws or executive orders.
+
+5-D:2 Applicability. This chapter shall apply to all computer systems operated by any state agency as defined in RSA 5-D:1, IV. Excepted are systems used in research by state-funded institutions of higher learning. Also excepted are installed consumer systems in common personal use, including, but not limited to facial recognition used to unlock a smartphone.
+
+5-D:3 Prohibition. The following uses of AI by state agencies shall be prohibited:
+
+I. Cognitive behavioral manipulation of individual persons or specific groups of persons.
+
+II. Classifying persons based on behavior, socio-economic status, or personal characteristics resulting in:
+
+(a) Unlawful discrimination against any individual person or group of persons; or
+
+(b) Unlawful disparate impact on any individual person or group of persons based on any actual or perceived differentiating characteristic, including, but not limited to, age, genetic information, color, ethnicity, race, creed, religion, national origin, ancestry, sex, gender identity or expression, sexual orientation, marital status, familial status, pregnancy, veteran status, disability, or lawful source of income.
+
+III. Real-time and remote biometric identification systems used for surveillance in public spaces, such as facial recognition, except when used to locate a missing or abducted person.
+
+IV. Deepfakes when used for any deceptive or malicious purpose.
+
+5-D:4 Permitted Uses and Restrictions. Use of AI by state agencies shall be allowed under the following circumstances and with the following restrictions:
+
+I. If an AI system produces a recommendation or a decision, and this recommendation or decision once implemented or executed cannot be reversed, then the recommendation or decision must be reviewed by a human who is in an appropriate responsible position and is aware of the limitations of the AI system before the recommendation or decision takes effect.
+
+II. Such recommendations and decisions pertain to, but are not limited to, the following:
+
+(a) Situations in which limitations on rights and freedoms of an individual person or group of persons are determined.
+
+(b) Biometric identification to verify the identity of an individual person.
+
+(c) Management and operation of critical infrastructure.
+
+(d) Actions taken by law enforcement at the state and local levels.
+
+(e) Interpreting and applying the laws of the state, including sentencing.
+
+III. Any material produced by generative AI and that has not been reviewed, and possibly edited by a human in an appropriate responsible position, must be accompanied by disclosure that the content was generated by AI.
+
+IV. In all other circumstances in which a human user is interacting with an AI system, either directly or indirectly, the user must be informed that they are interacting with an AI system.
+
+5-D:5 Compliance.
+
+I. All state agencies shall take the following actions no later than 9 months after the effective date of this chapter and report their compliance with the department of information technology:
+
+(a) Review the use of AI in their computer systems to verify that they comply with the provisions of this chapter. Any AI system that is prohibited shall be removed.
+
+(b) Modify all procedures relative to any use of AI that are inconsistent with this chapter so that these procedures are consistent with the requirements in this chapter.
+
+II. Any AI systems newly deployed by a state agency after the effective date of this chapter shall comply with the provisions of this chapter. All newly implemented procedures relative to any use of AI that are implemented by a state agency after the effective date of this chapter shall be consistent with the requirements in this chapter.
+
+III. One year after the effective date of this chapter, the department of information technology shall provide to the governor, the speaker of the house of representatives, and the president of the senate a report summarizing AI systems identified by state agencies recording which of those systems were prohibited and removed in compliance with this chapter, which systems are allowed according to this chapter, and what procedures have been implemented to ensure that the procurement and use of these systems will be in compliance with this chapter. This report shall be updated annually to include new systems that state agencies have purchased. All such reports shall also be posted on the department of information technology’s website.
+
+[](http://legiscan.com/NH/text/HB1688/id/2864315)2 Effective Date. This act shall take effect July 1, 2024.
+
+[LBA](http://legiscan.com/NH/text/HB1688/id/2864315)
+
+24-2510
+
+12/11/23
+
+HB 1688-FN- FISCAL NOTE
+
+AS INTRODUCED
+
+AN ACT [relative to the use of artificial intelligence by state agencies.](http://legiscan.com/NH/text/HB1688/id/2864315)
+
+FISCAL IMPACT:
+
+The Office of Legislative Budget Assistant is unable to complete a fiscal note for this bill, as introduced, as it is awaiting information from the Department of Information Technology. The Department was originally contacted on 11/07/23 and most recently contacted on 12/04/23 for a fiscal note worksheet. When completed, the fiscal note will be forwarded to the House Clerk's Office.
+
+AGENCIES CONTACTED:
+
+Department of Information Technology
