@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     local_context_length: int = 32768  # Context window size configured in LM Studio
     local_extraction_max_tokens: int = 4096  # Max output tokens for extraction
 
+    # Extraction settings (used by agents)
+    extraction_model: str = "openai/gpt-oss-20b"  # Model ID for tracking
+    extraction_max_tokens: int = 4096  # Max output tokens per extraction call
+    extraction_temperature: float = 0.0  # Temperature for extraction calls
+
     # FastAPI
     api_host: str = "0.0.0.0"
     api_port: int = 8000
