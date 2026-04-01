@@ -69,7 +69,7 @@ def _render(request: Request, template: str, context: dict = None) -> HTMLRespon
     ctx = context or {}
     ctx["request"] = request
     templates = request.app.state.templates
-    return templates.TemplateResponse(template, ctx)
+    return templates.TemplateResponse(name=template, context=ctx)
 
 
 # ---------------------------------------------------------------------------
