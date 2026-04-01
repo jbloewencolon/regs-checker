@@ -67,9 +67,8 @@ def _acquire_pipeline_lock() -> bool:
 def _render(request: Request, template: str, context: dict = None) -> HTMLResponse:
     """Render a Jinja2 template. Uses the templates instance from app state."""
     ctx = context or {}
-    ctx["request"] = request
     templates = request.app.state.templates
-    return templates.TemplateResponse(name=template, context=ctx)
+    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 # ---------------------------------------------------------------------------
