@@ -104,6 +104,9 @@
                 {{ (item.payload.get('timeline', {}).get('effective_date') or item.payload.get('effective_date') or '?')[:80] }}
               {% elif item.extraction_type == 'actor_mapping' %}
                 {{ (item.payload.get('actors', [{}])[0].get('name', '') if item.payload.get('actors') else '?')[:80] }}
+              {% elif item.extraction_type == 'preemption_signal' %}
+                <strong>{{ item.payload.get('conflict_type', '?') | replace('_', ' ') | title }}</strong>:
+                {{ (item.payload.get('description') or '')[:80] }}
               {% else %}
                 {{ item.payload | string | truncate(80) }}
               {% endif %}
