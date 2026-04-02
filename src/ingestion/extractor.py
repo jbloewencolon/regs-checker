@@ -848,6 +848,15 @@ def extract_single_record(
                         "orrick_gated": confidence.orrick_gated,
                     }
 
+                    # Generate plain-English summary from the verified payload
+                    try:
+                        from src.core.summary_generator import generate_summary
+                        extraction_meta["plain_summary"] = generate_summary(
+                            resolved_type, item, ctx.get("jurisdiction"),
+                        )
+                    except Exception:
+                        pass  # Summary is presentation-only; don't block extraction
+
                     extraction_kwargs: dict[str, Any] = dict(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,

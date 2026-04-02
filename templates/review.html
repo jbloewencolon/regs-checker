@@ -85,7 +85,9 @@
           </td>
           <td style="max-width: 280px;">
             <div class="summary-text">
-              {% if item.extraction_type == 'obligation' %}
+              {% if item.plain_summary %}
+                {{ item.plain_summary[:150] }}{% if item.plain_summary|length > 150 %}...{% endif %}
+              {% elif item.extraction_type == 'obligation' %}
                 <strong>{{ item.payload.get('subject') or '?' }}</strong>
                 {{ item.payload.get('modality') or '' }}
                 {{ (item.payload.get('action') or '')[:80] }}
@@ -185,6 +187,17 @@
         <tr class="detail-row" id="detail-{{ item.queue_id }}" style="display: none;">
           <td colspan="6">
             <div class="review-detail-panel">
+              <!-- Plain-English Summary (presentation layer) -->
+              {% if item.plain_summary %}
+              <div class="detail-section" style="background:var(--bg-secondary);padding:12px;border-radius:6px;margin-bottom:12px;border-left:3px solid var(--primary);">
+                <h4 style="margin:0 0 6px 0;font-size:12px;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;">Plain-English Summary</h4>
+                <div style="font-size:14px;line-height:1.5;">{{ item.plain_summary }}</div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">
+                  This summary is generated from the verified payload for readability. The raw data below is authoritative.
+                </div>
+              </div>
+              {% endif %}
+
               <!-- Source Passage (with evidence highlighting) — shown FIRST -->
               {% if item.source_text %}
               <div class="detail-section">

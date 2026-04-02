@@ -1743,6 +1743,45 @@ def reset_sync(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.post("/api/run/generate-summaries")
+def generate_summaries(
+    overwrite: bool = False,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Generate plain-English summaries for extractions that don't have one.
+
+    Summaries are deterministic templates built from the verified JSON payload.
+    They are stored in metadata_['plain_summary'] and displayed in the review
+    queue and product API. The raw payload remains authoritative — summaries
+    are presentation-only.
+    """
+    try:
+        from src.core.summary_generator import generate_summaries_batch
+
+        result = generate_summaries_batch(db, overwrite=overwrite)
+
+        if result["total"] == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">'
+                'All extractions already have summaries. '
+                'Use overwrite=true to regenerate.'
+                '</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Generated <strong>{result["generated"]}</strong> summaries '
+            f'({result["failed"]} failed, {result["total"]} total). '
+            f'Summaries are now visible in the review queue.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/triage/{triage_id}/override")
 def override_triage(
     triage_id: int,

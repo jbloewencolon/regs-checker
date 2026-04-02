@@ -627,6 +627,44 @@
 
     <div class="step-connector"></div>
 
+    <!-- STEP 4.5: Generate Plain-English Summaries -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">4.5</div>
+        <div class="step-title">Generate Summaries</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Generates plain-English summaries from <strong>verified extraction payloads</strong>
+          for dashboard and product display. Summaries are presentation-only &mdash;
+          the raw payload (booleans, integers, verbatim quotes) remains authoritative.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/generate-summaries"
+                  hx-target="#summary-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Generate Missing Summaries</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Generating...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/generate-summaries?overwrite=true"
+                  hx-target="#summary-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Regenerate ALL summaries? This overwrites existing ones.">
+            <span class="btn-label">Regenerate All</span>
+            <span class="htmx-indicator"><span class="spinner"></span></span>
+          </button>
+        </div>
+        <div class="step-result" id="summary-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
     <!-- STEP 5: Sync to Policy Navigator -->
     <div class="step">
       <div class="step-header">
