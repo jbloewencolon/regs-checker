@@ -845,6 +845,7 @@ def extract_single_record(
                         "source_quality": confidence.source_quality,
                         "orrick_alignment": confidence.orrick_alignment,
                         "cross_validation": confidence.cross_validation,
+                        "orrick_gated": confidence.orrick_gated,
                     }
 
                     extraction_kwargs: dict[str, Any] = dict(

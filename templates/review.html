@@ -13,18 +13,21 @@
     <summary>How confidence scores work</summary>
     <div class="confidence-explainer-body">
       <p>Each extraction receives a <strong>composite confidence score</strong> (0–100%) built from up to six weighted components. The score determines the <strong>tier</strong> (A&nbsp;≥&nbsp;85%, B&nbsp;≥&nbsp;70%, C&nbsp;≥&nbsp;50%, D&nbsp;&lt;&nbsp;50%).</p>
+      <p class="confidence-explainer-note" style="color:var(--danger);font-weight:600;margin-bottom:8px;">
+        ORRICK GATE: Extractions without Orrick validation data are automatically Tier D regardless of other scores.
+      </p>
       <table class="confidence-explainer-table">
         <thead><tr><th>Component</th><th>Weight</th><th>What it measures</th></tr></thead>
         <tbody>
-          <tr><td><span style="color:#2563eb;">&#9632;</span> Schema Validity</td><td>15%</td><td>Did the LLM output conform to the expected Pydantic schema? 0% means structurally broken.</td></tr>
-          <tr><td><span style="color:#16a34a;">&#9632;</span> Evidence Grounding</td><td>25%</td><td>Fraction of extracted fields with a verified evidence span pointing back to source text.</td></tr>
-          <tr><td><span style="color:#7c3aed;">&#9632;</span> Completeness</td><td>15%</td><td>Proportion of optional fields the model filled in. Missing fields lower this score.</td></tr>
-          <tr><td><span style="color:#0891b2;">&#9632;</span> Source Quality</td><td>10%</td><td>Parse quality from the ingestion pipeline. Low scores indicate OCR errors or truncated content.</td></tr>
-          <tr><td><span style="color:#ea580c;">&#9632;</span> Orrick Alignment</td><td>10%</td><td>Token overlap with Orrick reference data. N/A if no reference data exists for the jurisdiction.</td></tr>
+          <tr><td><span style="color:#2563eb;">&#9632;</span> Schema Validity</td><td>10%</td><td>Did the LLM output conform to the expected Pydantic schema? 0% means structurally broken.</td></tr>
+          <tr><td><span style="color:#16a34a;">&#9632;</span> Evidence Grounding</td><td>20%</td><td>Fraction of extracted fields with a verified evidence span pointing back to source text.</td></tr>
+          <tr><td><span style="color:#7c3aed;">&#9632;</span> Completeness</td><td>10%</td><td>Proportion of optional fields the model filled in. Missing fields lower this score.</td></tr>
+          <tr><td><span style="color:#0891b2;">&#9632;</span> Source Quality</td><td>5%</td><td>Parse quality from the ingestion pipeline. Low scores indicate OCR errors or truncated content.</td></tr>
+          <tr style="background:rgba(234,88,12,0.08);"><td><span style="color:#ea580c;">&#9632;</span> <strong>Orrick Alignment</strong></td><td><strong>30%</strong></td><td>Token overlap with Orrick reference data. <strong>Required</strong> — without this, the extraction is auto-Tier D.</td></tr>
           <tr><td><span style="color:#be185d;">&#9632;</span> Cross-Validation</td><td>25%</td><td>Accuracy from the cross-validation agent that independently checks extracted facts against the source.</td></tr>
         </tbody>
       </table>
-      <p class="confidence-explainer-note">When Orrick Alignment or Cross-Validation are unavailable, their weight is redistributed proportionally among the active components.</p>
+      <p class="confidence-explainer-note">When Cross-Validation is unavailable, its weight is redistributed proportionally among the active components. Orrick Alignment is never redistributed — it is required.</p>
     </div>
   </details>
 
@@ -75,6 +78,9 @@
             <span class="type-tag">{{ item.extraction_type }}</span>
             {% if item.truncated %}
             <span class="truncated-badge" title="Model output was cut off (finish_reason=length). This extraction may be incomplete.">TRUNCATED</span>
+            {% endif %}
+            {% if item.confidence_breakdown and item.confidence_breakdown.get('orrick_gated') %}
+            <span class="truncated-badge" style="background:#fef2f2;color:#ea580c;border-color:#fed7aa;" title="No Orrick validation data available for this law. Auto-Tier D until Orrick reference data is added.">NO ORRICK</span>
             {% endif %}
           </td>
           <td style="max-width: 280px;">
