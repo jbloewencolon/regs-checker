@@ -20,3 +20,9 @@
 
 ## Phase 4: Agent Grouping (Code)
 - [x] 4: Added PreemptionAgent to extractor.py agent registry — runs in GPT group alongside 5 other GPT-based agents (no VRAM swap cost)
+
+## Phase 5: UI Pipeline Integration
+- [x] 5A: Fixed analytics.html — added type_colors for rights_protection, compliance_mechanism, preemption_signal
+- [x] 5B: Fixed dashboard.html — updated agent count (4→7), model names (removed stale DeepSeek ref, updated to GPT-OSS 20B + Qwen 3.5 9B), updated setup instructions
+- [x] 5C: Fixed review.html — added preemption_signal summary display (conflict_type + description)
+- [x] 5D: Fixed v_state_ai_regulation_matrix view — changed INNER JOIN on dim_legislative_statuses to LEFT JOIN, recovering 124 laws with NULL status_id (48→172 rows)
