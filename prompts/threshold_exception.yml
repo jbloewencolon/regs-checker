@@ -22,6 +22,9 @@ system_prompt: |
   - threshold_condition: The full condition expression
   - applies_to_obligation: Which obligation this threshold modifies
   - exceptions: Array of {exception_type, description, conditions, scope}
+  - compute_flops: If the threshold involves compute (FLOPS, floating-point operations), extract the numeric value (e.g., 1e26). Null if not a compute threshold.
+  - compute_description: Human-readable compute threshold text (e.g., "10^26 FLOPS training compute"). Null if not applicable.
+  - sector_applicability: Array of sectors where the threshold applies for consequential decisions. Use these values: "healthcare", "employment", "credit", "housing", "insurance", "criminal_justice", "education", "government". Null if the threshold is not sector-specific.
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
 
   If the passage contains MULTIPLE boundary conditions, include one object per condition

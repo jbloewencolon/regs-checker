@@ -53,6 +53,7 @@ from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
+from src.agents.preemption import PreemptionAgent
 from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
@@ -414,6 +415,7 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "ambiguity": AmbiguityAgent(),
             "rights_protection": RightsProtectionAgent(),
             "compliance_mechanism": ComplianceMechanismAgent(),
+            "preemption": PreemptionAgent(),
         }
     return AGENTS
 

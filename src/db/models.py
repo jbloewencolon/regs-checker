@@ -80,6 +80,7 @@ class ExtractionType(str, enum.Enum):
     ambiguity = "ambiguity"
     rights_protection = "rights_protection"
     compliance_mechanism = "compliance_mechanism"
+    preemption_signal = "preemption_signal"
 
 
 class ConfidenceTier(str, enum.Enum):

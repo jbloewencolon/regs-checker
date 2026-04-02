@@ -1,0 +1,28 @@
+version: "1.0"
+agent: preemption
+description: >
+  Preemption signal agent — detects cross-jurisdictional conflicts,
+  federal preemption, Commerce Clause tensions, and First Amendment
+  challenges in legislative text.
+
+extraction_prompt: |
+  Analyze the following legislative passage for cross-jurisdictional conflicts,
+  preemption risks, Commerce Clause tensions, or First Amendment concerns.
+
+  If there are multiple conflicts, return each as a separate object in
+  the "extractions" array.
+
+  PASSAGE:
+  ---
+  {{ passage }}
+  ---
+  {% if document_title %}
+  DOCUMENT: {{ document_title }}
+  {% endif %}
+  {% if jurisdiction %}
+  JURISDICTION: {{ jurisdiction }}
+  {% endif %}
+  {% if key_requirements %}
+  KEY REQUIREMENTS (from Orrick AI Law Tracker):
+  {{ key_requirements }}
+  {% endif %}

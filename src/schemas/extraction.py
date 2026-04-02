@@ -52,6 +52,14 @@ class EnforcementInfo(BaseModel):
     penalty_description: str | None = None
     private_right_of_action: bool | None = None
     enforcement_text: str | None = Field(default=None, description="Raw enforcement language")
+    max_civil_penalty_usd: int | None = Field(
+        default=None,
+        description="Maximum civil penalty in USD if specified (e.g., 10000)",
+    )
+    cure_period_days: int | None = Field(
+        default=None,
+        description="Cure period in days before enforcement action (e.g., 60)",
+    )
 
 
 class ObligationPayload(BaseModel):
@@ -165,6 +173,21 @@ class ThresholdExceptionPayload(BaseModel):
         default=None, description="Which obligation this threshold modifies"
     )
     exceptions: list[ExceptionItem] | None = None
+
+    # Matrix fields — structured data for State AI Regulation Matrix
+    compute_flops: float | None = Field(
+        default=None,
+        description="Compute threshold in FLOPS if specified (e.g., 10e26)",
+    )
+    compute_description: str | None = Field(
+        default=None,
+        description="Human-readable compute threshold description",
+    )
+    sector_applicability: list[str] | None = Field(
+        default=None,
+        description="Consequential decision sectors: healthcare, employment, "
+        "credit, housing, insurance, criminal_justice, education, government",
+    )
 
 
 class ExceptionItem(BaseModel):
@@ -325,6 +348,68 @@ class ComplianceMechanismPayload(BaseModel):
     section_reference: str | None = None
     jurisdiction: str | None = None
 
+    # Matrix flags — classification booleans for State AI Regulation Matrix
+    is_bias_testing: bool = Field(
+        default=False,
+        description="True if this mechanism involves bias/discrimination testing",
+    )
+    is_red_teaming: bool = Field(
+        default=False,
+        description="True if this mechanism involves adversarial/red-team testing",
+    )
+    nist_measure_refs: list[str] | None = Field(
+        default=None,
+        description="Specific NIST AI RMF measure references (e.g., 'MEASURE-2.1')",
+    )
+    assessment_frequency_months: int | None = Field(
+        default=None,
+        description="Impact assessment frequency in months if specified (e.g., 12 for annual)",
+    )
+    is_third_party_audit: bool = Field(
+        default=False,
+        description="True if an independent third party must perform the audit/assessment",
+    )
+    incident_reporting_hours: int | None = Field(
+        default=None,
+        description="Hours within which incidents must be reported to AG/regulator",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Preemption Signal Agent output (cross-jurisdictional conflict detection)
+# ---------------------------------------------------------------------------
+
+
+class PreemptionSignalPayload(BaseModel):
+    """Extraction payload for the Preemption Signal Agent.
+
+    Detects cross-jurisdictional conflicts: federal preemption, Commerce Clause
+    tensions, cross-state contradictions, and First Amendment challenges.
+    """
+
+    conflict_type: str = Field(
+        description="Type: federal_preemption, interstate_commerce, cross_state_conflict, "
+        "first_amendment, dormant_commerce_clause, agency_jurisdiction, other"
+    )
+    description: str = Field(
+        description="Plain-language description of the conflict or preemption risk"
+    )
+    related_authority: str | None = Field(
+        default=None,
+        description="The preempting authority (e.g., 'Dec 2025 Federal EO on AI', "
+        "'US Constitution Art. I § 8')",
+    )
+    severity: str = Field(
+        description="high / medium / low — based on likelihood and compliance impact"
+    )
+    preemption_language: str | None = Field(
+        default=None,
+        description="Verbatim preemption clause from the passage if present "
+        "(e.g., 'nothing in this section shall preempt federal law')",
+    )
+    section_reference: str | None = None
+    jurisdiction: str | None = None
+
 
 # ---------------------------------------------------------------------------
 # Registry mapping extraction types to payload schemas
@@ -340,4 +425,5 @@ EXTRACTION_TYPE_SCHEMAS: dict[str, type[BaseModel]] = {
     "ambiguity": AmbiguityPayload,
     "rights_protection": RightsProtectionPayload,
     "compliance_mechanism": ComplianceMechanismPayload,
+    "preemption_signal": PreemptionSignalPayload,
 }
