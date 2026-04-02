@@ -36,6 +36,9 @@ docker/data/
 # PDF rendering artifacts
 static/*.png
 
+# Extraction run archives (keep .gitkeep, ignore run data)
+output/extraction_runs/*/
+
 # OS
 .DS_Store
 Thumbs.db

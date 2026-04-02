@@ -1275,14 +1275,60 @@ def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
             if j.status == IngestionStatus.completed
         ]
         passages_deleted = 0
+        extractions_deleted = 0
         if completed_version_ids:
-            # Delete triage results for these passages first
+            # Get passage IDs first — needed for cascading deletes
             passage_ids = db.scalars(
                 select(NormalizedSourceRecord.id).where(
                     NormalizedSourceRecord.document_version_id.in_(completed_version_ids)
                 )
             ).all()
             if passage_ids:
+                # Delete in FK order: deps/conditions → review → extractions → triage → passages
+                extraction_ids = db.scalars(
+                    select(Extraction.id).where(
+                        Extraction.source_record_id.in_(passage_ids)
+                    )
+                ).all()
+                if extraction_ids:
+                    db.execute(
+                        delete(ApplicabilityCondition).where(
+                            ApplicabilityCondition.extraction_id.in_(extraction_ids)
+                        )
+                    )
+                    db.execute(
+                        delete(ObligationDependency).where(
+                            ObligationDependency.parent_extraction_id.in_(extraction_ids)
+                        )
+                    )
+                    db.execute(
+                        delete(ObligationDependency).where(
+                            ObligationDependency.child_extraction_id.in_(extraction_ids)
+                        )
+                    )
+                    review_ids = db.scalars(
+                        select(ReviewQueueItem.id).where(
+                            ReviewQueueItem.extraction_id.in_(extraction_ids)
+                        )
+                    ).all()
+                    if review_ids:
+                        db.execute(
+                            delete(ReviewAction).where(
+                                ReviewAction.queue_item_id.in_(review_ids)
+                            )
+                        )
+                    db.execute(
+                        delete(ReviewQueueItem).where(
+                            ReviewQueueItem.extraction_id.in_(extraction_ids)
+                        )
+                    )
+                    db.execute(
+                        delete(Extraction).where(
+                            Extraction.id.in_(extraction_ids)
+                        )
+                    )
+                    extractions_deleted = len(extraction_ids)
+                # Delete triage results
                 db.execute(
                     delete(SectionTriageResult).where(
                         SectionTriageResult.source_record_id.in_(passage_ids)
@@ -1333,6 +1379,8 @@ def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
             parts.append(f'{reset_to_fetched} will re-parse (files already downloaded).')
         if reset_to_pending > 0:
             parts.append(f'{reset_to_pending} will re-fetch and parse.')
+        if extractions_deleted > 0:
+            parts.append(f'{extractions_deleted} extractions cleared.')
         if passages_deleted > 0:
             parts.append(f'{passages_deleted} passages cleared for rebuilding.')
 
@@ -2086,12 +2134,22 @@ def run_api_extract(
                 '</div>'
             )
             panel_class = "warning"
+        run_folder = summary.get("folder", "")
+        run_note = ""
+        if run_folder:
+            from pathlib import Path
+            folder_name = Path(run_folder).name
+            run_note = (
+                f'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'
+                f'Run archived to: <code>output/extraction_runs/{html_escape(folder_name)}/</code>'
+                f'</div>'
+            )
         return HTMLResponse(
             f'<div class="result-panel {panel_class}">'
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
-            f'{cancelled_note}'
+            f'{cancelled_note}{run_note}'
             f'</div>'
         )
     except Exception as e:

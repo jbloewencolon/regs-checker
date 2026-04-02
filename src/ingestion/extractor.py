@@ -1116,6 +1116,10 @@ def run_extraction(
     # Clear any stale cancellation from a previous run
     clear_cancel()
 
+    # Create a dated output folder for this run
+    from src.core.run_archiver import RunArchiver
+    archiver = RunArchiver.start("extract")
+
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
@@ -1208,6 +1212,7 @@ def run_extraction(
             )
         else:
             _log("No unprocessed passages found — all triaged-relevant passages already extracted.")
+        archiver.finalize(db, summary)
         return summary
 
     _log(f"Found {len(records)} triaged-relevant passages to extract from")
@@ -1303,6 +1308,7 @@ def run_extraction(
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
                 _monitor.stop_run(cancelled=True)
+                archiver.finalize(db, summary)
                 return summary
 
             try:
@@ -1331,6 +1337,7 @@ def run_extraction(
                 _log(f"\n{cb}")
                 _monitor.record_circuit_breaker(str(cb))
                 _monitor.stop_run()
+                archiver.finalize(db, summary)
                 return summary
 
             except Exception as e:
@@ -1377,6 +1384,7 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     _monitor.stop_run()
+    archiver.finalize(db, summary)
     return summary
 
 
