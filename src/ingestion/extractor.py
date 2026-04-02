@@ -472,10 +472,10 @@ def _build_context(
         key_reqs = df.metadata_.get("key_requirements")
         if key_reqs:
             ctx["key_requirements"] = key_reqs
-        enforcement = df.metadata_.get("enforcement")
+        enforcement = df.metadata_.get("enforcement_penalties")
         if enforcement:
             ctx["enforcement_summary"] = enforcement
-        ai_scope = df.metadata_.get("ai_scope")
+        ai_scope = df.metadata_.get("ai_scope_summary")
         if ai_scope:
             ctx["ai_scope"] = ai_scope
         # IAPP-sourced fields (populated by cross-reference or status checker)
