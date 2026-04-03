@@ -665,7 +665,7 @@
 
     <div class="step-connector"></div>
 
-    <!-- STEP 5: Sync to Regs Checker Supabase -->
+    <!-- STEP 5: Sync Local -> Regs Checker Supabase -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">5</div>
@@ -674,13 +674,50 @@
       </div>
       <div class="step-body">
         <div class="step-description">
-          Pushes approved extractions from local Docker Postgres to Regs Checker Supabase.
-          Run Pre-flight first, then Dry Run to preview, then Sync.
+          Pushes pipeline data from local Docker Postgres to Regs Checker Supabase.
+          This is the first sync leg (local -> cloud).
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-success"
+                  hx-post="/dashboard/api/run/sync-to-supabase"
+                  hx-target="#step5-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  hx-confirm="Push local data to Regs Checker Supabase?">
+            <span class="btn-label">Sync to Regs Checker</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Syncing...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/sync-to-supabase?dry_run=true"
+                  hx-target="#step5-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Dry Run (Preview)</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Previewing...</span>
+          </button>
+        </div>
+        <div class="step-result" id="step5-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <!-- STEP 6: Sync Regs Checker -> Policy Navigator -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">6</div>
+        <div class="step-title">Sync to Policy Navigator</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Pushes extractions from Regs Checker Supabase to Policy Navigator product database.
+          Requires Step 5 to have run first. Run Pre-flight, then Dry Run, then Sync.
         </div>
         <div class="step-actions">
           <button class="btn"
                   hx-post="/dashboard/api/run/sync-preflight"
-                  hx-target="#step7-result"
+                  hx-target="#step6-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
             <span class="btn-label">Pre-flight Check</span>
@@ -688,7 +725,7 @@
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/sync?dry_run=true"
-                  hx-target="#step7-result"
+                  hx-target="#step6-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
             <span class="btn-label">Dry Run (Preview)</span>
@@ -696,16 +733,16 @@
           </button>
           <button class="btn btn-success"
                   hx-post="/dashboard/api/run/sync"
-                  hx-target="#step7-result"
+                  hx-target="#step6-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this"
-                  hx-confirm="Push data to Regs Checker Supabase?">
-            <span class="btn-label">Sync to Regs Checker</span>
+                  hx-confirm="Push data to Policy Navigator?">
+            <span class="btn-label">Sync to Policy Navigator</span>
             <span class="htmx-indicator"><span class="spinner"></span> Syncing...</span>
           </button>
           <button class="btn btn-sm"
                   hx-post="/dashboard/api/run/bridge-check"
-                  hx-target="#step7-result"
+                  hx-target="#step6-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
             <span class="btn-label">Check Bridge Gaps</span>
@@ -713,14 +750,14 @@
           </button>
           <button class="btn btn-sm"
                   hx-post="/dashboard/api/run/sync/reset"
-                  hx-target="#step7-result"
+                  hx-target="#step6-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this"
                   hx-confirm="Clear sync status on all extractions? They will be re-synced on the next run.">
             Reset Sync
           </button>
         </div>
-        <div class="step-result" id="step7-result">
+        <div class="step-result" id="step6-result">
           {% if stats.total_extractions > 0 %}
           <span class="count">{{ stats.total_extractions }}</span> total extractions,
           <span class="count">{{ stats.approved_extractions }}</span> approved
