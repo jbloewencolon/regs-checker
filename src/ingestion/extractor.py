@@ -116,6 +116,40 @@ _payload_hash_available: bool | None = None
 # Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
 
+def _ensure_extraction_enums(db, _log=None) -> None:
+    """Ensure all ExtractionType enum values exist in the local Postgres enum.
+
+    The preemption_signal, rights_protection, and compliance_mechanism values
+    were added after the initial schema. If the Alembic migration hasn't been
+    applied to the local database, this adds them idempotently.
+    """
+    from sqlalchemy import text
+
+    new_values = [
+        "rights_protection",
+        "compliance_mechanism",
+        "preemption_signal",
+    ]
+
+    bind = db.get_bind()
+    with bind.begin() as conn:
+        # Get existing enum values
+        result = conn.execute(text(
+            "SELECT enumlabel FROM pg_enum "
+            "JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
+            "WHERE pg_type.typname = 'extractiontype'"
+        ))
+        existing = {row[0] for row in result}
+
+        for val in new_values:
+            if val not in existing:
+                if _log:
+                    _log(f"Adding '{val}' to extractiontype enum...")
+                conn.execute(text(
+                    f"ALTER TYPE extractiontype ADD VALUE IF NOT EXISTS '{val}'"
+                ))
+
+
 def _ensure_triage_table(db, _log=None) -> None:
     """Create the section_triage_results table if it doesn't exist.
 
@@ -802,6 +836,10 @@ def extract_single_record(
         # Write extractions against all source records in the merged passage
         for source_record in passage.source_records:
             for item in result.extractions:
+                # Use a savepoint so a single failed INSERT (e.g. missing
+                # enum value) doesn't roll back the entire transaction
+                # and destroy the ExtractionJob row + prior extractions.
+                sp = db.begin_nested()
                 try:
                     resolved_type = _discriminate_extraction_type(name, item)
 
@@ -913,7 +951,7 @@ def extract_single_record(
                     )
 
                 except Exception as e:
-                    db.rollback()
+                    sp.rollback()
                     logger.error(
                         "extraction_record_failed",
                         agent=name,
@@ -1127,6 +1165,9 @@ def run_extraction(
     """
     # Clear any stale cancellation from a previous run
     clear_cancel()
+
+    # Ensure all extraction type enum values exist in local Postgres
+    _ensure_extraction_enums(db, on_progress)
 
     # Create a dated output folder for this run
     from src.core.run_archiver import RunArchiver
