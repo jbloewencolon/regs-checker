@@ -7,17 +7,16 @@
 
 ## Bugs / Issues (post-extraction run)
 
-### BUG-1: 59 laws missing Orrick data → auto Tier D extractions
+### BUG-1: 59 laws missing Orrick data → auto Tier D extractions — FLAGGED
 **Root cause**: `data/fact_laws.csv` has 244 laws. Only 185 have `key_requirements_raw` or `enforcement_penalties` populated. 59 laws have neither, meaning ALL extractions from those laws get auto-Tier D by the Orrick gate.
 **Impact**: The 2046 Tier D items in the review queue include extractions that may be perfectly good but can never score above D because their source law has no Orrick reference data.
 **Action needed**: Either (a) add Orrick data to those 59 laws in the CSV and re-seed, or (b) flag them for manual review, or (c) exclude them from extraction. User preference: they should not be included unless Orrick data is added.
 **Affected files**: `data/fact_laws.csv`, possibly `src/ingestion/local_ingest.py` (seeding).
 
-### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step
+### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step — FIXED
 **Root cause**: The "Generate Summaries" button is a no-op because summaries are auto-generated at extraction time (`extractor.py:1004-1012`). The real issue is that failed agent calls (stored in `FailedExtractionAttempt` table) need the **"Retry Failed"** workflow (`dashboard.py:2208`, `POST /api/run/retry-failed`), not the summary step.
-**User need**: Retry failed agent calls. The endpoint exists (`run_retry_failed_extractions`), but it may not be visible or clearly labeled in the UI.
-**Action needed**: (a) Verify the retry button is visible and working in the dashboard, (b) surface the failed extraction count prominently so the user knows retries are available, (c) optionally make the "Generate Summaries" step clearer about what it does.
-**Affected files**: `src/api/routes/dashboard.py` (retry endpoint + UI), `templates/dashboard.html`, `src/ingestion/extractor.py` (retry logic).
+**Fix applied**: Added a `Retry Failed` button + badge to the Extract step (Step 3) in `templates/dashboard.html`. It polls `GET /api/failed-extractions-count` every 10s and shows the count + button when failures exist.
+**Affected files**: `templates/dashboard.html`.
 
 ### BUG-3: Supabase sync says "not configured" — wrong URL format in .env
 **Root cause**: Two problems:
