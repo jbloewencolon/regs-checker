@@ -2,7 +2,11 @@
 
 ## Active Tasks
 
-- **Starter task: Run existing tests and classify results** — Run `pytest tests/ -v` and classify each test as: passing, failing (with reason), or stale (tests code that no longer exists). Write results to `test-audit.md`.
+- **Write tests for type discriminator** — Unit tests for `_discriminate_extraction_type()` covering: obligation with court subject -> enforcement, obligation with developer subject -> obligation, definition with actors -> actor_mapping, threshold with exceptions -> exception, preemption -> preemption_signal.
+
+## Completed Tasks
+
+- **Starter task: Run existing tests and classify results** — DONE. See `test-audit.md` and `test-gaps.md`. Result: 320 pass, 20 fail, 4 stale files.
 
 ## Next Tasks
 
