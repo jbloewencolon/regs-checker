@@ -122,6 +122,10 @@ def _ensure_extraction_enums(db, _log=None) -> None:
     The preemption_signal, rights_protection, and compliance_mechanism values
     were added after the initial schema. If the Alembic migration hasn't been
     applied to the local database, this adds them idempotently.
+
+    IMPORTANT: ALTER TYPE ... ADD VALUE cannot run inside a transaction in
+    PostgreSQL (it auto-commits). We use a raw psycopg2 connection with
+    autocommit=True to execute these statements outside any transaction.
     """
     from sqlalchemy import text
 
@@ -132,8 +136,9 @@ def _ensure_extraction_enums(db, _log=None) -> None:
     ]
 
     bind = db.get_bind()
-    with bind.begin() as conn:
-        # Get existing enum values
+
+    # First, check if the enum type exists at all
+    with bind.connect() as conn:
         result = conn.execute(text(
             "SELECT enumlabel FROM pg_enum "
             "JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
@@ -141,13 +146,33 @@ def _ensure_extraction_enums(db, _log=None) -> None:
         ))
         existing = {row[0] for row in result}
 
-        for val in new_values:
-            if val not in existing:
-                if _log:
-                    _log(f"Adding '{val}' to extractiontype enum...")
-                conn.execute(text(
-                    f"ALTER TYPE extractiontype ADD VALUE IF NOT EXISTS '{val}'"
-                ))
+    if not existing:
+        # Enum type doesn't exist — Alembic migrations haven't run.
+        # Don't try to ALTER a non-existent type; the migration will create it.
+        if _log:
+            _log("extractiontype enum not found — run Alembic migrations first.")
+        return
+
+    missing = [v for v in new_values if v not in existing]
+    if not missing:
+        return
+
+    # ALTER TYPE ... ADD VALUE must run outside a transaction block.
+    # Get the raw DBAPI connection and set autocommit mode.
+    raw_conn = bind.raw_connection()
+    try:
+        raw_conn.autocommit = True
+        cursor = raw_conn.cursor()
+        for val in missing:
+            if _log:
+                _log(f"Adding '{val}' to extractiontype enum...")
+            cursor.execute(
+                f"ALTER TYPE extractiontype ADD VALUE IF NOT EXISTS '{val}'"
+            )
+        cursor.close()
+    finally:
+        raw_conn.autocommit = False
+        raw_conn.close()
 
 
 def _ensure_triage_table(db, _log=None) -> None:
@@ -891,8 +916,9 @@ def extract_single_record(
                     # Generate plain-English summary from the verified payload
                     try:
                         from src.core.summary_generator import generate_summary
+                        ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
                         extraction_meta["plain_summary"] = generate_summary(
-                            resolved_type, item, ctx.get("jurisdiction"),
+                            ext_type_str, item, ctx.get("jurisdiction"),
                         )
                     except Exception:
                         pass  # Summary is presentation-only; don't block extraction
@@ -937,6 +963,10 @@ def extract_single_record(
                         orrick_alignment=confidence.orrick_alignment,
                         orrick_matched_tokens=confidence.orrick_matched_tokens[:5],
                     )
+
+                    # Commit the savepoint so this extraction persists
+                    # even if a later extraction in this batch fails.
+                    sp.commit()
 
                     # Emit to live monitor
                     monitor.record_agent_result(
