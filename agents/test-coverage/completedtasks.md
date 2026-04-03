@@ -1,5 +1,26 @@
 # test-coverage Agent — Completed Tasks
 
+## 3. Fix Orrick gate test failures (2026-04-03)
+
+**What changed**: Updated `tests/unit/test_confidence.py` and `tests/unit/test_verification_agents.py`.
+
+**Problem**: 7 tests expected Tier A/B but got Tier D because the Orrick gate (added after tests were written) forces Tier D when no Orrick data is present. The tests never supplied Orrick data.
+
+**Fix**: Added mock `OrrickSimilarityResult` (with `has_orrick_data=True`, `combined_score=0.30`) to tests that need to verify scoring above Tier D. This is a controlled test input — the Orrick gate still enforces Tier D in production when real Orrick data is missing.
+
+**New tests added** (3):
+- `test_orrick_gate_forces_tier_d` — verifies perfect scores still get D without Orrick
+- `test_low_orrick_score_limits_tier` — verifies low Orrick match reduces alignment score
+- `test_no_orrick_data_flag` — verifies `has_orrick_data=False` triggers the gate
+- `test_orrick_gate_overrides_cv` — verifies perfect CV can't escape D without Orrick
+
+**Tests removed** (1):
+- `test_weight_redistribution_without_optional_components` — replaced by `test_orrick_gate_forces_tier_d` which tests the same scenario but with correct expectations
+
+**Suite result**: 403 pass, 13 fail (down from 20 fail). All remaining failures are DB-required (7), stale mocks (5), or stale module refs (1).
+
+---
+
 ## 2. Write new unit tests for 3 untested features (2026-04-03)
 
 **What changed**: Created 3 new test files in `tests/unit/`:
