@@ -311,7 +311,21 @@ class TestCitationVerification:
 
 
 class TestConfidenceWithCrossValidation:
-    """Tests for cross-validation score in the confidence model."""
+    """Tests for cross-validation score in the confidence model.
+
+    The Orrick gate forces Tier D when no Orrick data is present. To test
+    cross-validation's effect on scoring, we supply mock Orrick data so the
+    gate doesn't mask the CV signal.
+    """
+
+    @staticmethod
+    def _make_orrick():
+        """Create a mock OrrickSimilarityResult that passes the gate."""
+        sim = MagicMock()
+        sim.has_orrick_data = True
+        sim.combined_score = 0.30
+        sim.matched_tokens = ["ai", "developer"]
+        return sim
 
     def _base_kwargs(self):
         return dict(
@@ -328,6 +342,7 @@ class TestConfidenceWithCrossValidation:
             },
             schema_class=ObligationPayload,
             parse_quality_score=0.8,
+            orrick_similarity=self._make_orrick(),
         )
 
     def test_excluded_when_not_verified(self):
@@ -385,6 +400,7 @@ class TestConfidenceWithCrossValidation:
             },
             schema_class=ObligationPayload,
             parse_quality_score=1.0,
+            orrick_similarity=self._make_orrick(),
             cross_validation_score=1.0,
         )
         assert result.tier == "A"
@@ -404,8 +420,28 @@ class TestConfidenceWithCrossValidation:
             },
             schema_class=ObligationPayload,
             parse_quality_score=0.7,
+            orrick_similarity=self._make_orrick(),
             cross_validation_score=0.0,  # Failed cross-validation
         )
         # With CV = 0.0, the 0.25 weight should drag score down significantly
         assert result.cross_validation == 0.0
         assert result.tier in ("C", "D")
+
+    def test_orrick_gate_overrides_cv(self):
+        """Without Orrick data, even perfect CV can't escape Tier D."""
+        result = compute_confidence(
+            schema_valid=True,
+            evidence_spans=[
+                {"field_name": "subject", "text": "x", "verified": True},
+            ],
+            extraction_payload={
+                "subject": "Developer",
+                "modality": "shall",
+                "action": "comply",
+            },
+            schema_class=ObligationPayload,
+            parse_quality_score=1.0,
+            cross_validation_score=1.0,  # Perfect CV, no Orrick
+        )
+        assert result.tier == "D"
+        assert result.orrick_gated is True
