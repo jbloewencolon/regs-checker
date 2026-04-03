@@ -364,11 +364,15 @@ def run_condition_parsing(
 
     for i, extraction in enumerate(extractions):
         try:
+            # Use savepoint so one failed parse doesn't poison the session
+            sp = db.begin_nested()
             nodes = parse_conditions_for_extraction(db, extraction)
+            sp.commit()
             total_nodes += nodes
             if nodes > 0:
                 with_conditions += 1
         except Exception as e:
+            sp.rollback()
             errors += 1
             logger.error(
                 "condition_parse_failed",
