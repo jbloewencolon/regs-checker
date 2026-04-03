@@ -12,7 +12,7 @@
 - **Sync local -> Regs Checker Supabase** — Dashboard Step 5. Requires `REGS_SUPABASE_URL` and `REGS_SUPABASE_KEY` in `.env`.
 - **Sync Regs Checker -> Policy Navigator** — Dashboard Step 6. Requires `REGS_POLICY_NAVIGATOR_URL` in `.env`.
 - **Run rollup matrix** — After sync, run `python -m src.scripts.rollup_matrix` to aggregate into the 4 matrix detail tables.
-- **Review test coverage** — 23 unit test files exist but many predate the 7-agent pipeline. Tests need updating for preemption agent, failed_extraction_attempts table, retag endpoint, and retry mechanism.
+- **Review test coverage (IN PROGRESS)** — Audit complete: 320 pass, 20 fail, 4 stale files. 73 new tests added for `_discriminate_extraction_type()`, `generate_summary()`, and `_repair_truncated_json()`. Remaining: fix 20 failing tests (7 Orrick gate, 5 stale mocks, 7 DB-required, 1 mock mismatch) and delete 4 stale test files. See `agents/test-coverage/` for details.
 - **Write handoff document (HANDOFF_DOCUMENT.md)** — Comprehensive walkthrough for CS undergrad audience. Started but not completed.
 
 ## Blocked Tasks

@@ -28,6 +28,21 @@
 - Postgres starts independently from MinIO in startup script
 - Rewrote `README.md` to match current 7-agent, local-LLM, 3-tier-DB architecture
 
+## Test Coverage Audit (test-coverage agent — 2026-04-03)
+
+### Audit & Gap Analysis
+- Ran full test suite: 320 pass, 20 fail, 4 stale test files
+- Produced `agents/test-coverage/test-audit.md` (full classification of every test)
+- Produced `agents/test-coverage/test-gaps.md` (untested features prioritized by risk)
+- Root cause of most failures: Orrick gate (7 tests), stale mocks (5 tests), DB required (7 tests)
+
+### New Unit Tests (73 tests, all passing)
+- `test_discriminate_extraction_type.py` — 25 tests for extraction type routing across all 7 agents
+- `test_summary_generator.py` — 32 tests covering all 12 template-based summary types
+- `test_repair_truncated_json.py` — 16 tests documenting both repair strategies and known limitations
+
+---
+
 ## Previously Completed (State AI Regulation Matrix — prior session)
 
 ### Phase 1: Policy Navigator Schema (Supabase)
