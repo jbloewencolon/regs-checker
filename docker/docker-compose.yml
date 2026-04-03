@@ -33,7 +33,7 @@ services:
   # MinIO — S3-compatible object storage for raw artifacts
   # ---------------------------------------------------------------------------
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -51,7 +51,7 @@ services:
 
   # Create default buckets on startup
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:RELEASE.2024-06-12T14-34-03Z
     depends_on:
       minio:
         condition: service_healthy
