@@ -102,14 +102,20 @@ if (-not $dockerRunning) {
 Write-Host "  Docker is running." -ForegroundColor Green
 
 # ── Step 3: Start containers ──────────────────────────────────────────
-Write-Host "`n[3/6] Starting Docker containers (Postgres + MinIO)..." -ForegroundColor Cyan
+# Start Postgres FIRST (independently) so a MinIO pull failure doesn't block the DB.
+Write-Host "`n[3/6] Starting Docker containers..." -ForegroundColor Cyan
 
-docker compose -f docker/docker-compose.yml up -d postgres minio minio-init 2>$null
+Write-Host "  Starting Postgres..." -ForegroundColor Cyan
+docker compose -f docker/docker-compose.yml up -d postgres 2>$null
 if ($LASTEXITCODE -ne 0) {
-    # Retry once — sometimes first attempt after Docker Desktop start fails
     Start-Sleep -Seconds 3
-    docker compose -f docker/docker-compose.yml up -d postgres minio minio-init
+    docker compose -f docker/docker-compose.yml up -d postgres
 }
+
+# Start MinIO in background — it's used for raw artifact storage but
+# the dashboard and extraction pipeline work fine without it.
+Write-Host "  Starting MinIO (background, non-blocking)..." -ForegroundColor Cyan
+Start-Process -NoNewWindow -FilePath "docker" -ArgumentList "compose -f docker/docker-compose.yml up -d minio minio-init" -ErrorAction SilentlyContinue
 
 # ── Step 4: Wait for Postgres ─────────────────────────────────────────
 Write-Host "`n[4/6] Waiting for Postgres to be ready..." -NoNewline -ForegroundColor Cyan
