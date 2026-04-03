@@ -39,6 +39,7 @@ import hashlib
 import json
 import re
 import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -53,6 +54,7 @@ from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
+from src.agents.preemption import PreemptionAgent
 from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
@@ -170,7 +172,7 @@ def _ensure_triage_table(db, _log=None) -> None:
         _log("Table created.")
 
 
-# Agent registry — 4 consolidated agents per Recommendation #1
+# Agent registry — 7 extraction agents
 AGENTS: dict[str, BaseExtractionAgent] = {}
 
 # Maps agent names to the ExtractionType values they produce
@@ -185,6 +187,7 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     "ambiguity": [ExtractionType.ambiguity],
     "rights_protection": [ExtractionType.rights_protection],
     "compliance_mechanism": [ExtractionType.compliance_mechanism],
+    "preemption": [ExtractionType.preemption_signal],
 }
 
 
@@ -414,6 +417,7 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "ambiguity": AmbiguityAgent(),
             "rights_protection": RightsProtectionAgent(),
             "compliance_mechanism": ComplianceMechanismAgent(),
+            "preemption": PreemptionAgent(),
         }
     return AGENTS
 
@@ -470,10 +474,10 @@ def _build_context(
         key_reqs = df.metadata_.get("key_requirements")
         if key_reqs:
             ctx["key_requirements"] = key_reqs
-        enforcement = df.metadata_.get("enforcement")
+        enforcement = df.metadata_.get("enforcement_penalties")
         if enforcement:
             ctx["enforcement_summary"] = enforcement
-        ai_scope = df.metadata_.get("ai_scope")
+        ai_scope = df.metadata_.get("ai_scope_summary")
         if ai_scope:
             ctx["ai_scope"] = ai_scope
         # IAPP-sourced fields (populated by cross-reference or status checker)
@@ -843,7 +847,17 @@ def extract_single_record(
                         "source_quality": confidence.source_quality,
                         "orrick_alignment": confidence.orrick_alignment,
                         "cross_validation": confidence.cross_validation,
+                        "orrick_gated": confidence.orrick_gated,
                     }
+
+                    # Generate plain-English summary from the verified payload
+                    try:
+                        from src.core.summary_generator import generate_summary
+                        extraction_meta["plain_summary"] = generate_summary(
+                            resolved_type, item, ctx.get("jurisdiction"),
+                        )
+                    except Exception:
+                        pass  # Summary is presentation-only; don't block extraction
 
                     extraction_kwargs: dict[str, Any] = dict(
                         source_record_id=source_record.id,
@@ -953,7 +967,7 @@ def _get_neighbor_texts(
 
 def run_triage(
     db,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Run section triage on all untriaged passages.
 
@@ -1097,7 +1111,7 @@ def run_triage(
 def run_extraction(
     db,
     limit: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
     batch_mode: bool = False,
 ) -> dict:
     """Run extraction agents against all unprocessed passages.
@@ -1113,6 +1127,10 @@ def run_extraction(
     """
     # Clear any stale cancellation from a previous run
     clear_cancel()
+
+    # Create a dated output folder for this run
+    from src.core.run_archiver import RunArchiver
+    archiver = RunArchiver.start("extract")
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
@@ -1206,6 +1224,7 @@ def run_extraction(
             )
         else:
             _log("No unprocessed passages found — all triaged-relevant passages already extracted.")
+        archiver.finalize(db, summary)
         return summary
 
     _log(f"Found {len(records)} triaged-relevant passages to extract from")
@@ -1301,6 +1320,7 @@ def run_extraction(
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
                 _monitor.stop_run(cancelled=True)
+                archiver.finalize(db, summary)
                 return summary
 
             try:
@@ -1329,6 +1349,7 @@ def run_extraction(
                 _log(f"\n{cb}")
                 _monitor.record_circuit_breaker(str(cb))
                 _monitor.stop_run()
+                archiver.finalize(db, summary)
                 return summary
 
             except Exception as e:
@@ -1375,6 +1396,7 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     _monitor.stop_run()
+    archiver.finalize(db, summary)
     return summary
 
 
@@ -1386,7 +1408,7 @@ def run_extraction(
 def run_dependency_graph(
     db,
     document_version_id: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Build dependency graphs for documents that have extractions.
 
@@ -1511,7 +1533,7 @@ def run_dependency_graph(
 def run_condition_parsing(
     db,
     document_version_id: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Parse condition fields from extractions into structured expression trees.
 
@@ -1539,7 +1561,7 @@ def run_condition_parsing(
 def run_recovery_extraction(
     db,
     limit: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Re-extract passages that have partial results (some agents succeeded, others failed).
 
@@ -2062,7 +2084,7 @@ def run_verification_pass(
     skip_cross_validation: bool = False,
     skip_gap_detection: bool = False,
     skip_citation_verification: bool = False,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> list[VerificationResult]:
     """Run post-extraction verification agents on completed extractions.
 

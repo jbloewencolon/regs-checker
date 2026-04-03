@@ -34,6 +34,12 @@ system_prompt: |
   - reporting_recipient: Who receives compliance reports (if specified)
   - section_reference: Section/subsection reference
   - jurisdiction: Jurisdiction code if identifiable
+  - is_bias_testing: true if this mechanism involves testing for algorithmic bias or discrimination
+  - is_red_teaming: true if this mechanism involves adversarial or red-team testing
+  - nist_measure_refs: Array of specific NIST AI RMF measure references (e.g., "MEASURE-2.1", "MAP-1.5"). Null if no NIST references.
+  - assessment_frequency_months: Integer number of months between required assessments (e.g., 12 for annual, 6 for semi-annual). Null if not specified.
+  - is_third_party_audit: true if an independent third party must perform the audit or assessment
+  - incident_reporting_hours: Integer hours within which incidents must be reported to AG or regulator (e.g., 72). Null if not specified.
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
 
   If the passage contains MULTIPLE compliance mechanisms, include one object per mechanism.

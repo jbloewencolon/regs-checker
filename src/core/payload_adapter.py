@@ -86,7 +86,7 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
     elif isinstance(timeline, str):
         result["timeline"] = timeline
 
-    # Flatten enforcement object into a string summary
+    # Flatten enforcement object into a string summary, preserving structured fields
     enforcement = payload.get("enforcement")
     if isinstance(enforcement, dict):
         parts = []
@@ -101,6 +101,10 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         if enforcement.get("enforcement_text"):
             parts.append(enforcement["enforcement_text"])
         result["enforcement"] = "; ".join(parts) if parts else None
+        # Preserve structured enforcement fields for matrix rollup
+        result["private_right_of_action"] = enforcement.get("private_right_of_action")
+        result["max_civil_penalty_usd"] = enforcement.get("max_civil_penalty_usd")
+        result["cure_period_days"] = enforcement.get("cure_period_days")
     elif isinstance(enforcement, str):
         result["enforcement"] = enforcement
 
@@ -126,6 +130,10 @@ def _adapt_threshold(payload: dict[str, Any]) -> dict[str, Any]:
         "threshold_condition": payload.get("threshold_condition"),
         "applies_to_obligation": payload.get("applies_to_obligation"),
         "exceptions": None,
+        # Matrix fields — preserved for rollup
+        "compute_flops": payload.get("compute_flops"),
+        "compute_description": payload.get("compute_description"),
+        "sector_applicability": payload.get("sector_applicability"),
     }
 
     exceptions = payload.get("exceptions")
@@ -221,6 +229,91 @@ def _adapt_ambiguity(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _adapt_preemption_signal(payload: dict[str, Any]) -> dict[str, Any]:
+    """Adapt preemption signal payload for Policy Navigator."""
+    return {
+        "conflict_type": payload.get("conflict_type"),
+        "description": payload.get("description"),
+        "related_authority": payload.get("related_authority"),
+        "severity": payload.get("severity"),
+        "preemption_language": payload.get("preemption_language"),
+        "section_reference": payload.get("section_reference"),
+        "jurisdiction": payload.get("jurisdiction"),
+    }
+
+
+def _adapt_rights_protection(payload: dict[str, Any]) -> dict[str, Any]:
+    """Adapt rights_protection payload: flatten remedies list."""
+    result: dict[str, Any] = {
+        "right_holder": payload.get("right_holder"),
+        "right_holder_normalized": payload.get("right_holder_normalized"),
+        "right_type": payload.get("right_type"),
+        "right_description": payload.get("right_description"),
+        "trigger_condition": payload.get("trigger_condition"),
+        "duty_bearer": payload.get("duty_bearer"),
+        "section_reference": payload.get("section_reference"),
+        "jurisdiction": payload.get("jurisdiction"),
+        "remedies": None,
+    }
+
+    remedies = payload.get("remedies")
+    if isinstance(remedies, list) and remedies:
+        summaries = []
+        for r in remedies:
+            if isinstance(r, dict):
+                rtype = r.get("remedy_type", "")
+                desc = r.get("description", "")
+                summaries.append(f"{rtype}: {desc}" if rtype else desc)
+            elif isinstance(r, str):
+                summaries.append(r)
+        result["remedies"] = "; ".join(summaries) if summaries else None
+    elif isinstance(remedies, str):
+        result["remedies"] = remedies
+
+    return result
+
+
+def _adapt_compliance_mechanism(payload: dict[str, Any]) -> dict[str, Any]:
+    """Adapt compliance_mechanism payload: flatten audits, preserve matrix flags."""
+    result: dict[str, Any] = {
+        "mechanism_type": payload.get("mechanism_type"),
+        "description": payload.get("description"),
+        "responsible_party": payload.get("responsible_party"),
+        "responsible_party_normalized": payload.get("responsible_party_normalized"),
+        "record_retention_period": payload.get("record_retention_period"),
+        "reporting_frequency": payload.get("reporting_frequency"),
+        "reporting_recipient": payload.get("reporting_recipient"),
+        "section_reference": payload.get("section_reference"),
+        "jurisdiction": payload.get("jurisdiction"),
+        "audits": None,
+        # Matrix flags — preserved for rollup
+        "is_bias_testing": payload.get("is_bias_testing", False),
+        "is_red_teaming": payload.get("is_red_teaming", False),
+        "nist_measure_refs": payload.get("nist_measure_refs"),
+        "assessment_frequency_months": payload.get("assessment_frequency_months"),
+        "is_third_party_audit": payload.get("is_third_party_audit", False),
+        "incident_reporting_hours": payload.get("incident_reporting_hours"),
+    }
+
+    audits = payload.get("audits")
+    if isinstance(audits, list) and audits:
+        summaries = []
+        for a in audits:
+            if isinstance(a, dict):
+                atype = a.get("audit_type", "")
+                freq = a.get("frequency", "")
+                assessor = a.get("assessor", "")
+                parts = [p for p in [atype, freq, assessor] if p]
+                summaries.append(": ".join(parts))
+            elif isinstance(a, str):
+                summaries.append(a)
+        result["audits"] = "; ".join(summaries) if summaries else None
+    elif isinstance(audits, str):
+        result["audits"] = audits
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Adapter registry
 # ---------------------------------------------------------------------------
@@ -230,6 +323,9 @@ _ADAPTERS: dict[str, Any] = {
     "threshold": _adapt_threshold,
     "definition": _adapt_definition,
     "ambiguity": _adapt_ambiguity,
+    "rights_protection": _adapt_rights_protection,
+    "compliance_mechanism": _adapt_compliance_mechanism,
+    "preemption_signal": _adapt_preemption_signal,
     # Sub-types map to their parent adapter
     "actor_mapping": _adapt_definition,
     "framework_ref": _adapt_definition,

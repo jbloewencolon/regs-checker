@@ -95,8 +95,10 @@ def review_page(
 
         truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
         model_reasoning = None
+        plain_summary = None
         if e and e.metadata_:
             model_reasoning = e.metadata_.get("model_reasoning")
+            plain_summary = e.metadata_.get("plain_summary")
 
         items.append({
             "queue_id": qi.id,
@@ -109,6 +111,7 @@ def review_page(
             "model_id": e.model_id if e else None,
             "evidence_spans": e.evidence_spans if e else [],
             "model_reasoning": model_reasoning,
+            "plain_summary": plain_summary,
             "review_status": qi.status.value if hasattr(qi.status, 'value') else qi.status,
             "jurisdiction_code": src.jurisdiction_code if src else None,
             "short_cite": df.short_cite if df else None,
