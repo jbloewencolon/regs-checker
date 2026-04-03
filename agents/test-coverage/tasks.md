@@ -2,11 +2,21 @@
 
 ## Active Tasks
 
-- **Write tests for type discriminator** — Unit tests for `_discriminate_extraction_type()` covering: obligation with court subject -> enforcement, obligation with developer subject -> obligation, definition with actors -> actor_mapping, threshold with exceptions -> exception, preemption -> preemption_signal.
+(none — see next tasks below)
+
+## Next Tasks
+
+- **Fix stale tests** — Update or delete `test_connector.py`, `test_discovery_agent.py`, `test_llm_provider.py`, `test_pdf_tracker.py` (stale imports).
+- **Fix confidence tests** — Update `test_confidence.py` and `test_verification_agents.py` tests that expect Tier A/B but now get Tier D due to Orrick gate. Add mock Orrick data to affected tests.
+- **Fix ingestion pipeline tests** — Rewrite `test_ingestion_pipeline.py` for `local_ingest.py` (removed `fetch_document`).
+- **Write `adapt_payload_for_sync()` tests for missing types** — Extend `test_payload_adapter.py` for preemption_signal, rights_protection, compliance_mechanism.
 
 ## Completed Tasks
 
 - **Starter task: Run existing tests and classify results** — DONE. See `test-audit.md` and `test-gaps.md`. Result: 320 pass, 20 fail, 4 stale files.
+- **Write tests for type discriminator** — DONE. `tests/unit/test_discriminate_extraction_type.py`, 25 tests all passing.
+- **Write tests for summary generator** — DONE. `tests/unit/test_summary_generator.py`, 32 tests all passing (all 12 extraction types covered).
+- **Write tests for `_repair_truncated_json()`** — DONE. `tests/unit/test_repair_truncated_json.py`, 16 tests all passing. Documented known behavior: Strategy 1 drops last element of top-level arrays.
 
 ## Next Tasks
 
