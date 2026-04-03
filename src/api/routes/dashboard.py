@@ -1559,11 +1559,18 @@ def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
             )
 
         # Delete in FK order: review_actions → review_queue → extractions → extraction_jobs
-        # Also clear downstream: applicability_conditions, obligation_dependencies
+        # Also clear downstream: applicability_conditions, obligation_dependencies,
+        # failed_extraction_attempts
         db.execute(delete(ApplicabilityCondition))
         db.execute(delete(ObligationDependency))
         db.execute(delete(ReviewAction))
         db.execute(delete(ReviewQueueItem))
+        # Clear failed attempts (references both extractions and extraction_jobs)
+        try:
+            from src.db.models import FailedExtractionAttempt
+            db.execute(delete(FailedExtractionAttempt))
+        except Exception:
+            pass  # Table may not exist yet
         db.execute(delete(Extraction))
         db.execute(delete(ExtractionJob))
 
@@ -2196,6 +2203,63 @@ def run_api_extract(
         return HTMLResponse(
             f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/run/retry-failed")
+def run_retry_failed_extractions(
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Retry extraction for passages+agents that previously failed.
+
+    Reads from failed_extraction_attempts table and re-runs only the
+    specific agents that failed on each passage.
+    """
+    try:
+        from src.ingestion.extractor import run_retry_failed
+        summary = run_retry_failed(db)
+
+        if summary["total"] == 0:
+            return HTMLResponse(
+                '<div class="result-panel success">'
+                'No failed extractions to retry.'
+                '</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Retried {summary["retried"]} failed extractions: '
+            f'{summary["succeeded"]} succeeded, '
+            f'{summary["failed_again"]} failed again.'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Retry error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.get("/api/failed-extractions-count")
+def get_failed_extractions_count(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return count of un-retried failed extraction attempts."""
+    try:
+        from src.db.models import FailedExtractionAttempt
+        count = db.scalar(
+            select(func.count()).select_from(FailedExtractionAttempt)
+            .where(FailedExtractionAttempt.retried == False)  # noqa: E712
+        ) or 0
+        if count > 0:
+            return HTMLResponse(
+                f'<span class="badge warning">{count} failed</span> '
+                f'<button class="btn btn-sm btn-warning" '
+                f'hx-post="/dashboard/api/run/retry-failed" '
+                f'hx-target="#retry-result" '
+                f'hx-swap="innerHTML">Retry Failed</button> '
+                f'<span id="retry-result"></span>'
+            )
+        return HTMLResponse('<span class="badge success">No failures</span>')
+    except Exception:
+        return HTMLResponse("")
 
 
 @router.post("/api/run/dependency-graph")
