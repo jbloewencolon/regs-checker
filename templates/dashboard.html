@@ -665,16 +665,16 @@
 
     <div class="step-connector"></div>
 
-    <!-- STEP 5: Sync to Policy Navigator -->
+    <!-- STEP 5: Sync to Regs Checker Supabase -->
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">5</div>
-        <div class="step-title">Sync to Policy Navigator</div>
+        <div class="step-title">Sync to Regs Checker Supabase</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-body">
         <div class="step-description">
-          Pushes approved extractions to the product database.
+          Pushes approved extractions from local Docker Postgres to Regs Checker Supabase.
           Run Pre-flight first, then Dry Run to preview, then Sync.
         </div>
         <div class="step-actions">
@@ -699,8 +699,8 @@
                   hx-target="#step7-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this"
-                  hx-confirm="Push data to Policy Navigator?">
-            <span class="btn-label">Sync to Policy Navigator</span>
+                  hx-confirm="Push data to Regs Checker Supabase?">
+            <span class="btn-label">Sync to Regs Checker</span>
             <span class="htmx-indicator"><span class="spinner"></span> Syncing...</span>
           </button>
           <button class="btn btn-sm"

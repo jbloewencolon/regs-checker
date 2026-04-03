@@ -2368,7 +2368,7 @@ def run_sync(
     dry_run: bool = False,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Sync extractions to Policy Navigator (supports dry-run preview)."""
+    """Sync extractions to Regs Checker Supabase (supports dry-run preview)."""
     import os
     source_url = os.environ.get("REGS_SUPABASE_URL")
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
@@ -2402,7 +2402,7 @@ def run_sync(
 
         return HTMLResponse(
             f'<div class="result-panel success">'
-            f'Synced {summary["synced"]} rows to Policy Navigator. '
+            f'Synced {summary["synced"]} rows to Regs Checker Supabase. '
             f'{summary.get("skipped_excluded", 0)} excluded, '
             f'{summary.get("skipped_no_bridge", 0)} no bridge mapping.'
             f'</div>'
