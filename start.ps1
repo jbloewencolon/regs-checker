@@ -26,7 +26,7 @@ if (Test-Path $venvActivate) {
     Write-Host "  venv activated." -ForegroundColor Green
 } else {
     Write-Host "  WARNING: venv not found at $venvActivate" -ForegroundColor Yellow
-    Write-Host "  Create it with: python -m venv venv && .\venv\Scripts\Activate && pip install -r requirements.txt" -ForegroundColor Yellow
+    Write-Host "  Create it with: python -m venv venv; .\venv\Scripts\Activate; pip install -r requirements.txt" -ForegroundColor Yellow
     Write-Host "  Continuing with system Python..." -ForegroundColor Yellow
 }
 
