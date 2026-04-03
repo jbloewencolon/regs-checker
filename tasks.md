@@ -1,27 +1,28 @@
-# Regs Checker — Open Bugs & Tasks
+# Regs Checker — Tasks
 
-No open bugs. All items found during the codebase walkthrough have been fixed.
+## Active Tasks
 
-## Fixed Bugs (this session)
+- **Run full extraction on 243 laws** — The pipeline is debugged and ready. Reset extractions, then run seed -> triage -> extract on the full corpus. This is the user's next manual step.
+- **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
-### BUG-1 [FIXED]: Preemption agent missing from AGENT_EXTRACTION_TYPES — KeyError on extraction
-- **File:** `src/ingestion/extractor.py:178-189`
-- **Was:** `AGENT_EXTRACTION_TYPES` dict had no `"preemption"` entry. Line 797 `AGENT_EXTRACTION_TYPES[name][0]` raised `KeyError("preemption")`, crashing extraction for every preemption result.
-- **Fix:** Added `"preemption": [ExtractionType.preemption_signal]` to the dict.
+## Next Tasks
 
-### BUG-2 [FIXED]: Stale comment says "4 consolidated agents" — now 7
-- **File:** `src/ingestion/extractor.py:174`
-- **Fix:** Updated comment to `# Agent registry — 7 extraction agents`.
+- **Run verification pass (cross-validation + gap detection)** — After extraction completes, run the verification pass from the dashboard to populate cross-validation scores.
+- **Generate summaries** — After extraction, run "Generate Summaries" from dashboard Step 4.5.
+- **Sync local -> Regs Checker Supabase** — Dashboard Step 5. Requires `REGS_SUPABASE_URL` and `REGS_SUPABASE_KEY` in `.env`.
+- **Sync Regs Checker -> Policy Navigator** — Dashboard Step 6. Requires `REGS_POLICY_NAVIGATOR_URL` in `.env`.
+- **Run rollup matrix** — After sync, run `python -m src.scripts.rollup_matrix` to aggregate into the 4 matrix detail tables.
+- **Review test coverage** — 23 unit test files exist but many predate the 7-agent pipeline. Tests need updating for preemption agent, failed_extraction_attempts table, retag endpoint, and retry mechanism.
+- **Write handoff document (HANDOFF_DOCUMENT.md)** — Comprehensive walkthrough for CS undergrad audience. Started but not completed.
 
-### BUG-3 [FIXED]: `generate_summaries_batch` filter logic broken for JSONB missing keys
-- **File:** `src/core/summary_generator.py:382-383`
-- **Was:** `not_(Extraction.metadata_["plain_summary"].isnot(None))` — double-negative that excluded rows with missing keys (the ones that actually need summaries).
-- **Fix:** Replaced with `~Extraction.metadata_.has_key("plain_summary")`.
+## Blocked Tasks
 
-### BUG-4 [FIXED]: `callable` used as type hint instead of `Callable`
-- **Files:** `src/ingestion/local_ingest.py`, `src/ingestion/extractor.py`
-- **Fix:** Replaced `callable | None` with `Callable[[str], None] | None` from `collections.abc`.
+- **Supabase sync testing** — Supabase projects may be paused. Cannot verify sync until they're active. Test with dry-run first.
+- **Cross-validation scoring in confidence model** — The `cross_validation` weight (25%) is redistributed to other components when not available. Needs a full verification pass run to populate.
 
-## Previously Completed
+## Questions / Clarifications Needed
 
-See `completed_tasks.md` for all resolved items from the State AI Regulation Matrix implementation.
+- Should the Orrick gate (auto-Tier D without Orrick data) apply to all laws, or only Orrick-sourced laws? Currently applies to all.
+- What is the target extraction count? Previous run produced ~28k extractions from ~9k passages. New run with 7 agents may produce more.
+- Should the sync to Policy Navigator include all extraction types, or filter to approved-only?
+- Is the MinIO/S3 storage layer actually needed? The pipeline works without it (raw artifacts stored but not retrieved during extraction).

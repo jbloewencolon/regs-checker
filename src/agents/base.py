@@ -32,6 +32,135 @@ from src.schemas.extraction import AbstentionResult, EvidenceSpan
 logger = structlog.get_logger()
 
 
+def _repair_truncated_json(text: str) -> str:
+    """Attempt to salvage truncated JSON by closing open brackets.
+
+    When the LLM hits max_tokens, output is cut mid-JSON like:
+        {"extractions":[{"a":1,...},{"b":2,"nested":{...
+    This function:
+      1. Strips back to the last complete array element (last "},")
+      2. Closes any remaining open brackets/braces
+
+    Returns the repaired text, or the original if repair isn't possible.
+    """
+    text = text.rstrip()
+    if not text or text[0] not in "{[":
+        return text
+
+    # Strategy 1: Find the last complete object in an "extractions" array.
+    # Look for the pattern "},{ which indicates an array element boundary.
+    # Truncate to just after the last complete "}" before an incomplete element.
+    last_complete = -1
+    depth = 0
+    in_string = False
+    escape_next = False
+
+    for i, ch in enumerate(text):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\":
+            escape_next = True
+            continue
+        if ch == '"' and not escape_next:
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in "{[":
+            depth += 1
+        elif ch in "}]":
+            depth -= 1
+            if depth == 1 and ch == "}":
+                # This closes an object at depth 1 (array element level).
+                # Check if this is followed by a comma (next element).
+                rest = text[i + 1:].lstrip()
+                if rest.startswith(","):
+                    last_complete = i
+
+    if last_complete > 0:
+        # Truncate to just after the last complete array element
+        truncated = text[:last_complete + 1]
+        # Close the open containers
+        # Count what's still open
+        depth = 0
+        in_string = False
+        escape_next = False
+        for ch in truncated:
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == "\\":
+                escape_next = True
+                continue
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch in "{[":
+                depth += 1
+            elif ch in "}]":
+                depth -= 1
+
+        # Close remaining open brackets (reverse order: ] then })
+        # We need to figure out what type of brackets are open.
+        # Recount with a stack.
+        stack = []
+        in_string = False
+        escape_next = False
+        for ch in truncated:
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == "\\":
+                escape_next = True
+                continue
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == "{":
+                stack.append("}")
+            elif ch == "[":
+                stack.append("]")
+            elif ch in "}]" and stack:
+                stack.pop()
+
+        # Close in reverse order
+        closing = "".join(reversed(stack))
+        return truncated + closing
+
+    # Strategy 2: Simple fallback — just close all open brackets
+    stack = []
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\":
+            escape_next = True
+            continue
+        if ch == '"' and not escape_next:
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            stack.append("}")
+        elif ch == "[":
+            stack.append("]")
+        elif ch in "}]" and stack:
+            stack.pop()
+
+    if stack:
+        return text + "".join(reversed(stack))
+
+    return text
+
+
 @dataclass
 class ExtractionResult:
     """Result of a single agent extraction call, including metadata."""
@@ -331,7 +460,28 @@ class BaseExtractionAgent(ABC):
         if not initial_valid:
             text = re.sub(r",\s*([}\]])", r"\1", text)
 
-        # --- Fix 3: Stringified objects in arrays ---
+        # --- Fix 3: Truncated JSON (incomplete output from token limit) ---
+        # When the LLM hits max_tokens, the JSON is cut off mid-object.
+        # Try to salvage by:
+        #   a) Stripping back to the last complete object in an array
+        #   b) Closing any open brackets/braces
+        try:
+            json.loads(text)
+        except json.JSONDecodeError:
+            repaired_text = _repair_truncated_json(text)
+            if repaired_text != text:
+                try:
+                    json.loads(repaired_text)
+                    logger.debug(
+                        "json_repair_closed_truncated",
+                        original_len=len(text),
+                        repaired_len=len(repaired_text),
+                    )
+                    text = repaired_text
+                except json.JSONDecodeError:
+                    pass
+
+        # --- Fix 4: Stringified objects in arrays ---
         # Pattern: the "extractions" array contains string elements that
         # are actually JSON objects (double-encoded).  This can happen even
         # when the outer JSON is syntactically valid.

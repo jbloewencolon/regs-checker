@@ -2363,12 +2363,68 @@ def run_condition_parse(
         )
 
 
+@router.post("/api/run/sync-to-supabase")
+def run_sync_to_supabase(
+    dry_run: bool = False,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Sync pipeline data from local Docker Postgres to Regs Checker Supabase."""
+    import os
+
+    source_url = os.environ.get("REGS_DATABASE_URL")
+    supabase_url = os.environ.get("REGS_SUPABASE_URL")
+    supabase_key = os.environ.get("REGS_SUPABASE_KEY") or os.environ.get("REGS_SUPABASE_ANON_KEY")
+
+    if not source_url:
+        return HTMLResponse(
+            '<div class="result-panel warning">'
+            'Sync skipped: REGS_DATABASE_URL not configured.'
+            '</div>'
+        )
+    if not supabase_url or not supabase_key:
+        return HTMLResponse(
+            '<div class="result-panel warning">'
+            'Sync skipped: REGS_SUPABASE_URL and/or REGS_SUPABASE_KEY not configured.'
+            '</div>'
+        )
+
+    try:
+        from src.scripts.sync_to_supabase import sync_tables
+        summary = sync_tables(
+            source_url=source_url,
+            supabase_url=supabase_url,
+            supabase_key=supabase_key,
+            dry_run=dry_run,
+        )
+
+        total = sum(v.get("synced", v.get("source_count", 0)) for v in summary.values() if isinstance(v, dict))
+        tables = len([v for v in summary.values() if isinstance(v, dict)])
+
+        if dry_run:
+            return HTMLResponse(
+                f'<div class="result-panel warning">'
+                f'<strong>Dry Run Preview</strong><br>'
+                f'{tables} tables, ~{total} rows would be synced to Regs Checker Supabase.'
+                f'</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Synced {tables} tables ({total} rows) to Regs Checker Supabase.'
+            f'</div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Sync error: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/run/sync")
 def run_sync(
     dry_run: bool = False,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Sync extractions to Policy Navigator (supports dry-run preview)."""
+    """Sync extractions from Regs Checker Supabase to Policy Navigator."""
     import os
     source_url = os.environ.get("REGS_SUPABASE_URL")
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")

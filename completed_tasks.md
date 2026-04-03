@@ -1,28 +1,55 @@
-# State AI Regulation Matrix — Completed Tasks
+# Regs Checker — Completed Tasks
 
-## Phase 1: Policy Navigator Schema Additions (Supabase MCP)
-- [x] 1A: Extend dimension tables — added 4 legislative statuses (Vetoed, In Committee, Enjoined, Pending Signature), Compute Provider actor type, 3 requirement types (Bias Testing, Red Teaming, NIST Framework), 8 sector-level AI scope codes, widened scope_code to varchar(4)
-- [x] 1B: Created `law_enforcement_details` table — per-law structured enforcement (private_right_of_action, max_civil_penalty_usd, cure_period_days)
-- [x] 1C: Created `law_obligation_flags` table — per-law boolean matrix (bias testing, red teaming, NIST, assessments, audits, transparency, reporting). Bootstrapped from existing 373 map_law_requirements rows.
-- [x] 1D: Created `law_triggering_thresholds` table — per-law compute FLOPS, sectors, exemptions. Bootstrapped from existing map_law_scopes.
-- [x] 1E: Created `jurisdictional_conflicts` table + `conflict_type` enum (7 values)
-- [x] 1F: Created `v_state_ai_regulation_matrix` view — assembles full matrix from fact_laws + 3 detail tables + conflicts. Verified working with live data.
+## Recently Completed (current session — still matters for reasoning)
 
-## Phase 2: Regs Checker Pipeline Changes (Code)
-- [x] 2A: Added `preemption_signal` extraction type — new enum value in models.py + Supabase, new PreemptionSignalPayload schema, new PreemptionAgent (src/agents/preemption.py), new YAML prompt (prompts/preemption.yml), Alembic migration
-- [x] 2B: Extended ThresholdExceptionPayload with compute_flops, compute_description, sector_applicability fields. Updated threshold_exception.yml prompt.
-- [x] 2C: Extended EnforcementInfo with max_civil_penalty_usd and cure_period_days. Updated obligation.yml prompt.
-- [x] 2D: Extended ComplianceMechanismPayload with is_bias_testing, is_red_teaming, nist_measure_refs, assessment_frequency_months, is_third_party_audit, incident_reporting_hours. Updated compliance_mechanism.yml prompt.
+### Runtime Bug Fixes (critical — changed extraction behavior)
+- Fixed `AGENT_EXTRACTION_TYPES` missing `"preemption"` key — was crashing every preemption extraction with KeyError
+- Fixed `preemption_signal` enum not in local Postgres — added `_ensure_extraction_enums()` that auto-adds missing enum values using raw psycopg2 autocommit (ALTER TYPE cannot run in transactions)
+- Fixed FK cascade bug — `db.rollback()` after failed INSERT destroyed the ExtractionJob row, breaking all subsequent extractions for that document. Replaced with `db.begin_nested()` savepoints
+- Fixed extraction type discriminator — penalties tagged as obligations when subject was judicial authority (court, AG). Added enforcement-subject + penalty-verb detection
+- Fixed `generate_summary()` receiving enum object instead of string — summaries were all falling back to generic text
+- Fixed timezone mismatch in RunArchiver — `datetime.now(timezone.utc)` (aware) vs Postgres `func.now()` (naive) caused CSV exports to show 0 rows
+- Fixed `generate_summaries_batch` JSONB filter — double-negative `not_(metadata_["plain_summary"].isnot(None))` was skipping extractions that needed summaries
+- Fixed Alembic migration `create_type=False` syntax error for newer SQLAlchemy/Python versions
 
-## Phase 3: Sync Pipeline Changes (Code)
-- [x] 3A: Updated payload_adapter.py — preserved structured enforcement booleans, added matrix fields for thresholds, added adapters for preemption_signal, rights_protection, and compliance_mechanism types
-- [x] 3B: Created rollup_matrix.py — aggregates synced_extractions into 4 matrix detail tables with idempotent upserts
+### New Features (current session)
+- **Failed extraction tracking** — New `failed_extraction_attempts` table records every LLM and DB failure with agent name, error type, and retry state
+- **Retry mechanism** — `run_retry_failed()` re-runs only the specific agent+passage pairs that failed. Dashboard endpoint + button.
+- **DB errors feed circuit breaker** — Previously only LLM failures triggered it. Now DB insert errors (enum, FK) also count toward the 3-consecutive threshold.
+- **Retag endpoint** — `POST /dashboard/review/{queue_id}/retag` allows changing extraction_type from the review UI. Dropdown added to every review row.
+- **Two-step sync** — Dashboard now has Step 5 (Local -> Regs Checker Supabase) and Step 6 (Regs Checker -> Policy Navigator) as separate steps with separate endpoints.
+- **JSON truncation repair** — `_repair_truncated_json()` salvages partial LLM output by finding the last complete array element and closing brackets.
+- **Max tokens increased to 50k** — Both `extraction_max_tokens` and `local_extraction_max_tokens`.
+- **Verification pass filtered to triaged passages only** — Cross-validation and gap detection no longer waste tokens on `not_relevant` passages.
 
-## Phase 4: Agent Grouping (Code)
-- [x] 4: Added PreemptionAgent to extractor.py agent registry — runs in GPT group alongside 5 other GPT-based agents (no VRAM swap cost)
+### Infrastructure Fixes (current session)
+- Rewrote `start.ps1` with pure ASCII for PowerShell 5.1 compatibility
+- Pinned MinIO Docker images to specific release tags (`:latest` was returning 500 errors)
+- Postgres starts independently from MinIO in startup script
+- Rewrote `README.md` to match current 7-agent, local-LLM, 3-tier-DB architecture
 
-## Phase 5: UI Pipeline Integration
-- [x] 5A: Fixed analytics.html — added type_colors for rights_protection, compliance_mechanism, preemption_signal
-- [x] 5B: Fixed dashboard.html — updated agent count (4→7), model names (removed stale DeepSeek ref, updated to GPT-OSS 20B + Qwen 3.5 9B), updated setup instructions
-- [x] 5C: Fixed review.html — added preemption_signal summary display (conflict_type + description)
-- [x] 5D: Fixed v_state_ai_regulation_matrix view — changed INNER JOIN on dim_legislative_statuses to LEFT JOIN, recovering 124 laws with NULL status_id (48→172 rows)
+## Previously Completed (State AI Regulation Matrix — prior session)
+
+### Phase 1: Policy Navigator Schema (Supabase)
+- Extended dimension tables (4 statuses, Compute Provider, 3 requirement types, 8 sector scopes)
+- Created `law_enforcement_details`, `law_obligation_flags`, `law_triggering_thresholds`, `jurisdictional_conflicts` tables
+- Created `v_state_ai_regulation_matrix` SQL view (172+ rows)
+
+### Phase 2: Extraction Pipeline
+- Added `preemption_signal` extraction type + PreemptionAgent + YAML prompt
+- Extended ThresholdExceptionPayload (compute_flops, sector_applicability)
+- Extended EnforcementInfo (max_civil_penalty_usd, cure_period_days)
+- Extended ComplianceMechanismPayload (bias testing, red teaming, NIST, audit flags)
+
+### Phase 3: Sync Pipeline
+- Updated payload_adapter.py for all new extraction types
+- Created rollup_matrix.py (aggregates synced_extractions into 4 matrix tables)
+
+### Phase 4-5: Agent Grouping + UI
+- 7-agent pipeline with VRAM-efficient model grouping
+- Orrick-gated 6-component confidence scoring (auto-Tier D without Orrick data)
+- Abstraction presentation layer (deterministic template summaries)
+- Run archiver (dated output folders per extraction run)
+- Fixed Orrick metadata key mismatches in `_build_context()`
+- Fixed reset cascade FK violation
+- Fixed `v_state_ai_regulation_matrix` INNER->LEFT JOIN (48->172 rows)
