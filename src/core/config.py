@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     local_llm_model: str = "openai/gpt-oss-20b"  # Default model for discovery tasks
     local_extraction_model: str = "openai/gpt-oss-20b"  # Default model for extraction
     local_context_length: int = 32768  # Context window size configured in LM Studio
-    local_extraction_max_tokens: int = 4096  # Max output tokens for extraction
+    local_extraction_max_tokens: int = 8192  # Max output tokens for extraction
 
     # Extraction settings (used by agents)
     extraction_model: str = "openai/gpt-oss-20b"  # Model ID for tracking
