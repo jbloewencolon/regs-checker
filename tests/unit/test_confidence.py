@@ -1,4 +1,11 @@
-"""Unit tests for the confidence scoring model."""
+"""Unit tests for the confidence scoring model.
+
+Key design: The Orrick gate forces Tier D when no Orrick data is present.
+Tests that check scoring behavior above Tier D must supply mock Orrick data
+via orrick_similarity, otherwise the gate clamps the result.
+"""
+
+from unittest.mock import MagicMock
 
 from src.core.confidence import (
     ConfidenceBreakdown,
@@ -10,8 +17,18 @@ from src.core.confidence import (
 from src.schemas.extraction import ObligationPayload
 
 
+def _make_orrick_sim(combined_score: float = 0.30, tokens: list[str] | None = None):
+    """Create a mock OrrickSimilarityResult that passes the Orrick gate."""
+    sim = MagicMock()
+    sim.has_orrick_data = True
+    sim.combined_score = combined_score
+    sim.matched_tokens = tokens or ["ai", "system", "developer"]
+    return sim
+
+
 class TestConfidenceScoring:
     def test_perfect_score(self):
+        """All components maxed + Orrick data -> Tier A."""
         result = compute_confidence(
             schema_valid=True,
             evidence_spans=[
@@ -32,12 +49,14 @@ class TestConfidenceScoring:
             },
             schema_class=ObligationPayload,
             parse_quality_score=1.0,
+            orrick_similarity=_make_orrick_sim(0.30),
             cross_validation_score=1.0,
         )
         assert result.tier == "A"
         assert result.total_score >= 0.85
 
     def test_minimal_score(self):
+        """Bad inputs + no Orrick data -> Tier D."""
         result = compute_confidence(
             schema_valid=False,
             evidence_spans=[
@@ -55,6 +74,7 @@ class TestConfidenceScoring:
         assert result.total_score < 0.50
 
     def test_tier_b_threshold(self):
+        """Good extraction with Orrick data but no CV -> Tier A or B."""
         result = compute_confidence(
             schema_valid=True,
             evidence_spans=[
@@ -73,11 +93,13 @@ class TestConfidenceScoring:
             },
             schema_class=ObligationPayload,
             parse_quality_score=0.8,
+            orrick_similarity=_make_orrick_sim(0.30),
         )
         assert result.tier in ("A", "B")
         assert result.total_score >= 0.70
 
     def test_no_evidence_spans(self):
+        """Evidence grounding should be 0.0 when no spans provided."""
         result = compute_confidence(
             schema_valid=True,
             evidence_spans=[],
@@ -91,9 +113,8 @@ class TestConfidenceScoring:
         )
         assert result.evidence_grounding == 0.0
 
-    def test_weight_redistribution_without_optional_components(self):
-        """Without Orrick or cross-validation, weights redistribute to core
-        components so a well-extracted item can reach Tier A/B."""
+    def test_orrick_gate_forces_tier_d(self):
+        """Without Orrick data, even perfect scores get clamped to Tier D."""
         result = compute_confidence(
             schema_valid=True,
             evidence_spans=[
@@ -115,16 +136,13 @@ class TestConfidenceScoring:
             schema_class=ObligationPayload,
             parse_quality_score=0.9,
         )
-        # Without optional components, this should reach A on core merits
-        assert result.tier == "A", (
-            f"Expected Tier A, got {result.tier} (score={result.total_score})"
-        )
-        # Optional component scores should be 0.0 when excluded
+        assert result.tier == "D"
+        assert result.orrick_gated is True
         assert result.orrick_alignment == 0.0
         assert result.cross_validation == 0.0
 
     def test_cross_validation_lowers_tier(self):
-        """A low cross-validation score should pull the tier down."""
+        """Low CV score + Orrick data -> should prevent reaching Tier A."""
         result = compute_confidence(
             schema_valid=True,
             evidence_spans=[
@@ -138,6 +156,7 @@ class TestConfidenceScoring:
             },
             schema_class=ObligationPayload,
             parse_quality_score=0.8,
+            orrick_similarity=_make_orrick_sim(0.30),
             cross_validation_score=0.2,
         )
         # Low CV score should prevent reaching Tier A
@@ -145,12 +164,7 @@ class TestConfidenceScoring:
 
     def test_all_components_active(self):
         """With all 6 components active, full weight distribution applies."""
-        from unittest.mock import MagicMock
-
-        orrick_sim = MagicMock()
-        orrick_sim.has_orrick_data = True
-        orrick_sim.combined_score = 0.30
-        orrick_sim.matched_tokens = ["ai", "system"]
+        orrick_sim = _make_orrick_sim(0.30, ["ai", "system"])
 
         result = compute_confidence(
             schema_valid=True,
@@ -176,3 +190,47 @@ class TestConfidenceScoring:
         assert result.tier in ("A", "B")
         assert result.orrick_alignment == 1.0  # combined_score 0.30 >= 0.25
         assert result.orrick_matched_tokens == ["ai", "system"]
+
+    def test_low_orrick_score_limits_tier(self):
+        """Orrick data present but low similarity -> lower orrick_alignment."""
+        result = compute_confidence(
+            schema_valid=True,
+            evidence_spans=[
+                {"field_name": "subject", "text": "x", "verified": True},
+            ],
+            extraction_payload={
+                "subject": "Developer",
+                "modality": "shall",
+                "action": "comply",
+            },
+            schema_class=ObligationPayload,
+            parse_quality_score=0.8,
+            orrick_similarity=_make_orrick_sim(0.05),  # Very low match
+        )
+        # Low Orrick combined_score < 0.10 -> orrick_alignment = 0.3
+        assert result.orrick_alignment == 0.3
+        assert result.orrick_gated is False  # Data exists, gate doesn't fire
+
+    def test_no_orrick_data_flag(self):
+        """When orrick_similarity has has_orrick_data=False, gate fires."""
+        no_data_sim = MagicMock()
+        no_data_sim.has_orrick_data = False
+        no_data_sim.combined_score = 0.0
+        no_data_sim.matched_tokens = []
+
+        result = compute_confidence(
+            schema_valid=True,
+            evidence_spans=[
+                {"field_name": "subject", "text": "x", "verified": True},
+            ],
+            extraction_payload={
+                "subject": "Developer",
+                "modality": "shall",
+                "action": "comply",
+            },
+            schema_class=ObligationPayload,
+            parse_quality_score=0.9,
+            orrick_similarity=no_data_sim,
+        )
+        assert result.tier == "D"
+        assert result.orrick_gated is True

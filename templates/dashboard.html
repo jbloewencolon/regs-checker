@@ -478,6 +478,12 @@
                   hx-confirm="Clear ALL extractions, dependency graph, conditions, and review queue? Triage results will be preserved. This cannot be undone.">
             Reset Extractions
           </button>
+          <span id="failed-extraction-status"
+                hx-get="/dashboard/api/failed-extractions-count"
+                hx-trigger="load, every 10s"
+                hx-swap="innerHTML"
+                style="margin-left: 8px; display: inline-flex; align-items: center; gap: 6px;">
+          </span>
         </div>
 
         <div id="extract-cancel-status"></div>

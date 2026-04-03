@@ -36,10 +36,16 @@
 - Produced `agents/test-coverage/test-gaps.md` (untested features prioritized by risk)
 - Root cause of most failures: Orrick gate (7 tests), stale mocks (5 tests), DB required (7 tests)
 
-### New Unit Tests (73 tests, all passing)
+### New Unit Tests (76 tests, all passing)
 - `test_discriminate_extraction_type.py` — 25 tests for extraction type routing across all 7 agents
 - `test_summary_generator.py` — 32 tests covering all 12 template-based summary types
 - `test_repair_truncated_json.py` — 16 tests documenting both repair strategies and known limitations
+
+### Fixed Existing Tests (7 fixed + 3 new Orrick gate tests)
+- Fixed 4 failures in `test_confidence.py` — added mock Orrick data; replaced stale `test_weight_redistribution` with explicit gate test
+- Fixed 3 failures in `test_verification_agents.py` — added mock Orrick data to CV integration tests
+- Added `test_orrick_gate_forces_tier_d`, `test_low_orrick_score_limits_tier`, `test_no_orrick_data_flag`, `test_orrick_gate_overrides_cv`
+- Suite: 403 pass, 13 fail (down from 320 pass, 20 fail)
 
 ---
 
