@@ -1,8 +1,8 @@
 """Add section_triage_results table for AI-relevance filtering.
 
-Section triage sits between parse and extraction — each passage gets a
+Section triage sits between parse and extraction -- each passage gets a
 relevance decision (relevant / not_relevant / uncertain) before the full
-6-agent extraction battery runs.  This saves ~50% of LLM calls on typical
+7-agent extraction battery runs.  This saves ~50% of LLM calls on typical
 bills while keeping every decision auditable and reviewable.
 
 Revision ID: g3d9e5f7b208
@@ -21,28 +21,22 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enums first, then reference them in the table with
-    # create_type=False so SQLAlchemy doesn't try to create them again.
-    triage_decision = sa.Enum(
-        "relevant", "not_relevant", "uncertain",
-        name="triagedecision",
-        create_type=False,
-    )
-    triage_method = sa.Enum(
-        "keyword", "orrick_cross_check", "llm_generic", "quality_fail", "passthrough",
-        name="triagemethod",
-        create_type=False,
-    )
-
-    # Explicitly create the types (idempotent via checkfirst)
-    sa.Enum(
-        "relevant", "not_relevant", "uncertain",
-        name="triagedecision",
-    ).create(op.get_bind(), checkfirst=True)
-    sa.Enum(
-        "keyword", "orrick_cross_check", "llm_generic", "quality_fail", "passthrough",
-        name="triagemethod",
-    ).create(op.get_bind(), checkfirst=True)
+    # Create the enum types via raw SQL (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE triagedecision AS ENUM ('relevant', 'not_relevant', 'uncertain');
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE triagemethod AS ENUM (
+                'keyword', 'orrick_cross_check', 'llm_generic',
+                'quality_fail', 'passthrough'
+            );
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$
+    """)
 
     op.create_table(
         "section_triage_results",
@@ -52,8 +46,15 @@ def upgrade() -> None:
             sa.ForeignKey("normalized_source_records.id"),
             nullable=False, unique=True,
         ),
-        sa.Column("decision", triage_decision, nullable=False),
-        sa.Column("method", triage_method, nullable=False),
+        sa.Column("decision", sa.Enum(
+            "relevant", "not_relevant", "uncertain",
+            name="triagedecision", create_constraint=False,
+        ), nullable=False),
+        sa.Column("method", sa.Enum(
+            "keyword", "orrick_cross_check", "llm_generic",
+            "quality_fail", "passthrough",
+            name="triagemethod", create_constraint=False,
+        ), nullable=False),
         sa.Column("confidence", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("matched_keywords", JSONB, server_default="[]"),
         sa.Column("orrick_terms_checked", JSONB, server_default="[]"),
