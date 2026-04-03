@@ -7,20 +7,29 @@
 
 ## Bugs / Issues (post-extraction run)
 
-### BUG-1: Review tier counts may misrepresent quality (investigate)
-Dashboard shows 130 A, 3752 B, 2112 C, 2046 D (8040 total). Need to verify whether the Orrick gate is working as expected here — 2046 Tier D items (25%) is significant but may be correct if only ~75% of laws have Orrick metadata. The 0/8040 approved count is expected (no review has happened yet). **Action**: Verify Orrick coverage across the 243-law corpus; confirm tier distribution is expected.
+### BUG-1: 59 laws missing Orrick data → auto Tier D extractions
+**Root cause**: `data/fact_laws.csv` has 244 laws. Only 185 have `key_requirements_raw` or `enforcement_penalties` populated. 59 laws have neither, meaning ALL extractions from those laws get auto-Tier D by the Orrick gate.
+**Impact**: The 2046 Tier D items in the review queue include extractions that may be perfectly good but can never score above D because their source law has no Orrick reference data.
+**Action needed**: Either (a) add Orrick data to those 59 laws in the CSV and re-seed, or (b) flag them for manual review, or (c) exclude them from extraction. User preference: they should not be included unless Orrick data is added.
+**Affected files**: `data/fact_laws.csv`, possibly `src/ingestion/local_ingest.py` (seeding).
 
-### BUG-2: "Generate Summaries" shows all summaries exist — cannot regenerate errors
-**Root cause**: Summaries are auto-generated at extraction time (`extractor.py:1004-1012`). Every successful extraction already has `plain_summary` in its metadata. The batch function filters for missing summaries, finds none. Failed extractions live in a separate `FailedExtractionAttempt` table and have no Extraction record — so the summary step can't see them.
-**Two sub-issues**:
-  1. The "Generate Missing Summaries" button does nothing because all successful extractions already have summaries.
-  2. Failed extractions cannot be re-extracted from this step — they need the separate "Retry Failed" workflow.
-**Affected files**: `src/core/summary_generator.py` (batch query), `src/api/routes/dashboard.py` (endpoint), `templates/dashboard.html` (UI).
+### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step
+**Root cause**: The "Generate Summaries" button is a no-op because summaries are auto-generated at extraction time (`extractor.py:1004-1012`). The real issue is that failed agent calls (stored in `FailedExtractionAttempt` table) need the **"Retry Failed"** workflow (`dashboard.py:2208`, `POST /api/run/retry-failed`), not the summary step.
+**User need**: Retry failed agent calls. The endpoint exists (`run_retry_failed_extractions`), but it may not be visible or clearly labeled in the UI.
+**Action needed**: (a) Verify the retry button is visible and working in the dashboard, (b) surface the failed extraction count prominently so the user knows retries are available, (c) optionally make the "Generate Summaries" step clearer about what it does.
+**Affected files**: `src/api/routes/dashboard.py` (retry endpoint + UI), `templates/dashboard.html`, `src/ingestion/extractor.py` (retry logic).
 
-### BUG-3: Supabase sync says "not configured" despite .env having the URL
-**Root cause**: Environment variable name mismatch. The dashboard (`dashboard.py:2375`) reads `REGS_SUPABASE_URL`. The standalone script (`sync_to_supabase.py:217`) reads `REGS_SUPABASE_PROJECT_URL`. If user set `REGS_SUPABASE_PROJECT_URL` in `.env`, the dashboard won't find it.
-**Fix**: Either (a) add `REGS_SUPABASE_URL` to `.env` alongside the existing var, or (b) update the dashboard to also check `REGS_SUPABASE_PROJECT_URL` as fallback. Similarly for the key: dashboard checks `REGS_SUPABASE_KEY` first, then `REGS_SUPABASE_ANON_KEY`.
-**Affected files**: `src/api/routes/dashboard.py:2375-2376`, `src/scripts/sync_to_supabase.py:217-218`, `src/core/config.py`.
+### BUG-3: Supabase sync says "not configured" — wrong URL format in .env
+**Root cause**: Two problems:
+  1. **Format mismatch**: `.env` has `REGS_SUPABASE_URL=postgresql://postgres:...@db.wjxlimjpaijdogyrqtxc.supabase.co:5432/postgres` (a direct Postgres connection string). The sync code uses the **Supabase REST API** (`{base_url}/rest/v1/{table}`) via httpx, so it needs the REST URL: `https://wjxlimjpaijdogyrqtxc.supabase.co`.
+  2. **Missing API key**: The dashboard also needs `REGS_SUPABASE_KEY` (a Supabase anon or service_role JWT key), not a Postgres password. This key is found in Supabase Dashboard > Settings > API.
+**Fix**: Update `.env` to have the REST URL and API key:
+  ```
+  REGS_SUPABASE_URL=https://wjxlimjpaijdogyrqtxc.supabase.co
+  REGS_SUPABASE_KEY=eyJ...  (from Supabase dashboard > Settings > API > service_role key)
+  ```
+  The existing Postgres connection string can stay for direct DB access if needed, under a different name.
+**Affected files**: `.env` (user config, not committed).
 
 ## Next Tasks
 
