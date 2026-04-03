@@ -2531,14 +2531,35 @@ def run_verification_pass(
         total_input_tokens = 0
         total_output_tokens = 0
 
-        # Get all passages + extractions for this document
+        # Get triaged-relevant passages for this document (not ALL passages).
+        # Cross-validation and gap detection only need to check passages that
+        # were triaged as relevant/uncertain — irrelevant passages were already
+        # filtered out before extraction and contain no useful content.
         records = db.scalars(
+            select(NormalizedSourceRecord)
+            .where(NormalizedSourceRecord.document_version_id == dv_id)
+            .where(
+                NormalizedSourceRecord.id.in_(
+                    select(SectionTriageResult.source_record_id)
+                    .where(SectionTriageResult.decision.in_([
+                        TriageDecision.relevant,
+                        TriageDecision.uncertain,
+                    ]))
+                )
+            )
+            .order_by(NormalizedSourceRecord.ordinal)
+        ).all()
+
+        # Also load ALL records (including irrelevant) for bill context building,
+        # since definitions and scope sections may have been triaged as not_relevant
+        # but are still needed for context.
+        all_records = db.scalars(
             select(NormalizedSourceRecord)
             .where(NormalizedSourceRecord.document_version_id == dv_id)
             .order_by(NormalizedSourceRecord.ordinal)
         ).all()
 
-        bill_ctx = get_or_build_bill_context(db, dv_id, records=records)
+        bill_ctx = get_or_build_bill_context(db, dv_id, records=all_records)
 
         # --- Layer 1: Cross-Validation ---
         cv_passages = 0
