@@ -25,6 +25,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import mimetypes
+from collections.abc import Callable
 from datetime import date, datetime
 from pathlib import Path
 
@@ -120,7 +121,7 @@ def _temporal_status_from_csv(status_id: str) -> TemporalStatus:
 
 def seed_from_csv(
     db,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Create Source, DocumentFamily, DocumentVersion, and IngestionJob rows
     from data/fact_laws.csv.
@@ -296,7 +297,7 @@ def _detect_content_type(path: Path) -> str:
 def ingest_local_files(
     db,
     limit: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Ingest local source files for all pending ingestion jobs with ingest_mode=local.
 
@@ -472,7 +473,7 @@ def run_local_ingest(
     db,
     limit: int | None = None,
     seed_only: bool = False,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Full local ingestion pipeline: seed from CSV + ingest local files.
 

@@ -39,6 +39,7 @@ import hashlib
 import json
 import re
 import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -171,7 +172,7 @@ def _ensure_triage_table(db, _log=None) -> None:
         _log("Table created.")
 
 
-# Agent registry — 4 consolidated agents per Recommendation #1
+# Agent registry — 7 extraction agents
 AGENTS: dict[str, BaseExtractionAgent] = {}
 
 # Maps agent names to the ExtractionType values they produce
@@ -186,6 +187,7 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
     "ambiguity": [ExtractionType.ambiguity],
     "rights_protection": [ExtractionType.rights_protection],
     "compliance_mechanism": [ExtractionType.compliance_mechanism],
+    "preemption": [ExtractionType.preemption_signal],
 }
 
 
@@ -965,7 +967,7 @@ def _get_neighbor_texts(
 
 def run_triage(
     db,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Run section triage on all untriaged passages.
 
@@ -1109,7 +1111,7 @@ def run_triage(
 def run_extraction(
     db,
     limit: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
     batch_mode: bool = False,
 ) -> dict:
     """Run extraction agents against all unprocessed passages.
@@ -1406,7 +1408,7 @@ def run_extraction(
 def run_dependency_graph(
     db,
     document_version_id: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Build dependency graphs for documents that have extractions.
 
@@ -1531,7 +1533,7 @@ def run_dependency_graph(
 def run_condition_parsing(
     db,
     document_version_id: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Parse condition fields from extractions into structured expression trees.
 
@@ -1559,7 +1561,7 @@ def run_condition_parsing(
 def run_recovery_extraction(
     db,
     limit: int | None = None,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     """Re-extract passages that have partial results (some agents succeeded, others failed).
 
@@ -2082,7 +2084,7 @@ def run_verification_pass(
     skip_cross_validation: bool = False,
     skip_gap_detection: bool = False,
     skip_citation_verification: bool = False,
-    on_progress: callable | None = None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> list[VerificationResult]:
     """Run post-extraction verification agents on completed extractions.
 

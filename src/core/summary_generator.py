@@ -377,10 +377,11 @@ def generate_summaries_batch(
     )
 
     if not overwrite:
-        # Only process extractions without a summary
-        from sqlalchemy import not_
+        # Only process extractions without a summary.
+        # JSONB path returns SQL NULL when key is missing, so use
+        # has_key negation to catch both missing keys and null values.
         query = query.where(
-            not_(Extraction.metadata_["plain_summary"].isnot(None))
+            ~Extraction.metadata_.has_key("plain_summary")
         )
 
     if limit:
