@@ -181,6 +181,31 @@
             {% else %}
             <span class="review-status-label">{{ item.review_status }}</span>
             {% endif %}
+            <!-- Retag dropdown -->
+            <div class="retag-control" style="margin-top:4px;">
+              <form style="display:inline-flex;gap:4px;align-items:center;"
+                    hx-post="/dashboard/review/{{ item.queue_id }}/retag"
+                    hx-target="#retag-result-{{ item.queue_id }}"
+                    hx-swap="innerHTML">
+                <select name="new_type" style="font-size:11px;padding:2px 4px;border-radius:3px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+                  <option value="" disabled selected>Retag...</option>
+                  <option value="obligation" {% if item.extraction_type == 'obligation' %}disabled{% endif %}>obligation</option>
+                  <option value="enforcement" {% if item.extraction_type == 'enforcement' %}disabled{% endif %}>enforcement</option>
+                  <option value="timeline" {% if item.extraction_type == 'timeline' %}disabled{% endif %}>timeline</option>
+                  <option value="definition" {% if item.extraction_type == 'definition' %}disabled{% endif %}>definition</option>
+                  <option value="actor_mapping" {% if item.extraction_type == 'actor_mapping' %}disabled{% endif %}>actor_mapping</option>
+                  <option value="framework_ref" {% if item.extraction_type == 'framework_ref' %}disabled{% endif %}>framework_ref</option>
+                  <option value="threshold" {% if item.extraction_type == 'threshold' %}disabled{% endif %}>threshold</option>
+                  <option value="exception" {% if item.extraction_type == 'exception' %}disabled{% endif %}>exception</option>
+                  <option value="ambiguity" {% if item.extraction_type == 'ambiguity' %}disabled{% endif %}>ambiguity</option>
+                  <option value="rights_protection" {% if item.extraction_type == 'rights_protection' %}disabled{% endif %}>rights_protection</option>
+                  <option value="compliance_mechanism" {% if item.extraction_type == 'compliance_mechanism' %}disabled{% endif %}>compliance_mechanism</option>
+                  <option value="preemption_signal" {% if item.extraction_type == 'preemption_signal' %}disabled{% endif %}>preemption_signal</option>
+                </select>
+                <button type="submit" class="btn btn-sm" style="font-size:10px;padding:2px 6px;">Go</button>
+              </form>
+              <span id="retag-result-{{ item.queue_id }}"></span>
+            </div>
           </td>
         </tr>
         <!-- Expandable detail row (hidden by default) -->

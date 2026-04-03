@@ -364,6 +364,26 @@ def _discriminate_extraction_type(
             or tl.get("sunset_date") or tl.get("phase_in_period")
         )
 
+        # Check if the "obligation" is really just an enforcement provision
+        # disguised as an obligation. When the subject is a judicial or
+        # enforcement authority (court, AG, commission) AND the action is
+        # about imposing penalties/fines, this is an enforcement extraction,
+        # not a compliance obligation on a regulated entity.
+        if has_core_obligation and has_enforcement:
+            subject_lower = (payload.get("subject_normalized") or payload.get("subject") or "").lower()
+            action_lower = (payload.get("action") or "").lower()
+            _enforcement_subjects = {
+                "court", "judge", "judicial_authority", "attorney_general",
+                "ag", "commission", "prosecutor", "district_attorney",
+                "secretary", "commissioner", "regulator", "agency",
+            }
+            _penalty_verbs = {"fine", "penalt", "sanction", "forfeit", "assess", "impose", "award"}
+            is_enforcement_subject = any(s in subject_lower for s in _enforcement_subjects)
+            is_penalty_action = any(v in action_lower for v in _penalty_verbs)
+
+            if is_enforcement_subject and is_penalty_action:
+                return ExtractionType.enforcement
+
         if not has_core_obligation:
             if has_enforcement:
                 return ExtractionType.enforcement

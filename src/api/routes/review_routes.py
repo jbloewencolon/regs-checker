@@ -13,6 +13,7 @@ from src.api.routes._dashboard_helpers import _render
 from src.db.engine import get_db
 from src.db.models import (
     Extraction,
+    ExtractionType,
     ReviewAction,
     ReviewQueueItem,
     ReviewStatus,
@@ -230,4 +231,60 @@ def edit_extraction(
     return HTMLResponse(
         '<div class="result-panel success" style="padding:6px 12px;font-size:12px;">'
         f'Saved changes to {len(updates)} field(s).</div>'
+    )
+
+
+@router.post("/review/{queue_id}/retag")
+def retag_extraction(
+    queue_id: int,
+    new_type: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Change the extraction_type of an extraction.
+
+    Used when the discriminator mis-classified (e.g., tagged a penalty
+    as an obligation). Valid types are the ExtractionType enum values.
+    """
+    item = db.get(ReviewQueueItem, queue_id)
+    if not item or not item.extraction:
+        return HTMLResponse(
+            '<div class="result-panel danger">Item not found</div>',
+            status_code=404,
+        )
+
+    # Validate the new type
+    try:
+        new_extraction_type = ExtractionType(new_type)
+    except ValueError:
+        valid = ", ".join(t.value for t in ExtractionType)
+        return HTMLResponse(
+            f'<div class="result-panel danger">Invalid type "{new_type}". '
+            f'Valid: {valid}</div>',
+            status_code=400,
+        )
+
+    extraction = item.extraction
+    old_type = extraction.extraction_type
+
+    if old_type == new_extraction_type:
+        return HTMLResponse(
+            '<div class="result-panel info" style="padding:6px 12px;font-size:12px;">'
+            f'Already tagged as {new_type}.</div>'
+        )
+
+    extraction.extraction_type = new_extraction_type
+
+    # Record the retag as a review action
+    db.add(ReviewAction(
+        queue_item_id=queue_id,
+        action=ReviewStatus.pending,
+        reviewer="dashboard",
+        comment=f"Retagged: {old_type.value} -> {new_type}",
+    ))
+    db.commit()
+
+    return HTMLResponse(
+        '<div class="result-panel success" style="padding:6px 12px;font-size:12px;">'
+        f'Retagged from <strong>{old_type.value}</strong> to '
+        f'<strong>{new_type}</strong>.</div>'
     )
