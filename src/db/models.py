@@ -586,6 +586,36 @@ class SectionTriageResult(Base):
     )
 
 
+class FailedExtractionAttempt(Base):
+    """Tracks individual extraction failures for retry.
+
+    When an agent call or DB insert fails during extraction, a row is written
+    here so the passage+agent pair can be retried later without re-running
+    the entire extraction pipeline.
+    """
+    __tablename__ = "failed_extraction_attempts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_record_id = Column(
+        Integer, ForeignKey("normalized_source_records.id"),
+        nullable=False, index=True,
+    )
+    agent_name = Column(String(100), nullable=False)
+    error_type = Column(String(50), nullable=False)  # "llm_error", "validation_error", "db_error"
+    error_message = Column(Text, nullable=False)
+    extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), nullable=True)
+    retried = Column(Boolean, default=False, nullable=False, index=True)
+    retry_succeeded = Column(Boolean, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    source_record = relationship("NormalizedSourceRecord")
+    extraction_job = relationship("ExtractionJob")
+
+    __table_args__ = (
+        Index("ix_failed_attempts_retry", "retried", "agent_name"),
+    )
+
+
 class ExportJob(Base):
     __tablename__ = "export_jobs"
 

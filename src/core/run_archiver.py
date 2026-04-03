@@ -23,7 +23,7 @@ from __future__ import annotations
 import csv
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +51,11 @@ class RunArchiver:
         Args:
             run_type: Label for the run (e.g., "extract", "re-extract", "triage").
         """
-        now = datetime.now(timezone.utc)
+        # Use naive UTC datetime to match Postgres func.now() which returns
+        # naive timestamps. Using timezone-aware datetimes here causes the
+        # CSV export query (WHERE created_at >= started_at) to return 0 rows
+        # because SQLAlchemy can't compare aware vs naive datetimes correctly.
+        now = datetime.utcnow()
         folder_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_{run_type}"
         run_dir = RUNS_DIR / folder_name
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +80,7 @@ class RunArchiver:
         Returns:
             Path to the run folder.
         """
-        finished_at = datetime.now(timezone.utc)
+        finished_at = datetime.utcnow()
 
         # 1. Write run summary
         run_meta = {

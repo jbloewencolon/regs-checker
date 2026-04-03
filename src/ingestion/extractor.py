@@ -70,6 +70,7 @@ from src.db.models import (
     Extraction,
     ExtractionJob,
     ExtractionType,
+    FailedExtractionAttempt,
     IngestionJob,
     NormalizedSourceRecord,
     ObligationDependency,
@@ -115,6 +116,127 @@ _payload_hash_available: bool | None = None
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 3
+
+def _ensure_extraction_enums(db, _log=None) -> None:
+    """Ensure all ExtractionType enum values exist in the local Postgres enum.
+
+    The preemption_signal, rights_protection, and compliance_mechanism values
+    were added after the initial schema. If the Alembic migration hasn't been
+    applied to the local database, this adds them idempotently.
+
+    IMPORTANT: ALTER TYPE ... ADD VALUE cannot run inside a transaction in
+    PostgreSQL (it auto-commits). We use a raw psycopg2 connection with
+    autocommit=True to execute these statements outside any transaction.
+    """
+    from sqlalchemy import text
+
+    new_values = [
+        "rights_protection",
+        "compliance_mechanism",
+        "preemption_signal",
+    ]
+
+    bind = db.get_bind()
+
+    # First, check if the enum type exists at all
+    with bind.connect() as conn:
+        result = conn.execute(text(
+            "SELECT enumlabel FROM pg_enum "
+            "JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
+            "WHERE pg_type.typname = 'extractiontype'"
+        ))
+        existing = {row[0] for row in result}
+
+    if not existing:
+        # Enum type doesn't exist — Alembic migrations haven't run.
+        # Don't try to ALTER a non-existent type; the migration will create it.
+        if _log:
+            _log("extractiontype enum not found — run Alembic migrations first.")
+        return
+
+    missing = [v for v in new_values if v not in existing]
+    if not missing:
+        return
+
+    # ALTER TYPE ... ADD VALUE must run outside a transaction block.
+    # Get the raw DBAPI connection and set autocommit mode.
+    raw_conn = bind.raw_connection()
+    try:
+        raw_conn.autocommit = True
+        cursor = raw_conn.cursor()
+        for val in missing:
+            if _log:
+                _log(f"Adding '{val}' to extractiontype enum...")
+            cursor.execute(
+                f"ALTER TYPE extractiontype ADD VALUE IF NOT EXISTS '{val}'"
+            )
+        cursor.close()
+    finally:
+        raw_conn.autocommit = False
+        raw_conn.close()
+
+
+def _ensure_failed_attempts_table(db, _log=None) -> None:
+    """Create the failed_extraction_attempts table if it doesn't exist."""
+    from sqlalchemy import inspect as sa_inspect, text
+
+    bind = db.get_bind()
+    inspector = sa_inspect(bind)
+    if inspector.has_table("failed_extraction_attempts"):
+        return
+
+    if _log:
+        _log("Creating failed_extraction_attempts table...")
+
+    with bind.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS failed_extraction_attempts (
+                id SERIAL PRIMARY KEY,
+                source_record_id INTEGER NOT NULL REFERENCES normalized_source_records(id),
+                agent_name VARCHAR(100) NOT NULL,
+                error_type VARCHAR(50) NOT NULL,
+                error_message TEXT NOT NULL,
+                extraction_job_id INTEGER REFERENCES extraction_jobs(id),
+                retried BOOLEAN NOT NULL DEFAULT FALSE,
+                retry_succeeded BOOLEAN,
+                created_at TIMESTAMP DEFAULT now()
+            )
+        """))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_failed_attempts_source "
+            "ON failed_extraction_attempts (source_record_id)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_failed_attempts_retry "
+            "ON failed_extraction_attempts (retried, agent_name)"
+        ))
+
+    if _log:
+        _log("Table created.")
+
+
+def _record_failed_attempt(
+    db,
+    source_record_id: int,
+    agent_name: str,
+    error_type: str,
+    error_message: str,
+    extraction_job_id: int | None = None,
+) -> None:
+    """Record a failed extraction attempt for later retry."""
+    try:
+        db.add(FailedExtractionAttempt(
+            source_record_id=source_record_id,
+            agent_name=agent_name,
+            error_type=error_type,
+            error_message=str(error_message)[:2000],
+            extraction_job_id=extraction_job_id,
+        ))
+        db.flush()
+    except Exception as e:
+        # Don't let failure tracking itself block the pipeline
+        logger.warning("failed_attempt_recording_error", error=str(e))
+
 
 def _ensure_triage_table(db, _log=None) -> None:
     """Create the section_triage_results table if it doesn't exist.
@@ -750,6 +872,11 @@ def extract_single_record(
                 error=str(result),
                 section_path=record.section_path,
             )
+            # Record for retry
+            _record_failed_attempt(
+                db, record.id, name, "llm_error", str(result),
+                extraction_job_id=extraction_job.id if extraction_job else None,
+            )
             if tracker is not None:
                 tracker.record_failure(
                     f"agent={name} record={record.id}: {result}"
@@ -802,6 +929,10 @@ def extract_single_record(
         # Write extractions against all source records in the merged passage
         for source_record in passage.source_records:
             for item in result.extractions:
+                # Use a savepoint so a single failed INSERT (e.g. missing
+                # enum value) doesn't roll back the entire transaction
+                # and destroy the ExtractionJob row + prior extractions.
+                sp = db.begin_nested()
                 try:
                     resolved_type = _discriminate_extraction_type(name, item)
 
@@ -853,8 +984,9 @@ def extract_single_record(
                     # Generate plain-English summary from the verified payload
                     try:
                         from src.core.summary_generator import generate_summary
+                        ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
                         extraction_meta["plain_summary"] = generate_summary(
-                            resolved_type, item, ctx.get("jurisdiction"),
+                            ext_type_str, item, ctx.get("jurisdiction"),
                         )
                     except Exception:
                         pass  # Summary is presentation-only; don't block extraction
@@ -900,6 +1032,10 @@ def extract_single_record(
                         orrick_matched_tokens=confidence.orrick_matched_tokens[:5],
                     )
 
+                    # Commit the savepoint so this extraction persists
+                    # even if a later extraction in this batch fails.
+                    sp.commit()
+
                     # Emit to live monitor
                     monitor.record_agent_result(
                         agent_name=name,
@@ -913,13 +1049,22 @@ def extract_single_record(
                     )
 
                 except Exception as e:
-                    db.rollback()
+                    sp.rollback()
                     logger.error(
                         "extraction_record_failed",
                         agent=name,
                         record_id=source_record.id,
                         error=str(e),
                     )
+                    # Record for retry and feed the circuit breaker
+                    _record_failed_attempt(
+                        db, source_record.id, name, "db_error", str(e),
+                        extraction_job_id=extraction_job.id if extraction_job else None,
+                    )
+                    if tracker is not None:
+                        tracker.record_failure(
+                            f"db_insert agent={name} record={source_record.id}: {e}"
+                        )
 
     # Record passage-level completion to monitor
     monitor.record_passage_complete(
@@ -1127,6 +1272,12 @@ def run_extraction(
     """
     # Clear any stale cancellation from a previous run
     clear_cancel()
+
+    # Ensure all extraction type enum values exist in local Postgres
+    _ensure_extraction_enums(db, on_progress)
+
+    # Ensure failed_extraction_attempts table exists for error tracking
+    _ensure_failed_attempts_table(db, on_progress)
 
     # Create a dated output folder for this run
     from src.core.run_archiver import RunArchiver
@@ -1396,6 +1547,205 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     _monitor.stop_run()
+    archiver.finalize(db, summary)
+    return summary
+
+
+# ---------------------------------------------------------------------------
+# Retry Failed Extractions
+# ---------------------------------------------------------------------------
+
+
+def run_retry_failed(
+    db,
+    on_progress: Callable[[str], None] | None = None,
+    limit: int | None = None,
+) -> dict:
+    """Retry extraction for passages+agents that previously failed.
+
+    Reads from the failed_extraction_attempts table, groups by passage,
+    and re-runs only the specific agents that failed. Marks attempts as
+    retried and records success/failure.
+
+    Args:
+        db: SQLAlchemy session
+        on_progress: Optional callback for status updates
+        limit: Max failed attempts to retry (None = all)
+
+    Returns:
+        Summary dict with retry counts.
+    """
+    from src.core.run_archiver import RunArchiver
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    _ensure_extraction_enums(db, on_progress)
+    _ensure_failed_attempts_table(db, on_progress)
+
+    # Find un-retried failures
+    query = (
+        select(FailedExtractionAttempt)
+        .where(FailedExtractionAttempt.retried == False)  # noqa: E712
+        .order_by(FailedExtractionAttempt.source_record_id)
+    )
+    if limit:
+        query = query.limit(limit)
+
+    failed_attempts = db.scalars(query).all()
+
+    if not failed_attempts:
+        _log("No failed extraction attempts to retry.")
+        return {"total": 0, "retried": 0, "succeeded": 0, "failed_again": 0}
+
+    _log(f"Found {len(failed_attempts)} failed attempts to retry")
+
+    # Group by source_record_id so we build context once per passage
+    from itertools import groupby
+    from operator import attrgetter
+
+    all_agents = _get_agents()
+    archiver = RunArchiver.start("retry")
+    token_usage = TokenUsageSummary()
+    tracker = FailureTracker(
+        context="retry failed extractions",
+        max_consecutive=CIRCUIT_BREAKER_THRESHOLD,
+        max_failure_rate=0.8,
+        min_items_for_rate=10,
+    )
+
+    retried = 0
+    succeeded = 0
+    failed_again = 0
+
+    sorted_attempts = sorted(failed_attempts, key=attrgetter("source_record_id"))
+    for record_id, group in groupby(sorted_attempts, key=attrgetter("source_record_id")):
+        attempts = list(group)
+        record = db.get(NormalizedSourceRecord, record_id)
+        if not record:
+            _log(f"  Record {record_id} not found — skipping")
+            for att in attempts:
+                att.retried = True
+                att.retry_succeeded = False
+            continue
+
+        ctx = _build_context(db, record)
+
+        for attempt in attempts:
+            agent_name = attempt.agent_name
+            agent = all_agents.get(agent_name)
+            if not agent:
+                _log(f"  Agent '{agent_name}' not found — skipping")
+                attempt.retried = True
+                attempt.retry_succeeded = False
+                failed_again += 1
+                continue
+
+            _log(f"  Retrying {agent_name} on record {record_id}...")
+            attempt.retried = True
+            retried += 1
+
+            try:
+                result = agent.extract(record.text_content, ctx)
+                if result.abstention is not None:
+                    attempt.retry_succeeded = True
+                    succeeded += 1
+                    tracker.record_success()
+                    continue
+
+                # Process extractions
+                types = AGENT_EXTRACTION_TYPES.get(agent_name, [])
+                default_type = types[0] if types else ExtractionType.obligation
+                schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
+
+                for item in result.extractions:
+                    sp = db.begin_nested()
+                    try:
+                        resolved_type = _discriminate_extraction_type(agent_name, item)
+                        evidence = item.get("evidence_spans", [])
+                        orrick_sim = validate_extraction_against_orrick(item, ctx)
+                        confidence = compute_confidence(
+                            schema_valid=True,
+                            evidence_spans=evidence,
+                            extraction_payload=item,
+                            schema_class=schema_class,
+                            orrick_similarity=orrick_sim,
+                        )
+
+                        ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
+                        extraction_meta: dict = {}
+                        extraction_meta["confidence_breakdown"] = {
+                            "schema_validity": confidence.schema_validity,
+                            "evidence_grounding": confidence.evidence_grounding,
+                            "completeness": confidence.completeness,
+                            "source_quality": confidence.source_quality,
+                            "orrick_alignment": confidence.orrick_alignment,
+                            "cross_validation": confidence.cross_validation,
+                            "orrick_gated": confidence.orrick_gated,
+                        }
+                        extraction_meta["retried_from"] = attempt.id
+                        try:
+                            from src.core.summary_generator import generate_summary
+                            extraction_meta["plain_summary"] = generate_summary(
+                                ext_type_str, item, ctx.get("jurisdiction"),
+                            )
+                        except Exception:
+                            pass
+
+                        extraction = Extraction(
+                            source_record_id=record_id,
+                            extraction_type=resolved_type,
+                            payload=item,
+                            evidence_spans=evidence,
+                            confidence_score=confidence.total_score,
+                            confidence_tier=ConfidenceTier(confidence.tier),
+                            review_status=ReviewStatus.pending,
+                            prompt_hash=result.prompt_hash,
+                            model_id=result.model_id,
+                            metadata_=extraction_meta,
+                        )
+                        db.add(extraction)
+                        db.flush()
+
+                        db.add(ReviewQueueItem(
+                            extraction_id=extraction.id,
+                            priority=_confidence_to_priority(confidence.tier),
+                            status=ReviewStatus.pending,
+                        ))
+                        sp.commit()
+
+                    except Exception as e:
+                        sp.rollback()
+                        logger.error("retry_insert_failed", agent=agent_name, error=str(e))
+
+                attempt.retry_succeeded = True
+                succeeded += 1
+                tracker.record_success()
+                token_usage.add(result.input_tokens, result.output_tokens)
+
+            except CircuitBreakerTripped:
+                _log("Circuit breaker tripped during retry — aborting.")
+                break
+            except Exception as e:
+                attempt.retry_succeeded = False
+                failed_again += 1
+                tracker.record_failure(f"retry agent={agent_name}: {e}")
+                logger.error("retry_agent_failed", agent=agent_name, error=str(e))
+
+        db.commit()
+
+    summary = {
+        "total": len(failed_attempts),
+        "retried": retried,
+        "succeeded": succeeded,
+        "failed_again": failed_again,
+    }
+    _log(
+        f"\nRetry complete: {succeeded}/{retried} succeeded, "
+        f"{failed_again} failed again"
+    )
     archiver.finalize(db, summary)
     return summary
 
