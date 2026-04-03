@@ -24,13 +24,13 @@
 ## Code Changes
 - After editing large files (especially `extractor.py`), verify imports are intact
 - Do not add unrequested features — only implement what was asked
-- The extraction pipeline has 6 agents: obligation, definition_actor, threshold_exception, ambiguity, rights_protection, compliance_mechanism
+- The extraction pipeline has 7 agents: obligation, definition_actor, threshold_exception, ambiguity, rights_protection, compliance_mechanism, preemption
 - Archived code lives in `_archived/` and `src/ingestion/_archived/`
 
 ## Project Structure
 - `data/` — CSV law metadata (fact_laws.csv, dim tables)
 - `output/` — Pre-fetched source files (law_sources/, law_texts/)
 - `src/ingestion/local_ingest.py` — Primary ingestion (replaces old URL fetcher)
-- `src/ingestion/extractor.py` — Extraction pipeline (6 AI agents)
+- `src/ingestion/extractor.py` — Extraction pipeline (7 AI agents)
 - `src/api/routes/dashboard.py` — Dashboard UI (HTMX)
 - `templates/` — Jinja2 templates
