@@ -2,6 +2,18 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### CSV Title Fix & IAPP Enrichment (2026-04-04)
+- **Root cause**: `fact_laws.csv` `title` column was corrupted during PDF extraction — truncated names, statute references concatenated, words missing
+- Mapped all 187 Orrick CSV rows to 186 legacy document_families (correct titles) via fuzzy matching by jurisdiction
+- Corrected 187 Orrick law titles (e.g., "of Arkansas CSAM HB1877" → "Amendment of Arkansas CSAM Laws")
+- Fixed 2 severely corrupted rows manually (law_id=25 California Employment Regs, law_id=218 Utah AI Impersonation)
+- Enriched 17 IAPP rows with status/scope from `iapp_law_tracker.csv` (e.g., "SB 205" → "SB 205 (Enacted - Automated Decision Systems)")
+- Added 38 new entries to `static/iapp_law_tracker.csv` (65 → 103 rows) from fact_laws IAPP data
+- Identified 15 jurisdiction mismatches: same bill numbers in different states (e.g., AB 1018 is California in tracker, Arkansas in CSV)
+- Created `scripts/fix_csv_titles.py` — reusable mapping script with fuzzy title matching
+- **Files modified**: `data/fact_laws.csv`, `static/iapp_law_tracker.csv`
+- **Files created**: `scripts/fix_csv_titles.py`
+
 ### Supabase Sync (2026-04-04)
 - Fixed BUG-3: Supabase sync "not configured" — `.env` had postgres:// URL instead of https:// REST URL, and no JWT key
 - Added diagnostic error detection in `dashboard.py` for common misconfigs (postgres:// URLs, non-JWT keys, missing env vars)

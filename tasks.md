@@ -2,26 +2,21 @@
 
 ## Active Tasks
 
-- **DATA ALIGNMENT: Local DB has 430 document families but only 163 have extractions** — DB audit on 2026-04-04 revealed:
-  - Ground truth CSV has **244 laws**
-  - DB has **430 document families** (429 unique titles) — nearly 2x the CSV
-  - Only **163 families** have any extractions (67% of CSV, 38% of DB)
-  - Old range (ID 1–180): 82 families with 3,428 extractions
-  - New range (ID 190–430): 81 families with 4,612 extractions
-  - Gap range (ID 181–189): 9 families, 0 extractions
-  - No title overlap between old and new — they are different laws, not re-ingested duplicates
-  - **81 ground truth laws have zero extractions**
-  - Need to: (1) identify which families are canonical/current, (2) clean orphaned families, (3) determine if re-extraction is needed
+- **DATA ALIGNMENT: CSV titles fixed, DB cleanup still needed** — DB audit on 2026-04-04 revealed 430 document families (186 legacy + 244 CSV-seeded). Root cause: CSV `title` column was corrupted during PDF extraction. **FIXED**:
+  - Corrected 187 Orrick law titles in `fact_laws.csv` using legacy family data from Supabase
+  - Enriched 17 IAPP rows with scope/status from `iapp_law_tracker.csv`
+  - Added 38 new IAPP entries to `static/iapp_law_tracker.csv` (from 65 → 103 rows)
+  - Identified 15 jurisdiction mismatches between CSV and IAPP tracker (bill number collisions across states)
+  - **Still needed**: (1) Delete 186 legacy orphan families from local DB, (2) Re-seed from fixed CSV, (3) Re-extract 163 families with zero extractions
 - **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until data alignment is resolved.
 - **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
 ## Bugs / Issues (post-extraction run)
 
 ### BUG-1: 59 laws missing Orrick data → auto Tier D extractions — FLAGGED
-**Root cause**: `data/fact_laws.csv` has 244 laws. Only 185 have `key_requirements_raw` or `enforcement_penalties` populated. 59 laws have neither, meaning ALL extractions from those laws get auto-Tier D by the Orrick gate.
-**Impact**: The 2046 Tier D items in the review queue include extractions that may be perfectly good but can never score above D because their source law has no Orrick reference data.
-**Action needed**: Either (a) add Orrick data to those 59 laws in the CSV and re-seed, or (b) flag them for manual review, or (c) exclude them from extraction. User preference: they should not be included unless Orrick data is added.
-**Affected files**: `data/fact_laws.csv`, possibly `src/ingestion/local_ingest.py` (seeding).
+**Root cause**: `data/fact_laws.csv` has 244 laws. 188 are Orrick-sourced, 56 are IAPP-sourced. Of the 188 Orrick laws, 185 have `key_requirements_raw` or `enforcement_penalties` populated. 2 Orrick + all 56 IAPP = 58 laws have neither, meaning ALL extractions from those laws get auto-Tier D by the Orrick gate.
+**Update (2026-04-04)**: Legacy families (ID 1-186) have `key_requirements` for all 186 laws. The 2 missing Orrick laws may be recoverable. The 56 IAPP laws inherently lack Orrick data — the Orrick gate should either be modified for IAPP laws or IAPP laws should have equivalent reference data added.
+**Affected files**: `data/fact_laws.csv`, `data/flagged_missing_orrick.md`, `src/core/confidence.py` (Orrick gate logic).
 
 ### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step — FIXED
 **Root cause**: The "Generate Summaries" button is a no-op because summaries are auto-generated at extraction time (`extractor.py:1004-1012`). The real issue is that failed agent calls (stored in `FailedExtractionAttempt` table) need the **"Retry Failed"** workflow (`dashboard.py:2208`, `POST /api/run/retry-failed`), not the summary step.
