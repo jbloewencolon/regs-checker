@@ -298,11 +298,11 @@ def _build_bill_context_block(context: dict) -> str:
 
     bill_defs = context.get("bill_definitions", "")
     if bill_defs:
-        parts.append(f"DEFINITIONS FROM THIS BILL (excerpt):\n{bill_defs[:6000]}")
+        parts.append(f"DEFINITIONS FROM THIS BILL (excerpt):\n{bill_defs[:30000]}")
 
     bill_scope = context.get("bill_scope", "")
     if bill_scope:
-        parts.append(f"SCOPE / APPLICABILITY (excerpt):\n{bill_scope[:4000]}")
+        parts.append(f"SCOPE / APPLICABILITY (excerpt):\n{bill_scope[:20000]}")
 
     defined_terms = context.get("defined_terms")
     if defined_terms:
@@ -311,7 +311,7 @@ def _build_bill_context_block(context: dict) -> str:
 
     bill_structure = context.get("bill_structure", "")
     if bill_structure:
-        parts.append(f"BILL STRUCTURE (section outline):\n{bill_structure[:1500]}")
+        parts.append(f"BILL STRUCTURE (section outline):\n{bill_structure[:5000]}")
 
     if not parts:
         return ""
@@ -323,7 +323,7 @@ def _build_neighbor_block(neighbors: list[str]) -> str:
     """Build a text block showing neighboring passages for context."""
     if not neighbors:
         return ""
-    trimmed = [n[:800] for n in neighbors]
+    trimmed = [n[:3000] for n in neighbors]
     return "SURROUNDING SECTIONS (for context):\n" + "\n---\n".join(trimmed)
 
 
@@ -502,7 +502,7 @@ def triage_passage(
         llm_response = llm_provider.call(
             system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
             user_prompt=prompt,
-            max_tokens=8192,
+            max_tokens=16384,
             temperature=0.0,
         )
 
