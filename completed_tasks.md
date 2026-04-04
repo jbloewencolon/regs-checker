@@ -2,6 +2,15 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### Supabase Sync (2026-04-04)
+- Fixed BUG-3: Supabase sync "not configured" — `.env` had postgres:// URL instead of https:// REST URL, and no JWT key
+- Added diagnostic error detection in `dashboard.py` for common misconfigs (postgres:// URLs, non-JWT keys, missing env vars)
+- Added `REGS_SUPABASE_PROJECT_URL` fallback to all 4 Supabase dashboard endpoints
+- First sync pushed 47,485/64,995 rows (partial failures from FK cascades on batched inserts)
+- Verified **zero duplicates** via Supabase SQL queries on composite keys and primary keys
+- Truncated all Supabase tables for clean re-sync (user requested full replacement)
+- Next step: run `python -m src.scripts.sync_to_supabase` for clean full push
+
 ### Runtime Bug Fixes (critical — changed extraction behavior)
 - Fixed `AGENT_EXTRACTION_TYPES` missing `"preemption"` key — was crashing every preemption extraction with KeyError
 - Fixed `preemption_signal` enum not in local Postgres — added `_ensure_extraction_enums()` that auto-adds missing enum values using raw psycopg2 autocommit (ALTER TYPE cannot run in transactions)

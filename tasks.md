@@ -2,7 +2,7 @@
 
 ## Active Tasks
 
-- **Run full extraction on 243 laws** — The pipeline is debugged and ready. Reset extractions, then run seed -> triage -> extract on the full corpus. This is the user's next manual step.
+- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. Run `python -m src.scripts.sync_to_supabase` to push a clean copy of all local data. No duplicates possible on a clean slate.
 - **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
 ## Bugs / Issues (post-extraction run)
@@ -18,31 +18,24 @@
 **Fix applied**: Added a `Retry Failed` button + badge to the Extract step (Step 3) in `templates/dashboard.html`. It polls `GET /api/failed-extractions-count` every 10s and shows the count + button when failures exist.
 **Affected files**: `templates/dashboard.html`.
 
-### BUG-3: Supabase sync says "not configured" — wrong URL format in .env
+### BUG-3: Supabase sync says "not configured" — FIXED
 **Root cause**: Two problems:
-  1. **Format mismatch**: `.env` has `REGS_SUPABASE_URL=postgresql://postgres:...@db.wjxlimjpaijdogyrqtxc.supabase.co:5432/postgres` (a direct Postgres connection string). The sync code uses the **Supabase REST API** (`{base_url}/rest/v1/{table}`) via httpx, so it needs the REST URL: `https://wjxlimjpaijdogyrqtxc.supabase.co`.
-  2. **Missing API key**: The dashboard also needs `REGS_SUPABASE_KEY` (a Supabase anon or service_role JWT key), not a Postgres password. This key is found in Supabase Dashboard > Settings > API.
-**Fix**: Update `.env` to have the REST URL and API key:
-  ```
-  REGS_SUPABASE_URL=https://wjxlimjpaijdogyrqtxc.supabase.co
-  REGS_SUPABASE_KEY=eyJ...  (from Supabase dashboard > Settings > API > service_role key)
-  ```
-  The existing Postgres connection string can stay for direct DB access if needed, under a different name.
-**Affected files**: `.env` (user config, not committed).
+  1. **Format mismatch**: `.env` had `REGS_SUPABASE_URL=postgresql://...` (Postgres connection string) but the sync code uses the REST API and needs `https://wjxlimjpaijdogyrqtxc.supabase.co`.
+  2. **Missing API key**: Needed `REGS_SUPABASE_ANON_KEY` (a JWT service_role key), not a Postgres password.
+**Fix applied**: Updated `.env` with REST URL and service_role JWT key. Added diagnostic error detection in `dashboard.py` for postgres:// URLs and non-JWT keys. Sync confirmed working (200 responses from Supabase).
+**Affected files**: `.env` (user config, not committed), `src/api/routes/dashboard.py`.
 
 ## Next Tasks
 
 - **Run verification pass (cross-validation + gap detection)** — After extraction completes, run the verification pass from the dashboard to populate cross-validation scores.
 - **Generate summaries** — After extraction, run "Generate Summaries" from dashboard Step 4.5.
-- **Sync local -> Regs Checker Supabase** — Dashboard Step 5. Requires `REGS_SUPABASE_URL` and `REGS_SUPABASE_KEY` in `.env`.
+- **Sync local -> Regs Checker Supabase** — Dashboard Step 5. Supabase truncated 2026-04-04; needs fresh re-sync via `python -m src.scripts.sync_to_supabase`.
 - **Sync Regs Checker -> Policy Navigator** — Dashboard Step 6. Requires `REGS_POLICY_NAVIGATOR_URL` in `.env`.
 - **Run rollup matrix** — After sync, run `python -m src.scripts.rollup_matrix` to aggregate into the 4 matrix detail tables.
 - **Review test coverage (IN PROGRESS)** — 403 pass, 13 fail. Added 76 new tests; fixed 7 Orrick gate failures. Remaining: 7 DB-required (need Docker), 5 stale mock targets (`fetch_document` removed), 1 stale module ref. 4 stale test files still to delete. See `agents/test-coverage/` for details.
 - **Write handoff document (HANDOFF_DOCUMENT.md)** — Comprehensive walkthrough for CS undergrad audience. Started but not completed.
 
 ## Blocked Tasks
-
-- **Supabase sync testing** — Supabase projects may be paused. Cannot verify sync until they're active. Test with dry-run first.
 - **Cross-validation scoring in confidence model** — The `cross_validation` weight (25%) is redistributed to other components when not available. Needs a full verification pass run to populate.
 
 ## Questions / Clarifications Needed
