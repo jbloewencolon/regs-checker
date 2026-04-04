@@ -1592,14 +1592,7 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         # --- Quality failures (method=quality_fail) ---
         quality_fail_count = method_counts.get("quality_fail", 0)
 
-        # --- LLM failures (method=passthrough with error flags) ---
-        llm_fail_count = db.scalar(
-            select(func.count()).where(
-                SectionTriageResult.method == "passthrough",
-                SectionTriageResult.quality_flags.cast(String).like('%llm_%'),
-            )
-        ) or 0
-        # Fallback: count all passthrough as potential failures
+        # --- LLM failures (method=passthrough — all are LLM failures) ---
         passthrough_count = method_counts.get("passthrough", 0)
 
         # --- Low-confidence passages (relevant/uncertain with confidence < 0.5) ---

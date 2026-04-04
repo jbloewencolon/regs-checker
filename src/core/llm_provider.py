@@ -139,11 +139,15 @@ class LocalLLMProvider(BaseLLMProvider):
         # Reasoning models (DeepSeek-R1, Qwen3 in thinking mode) use output
         # tokens for <think> blocks before producing JSON.  Double the budget
         # so the actual answer isn't truncated after the thinking phase.
+        # Skip doubling when reasoning_effort="low" — caller wants minimal thinking.
         is_reasoning = any(
             tag in effective_model.lower()
             for tag in ("deepseek-r1", "qwen3", "gpt-oss")
         )
-        adjusted_max = max_tokens * 2 if is_reasoning else max_tokens
+        if is_reasoning and reasoning_effort != "low":
+            adjusted_max = max_tokens * 2
+        else:
+            adjusted_max = max_tokens
 
         # Cap max_tokens to fit within context window.
         # LM Studio needs: prompt_tokens + max_tokens <= n_ctx.

@@ -499,11 +499,13 @@ def triage_passage(
 
     try:
         prompt = _build_triage_prompt(text, context, neighbors=neighbors)
+        from src.core.config import settings
         llm_response = llm_provider.call(
-            system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
+            system_prompt="You are a legal text triage agent. Respond ONLY with a single JSON object. No commentary.",
             user_prompt=prompt,
-            max_tokens=1024,
+            max_tokens=512,
             temperature=0.0,
+            model_override=settings.local_triage_model,
         )
 
         # Parse LLM response
