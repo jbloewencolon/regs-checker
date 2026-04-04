@@ -101,6 +101,51 @@ _BASE_AI_PATTERNS: list[re.Pattern] = [
 
 
 # ---------------------------------------------------------------------------
+# Boilerplate / website chrome detection
+# ---------------------------------------------------------------------------
+
+_BOILERPLATE_PHRASES: list[str] = [
+    "skip to content",
+    "quick search",
+    "bill number",
+    "bill keyword",
+    "bill information",
+    "bill search",
+    "my subscriptions",
+    "my favorites",
+    "accessibility",
+    "table of contents",
+    "site map",
+    "privacy policy",
+    "terms of use",
+    "cookie policy",
+    "log in",
+    "sign in",
+    "sign up",
+    "register now",
+    "subscribe",
+    "newsletter",
+    "follow us",
+    "share this",
+    "print this page",
+    "back to top",
+    "copyright ©",
+    "all rights reserved",
+]
+
+
+def _is_boilerplate(text: str, threshold: int = 3) -> bool:
+    """Return True if the passage looks like website navigation/chrome.
+
+    Checks for a cluster of boilerplate phrases. A single match could be
+    coincidence; *threshold* or more is almost certainly not bill text.
+    """
+    lower = text.lower()
+    hits = sum(1 for phrase in _BOILERPLATE_PHRASES if phrase in lower)
+    return hits >= threshold
+
+
+# ---------------------------------------------------------------------------
 # PDF quality detection
 # ---------------------------------------------------------------------------
 
@@ -389,8 +434,14 @@ INSTRUCTIONS:
 Respond with EXACTLY one JSON object:
 {{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation of your decision", "ai_signals": "quote the specific words/phrases from the passage that indicate AI relevance, or explain why none exist — be explicit about whether the connection is direct or indirect"}}
 
-Be CONSERVATIVE — when genuinely in doubt, mark as relevant. But do NOT mark
-generic procedural sections as relevant simply because they sit inside an AI bill."""
+CRITICAL RULES:
+- Judge ONLY the passage text between the --- markers above.
+- Do NOT assume the passage is relevant just because the BILL is about AI.
+- Website navigation, boilerplate, table of contents, headers/footers, and
+  procedural text (severability, effective dates, appropriations) are NOT relevant.
+- If the passage text itself does not contain AI-specific terms or obligations,
+  mark it as NOT relevant, even if the surrounding bill is about AI.
+- When genuinely in doubt about substantive legal content, mark as relevant."""
     else:
         # Layer 3: Generic AI-relevance check (no Orrick data)
         prompt = f"""You are a legal triage agent. Your job is to determine whether a
@@ -420,8 +471,14 @@ INSTRUCTIONS:
 Respond with EXACTLY one JSON object:
 {{"relevant": true/false, "confidence": 0.0-1.0, "reasoning": "brief explanation of your decision", "ai_signals": "quote the specific words/phrases from the passage that indicate AI relevance, or explain why none exist — be explicit about whether the connection is direct or indirect"}}
 
-Be CONSERVATIVE — when genuinely in doubt, mark as relevant. But do NOT mark
-generic procedural sections as relevant simply because they sit inside an AI bill."""
+CRITICAL RULES:
+- Judge ONLY the passage text between the --- markers above.
+- Do NOT assume the passage is relevant just because the BILL is about AI.
+- Website navigation, boilerplate, table of contents, headers/footers, and
+  procedural text (severability, effective dates, appropriations) are NOT relevant.
+- If the passage text itself does not contain AI-specific terms or obligations,
+  mark it as NOT relevant, even if the surrounding bill is about AI.
+- When genuinely in doubt about substantive legal content, mark as relevant."""
 
     return prompt
 
@@ -464,6 +521,16 @@ def triage_passage(
             confidence=quality_score,
             pdf_quality_score=quality_score,
             quality_flags=quality_flags,
+        )
+
+    # Step 0b: Boilerplate / website chrome filter
+    if _is_boilerplate(text):
+        return TriageResult(
+            decision="not_relevant",
+            method="keyword",
+            confidence=0.95,
+            pdf_quality_score=quality_score,
+            quality_flags=quality_flags + ["boilerplate"],
         )
 
     # Step 1: Extract Orrick terms for this bill
@@ -559,10 +626,12 @@ def triage_passage(
 
             if is_relevant:
                 decision = "relevant"
-            elif conf >= 0.8:
+            elif conf >= 0.4:
+                # LLM says not relevant — trust it unless confidence is very low.
+                # Small models (Qwen 3B) default to 0.5 confidence even when correct.
                 decision = "not_relevant"
             else:
-                # Low confidence "not relevant" → uncertain (send to extraction anyway)
+                # Very low confidence "not relevant" → uncertain (send to extraction)
                 decision = "uncertain"
 
             return TriageResult(

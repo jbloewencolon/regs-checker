@@ -266,20 +266,20 @@ def seed_from_csv(
 def _resolve_local_file(canonical_law_id: str) -> Path | None:
     """Find the best local source file for a given canonical_law_id.
 
-    Resolution order:
-      1. output/law_sources/{id}.html
-      2. output/law_sources/{id}.pdf
-      3. output/law_sources/{id}.txt
-      4. output/law_texts/{id}.txt  (pre-extracted plain text fallback)
+    Resolution order — prefer pre-extracted plain text (law_texts/) since
+    all source files have already been converted to .txt.  The law_sources/
+    folder contains raw HTML/PDF originals that are no longer needed.
     """
-    for ext in (".html", ".pdf", ".txt"):
-        path = _LAW_SOURCES_DIR / f"{canonical_law_id}{ext}"
-        if path.exists():
-            return path
-
+    # 1. Pre-extracted plain text (primary)
     txt_path = _LAW_TEXTS_DIR / f"{canonical_law_id}.txt"
     if txt_path.exists():
         return txt_path
+
+    # 2. Fallback to law_sources/ if no law_text exists
+    for ext in (".txt", ".html", ".pdf"):
+        path = _LAW_SOURCES_DIR / f"{canonical_law_id}{ext}"
+        if path.exists():
+            return path
 
     return None
 

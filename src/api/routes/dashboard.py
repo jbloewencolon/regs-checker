@@ -2184,18 +2184,28 @@ def override_triage(
     triage.confidence = 1.0
     triage.llm_reasoning = f"Manual override: {old_decision} → {decision}"
 
-    # Add manual_review enum value to Postgres if needed, then set it
+    # Add manual_review enum value to Postgres if needed.
+    # ALTER TYPE ... ADD VALUE must run outside a transaction, so use autocommit.
     try:
         triage.method = TriageMethod.manual_review
+        db.flush()  # Test if Postgres accepts the value
     except Exception:
+        db.rollback()
+        # Re-fetch triage after rollback
+        triage = db.get(SectionTriageResult, triage_id)
         try:
-            db.execute(text(
-                "ALTER TYPE triagemethod ADD VALUE IF NOT EXISTS 'manual_review'"
-            ))
-            db.commit()
-            triage.method = TriageMethod.manual_review
+            from src.db.engine import engine as _engine
+            with _engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text(
+                    "ALTER TYPE triagemethod ADD VALUE IF NOT EXISTS 'manual_review'"
+                ))
         except Exception:
-            pass  # Leave original method if enum update fails
+            pass  # Value may already exist
+        # Now retry the update
+        triage.decision = TriageDecision(decision)
+        triage.confidence = 1.0
+        triage.llm_reasoning = f"Manual override: {old_decision} → {decision}"
+        triage.method = TriageMethod.manual_review
 
     db.commit()
 
