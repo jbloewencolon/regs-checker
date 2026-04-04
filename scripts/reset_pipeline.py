@@ -55,6 +55,7 @@ TABLES_TO_CLEAR = [
     "normalized_source_records",
     "ingestion_jobs",
     "raw_artifacts",
+    "legal_events",
     "document_versions",
     "document_families",
     # api_keys preserved (user credentials)
@@ -105,14 +106,17 @@ def main():
                 print("Aborted.")
                 return
 
-        # Delete in order
+        # Delete in order, using savepoints so one FK error doesn't abort the rest
         print("\nDeleting...")
         for table in TABLES_TO_CLEAR:
+            savepoint = conn.begin_nested()
             try:
                 result = conn.execute(text(f"DELETE FROM {table}"))  # noqa: S608
                 count = result.rowcount
                 print(f"  {table:40s} {count:>8,} deleted")
+                savepoint.commit()
             except Exception as e:
+                savepoint.rollback()
                 print(f"  {table:40s} SKIP ({e})")
 
         conn.commit()
