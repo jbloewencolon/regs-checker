@@ -20,7 +20,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
-from sqlalchemy import func, select, text
+from sqlalchemy import String, func, select, text
 from sqlalchemy.orm import Session
 
 from src.db.engine import get_db
@@ -1592,6 +1592,16 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         # --- Quality failures (method=quality_fail) ---
         quality_fail_count = method_counts.get("quality_fail", 0)
 
+        # --- LLM failures (method=passthrough with error flags) ---
+        llm_fail_count = db.scalar(
+            select(func.count()).where(
+                SectionTriageResult.method == "passthrough",
+                SectionTriageResult.quality_flags.cast(String).like('%llm_%'),
+            )
+        ) or 0
+        # Fallback: count all passthrough as potential failures
+        passthrough_count = method_counts.get("passthrough", 0)
+
         # --- Low-confidence passages (relevant/uncertain with confidence < 0.5) ---
         low_conf_count = db.scalar(
             select(func.count()).where(
@@ -1605,7 +1615,7 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         quality_flag_rows = db.execute(
             select(SectionTriageResult.quality_flags)
             .where(SectionTriageResult.quality_flags.isnot(None))
-            .limit(500)
+            .limit(2000)
         ).all()
         flag_counts: dict[str, int] = {}
         for (flags,) in quality_flag_rows:
@@ -1613,33 +1623,50 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
                 for f in flags:
                     flag_counts[f] = flag_counts.get(f, 0) + 1
 
-        # --- Low-quality passages with details (worst 20) ---
-        low_quality_rows = db.execute(
-            select(
-                SectionTriageResult.id,
-                SectionTriageResult.decision,
-                SectionTriageResult.method,
-                SectionTriageResult.confidence,
-                SectionTriageResult.pdf_quality_score,
-                SectionTriageResult.quality_flags,
-                SectionTriageResult.llm_reasoning,
-                NormalizedSourceRecord.section_path,
-                NormalizedSourceRecord.text_content,
-                DocumentFamily.label,
-            )
+        # --- Problem passages: LLM failures + quality issues + low confidence ---
+        _problem_cols = [
+            SectionTriageResult.id,
+            SectionTriageResult.decision,
+            SectionTriageResult.method,
+            SectionTriageResult.confidence,
+            SectionTriageResult.pdf_quality_score,
+            SectionTriageResult.quality_flags,
+            SectionTriageResult.llm_reasoning,
+            NormalizedSourceRecord.section_path,
+            NormalizedSourceRecord.text_content,
+            DocumentFamily.label,
+        ]
+        _problem_join = (
+            select(*_problem_cols)
             .join(NormalizedSourceRecord, SectionTriageResult.source_record_id == NormalizedSourceRecord.id)
             .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
             .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
-            .where(
-                (SectionTriageResult.pdf_quality_score < 0.5)
-                | (SectionTriageResult.method == "quality_fail")
-                | (
-                    SectionTriageResult.decision.in_(["relevant", "uncertain"])
-                    & (SectionTriageResult.confidence < 0.5)
-                )
+        )
+
+        # Query 1: LLM failures (passthrough method) — show these first
+        llm_fail_rows = db.execute(
+            _problem_join.where(
+                SectionTriageResult.method == "passthrough",
+            )
+            .order_by(SectionTriageResult.created_at.desc())
+            .limit(30)
+        ).all()
+
+        # Query 2: Quality/confidence issues (non-passthrough)
+        quality_rows = db.execute(
+            _problem_join.where(
+                SectionTriageResult.method != "passthrough",
+                (
+                    (SectionTriageResult.pdf_quality_score < 0.5)
+                    | (SectionTriageResult.method == "quality_fail")
+                    | (
+                        SectionTriageResult.decision.in_(["relevant", "uncertain"])
+                        & (SectionTriageResult.confidence < 0.5)
+                    )
+                ),
             )
             .order_by(SectionTriageResult.pdf_quality_score.asc().nullslast())
-            .limit(30)
+            .limit(20)
         ).all()
 
         # --- Build HTML ---
@@ -1694,56 +1721,82 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
                     f'<span>{html_escape(flag)}</span><span>{cnt}</span></div>'
                 )
 
-        # Problem passages table
-        problems_html = ""
-        if low_quality_rows:
-            problems_html = (
-                '<div style="margin-top:12px;">'
-                '<strong>Problem Passages</strong> '
-                '<span style="font-size:12px;color:var(--text-muted);">'
-                '(low quality, quality fail, or low confidence)</span>'
-                '</div>'
+        # --- Helper to render a problem rows table ---
+        def _render_problem_table(rows, title, subtitle):
+            if not rows:
+                return ""
+            html_out = (
+                f'<div style="margin-top:12px;">'
+                f'<strong>{title}</strong> '
+                f'<span style="font-size:12px;color:var(--text-muted);">{subtitle}</span>'
+                f'</div>'
                 '<table class="review-table" style="margin-top:6px;font-size:12px;">'
                 '<thead><tr>'
                 '<th>Document</th><th>Section</th><th>Decision</th>'
                 '<th>Method</th><th>Conf.</th><th>Quality</th><th>Flags</th>'
-                '<th>Reasoning</th>'
+                '<th>Error / Reasoning</th>'
                 '</tr></thead><tbody>'
             )
-            for row in low_quality_rows:
-                tr_id, dec, meth, conf, qual, flags, reasoning, section, text, doc_label = row
+            for row in rows:
+                tr_id, dec, meth, conf, qual, flags, reasoning, section, text_content, doc_label = row
                 dec_str = dec.value if hasattr(dec, "value") else str(dec)
                 meth_str = meth.value if hasattr(meth, "value") else str(meth)
                 flags_str = ", ".join(flags) if isinstance(flags, list) and flags else "—"
+                reason_full = html_escape((reasoning or "—")[:500])
                 reason_short = html_escape((reasoning or "—")[:120])
                 qual_str = f"{qual:.2f}" if qual is not None else "—"
                 conf_str = f"{conf:.2f}" if conf is not None else "—"
                 section_str = html_escape((section or "—")[:40])
                 doc_str = html_escape((doc_label or "—")[:30])
+                # Snippet of the passage for context
+                snippet = html_escape((text_content or "")[:80])
 
-                # Color-code quality score
                 qual_color = "var(--danger)" if qual is not None and qual < 0.3 else (
                     "var(--warning)" if qual is not None and qual < 0.6 else "var(--text)"
                 )
+                # Highlight LLM failures
+                is_llm_fail = isinstance(flags, list) and any("llm_" in f for f in flags)
+                row_style = ' style="background:rgba(255,0,0,0.05);"' if is_llm_fail else ""
 
-                problems_html += (
-                    f'<tr>'
+                html_out += (
+                    f'<tr{row_style}>'
                     f'<td title="{html_escape(doc_label or "")}">{doc_str}</td>'
-                    f'<td title="{html_escape(section or "")}">{section_str}</td>'
+                    f'<td title="{html_escape(section or "")}\n---\n{snippet}">{section_str}</td>'
                     f'<td>{dec_str}</td>'
                     f'<td>{meth_str}</td>'
                     f'<td>{conf_str}</td>'
                     f'<td style="color:{qual_color};">{qual_str}</td>'
                     f'<td style="font-size:11px;color:var(--danger);">{html_escape(flags_str)}</td>'
-                    f'<td style="font-size:11px;max-width:200px;overflow:hidden;'
+                    f'<td style="font-size:11px;max-width:300px;overflow:hidden;'
                     f'text-overflow:ellipsis;white-space:nowrap;"'
-                    f' title="{reason_short}">{reason_short}</td>'
+                    f' title="{reason_full}">{reason_short}</td>'
                     f'</tr>'
                 )
-            problems_html += '</tbody></table>'
+            html_out += '</tbody></table>'
+            return html_out
+
+        # Render LLM failures table
+        llm_fail_html = _render_problem_table(
+            llm_fail_rows,
+            f"LLM Failures ({len(llm_fail_rows)} shown)",
+            "(model returned garbage, timed out, or HTTP error — defaulted to uncertain/passthrough)",
+        )
+
+        # Render quality/confidence issues table
+        quality_html = _render_problem_table(
+            quality_rows,
+            f"Quality / Confidence Issues ({len(quality_rows)} shown)",
+            "(low PDF quality, quality fail, or low-confidence relevant/uncertain)",
+        )
+
+        problems_html = llm_fail_html + quality_html
 
         # Alert badges
         alerts = []
+        if passthrough_count > 0:
+            alerts.append(
+                f'<span class="tracker-badge failed">{passthrough_count} LLM failures (passthrough)</span>'
+            )
         if quality_fail_count > 0:
             alerts.append(
                 f'<span class="tracker-badge failed">{quality_fail_count} quality failures</span>'
