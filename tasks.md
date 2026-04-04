@@ -2,21 +2,23 @@
 
 ## Active Tasks
 
-- **DATA ALIGNMENT: CSV titles fixed, DB cleanup still needed** — DB audit on 2026-04-04 revealed 430 document families (186 legacy + 244 CSV-seeded). Root cause: CSV `title` column was corrupted during PDF extraction. **FIXED**:
-  - Corrected 187 Orrick law titles in `fact_laws.csv` using legacy family data from Supabase
-  - Enriched 17 IAPP rows with scope/status from `iapp_law_tracker.csv`
-  - Added 38 new IAPP entries to `static/iapp_law_tracker.csv` (from 65 → 103 rows)
-  - Identified 15 jurisdiction mismatches between CSV and IAPP tracker (bill number collisions across states)
-  - **Still needed**: (1) Delete 186 legacy orphan families from local DB, (2) Re-seed from fixed CSV, (3) Re-extract 163 families with zero extractions
+- **DATA ALIGNMENT: CSV deduplicated, DB cleanup still needed** — Orrick/IAPP/CSV are 3 views of the same laws. **DONE**:
+  - Merged 4 confirmed IAPP→Orrick duplicates (CA AB 2013, CA SB 53, CO SB 205, TX HB 149)
+  - Added `iapp_scope` and `iapp_section` columns to fact_laws.csv
+  - Recovered 87 bill numbers from old corrupted titles
+  - CSV: 241 rows (187 Orrick + 53 IAPP-only + 1 other), down from 244
+  - The 53 IAPP-only rows are mostly ACTIVE BILLS (pending legislation) not tracked by Orrick
+  - **Still needed**: (1) Delete 186 legacy orphan families from local DB, (2) Re-seed from fixed CSV, (3) Re-extract families with zero extractions, (4) Sync to Supabase
 - **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until data alignment is resolved.
 - **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
 ## Bugs / Issues (post-extraction run)
 
-### BUG-1: 59 laws missing Orrick data → auto Tier D extractions — FLAGGED
-**Root cause**: `data/fact_laws.csv` has 244 laws. 188 are Orrick-sourced, 56 are IAPP-sourced. Of the 188 Orrick laws, 185 have `key_requirements_raw` or `enforcement_penalties` populated. 2 Orrick + all 56 IAPP = 58 laws have neither, meaning ALL extractions from those laws get auto-Tier D by the Orrick gate.
-**Update (2026-04-04)**: Legacy families (ID 1-186) have `key_requirements` for all 186 laws. The 2 missing Orrick laws may be recoverable. The 56 IAPP laws inherently lack Orrick data — the Orrick gate should either be modified for IAPP laws or IAPP laws should have equivalent reference data added.
-**Affected files**: `data/fact_laws.csv`, `data/flagged_missing_orrick.md`, `src/core/confidence.py` (Orrick gate logic).
+### BUG-1: Laws missing Orrick data → auto Tier D extractions — REASSESSED
+**Post-dedup status**: 241 rows. 187 Orrick-sourced (185 have key_requirements or enforcement_penalties). 53 IAPP-only (0 have Orrick data — they're active bills Orrick doesn't track). 1 other.
+**Net impact**: Only 2 Orrick laws + 53 IAPP active bills lack Orrick data. The 53 IAPP bills are pending legislation — the Orrick gate legitimately flags them since there's no firm analysis to validate against.
+**Recommendation**: Accept Tier D for IAPP-only active bills. Focus on getting the 2 missing Orrick laws' data.
+**Affected files**: `data/fact_laws.csv`, `src/core/confidence.py` (Orrick gate logic).
 
 ### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step — FIXED
 **Root cause**: The "Generate Summaries" button is a no-op because summaries are auto-generated at extraction time (`extractor.py:1004-1012`). The real issue is that failed agent calls (stored in `FailedExtractionAttempt` table) need the **"Retry Failed"** workflow (`dashboard.py:2208`, `POST /api/run/retry-failed`), not the summary step.
@@ -45,7 +47,7 @@
 
 ## Questions / Clarifications Needed
 
-- Should the Orrick gate (auto-Tier D without Orrick data) apply to all laws, or only Orrick-sourced laws? Currently applies to all.
+- **RESOLVED**: Orrick gate applies to all laws — IAPP rows will get Orrick data once merged with their Orrick counterparts.
 - What is the target extraction count? Previous run produced ~28k extractions from ~9k passages. New run with 7 agents may produce more.
 - Should the sync to Policy Navigator include all extraction types, or filter to approved-only?
 - Is the MinIO/S3 storage layer actually needed? The pipeline works without it (raw artifacts stored but not retrieved during extraction).

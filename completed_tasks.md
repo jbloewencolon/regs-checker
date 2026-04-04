@@ -2,6 +2,18 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### CSV Deduplication & IAPP Merge (2026-04-04)
+- Confirmed Orrick/IAPP/CSV are 3 data layers on the same laws, not separate populations
+- Mapped IAPP bill numbers to Orrick law names via old corrupted titles + IAPP tracker cross-reference
+- Found 4 confirmed duplicates: CA AB 2013, CA SB 53, CO SB 205, TX HB 149
+- Merged duplicates: IAPP scope/section data added to Orrick rows, IAPP duplicate rows deleted
+- Remaining 52 IAPP rows are genuinely new (mostly ACTIVE BILLS not tracked by Orrick)
+- Fixed wrong HB 149 merge (was matched to NY law instead of TX)
+- Added `iapp_scope` and `iapp_section` columns to fact_laws.csv
+- Recovered 87 bill numbers for Orrick rows from old corrupted PDF titles
+- CSV reduced from 244 → 241 rows (187 Orrick + 53 IAPP + 1 other)
+- **Files modified**: `data/fact_laws.csv`
+
 ### CSV Title Fix & IAPP Enrichment (2026-04-04)
 - **Root cause**: `fact_laws.csv` `title` column was corrupted during PDF extraction — truncated names, statute references concatenated, words missing
 - Mapped all 187 Orrick CSV rows to 186 legacy document_families (correct titles) via fuzzy matching by jurisdiction
