@@ -201,6 +201,8 @@ def seed_from_csv(
                 "key_requirements": row.get("key_requirements_raw", ""),
                 "enforcement_penalties": row.get("enforcement_penalties", ""),
                 "source_tracker": "orrick" if row.get("source_id") == "1" else "iapp",
+                "iapp_scope": row.get("iapp_scope", ""),
+                "iapp_section": row.get("iapp_section", ""),
             },
         )
         db.add(family)

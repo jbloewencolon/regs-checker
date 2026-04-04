@@ -1328,6 +1328,21 @@ def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
                         )
                     )
                     extractions_deleted = len(extraction_ids)
+                # Delete extraction jobs and failed attempts for these versions
+                try:
+                    from src.db.models import FailedExtractionAttempt
+                    db.execute(
+                        delete(FailedExtractionAttempt).where(
+                            FailedExtractionAttempt.source_record_id.in_(passage_ids)
+                        )
+                    )
+                except Exception:
+                    pass  # Table may not exist yet
+                db.execute(
+                    delete(ExtractionJob).where(
+                        ExtractionJob.document_version_id.in_(completed_version_ids)
+                    )
+                )
                 # Delete triage results
                 db.execute(
                     delete(SectionTriageResult).where(

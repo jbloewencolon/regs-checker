@@ -8,7 +8,7 @@
   - Recovered 87 bill numbers from old corrupted titles
   - CSV: 241 rows (187 Orrick + 53 IAPP-only + 1 other), down from 244
   - The 53 IAPP-only rows are mostly ACTIVE BILLS (pending legislation) not tracked by Orrick
-  - **Still needed**: (1) Delete 186 legacy orphan families from local DB, (2) Re-seed from fixed CSV, (3) Re-extract families with zero extractions, (4) Sync to Supabase
+  - **Still needed**: Run `python -m scripts.reset_pipeline` on local machine (Docker must be running), then re-seed from dashboard, re-extract, and sync to Supabase
 - **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until data alignment is resolved.
 - **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
