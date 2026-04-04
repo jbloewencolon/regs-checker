@@ -559,10 +559,12 @@ def triage_passage(
 
             if is_relevant:
                 decision = "relevant"
-            elif conf >= 0.8:
+            elif conf >= 0.4:
+                # LLM says not relevant — trust it unless confidence is very low.
+                # Small models (Qwen 3B) default to 0.5 confidence even when correct.
                 decision = "not_relevant"
             else:
-                # Low confidence "not relevant" → uncertain (send to extraction anyway)
+                # Very low confidence "not relevant" → uncertain (send to extraction)
                 decision = "uncertain"
 
             return TriageResult(
