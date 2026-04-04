@@ -954,7 +954,7 @@ def run_seed_local(
 
 @router.post("/api/run/pdf-discovery")
 def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
-    """[LEGACY] Seed legislation from the ai_law_tracker.csv (primary discovery source)."""
+    """[LEGACY] Seed legislation from the fact_laws.csv (primary discovery source)."""
     if not _acquire_pipeline_lock():
         return HTMLResponse(
             '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
@@ -966,7 +966,7 @@ def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
         if not records:
             return HTMLResponse(
                 '<div class="result-panel warning">'
-                'No records in <code>static/ai_law_tracker.csv</code>. '
+                'No records in <code>data/fact_laws.csv</code>. '
                 'Add rows via the Law Tracker tab first.</div>'
             )
 
