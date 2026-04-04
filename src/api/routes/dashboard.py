@@ -1554,6 +1554,236 @@ def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.get("/api/triage-results")
+def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return detailed triage results breakdown: by method, quality issues, low-confidence passages."""
+    from src.db.models import (
+        SectionTriageResult, NormalizedSourceRecord, DocumentVersion,
+        DocumentFamily,
+    )
+
+    try:
+        total = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+        ) or 0
+
+        if total == 0:
+            return HTMLResponse(
+                '<div class="result-panel info">No triage results yet. '
+                'Run triage first.</div>'
+            )
+
+        # --- Breakdown by decision ---
+        decision_counts = {}
+        for row in db.execute(
+            select(SectionTriageResult.decision, func.count())
+            .group_by(SectionTriageResult.decision)
+        ):
+            decision_counts[row[0].value if hasattr(row[0], "value") else str(row[0])] = row[1]
+
+        # --- Breakdown by method ---
+        method_counts = {}
+        for row in db.execute(
+            select(SectionTriageResult.method, func.count())
+            .group_by(SectionTriageResult.method)
+        ):
+            method_counts[row[0].value if hasattr(row[0], "value") else str(row[0])] = row[1]
+
+        # --- Quality failures (method=quality_fail) ---
+        quality_fail_count = method_counts.get("quality_fail", 0)
+
+        # --- Low-confidence passages (relevant/uncertain with confidence < 0.5) ---
+        low_conf_count = db.scalar(
+            select(func.count()).where(
+                SectionTriageResult.decision.in_(["relevant", "uncertain"]),
+                SectionTriageResult.confidence < 0.5,
+            )
+        ) or 0
+
+        # --- Quality flags summary ---
+        # Get the most common quality flags across all triaged passages
+        quality_flag_rows = db.execute(
+            select(SectionTriageResult.quality_flags)
+            .where(SectionTriageResult.quality_flags.isnot(None))
+            .limit(500)
+        ).all()
+        flag_counts: dict[str, int] = {}
+        for (flags,) in quality_flag_rows:
+            if isinstance(flags, list):
+                for f in flags:
+                    flag_counts[f] = flag_counts.get(f, 0) + 1
+
+        # --- Low-quality passages with details (worst 20) ---
+        low_quality_rows = db.execute(
+            select(
+                SectionTriageResult.id,
+                SectionTriageResult.decision,
+                SectionTriageResult.method,
+                SectionTriageResult.confidence,
+                SectionTriageResult.pdf_quality_score,
+                SectionTriageResult.quality_flags,
+                SectionTriageResult.llm_reasoning,
+                NormalizedSourceRecord.section_path,
+                NormalizedSourceRecord.text_content,
+                DocumentFamily.label,
+            )
+            .join(NormalizedSourceRecord, SectionTriageResult.source_record_id == NormalizedSourceRecord.id)
+            .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+            .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+            .where(
+                (SectionTriageResult.pdf_quality_score < 0.5)
+                | (SectionTriageResult.method == "quality_fail")
+                | (
+                    SectionTriageResult.decision.in_(["relevant", "uncertain"])
+                    & (SectionTriageResult.confidence < 0.5)
+                )
+            )
+            .order_by(SectionTriageResult.pdf_quality_score.asc().nullslast())
+            .limit(30)
+        ).all()
+
+        # --- Build HTML ---
+        # Decision summary
+        decision_colors = {
+            "relevant": "var(--success)", "not_relevant": "var(--text-muted)",
+            "uncertain": "var(--warning)",
+        }
+        decision_html = ""
+        for dec in ["relevant", "not_relevant", "uncertain"]:
+            count = decision_counts.get(dec, 0)
+            pct = round(count / total * 100, 1) if total else 0
+            color = decision_colors.get(dec, "var(--text)")
+            label = dec.replace("_", " ").title()
+            decision_html += (
+                f'<div style="display:flex;justify-content:space-between;padding:3px 0;">'
+                f'<span style="color:{color};font-weight:600;">{label}</span>'
+                f'<span>{count} ({pct}%)</span></div>'
+            )
+
+        # Method summary
+        method_labels = {
+            "keyword": "Keyword match",
+            "orrick_cross_check": "Orrick + LLM",
+            "llm_generic": "LLM generic",
+            "quality_fail": "Quality fail",
+            "passthrough": "Passthrough",
+            "manual_review": "Manual review",
+        }
+        method_html = ""
+        for method in ["keyword", "orrick_cross_check", "llm_generic", "quality_fail", "passthrough", "manual_review"]:
+            count = method_counts.get(method, 0)
+            if count == 0:
+                continue
+            label = method_labels.get(method, method)
+            is_problem = method in ("quality_fail", "passthrough")
+            style = ' style="color:var(--danger);"' if is_problem else ""
+            method_html += (
+                f'<div style="display:flex;justify-content:space-between;padding:3px 0;">'
+                f'<span{style}>{label}</span>'
+                f'<span{style}>{count}</span></div>'
+            )
+
+        # Quality flags
+        flags_html = ""
+        if flag_counts:
+            flags_html = '<div style="margin-top:8px;"><strong>Quality Flags:</strong></div>'
+            for flag, cnt in sorted(flag_counts.items(), key=lambda x: -x[1]):
+                flags_html += (
+                    f'<div style="display:flex;justify-content:space-between;padding:2px 0;'
+                    f'font-size:12px;color:var(--danger);">'
+                    f'<span>{html_escape(flag)}</span><span>{cnt}</span></div>'
+                )
+
+        # Problem passages table
+        problems_html = ""
+        if low_quality_rows:
+            problems_html = (
+                '<div style="margin-top:12px;">'
+                '<strong>Problem Passages</strong> '
+                '<span style="font-size:12px;color:var(--text-muted);">'
+                '(low quality, quality fail, or low confidence)</span>'
+                '</div>'
+                '<table class="review-table" style="margin-top:6px;font-size:12px;">'
+                '<thead><tr>'
+                '<th>Document</th><th>Section</th><th>Decision</th>'
+                '<th>Method</th><th>Conf.</th><th>Quality</th><th>Flags</th>'
+                '<th>Reasoning</th>'
+                '</tr></thead><tbody>'
+            )
+            for row in low_quality_rows:
+                tr_id, dec, meth, conf, qual, flags, reasoning, section, text, doc_label = row
+                dec_str = dec.value if hasattr(dec, "value") else str(dec)
+                meth_str = meth.value if hasattr(meth, "value") else str(meth)
+                flags_str = ", ".join(flags) if isinstance(flags, list) and flags else "—"
+                reason_short = html_escape((reasoning or "—")[:120])
+                qual_str = f"{qual:.2f}" if qual is not None else "—"
+                conf_str = f"{conf:.2f}" if conf is not None else "—"
+                section_str = html_escape((section or "—")[:40])
+                doc_str = html_escape((doc_label or "—")[:30])
+
+                # Color-code quality score
+                qual_color = "var(--danger)" if qual is not None and qual < 0.3 else (
+                    "var(--warning)" if qual is not None and qual < 0.6 else "var(--text)"
+                )
+
+                problems_html += (
+                    f'<tr>'
+                    f'<td title="{html_escape(doc_label or "")}">{doc_str}</td>'
+                    f'<td title="{html_escape(section or "")}">{section_str}</td>'
+                    f'<td>{dec_str}</td>'
+                    f'<td>{meth_str}</td>'
+                    f'<td>{conf_str}</td>'
+                    f'<td style="color:{qual_color};">{qual_str}</td>'
+                    f'<td style="font-size:11px;color:var(--danger);">{html_escape(flags_str)}</td>'
+                    f'<td style="font-size:11px;max-width:200px;overflow:hidden;'
+                    f'text-overflow:ellipsis;white-space:nowrap;"'
+                    f' title="{reason_short}">{reason_short}</td>'
+                    f'</tr>'
+                )
+            problems_html += '</tbody></table>'
+
+        # Alert badges
+        alerts = []
+        if quality_fail_count > 0:
+            alerts.append(
+                f'<span class="tracker-badge failed">{quality_fail_count} quality failures</span>'
+            )
+        if low_conf_count > 0:
+            alerts.append(
+                f'<span class="tracker-badge" style="background:var(--warning);color:#000;">'
+                f'{low_conf_count} low confidence</span>'
+            )
+
+        alerts_html = " ".join(alerts) if alerts else (
+            '<span style="color:var(--success);">No issues detected.</span>'
+        )
+
+        html = f"""
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+          <div>
+            <strong>Decisions</strong> <span style="font-size:12px;color:var(--text-muted);">({total} total)</span>
+            {decision_html}
+          </div>
+          <div>
+            <strong>Methods</strong>
+            {method_html}
+            {flags_html}
+          </div>
+        </div>
+        <div style="margin-bottom:8px;">
+          <strong>Alerts:</strong> {alerts_html}
+        </div>
+        {problems_html}
+        """
+        return HTMLResponse(html)
+
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error loading triage results: {html_escape(str(e))}</div>'
+        )
+
+
 @router.post("/api/run/extract/reset")
 def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     """Clear all extractions and extraction jobs so passages can be re-extracted.

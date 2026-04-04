@@ -265,6 +265,16 @@
         </details>
 
         <details class="step-accordion">
+          <summary class="step-accordion-header">Triage Results</summary>
+          <div class="step-accordion-body"
+               hx-get="/dashboard/api/triage-results"
+               hx-trigger="intersect once"
+               hx-swap="innerHTML">
+            <span class="spinner"></span> Loading...
+          </div>
+        </details>
+
+        <details class="step-accordion">
           <summary class="step-accordion-header">Cross-Reference</summary>
           <div class="step-accordion-body">
             <div class="step-description" style="margin-bottom:8px;">
