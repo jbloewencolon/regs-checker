@@ -2,52 +2,58 @@
 
 ## Active Tasks
 
-- **DATA ALIGNMENT: CSV deduplicated, DB cleanup still needed** — Orrick/IAPP/CSV are 3 views of the same laws. **DONE**:
-  - Merged 4 confirmed IAPP→Orrick duplicates (CA AB 2013, CA SB 53, CO SB 205, TX HB 149)
-  - Added `iapp_scope` and `iapp_section` columns to fact_laws.csv
-  - Recovered 87 bill numbers from old corrupted titles
-  - CSV: 241 rows (187 Orrick + 53 IAPP-only + 1 other), down from 244
-  - The 53 IAPP-only rows are mostly ACTIVE BILLS (pending legislation) not tracked by Orrick
-  - **Still needed**: Run `python -m scripts.reset_pipeline` on local machine (Docker must be running), then re-seed from dashboard, re-extract, and sync to Supabase
-- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until data alignment is resolved.
-- **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
+- **PIPELINE RESET & RE-RUN** — Local DB has 64,677 stale rows from old extraction run. Steps:
+  1. Run `python scripts/reset_pipeline.py` (Docker must be running on port 5434)
+  2. Dashboard Step 1 (Seed) — Re-seed from fixed CSV (241 laws)
+  3. Dashboard Step 2 (Fetch/Parse) — Re-ingest local files
+  4. Dashboard Step 3 (Extract) — Run extraction with 7 agents
+  5. Dashboard Step 4.5 (Verify) — Cross-validation + gap detection
+  6. Dashboard Step 5 (Sync) — Push to Supabase
+- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until extraction completes.
+- **Merge feature branch to main** — All work is on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge to `main`.
 
-## Bugs / Issues (post-extraction run)
+## Recently Completed
 
-### BUG-1: Laws missing Orrick data → auto Tier D extractions — REASSESSED
-**Post-dedup status**: 241 rows. 187 Orrick-sourced (185 have key_requirements or enforcement_penalties). 53 IAPP-only (0 have Orrick data — they're active bills Orrick doesn't track). 1 other.
-**Net impact**: Only 2 Orrick laws + 53 IAPP active bills lack Orrick data. The 53 IAPP bills are pending legislation — the Orrick gate legitimately flags them since there's no firm analysis to validate against.
-**Recommendation**: Accept Tier D for IAPP-only active bills. Focus on getting the 2 missing Orrick laws' data.
-**Affected files**: `data/fact_laws.csv`, `src/core/confidence.py` (Orrick gate logic).
+### LLM Limits Maxed for GPT-OSS 20B (128k context) — 2026-04-04
+- `config.py`: context window 32k→128k, extraction max_tokens 50k→65k
+- `llm_provider.py`: default max_tokens 4k/8k→16k
+- `parser.py`: paragraph oversplit 2k→15k chars
+- `bill_context.py`: definitions 3k→30k, scope 2k→20k, structure 500→5k
+- `section_triage.py`: definitions 2k→30k, scope 1.5k→20k, structure 500→5k, neighbors 300→3k, triage max_tokens 8k→16k
 
-### BUG-2: Failed extractions cannot be retried from "Generate Summaries" step — FIXED
-**Root cause**: The "Generate Summaries" button is a no-op because summaries are auto-generated at extraction time (`extractor.py:1004-1012`). The real issue is that failed agent calls (stored in `FailedExtractionAttempt` table) need the **"Retry Failed"** workflow (`dashboard.py:2208`, `POST /api/run/retry-failed`), not the summary step.
-**Fix applied**: Added a `Retry Failed` button + badge to the Extract step (Step 3) in `templates/dashboard.html`. It polls `GET /api/failed-extractions-count` every 10s and shows the count + button when failures exist.
-**Affected files**: `templates/dashboard.html`.
+### Bug Sweep (4 fixes) — 2026-04-04
+- `local_ingest.py`: Added `iapp_scope`/`iapp_section` to family metadata (was silently dropped)
+- `confidence.py`: Fixed empty strings counting as "filled" in completeness scoring
+- `dashboard.py`: Fixed `reset_fetch_all` missing ExtractionJob/FailedExtractionAttempt cascade delete
+- `fact_laws.csv`: Fixed law_id=143 missing source_id (set to "1" Orrick)
+- Created `scripts/reset_pipeline.py` — FK-safe full pipeline reset with verification + sequence reset
 
-### BUG-3: Supabase sync says "not configured" — FIXED
-**Root cause**: Two problems:
-  1. **Format mismatch**: `.env` had `REGS_SUPABASE_URL=postgresql://...` (Postgres connection string) but the sync code uses the REST API and needs `https://wjxlimjpaijdogyrqtxc.supabase.co`.
-  2. **Missing API key**: Needed `REGS_SUPABASE_ANON_KEY` (a JWT service_role key), not a Postgres password.
-**Fix applied**: Updated `.env` with REST URL and service_role JWT key. Added diagnostic error detection in `dashboard.py` for postgres:// URLs and non-JWT keys. Sync confirmed working (200 responses from Supabase).
-**Affected files**: `.env` (user config, not committed), `src/api/routes/dashboard.py`.
+### Data Alignment Complete — 2026-04-04
+- CSV deduplicated: 244→241 rows (merged 4 IAPP→Orrick duplicates)
+- 187 Orrick titles corrected from legacy DB via fuzzy matching
+- 87 bill numbers recovered from old corrupted titles
+- `iapp_scope` and `iapp_section` columns added to fact_laws.csv
 
-## Next Tasks
+## Bugs / Issues
 
-- **Run verification pass (cross-validation + gap detection)** — After extraction completes, run the verification pass from the dashboard to populate cross-validation scores.
-- **Generate summaries** — After extraction, run "Generate Summaries" from dashboard Step 4.5.
-- **Sync local -> Regs Checker Supabase** — Dashboard Step 5. Supabase truncated 2026-04-04; needs fresh re-sync via `python -m src.scripts.sync_to_supabase`.
-- **Sync Regs Checker -> Policy Navigator** — Dashboard Step 6. Requires `REGS_POLICY_NAVIGATOR_URL` in `.env`.
-- **Run rollup matrix** — After sync, run `python -m src.scripts.rollup_matrix` to aggregate into the 4 matrix detail tables.
-- **Review test coverage (IN PROGRESS)** — 403 pass, 13 fail. Added 76 new tests; fixed 7 Orrick gate failures. Remaining: 7 DB-required (need Docker), 5 stale mock targets (`fetch_document` removed), 1 stale module ref. 4 stale test files still to delete. See `agents/test-coverage/` for details.
-- **Write handoff document (HANDOFF_DOCUMENT.md)** — Comprehensive walkthrough for CS undergrad audience. Started but not completed.
+### BUG-1: Laws missing Orrick data → auto Tier D — ACCEPTED
+Only 2 Orrick laws + 53 IAPP active bills lack Orrick data. The 53 IAPP bills are pending legislation — the Orrick gate legitimately flags them. Accept Tier D for these.
+
+### BUG-2: Failed extraction retry — FIXED
+### BUG-3: Supabase sync "not configured" — FIXED
+
+## Next Tasks (after extraction completes)
+
+- **Sync local → Supabase** — Dashboard Step 5. Supabase truncated 2026-04-04.
+- **Sync Regs Checker → Policy Navigator** — Dashboard Step 6.
+- **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
+- **Review test coverage** — 403 pass, 13 fail. 7 DB-required, 5 stale mocks, 1 stale ref.
+- **Write handoff document** — HANDOFF_DOCUMENT.md for CS undergrad audience.
 
 ## Blocked Tasks
-- **Cross-validation scoring in confidence model** — The `cross_validation` weight (25%) is redistributed to other components when not available. Needs a full verification pass run to populate.
+- **Cross-validation scoring** — Needs verification pass after extraction.
 
 ## Questions / Clarifications Needed
-
-- **RESOLVED**: Orrick gate applies to all laws — IAPP rows will get Orrick data once merged with their Orrick counterparts.
-- What is the target extraction count? Previous run produced ~28k extractions from ~9k passages. New run with 7 agents may produce more.
-- Should the sync to Policy Navigator include all extraction types, or filter to approved-only?
-- Is the MinIO/S3 storage layer actually needed? The pipeline works without it (raw artifacts stored but not retrieved during extraction).
+- Target extraction count? Previous run: ~28k from ~9k passages.
+- Sync to Policy Navigator: all types or approved-only?
+- Is MinIO/S3 actually needed? Pipeline works without it.
