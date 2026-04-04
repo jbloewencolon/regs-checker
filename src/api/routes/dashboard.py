@@ -82,11 +82,16 @@ def _run_in_background(step: str, target, kwargs: dict | None = None):
     _background_jobs[step] = {"running": True, "result_html": None, "error": None}
 
     def _wrapper():
+        import logging as _logging
+        _bg_log = _logging.getLogger(f"background.{step}")
+        _bg_log.info("Background job '%s' starting", step)
         db = SessionLocal()
         try:
             result_html = target(db=db, **(kwargs or {}))
             _background_jobs[step]["result_html"] = result_html
+            _bg_log.info("Background job '%s' completed successfully", step)
         except Exception as e:
+            _bg_log.error("Background job '%s' failed: %s", step, e, exc_info=True)
             db.rollback()
             _background_jobs[step]["error"] = str(e)
         finally:
