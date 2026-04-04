@@ -2,7 +2,17 @@
 
 ## Active Tasks
 
-- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. Run `python -m src.scripts.sync_to_supabase` to push a clean copy of all local data. No duplicates possible on a clean slate.
+- **DATA ALIGNMENT: Local DB has 430 document families but only 163 have extractions** — DB audit on 2026-04-04 revealed:
+  - Ground truth CSV has **244 laws**
+  - DB has **430 document families** (429 unique titles) — nearly 2x the CSV
+  - Only **163 families** have any extractions (67% of CSV, 38% of DB)
+  - Old range (ID 1–180): 82 families with 3,428 extractions
+  - New range (ID 190–430): 81 families with 4,612 extractions
+  - Gap range (ID 181–189): 9 families, 0 extractions
+  - No title overlap between old and new — they are different laws, not re-ingested duplicates
+  - **81 ground truth laws have zero extractions**
+  - Need to: (1) identify which families are canonical/current, (2) clean orphaned families, (3) determine if re-extraction is needed
+- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until data alignment is resolved.
 - **Merge feature branch to main** — All work is on `claude/ai-policy-audit-agents-pwle7`. Needs review and merge to `main`.
 
 ## Bugs / Issues (post-extraction run)
