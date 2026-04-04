@@ -66,12 +66,12 @@ def parse_and_normalize(
 
 
 def _make_soup(content: bytes) -> BeautifulSoup:
-    """Create a BeautifulSoup instance, using the XML parser when appropriate."""
-    if content.lstrip()[:100].startswith(b"<?xml"):
-        try:
-            return BeautifulSoup(content, "lxml-xml")
-        except Exception:
-            pass
+    """Create a BeautifulSoup instance.
+
+    Always parse as HTML (lxml) even if the document has an <?xml> declaration.
+    Legislative HTML pages from state sites commonly include XML prologues but
+    are structurally HTML — the XML parser strips most content.
+    """
     return BeautifulSoup(content, "lxml")
 
 
@@ -80,26 +80,104 @@ def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
 
     Returns list of (section_path, text, char_start, char_end).
     """
+    # Guard: some .html files are actually PDFs (wrong extension)
+    if content.lstrip()[:10].startswith(b"%PDF"):
+        return _parse_pdf(content)
+
     soup = _make_soup(content)
 
-    # Remove script and style elements
-    for element in soup(["script", "style", "nav", "footer", "header"]):
+    # Remove script, style, and non-content elements
+    for element in soup(["script", "style", "nav", "footer", "header", "noscript"]):
         element.decompose()
 
-    # Extract text from main content.
-    # Use "\n\n" separator so each block element (p, div, li, h1-h6, etc.)
-    # creates a double-newline paragraph break.  With "\n" the entire document
-    # collapses into single-newline-separated text, making the paragraph
-    # fallback splitter treat 100KB of text as a single passage.
-    body = soup.find("body") or soup
-    full_text = body.get_text(separator="\n\n", strip=True)
+    # Try to find the real content area (state legislature sites bury bill
+    # text inside specific containers; everything else is navigation chrome).
+    # Check selectors from most-specific to least-specific.
+    content_el = None
+    _CONTENT_SELECTORS = [
+        "#bill",           # CA leginfo.legislature.ca.gov
+        "#bill_all",       # CA leginfo (broader)
+        "#billtext",       # CA leginfo (tab container)
+        "#billTextContainer",
+        ".bill-text",
+        "#document",
+        ".legislation-text",
+        "#TextContent",    # Various state sites
+        "article",         # Semantic HTML5
+        "main",            # Semantic HTML5
+        "#main-content",
+        "#content_main",
+        "#content",
+    ]
+    for selector in _CONTENT_SELECTORS:
+        found = soup.select_one(selector)
+        if found and len(found.get_text(strip=True)) > 500:
+            content_el = found
+            break
+
+    if content_el is None:
+        # Fallback: use the entire body
+        content_el = soup.find("body") or soup
+
+    # Extract text with double-newline separators so each block element
+    # creates a paragraph break.
+    full_text = content_el.get_text(separator="\n\n", strip=True)
+
+    # Strip leading website chrome that survived tag removal.
+    # Look for the bill text start marker (common patterns).
+    _BILL_START_PATTERNS = [
+        r"(?:Senate|Assembly|House)\s+Bill\s+No\.\s*\d+",
+        r"LEGISLATIVE\s+COUNSEL",
+        r"AN\s+ACT\s+(?:to|relating|concerning)",
+        r"Be\s+it\s+enacted",
+        r"CHAPTER\s+\d+",
+        r"ENROLLED\s+(?:ACT|BILL)",
+        r"(?:Section|SECTION)\s+1\b",
+    ]
+    for pattern in _BILL_START_PATTERNS:
+        m = re.search(pattern, full_text, re.IGNORECASE)
+        if m and m.start() > 100:
+            # Only trim if there's substantial leading chrome (>100 chars)
+            full_text = full_text[m.start():]
+            break
 
     return _segment_text(full_text)
 
 
 def _parse_plaintext(content: bytes) -> list[tuple[str, str, int, int]]:
-    """Parse plain text into passages."""
+    """Parse plain text into passages.
+
+    Strips web-sourced markdown headers (Title:, URL Source:, Markdown Content:)
+    and leading navigation chrome when present.
+    """
     text = content.decode("utf-8", errors="replace")
+
+    # Strip web-sourced markdown wrapper (produced by URL fetcher)
+    if text.startswith("Title:"):
+        # Remove "Title: ...\n\nURL Source: ...\n\nMarkdown Content:\n" header
+        marker = "Markdown Content:"
+        idx = text.find(marker)
+        if idx >= 0:
+            text = text[idx + len(marker):].lstrip("\n")
+
+    # Strip markdown navigation chrome (links, menus, image references)
+    # Look for the actual legislative content start
+    _BILL_START_PATTERNS = [
+        r"(?:Senate|Assembly|House)\s+Bill\s+No\.\s*\d+",
+        r"LEGISLATIVE\s+COUNSEL",
+        r"AN\s+ACT\s+(?:to|relating|concerning)",
+        r"Be\s+it\s+enacted",
+        r"CHAPTER\s+\d+",
+        r"ENROLLED\s+(?:ACT|BILL)",
+        r"(?:Section|SECTION)\s+1\b",
+        r"Bill\s+(?:Text|Start)",
+    ]
+    for pattern in _BILL_START_PATTERNS:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m and m.start() > 200:
+            text = text[m.start():]
+            break
+
     return _segment_text(text)
 
 
