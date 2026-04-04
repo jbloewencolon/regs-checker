@@ -389,10 +389,8 @@ def ingest_local_files(
                 artifact = existing_artifact
                 _log(f"  Artifact deduplicated: sha256={sha256[:12]}")
             else:
-                # Store in S3/MinIO
-                source_code = family.source.jurisdiction_code if family and family.source else "XX"
-                s3_key = f"raw/{source_code}/{sha256}"
-                _upload_to_s3(s3_key, content_bytes, content_type)
+                # Store reference to local file (no S3/MinIO needed)
+                s3_key = f"local://{local_file}"
 
                 artifact = RawArtifact(
                     document_version_id=job.document_version_id,
@@ -410,12 +408,12 @@ def ingest_local_files(
                 f"sha256={sha256[:12]}"
             )
 
-            # Parse into passages
+            # Parse into passages (pass bytes directly, skip S3 round-trip)
             job.status = IngestionStatus.parsing
             job.parse_started_at = datetime.utcnow()
             db.commit()
 
-            records = parse_and_normalize(db, job, artifact)
+            records = parse_and_normalize(db, job, artifact, content_bytes=content_bytes)
 
             job.status = IngestionStatus.completed
             job.parse_completed_at = datetime.utcnow()

@@ -25,12 +25,14 @@ def parse_and_normalize(
     db,
     job: IngestionJob,
     artifact: RawArtifact,
+    content_bytes: bytes | None = None,
 ) -> list[NormalizedSourceRecord]:
     """Parse a raw artifact into passage-level normalized records.
 
     Handles HTML and plain text. PDF support to be added.
+    If content_bytes is provided, uses that instead of fetching from S3.
     """
-    content = _fetch_content_from_s3(artifact.s3_key)
+    content = content_bytes if content_bytes is not None else _fetch_content_from_s3(artifact.s3_key)
 
     if artifact.content_type in ("text/html", "application/xhtml+xml"):
         passages = _parse_html(content)
