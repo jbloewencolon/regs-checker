@@ -27,14 +27,46 @@ characters, and encoding issues that could cause extraction failures.
 
 from __future__ import annotations
 
+import json as _json
 import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 
 import structlog
 
 logger = structlog.get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Triage warning log — persistent file for reviewing issues after runs.
+# Each line is a JSON object: {timestamp, record_id, warning_type, details}
+# ---------------------------------------------------------------------------
+_TRIAGE_LOG_PATH = Path(__file__).resolve().parents[2] / "output" / "triage_warnings.jsonl"
+
+
+def _log_triage_warning(
+    warning_type: str,
+    details: str,
+    record_id: int | None = None,
+    raw_response: str | None = None,
+) -> None:
+    """Append a triage warning to output/triage_warnings.jsonl."""
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "record_id": record_id,
+        "warning_type": warning_type,
+        "details": details,
+    }
+    if raw_response:
+        entry["raw_response"] = raw_response[:500]
+    try:
+        _TRIAGE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(_TRIAGE_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(_json.dumps(entry) + "\n")
+    except Exception:
+        pass  # Don't let logging failures break triage
 
 
 # ---------------------------------------------------------------------------
@@ -488,6 +520,7 @@ def triage_passage(
     context: dict,
     llm_provider=None,
     neighbors: list[str] | None = None,
+    record_id: int | None = None,
 ) -> TriageResult:
     """Triage a single passage for AI-relevance.
 
@@ -627,6 +660,10 @@ def triage_passage(
                         }
                     else:
                         logger.warning("triage_json_decode_failed", raw=json_match_str[:200])
+                        _log_triage_warning(
+                            "json_decode_failed", "Could not parse JSON from LLM response",
+                            record_id=record_id, raw_response=json_match_str,
+                        )
                         return TriageResult(
                             decision="uncertain",
                             method="passthrough",
@@ -670,6 +707,10 @@ def triage_passage(
             )
         else:
             logger.warning("triage_llm_parse_failed", response=response_text[:200])
+            _log_triage_warning(
+                "llm_parse_failed", "No JSON found in LLM response",
+                record_id=record_id, raw_response=response_text,
+            )
             return TriageResult(
                 decision="uncertain",
                 method="passthrough",
@@ -683,6 +724,10 @@ def triage_passage(
     except Exception as exc:
         logger.exception("triage_llm_error")
         error_msg = str(exc)[:300]
+        _log_triage_warning(
+            "llm_error", f"LLM call exception: {error_msg}",
+            record_id=record_id,
+        )
         return TriageResult(
             decision="uncertain",
             method="passthrough",
