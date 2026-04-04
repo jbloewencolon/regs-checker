@@ -2,6 +2,39 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### CSV Deduplication & IAPP Merge (2026-04-04)
+- Confirmed Orrick/IAPP/CSV are 3 data layers on the same laws, not separate populations
+- Mapped IAPP bill numbers to Orrick law names via old corrupted titles + IAPP tracker cross-reference
+- Found 4 confirmed duplicates: CA AB 2013, CA SB 53, CO SB 205, TX HB 149
+- Merged duplicates: IAPP scope/section data added to Orrick rows, IAPP duplicate rows deleted
+- Remaining 52 IAPP rows are genuinely new (mostly ACTIVE BILLS not tracked by Orrick)
+- Fixed wrong HB 149 merge (was matched to NY law instead of TX)
+- Added `iapp_scope` and `iapp_section` columns to fact_laws.csv
+- Recovered 87 bill numbers for Orrick rows from old corrupted PDF titles
+- CSV reduced from 244 → 241 rows (187 Orrick + 53 IAPP + 1 other)
+- **Files modified**: `data/fact_laws.csv`
+
+### CSV Title Fix & IAPP Enrichment (2026-04-04)
+- **Root cause**: `fact_laws.csv` `title` column was corrupted during PDF extraction — truncated names, statute references concatenated, words missing
+- Mapped all 187 Orrick CSV rows to 186 legacy document_families (correct titles) via fuzzy matching by jurisdiction
+- Corrected 187 Orrick law titles (e.g., "of Arkansas CSAM HB1877" → "Amendment of Arkansas CSAM Laws")
+- Fixed 2 severely corrupted rows manually (law_id=25 California Employment Regs, law_id=218 Utah AI Impersonation)
+- Enriched 17 IAPP rows with status/scope from `iapp_law_tracker.csv` (e.g., "SB 205" → "SB 205 (Enacted - Automated Decision Systems)")
+- Added 38 new entries to `static/iapp_law_tracker.csv` (65 → 103 rows) from fact_laws IAPP data
+- Identified 15 jurisdiction mismatches: same bill numbers in different states (e.g., AB 1018 is California in tracker, Arkansas in CSV)
+- Created `scripts/fix_csv_titles.py` — reusable mapping script with fuzzy title matching
+- **Files modified**: `data/fact_laws.csv`, `static/iapp_law_tracker.csv`
+- **Files created**: `scripts/fix_csv_titles.py`
+
+### Supabase Sync (2026-04-04)
+- Fixed BUG-3: Supabase sync "not configured" — `.env` had postgres:// URL instead of https:// REST URL, and no JWT key
+- Added diagnostic error detection in `dashboard.py` for common misconfigs (postgres:// URLs, non-JWT keys, missing env vars)
+- Added `REGS_SUPABASE_PROJECT_URL` fallback to all 4 Supabase dashboard endpoints
+- First sync pushed 47,485/64,995 rows (partial failures from FK cascades on batched inserts)
+- Verified **zero duplicates** via Supabase SQL queries on composite keys and primary keys
+- Truncated all Supabase tables for clean re-sync (user requested full replacement)
+- Next step: run `python -m src.scripts.sync_to_supabase` for clean full push
+
 ### Runtime Bug Fixes (critical — changed extraction behavior)
 - Fixed `AGENT_EXTRACTION_TYPES` missing `"preemption"` key — was crashing every preemption extraction with KeyError
 - Fixed `preemption_signal` enum not in local Postgres — added `_ensure_extraction_enums()` that auto-adds missing enum values using raw psycopg2 autocommit (ALTER TYPE cannot run in transactions)

@@ -1328,6 +1328,21 @@ def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
                         )
                     )
                     extractions_deleted = len(extraction_ids)
+                # Delete extraction jobs and failed attempts for these versions
+                try:
+                    from src.db.models import FailedExtractionAttempt
+                    db.execute(
+                        delete(FailedExtractionAttempt).where(
+                            FailedExtractionAttempt.source_record_id.in_(passage_ids)
+                        )
+                    )
+                except Exception:
+                    pass  # Table may not exist yet
+                db.execute(
+                    delete(ExtractionJob).where(
+                        ExtractionJob.document_version_id.in_(completed_version_ids)
+                    )
+                )
                 # Delete triage results
                 db.execute(
                     delete(SectionTriageResult).where(
@@ -2372,20 +2387,53 @@ def run_sync_to_supabase(
     import os
 
     source_url = os.environ.get("REGS_DATABASE_URL")
-    supabase_url = os.environ.get("REGS_SUPABASE_URL")
-    supabase_key = os.environ.get("REGS_SUPABASE_KEY") or os.environ.get("REGS_SUPABASE_ANON_KEY")
+    supabase_url = (
+        os.environ.get("REGS_SUPABASE_URL")
+        or os.environ.get("REGS_SUPABASE_PROJECT_URL")
+    )
+    supabase_key = (
+        os.environ.get("REGS_SUPABASE_KEY")
+        or os.environ.get("REGS_SUPABASE_ANON_KEY")
+    )
 
+    # Diagnostic: detect common misconfigurations
     if not source_url:
         return HTMLResponse(
             '<div class="result-panel warning">'
-            'Sync skipped: REGS_DATABASE_URL not configured.'
+            'Sync skipped: <code>REGS_DATABASE_URL</code> not set in .env.'
             '</div>'
         )
-    if not supabase_url or not supabase_key:
+
+    missing = []
+    diagnostics = []
+    if not supabase_url:
+        missing.append("REGS_SUPABASE_URL")
+    elif supabase_url.startswith("postgresql://"):
+        diagnostics.append(
+            f'<code>REGS_SUPABASE_URL</code> looks like a Postgres connection string '
+            f'(<code>{html_escape(supabase_url[:50])}...</code>). '
+            f'The sync uses the <strong>REST API</strong> and needs the HTTP URL, e.g. '
+            f'<code>https://your-project.supabase.co</code>'
+        )
+    if not supabase_key:
+        missing.append("REGS_SUPABASE_KEY")
+    elif not supabase_key.startswith("eyJ"):
+        diagnostics.append(
+            f'<code>REGS_SUPABASE_KEY</code> does not look like a JWT token '
+            f'(should start with <code>eyJ</code>). Get it from Supabase Dashboard &rarr; '
+            f'Settings &rarr; API &rarr; <code>service_role</code> key.'
+        )
+
+    if missing or diagnostics:
+        parts = []
+        if missing:
+            parts.append(f'Missing env vars: {", ".join(f"<code>{m}</code>" for m in missing)}')
+        parts.extend(diagnostics)
         return HTMLResponse(
             '<div class="result-panel warning">'
-            'Sync skipped: REGS_SUPABASE_URL and/or REGS_SUPABASE_KEY not configured.'
-            '</div>'
+            '<strong>Sync config issue:</strong><br>'
+            + '<br>'.join(parts)
+            + '</div>'
         )
 
     try:
@@ -2426,13 +2474,21 @@ def run_sync(
 ) -> HTMLResponse:
     """Sync extractions from Regs Checker Supabase to Policy Navigator."""
     import os
-    source_url = os.environ.get("REGS_SUPABASE_URL")
+    source_url = (
+        os.environ.get("REGS_SUPABASE_URL")
+        or os.environ.get("REGS_SUPABASE_PROJECT_URL")
+    )
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
 
-    if not source_url or not target_url:
+    missing = []
+    if not source_url:
+        missing.append("REGS_SUPABASE_URL")
+    if not target_url:
+        missing.append("REGS_POLICY_NAVIGATOR_URL")
+    if missing:
         return HTMLResponse(
             '<div class="result-panel warning">'
-            'Sync skipped: REGS_SUPABASE_URL and/or REGS_POLICY_NAVIGATOR_URL not configured.'
+            f'Sync skipped: missing {", ".join(f"<code>{m}</code>" for m in missing)} in .env.'
             '</div>'
         )
 
@@ -2481,7 +2537,10 @@ def run_sync_preflight() -> HTMLResponse:
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    source_url = os.environ.get("REGS_SUPABASE_URL")
+    source_url = (
+        os.environ.get("REGS_SUPABASE_URL")
+        or os.environ.get("REGS_SUPABASE_PROJECT_URL")
+    )
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
 
     if not source_url or not target_url:
@@ -2612,7 +2671,10 @@ def run_bridge_check() -> HTMLResponse:
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    source_url = os.environ.get("REGS_SUPABASE_URL")
+    source_url = (
+        os.environ.get("REGS_SUPABASE_URL")
+        or os.environ.get("REGS_SUPABASE_PROJECT_URL")
+    )
     target_url = os.environ.get("REGS_POLICY_NAVIGATOR_URL")
 
     if not source_url or not target_url:

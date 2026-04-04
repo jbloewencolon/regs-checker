@@ -199,7 +199,7 @@ def _compute_completeness(payload: dict, schema_class: type[BaseModel]) -> float
 
     filled = sum(
         1 for name in optional_fields
-        if payload.get(name) is not None
+        if payload.get(name) is not None and payload.get(name) != ""
     )
 
     return filled / len(optional_fields)
