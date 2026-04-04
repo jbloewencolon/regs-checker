@@ -3184,12 +3184,8 @@ async def upload_document(
         if existing:
             artifact = existing
         else:
-            # Upload to S3
-            dv = job.document_version
-            source = dv.family.source if dv and dv.family else None
-            jurisdiction = source.jurisdiction_code if source else "unknown"
-            s3_key = f"raw/{jurisdiction}/{sha256}"
-            _upload_to_s3(s3_key, content_bytes, content_type)
+            # Store reference (no S3 needed for uploaded files)
+            s3_key = f"upload://{sha256}"
 
             artifact = RawArtifact(
                 document_version_id=job.document_version_id,
@@ -3208,12 +3204,12 @@ async def upload_document(
         job.error_message = None
         db.commit()
 
-        # Parse and chunk
+        # Parse and chunk (pass bytes directly, skip S3)
         job.status = IngestionStatus.parsing
         job.parse_started_at = datetime.utcnow()
         db.commit()
 
-        records = parse_and_normalize(db, job, artifact)
+        records = parse_and_normalize(db, job, artifact, content_bytes=content_bytes)
 
         job.status = IngestionStatus.completed
         job.parse_completed_at = datetime.utcnow()
