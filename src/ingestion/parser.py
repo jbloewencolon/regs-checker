@@ -185,12 +185,27 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     """Segment legislative text into passage-level chunks.
 
     Strategy:
+      0. If text has few/no newlines, insert them before section markers
       1. Try section-header splitting (Section X, Article Y, § Z, etc.)
       2. Fall back to paragraph splitting on double-newlines
       3. If paragraphs are too large (>15000 chars), split them further
 
     Returns list of (section_path, text, char_start, char_end).
     """
+    # Pre-process: if the text is mostly one long line (common with HTML-extracted
+    # law_texts/*.txt files), insert double-newlines before section markers so
+    # the section regex can match them.
+    newline_count = text.count("\n")
+    if newline_count < len(text) / 2000:  # Very few newlines relative to length
+        text = re.sub(
+            r"(?<=[.;)\]])\s+(?=(?:Section|SECTION|Sec\.|SEC\.)\s+\d"
+            r"|§\s*\d"
+            r"|(?:Article|ARTICLE)\s+[IVXLCDM\d]"
+            r"|(?:Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE)\s+\d)",
+            "\n\n",
+            text,
+        )
+
     # Pattern for top-level legislative section markers — covers:
     #   Section 1, SECTION 1, Sec. 1, SEC. 1, § 1, §1
     #   Article I, ARTICLE 1
