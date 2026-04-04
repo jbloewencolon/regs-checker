@@ -376,6 +376,10 @@ def ingest_local_files(
             content_bytes = local_file.read_bytes()
             content_type = _detect_content_type(local_file)
 
+            # Mark fetch phase complete (local files are "fetched" instantly)
+            job.fetch_started_at = datetime.utcnow()
+            job.fetch_completed_at = datetime.utcnow()
+
             # Content-addressable storage
             sha256 = hashlib.sha256(content_bytes).hexdigest()
 

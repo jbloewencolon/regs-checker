@@ -35,11 +35,12 @@ from src.db.models import (
 
 EXPORT_DIR = Path("export")
 
-TRACKER_CSV = Path("static/ai_law_tracker.csv")
+TRACKER_CSV = Path("data/fact_laws.csv")
 TRACKER_FIELDS = [
-    "State/Terr", "AI Scope", "Relevant Law", "Bill ID",
-    "Effective Date", "Key Requirements", "Enforcements Penalties",
-    "Status", "Source URL",
+    "law_id", "canonical_law_id", "bill_number", "jurisdiction_id",
+    "status_id", "effective_date", "title", "ai_scope_summary",
+    "key_requirements_raw", "enforcement_penalties", "source_id",
+    "source_url", "last_updated_at", "iapp_scope", "iapp_section",
 ]
 
 # ---------------------------------------------------------------------------
