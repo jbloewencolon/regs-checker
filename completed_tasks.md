@@ -2,6 +2,24 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### LLM Limits Maxed for GPT-OSS 20B 128k (2026-04-04)
+- **Critical fix**: `local_context_length` was 32,768 — dynamic cap in `llm_provider.py` was silently clipping all output tokens to fit 32k window, even though extraction requested 50k tokens. Raised to 131,072.
+- `config.py`: context window 32k→128k, extraction max_tokens 50k→65,536
+- `llm_provider.py`: default max_tokens raised to 16,384 (Base + Local)
+- `parser.py`: paragraph oversplit threshold 2k→15k chars (fewer, larger passages)
+- `bill_context.py`: definitions 3k→30k, scope 2k→20k, structure 500→5k chars
+- `section_triage.py`: definitions 2k→30k, scope 1.5k→20k, structure 500→5k, neighbors 300→3k chars, triage max_tokens 8k→16k
+- **Files modified**: `src/core/config.py`, `src/core/llm_provider.py`, `src/core/bill_context.py`, `src/ingestion/parser.py`, `src/agents/section_triage.py`
+
+### Bug Sweep — 4 Fixes (2026-04-04)
+- `local_ingest.py`: Added `iapp_scope`/`iapp_section` to DocumentFamily metadata (was silently dropped during seeding)
+- `confidence.py`: Fixed `payload.get(name) is not None` passing for empty strings — added `and payload.get(name) != ""`
+- `dashboard.py`: Fixed `reset_fetch_all` cascade missing ExtractionJob + FailedExtractionAttempt deletion
+- `fact_laws.csv`: Fixed law_id=143 missing source_id (set to "1" Orrick)
+- Created `scripts/reset_pipeline.py` — FK-safe full pipeline reset: deletes 14 tables in dependency order, preserves sources (48 jurisdictions), resets sequences, verifies empty state
+- **Files modified**: `src/ingestion/local_ingest.py`, `src/core/confidence.py`, `src/api/routes/dashboard.py`, `data/fact_laws.csv`
+- **Files created**: `scripts/reset_pipeline.py`
+
 ### CSV Deduplication & IAPP Merge (2026-04-04)
 - Confirmed Orrick/IAPP/CSV are 3 data layers on the same laws, not separate populations
 - Mapped IAPP bill numbers to Orrick law names via old corrupted titles + IAPP tracker cross-reference
@@ -52,7 +70,7 @@
 - **Retag endpoint** — `POST /dashboard/review/{queue_id}/retag` allows changing extraction_type from the review UI. Dropdown added to every review row.
 - **Two-step sync** — Dashboard now has Step 5 (Local -> Regs Checker Supabase) and Step 6 (Regs Checker -> Policy Navigator) as separate steps with separate endpoints.
 - **JSON truncation repair** — `_repair_truncated_json()` salvages partial LLM output by finding the last complete array element and closing brackets.
-- **Max tokens increased to 50k** — Both `extraction_max_tokens` and `local_extraction_max_tokens`.
+- **Max tokens increased to 65k** — Both `extraction_max_tokens` and `local_extraction_max_tokens`. Context window raised to 128k.
 - **Verification pass filtered to triaged passages only** — Cross-validation and gap detection no longer waste tokens on `not_relevant` passages.
 
 ### Infrastructure Fixes (current session)
