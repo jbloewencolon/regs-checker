@@ -63,6 +63,63 @@ router.include_router(tracker_router)
 
 
 # ---------------------------------------------------------------------------
+# Background job runner — lets long-running pipeline steps return immediately
+# so HTMX polling can keep the UI alive.
+# ---------------------------------------------------------------------------
+
+_background_jobs: dict[str, dict] = {}  # keyed by step name
+
+
+def _run_in_background(step: str, target, kwargs: dict | None = None):
+    """Launch *target* in a daemon thread with its own DB session.
+
+    The function stored in *target* must accept a ``db`` keyword argument.
+    We create a fresh ``SessionLocal()`` so the request-scoped session can
+    close immediately.
+    """
+    from src.db.engine import SessionLocal
+
+    _background_jobs[step] = {"running": True, "result_html": None, "error": None}
+
+    def _wrapper():
+        db = SessionLocal()
+        try:
+            result_html = target(db=db, **(kwargs or {}))
+            _background_jobs[step]["result_html"] = result_html
+        except Exception as e:
+            db.rollback()
+            _background_jobs[step]["error"] = str(e)
+        finally:
+            db.close()
+            _background_jobs[step]["running"] = False
+
+    t = threading.Thread(target=_wrapper, daemon=True)
+    t.start()
+
+
+@router.get("/api/job-status/{step}")
+def get_job_status(step: str) -> HTMLResponse:
+    """Poll background job status. Returns result HTML when done."""
+    job = _background_jobs.get(step)
+    if job is None:
+        return HTMLResponse('<div class="result-panel info">No job running.</div>')
+    if job["running"]:
+        return HTMLResponse(
+            f'<div class="result-panel info" hx-get="/dashboard/api/job-status/{step}" '
+            f'hx-trigger="every 2s" hx-swap="outerHTML">'
+            f'<span class="spinner"></span> {step.replace("_", " ").title()} running&hellip; '
+            f'Check the pipeline tracker above for live progress.</div>'
+        )
+    # Done — return final result
+    if job["error"]:
+        html = f'<div class="result-panel error">Error: {html_escape(job["error"])}</div>'
+    else:
+        html = job["result_html"] or '<div class="result-panel success">Done.</div>'
+    del _background_jobs[step]
+    return HTMLResponse(html)
+
+
+# ---------------------------------------------------------------------------
 # Dashboard pages
 # ---------------------------------------------------------------------------
 
@@ -1083,8 +1140,15 @@ def run_fetch(
     limit: int | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Fetch and parse pending documents."""
-    try:
+    """Fetch and parse pending documents (runs in background thread)."""
+    if _background_jobs.get("fetch", {}).get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info" hx-get="/dashboard/api/job-status/fetch" '
+            'hx-trigger="every 2s" hx-swap="outerHTML">'
+            '<span class="spinner"></span> Fetch already running&hellip;</div>'
+        )
+
+    def _do_fetch(db):
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
 
@@ -1113,7 +1177,7 @@ def run_fetch(
                 f'</div>'
             )
 
-        return HTMLResponse(
+        return (
             f'<div class="result-panel {panel_class}">'
             f'<strong>{summary["completed"]}/{total}</strong> documents fetched, '
             f'<strong>{summary["total_passages"]}</strong> passages extracted.'
@@ -1121,11 +1185,14 @@ def run_fetch(
             f'{cancelled_note}'
             f'</div>'
         )
-    except Exception as e:
-        db.rollback()
-        return HTMLResponse(
-            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
-        )
+
+    _run_in_background("fetch", _do_fetch)
+    return HTMLResponse(
+        '<div class="result-panel info" hx-get="/dashboard/api/job-status/fetch" '
+        'hx-trigger="every 2s" hx-swap="outerHTML">'
+        '<span class="spinner"></span> Fetch started&hellip; '
+        'Watch the pipeline tracker above for live progress.</div>'
+    )
 
 
 @router.post("/api/run/fetch/cancel")
@@ -1416,16 +1483,25 @@ _triage_lock = threading.Lock()
 
 @router.post("/api/run/triage")
 def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Run section triage on all untriaged passages, streaming progress."""
+    """Run section triage on all untriaged passages (runs in background thread)."""
     global _triage_progress
 
     if _triage_progress is not None and _triage_progress.get("running"):
         return HTMLResponse(
-            '<div class="result-panel info">Triage is already running. '
-            'Check the Triage tab for live results.</div>'
+            '<div class="result-panel info" hx-get="/dashboard/api/job-status/triage" '
+            'hx-trigger="every 2s" hx-swap="outerHTML">'
+            '<span class="spinner"></span> Triage is already running&hellip;</div>'
         )
 
-    try:
+    if _background_jobs.get("triage", {}).get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info" hx-get="/dashboard/api/job-status/triage" '
+            'hx-trigger="every 2s" hx-swap="outerHTML">'
+            '<span class="spinner"></span> Triage already running&hellip;</div>'
+        )
+
+    def _do_triage(db):
+        global _triage_progress
         from src.ingestion.extractor import run_triage
 
         _triage_progress = {"running": True, "relevant": 0, "uncertain": 0, "skipped": 0, "total": 0, "done": 0}
@@ -1435,18 +1511,15 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
 
         summary = run_triage(db, on_progress=_on_progress)
 
-        _triage_progress = {
-            "running": False,
-            **summary,
-        }
+        _triage_progress = {"running": False, **summary}
 
         if summary["total"] == 0:
-            return HTMLResponse(
+            return (
                 '<div class="result-panel info">No untriaged passages found. '
                 'All passages have already been triaged, or no documents have been parsed yet.</div>'
             )
 
-        return HTMLResponse(
+        return (
             f'<div class="result-panel success">'
             f'Triaged <strong>{summary["total"]}</strong> passages: '
             f'<span style="color:var(--success);">{summary["relevant"]} relevant</span>, '
@@ -1455,12 +1528,14 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
             f'<a href="/dashboard/triage">View results &rarr;</a>'
             f'</div>'
         )
-    except Exception as e:
-        _triage_progress = None
-        db.rollback()
-        return HTMLResponse(
-            f'<div class="result-panel error">Triage error: {html_escape(str(e))}</div>'
-        )
+
+    _run_in_background("triage", _do_triage)
+    return HTMLResponse(
+        '<div class="result-panel info" hx-get="/dashboard/api/job-status/triage" '
+        'hx-trigger="every 2s" hx-swap="outerHTML">'
+        '<span class="spinner"></span> Triage started&hellip; '
+        'Watch the pipeline tracker above for live progress.</div>'
+    )
 
 
 @router.post("/api/run/triage/reset")
@@ -2428,20 +2503,26 @@ def run_api_extract(
     provider: str | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Run extraction via local LLM or Anthropic API.
+    """Run extraction via local LLM (runs in background thread).
 
     Args:
         limit: Max passages to extract (None = all).
         provider: Force "local" or "anthropic". Defaults to REGS_EXTRACTION_PROVIDER.
     """
-    import os
+    if _background_jobs.get("extract", {}).get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info" hx-get="/dashboard/api/job-status/extract" '
+            'hx-trigger="every 2s" hx-swap="outerHTML">'
+            '<span class="spinner"></span> Extraction already running&hellip;</div>'
+        )
 
-    try:
+    def _do_extract(db, limit=None, provider=None):
+        import os
+
         # Temporarily override the extraction provider if explicitly requested
         old_provider = os.environ.get("REGS_EXTRACTION_PROVIDER")
         if provider:
             os.environ["REGS_EXTRACTION_PROVIDER"] = provider
-            # Clear cached provider so the new setting takes effect
             from src.core.llm_provider import _provider_cache
             _provider_cache.pop("extraction", None)
             _provider_cache.pop("local_extraction", None)
@@ -2450,7 +2531,6 @@ def run_api_extract(
             from src.ingestion.extractor import run_extraction
             summary = run_extraction(db, limit=limit)
         finally:
-            # Restore original provider setting
             if provider:
                 if old_provider is not None:
                     os.environ["REGS_EXTRACTION_PROVIDER"] = old_provider
@@ -2481,7 +2561,7 @@ def run_api_extract(
                 f'Run archived to: <code>output/extraction_runs/{html_escape(folder_name)}/</code>'
                 f'</div>'
             )
-        return HTMLResponse(
+        return (
             f'<div class="result-panel {panel_class}">'
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
@@ -2489,11 +2569,14 @@ def run_api_extract(
             f'{cancelled_note}{run_note}'
             f'</div>'
         )
-    except Exception as e:
-        db.rollback()
-        return HTMLResponse(
-            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
-        )
+
+    _run_in_background("extract", _do_extract, {"limit": limit, "provider": provider})
+    return HTMLResponse(
+        '<div class="result-panel info" hx-get="/dashboard/api/job-status/extract" '
+        'hx-trigger="every 2s" hx-swap="outerHTML">'
+        '<span class="spinner"></span> Extraction started&hellip; '
+        'Watch the extraction monitor below for live progress.</div>'
+    )
 
 
 @router.post("/api/run/retry-failed")
