@@ -592,27 +592,50 @@ def triage_passage(
         if not json_match:
             # Fallback: try any JSON-like object
             json_match = re.search(r"\{[^{}]+\}", response_text)
-        if json_match:
+        if not json_match:
+            # Last resort: try to fix truncated JSON (missing closing brace)
+            trunc_match = re.search(r'\{[^{}]*"relevant"\s*:', response_text)
+            if trunc_match:
+                # Append closing brace to truncated JSON
+                raw = trunc_match.group() + response_text[trunc_match.end():]
+                # Remove trailing comma/whitespace and close the object
+                raw = re.sub(r'[,\s]+$', '', raw) + '}'
+                json_match_str = raw
+            else:
+                json_match_str = None
+        else:
+            json_match_str = json_match.group()
+
+        if json_match_str:
             try:
-                result = json.loads(json_match.group())
+                result = json.loads(json_match_str)
             except json.JSONDecodeError:
                 try:
                     # Try fixing common issues: trailing commas, unquoted values
-                    cleaned = re.sub(r",\s*}", "}", json_match.group())
+                    cleaned = re.sub(r",\s*}", "}", json_match_str)
                     cleaned = re.sub(r":\s*(true|false)\b", lambda m: ": " + m.group(1).lower(), cleaned)
                     result = json.loads(cleaned)
                 except json.JSONDecodeError:
-                    # Completely unparseable — treat as parse failure
-                    logger.warning("triage_json_decode_failed", raw=json_match.group()[:200])
-                    return TriageResult(
-                        decision="uncertain",
-                        method="passthrough",
-                        confidence=0.3,
-                        orrick_terms_checked=sorted(orrick_terms)[:20],
-                        llm_reasoning=f"JSON decode failed: {json_match.group()[:300]}",
-                        pdf_quality_score=quality_score,
-                        quality_flags=quality_flags + ["llm_parse_failed"],
-                    )
+                    # Completely unparseable — try extracting key fields with regex
+                    rel_m = re.search(r'"relevant"\s*:\s*(true|false)', response_text, re.IGNORECASE)
+                    conf_m = re.search(r'"confidence"\s*:\s*([\d.]+)', response_text)
+                    if rel_m:
+                        result = {
+                            "relevant": rel_m.group(1).lower() == "true",
+                            "confidence": float(conf_m.group(1)) if conf_m else 0.5,
+                            "reasoning": "Extracted from truncated JSON",
+                        }
+                    else:
+                        logger.warning("triage_json_decode_failed", raw=json_match_str[:200])
+                        return TriageResult(
+                            decision="uncertain",
+                            method="passthrough",
+                            confidence=0.3,
+                            orrick_terms_checked=sorted(orrick_terms)[:20],
+                            llm_reasoning=f"JSON decode failed: {json_match_str[:300]}",
+                            pdf_quality_score=quality_score,
+                            quality_flags=quality_flags + ["llm_parse_failed"],
+                        )
 
             is_relevant = result.get("relevant", True)  # Default to relevant (conservative)
             conf = float(result.get("confidence", 0.5))
