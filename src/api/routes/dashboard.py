@@ -1014,6 +1014,99 @@ def run_seed_local(
         _pipeline_lock.release()
 
 
+@router.post("/api/run/full-reset-seed-ingest")
+def run_full_reset_seed_ingest(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Full pipeline reset + re-seed + ingest in one background operation.
+
+    1. Clears all pipeline tables (preserves sources)
+    2. Re-seeds document families from data/fact_laws.csv
+    3. Ingests all local files from output/law_texts/
+    """
+    if _background_jobs.get("full_reset", {}).get("running"):
+        return HTMLResponse(
+            '<div class="result-panel info" hx-get="/dashboard/api/job-status/full_reset" '
+            'hx-trigger="every 2s" hx-swap="outerHTML">'
+            '<span class="spinner"></span> Reset already running&hellip;</div>'
+        )
+
+    def _do_full_reset(db):
+        from sqlalchemy import text as _text
+
+        TABLES_TO_CLEAR = [
+            "export_jobs",
+            "applicability_conditions",
+            "obligation_dependencies",
+            "review_actions",
+            "review_queue",
+            "failed_extraction_attempts",
+            "extractions",
+            "extraction_jobs",
+            "section_triage_results",
+            "normalized_source_records",
+            "ingestion_jobs",
+            "raw_artifacts",
+            "legal_events",
+            "document_versions",
+            "document_families",
+        ]
+
+        # Step 1: Clear all pipeline tables
+        deleted_total = 0
+        for table in TABLES_TO_CLEAR:
+            sp = db.begin_nested()
+            try:
+                result = db.execute(_text(f"DELETE FROM {table}"))  # noqa: S608
+                deleted_total += result.rowcount
+                sp.commit()
+            except Exception:
+                sp.rollback()
+        db.commit()
+
+        # Reset sequences for primary key columns
+        for table in ["document_families", "document_versions", "ingestion_jobs",
+                       "raw_artifacts", "normalized_source_records",
+                       "section_triage_results", "extraction_jobs", "extractions"]:
+            try:
+                db.execute(_text(
+                    f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), 1, false)"  # noqa: S608
+                ))
+            except Exception:
+                pass
+        db.commit()
+
+        # Step 2: Re-seed from fact_laws.csv
+        from src.ingestion.local_ingest import run_local_ingest
+        summary = run_local_ingest(db)
+
+        created = summary.get("created", 0)
+        completed = summary.get("completed", 0)
+        failed = summary.get("failed", 0)
+        passages = summary.get("total_passages", 0)
+        no_file = summary.get("skipped_no_file", 0)
+
+        panel_class = "success" if failed == 0 else "warning"
+        fail_note = (
+            f'<div style="margin-top:6px;font-size:13px;color:var(--warning);">'
+            f'{failed} failed ({no_file} missing source files).</div>'
+        ) if failed else ""
+        return (
+            f'<div class="result-panel {panel_class}">'
+            f'Reset <strong>{deleted_total:,}</strong> rows. '
+            f'Seeded <strong>{created}</strong> laws. '
+            f'Ingested <strong>{completed}</strong> documents '
+            f'(<strong>{passages:,}</strong> passages).{fail_note}'
+            f'</div>'
+        )
+
+    _run_in_background("full_reset", _do_full_reset)
+    return HTMLResponse(
+        '<div class="result-panel info" hx-get="/dashboard/api/job-status/full_reset" '
+        'hx-trigger="every 2s" hx-swap="outerHTML">'
+        '<span class="spinner"></span> Resetting DB, re-seeding, and ingesting&hellip; '
+        'Watch the pipeline tracker for progress.</div>'
+    )
+
+
 @router.post("/api/run/pdf-discovery")
 def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
     """[LEGACY] Seed legislation from the fact_laws.csv (primary discovery source)."""
