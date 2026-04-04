@@ -502,7 +502,7 @@ def triage_passage(
         llm_response = llm_provider.call(
             system_prompt="You are a legal text triage agent. Respond only with valid JSON.",
             user_prompt=prompt,
-            max_tokens=16384,
+            max_tokens=1024,
             temperature=0.0,
         )
 
@@ -512,11 +512,22 @@ def triage_passage(
         response_text = re.sub(
             r"<think>.*?</think>", "", response_text, flags=re.DOTALL
         ).strip()
+        # Strip special tokens that some models emit
+        response_text = re.sub(
+            r"<\|[^|]+\|>", "", response_text
+        ).strip()
 
         # Find JSON in response
         json_match = re.search(r"\{[^{}]+\}", response_text)
         if json_match:
-            result = json.loads(json_match.group())
+            try:
+                result = json.loads(json_match.group())
+            except json.JSONDecodeError:
+                # Try fixing common issues: trailing commas, unquoted values
+                cleaned = re.sub(r",\s*}", "}", json_match.group())
+                cleaned = re.sub(r":\s*(true|false)\b", lambda m: ": " + m.group(1).lower(), cleaned)
+                result = json.loads(cleaned)
+
             is_relevant = result.get("relevant", True)  # Default to relevant (conservative)
             conf = float(result.get("confidence", 0.5))
             reasoning = result.get("reasoning", "")
@@ -543,17 +554,25 @@ def triage_passage(
             )
         else:
             logger.warning("triage_llm_parse_failed", response=response_text[:200])
+            return TriageResult(
+                decision="uncertain",
+                method="passthrough",
+                confidence=0.3,
+                orrick_terms_checked=sorted(orrick_terms)[:20],
+                llm_reasoning=f"LLM returned unparseable response: {response_text[:300]}",
+                pdf_quality_score=quality_score,
+                quality_flags=quality_flags + ["llm_parse_failed"],
+            )
 
-    except Exception:
+    except Exception as exc:
         logger.exception("triage_llm_error")
-
-    # LLM failed — conservative fallback
-    return TriageResult(
-        decision="uncertain",
-        method=method,
-        confidence=0.3,
-        orrick_terms_checked=sorted(orrick_terms)[:20],
-        llm_reasoning="LLM call failed — defaulting to uncertain (will extract)",
-        pdf_quality_score=quality_score,
-        quality_flags=quality_flags,
-    )
+        error_msg = str(exc)[:300]
+        return TriageResult(
+            decision="uncertain",
+            method="passthrough",
+            confidence=0.3,
+            orrick_terms_checked=sorted(orrick_terms)[:20],
+            llm_reasoning=f"LLM call failed: {error_msg}",
+            pdf_quality_score=quality_score,
+            quality_flags=quality_flags + ["llm_error"],
+        )
