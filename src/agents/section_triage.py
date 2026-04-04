@@ -550,7 +550,12 @@ def triage_passage(
             is_relevant = result.get("relevant", True)  # Default to relevant (conservative)
             conf = float(result.get("confidence", 0.5))
             reasoning = result.get("reasoning", "")
-            ai_signals = result.get("ai_signals", "")
+            ai_signals_raw = result.get("ai_signals", "")
+            # LLM may return a list or a string — normalize to string for Text column
+            if isinstance(ai_signals_raw, list):
+                ai_signals = ", ".join(str(s) for s in ai_signals_raw)
+            else:
+                ai_signals = str(ai_signals_raw) if ai_signals_raw else None
 
             if is_relevant:
                 decision = "relevant"
