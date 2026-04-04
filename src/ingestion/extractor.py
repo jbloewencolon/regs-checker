@@ -1211,51 +1211,70 @@ def run_triage(
             _bill_ctx_cache[dv_id] = {}
 
     for i, record in enumerate(records):
-        ctx = _build_context(db, record)
-        # Inject bill-level context (definitions, scope, structure)
-        bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
-        if bill_ctx:
-            if bill_ctx.get("definitions"):
-                ctx["bill_definitions"] = bill_ctx["definitions"]
-            if bill_ctx.get("scope"):
-                ctx["bill_scope"] = bill_ctx["scope"]
-            if bill_ctx.get("structure"):
-                ctx["bill_structure"] = bill_ctx["structure"]
-            if bill_ctx.get("defined_terms"):
-                ctx["defined_terms"] = bill_ctx["defined_terms"]
+        try:
+            ctx = _build_context(db, record)
+            # Inject bill-level context (definitions, scope, structure)
+            bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
+            if bill_ctx:
+                if bill_ctx.get("definitions"):
+                    ctx["bill_definitions"] = bill_ctx["definitions"]
+                if bill_ctx.get("scope"):
+                    ctx["bill_scope"] = bill_ctx["scope"]
+                if bill_ctx.get("structure"):
+                    ctx["bill_structure"] = bill_ctx["structure"]
+                if bill_ctx.get("defined_terms"):
+                    ctx["defined_terms"] = bill_ctx["defined_terms"]
 
-        # Gather neighboring passage texts for surrounding context
-        siblings = _dv_records.get(record.document_version_id, [])
-        neighbors = _get_neighbor_texts(record, siblings)
+            # Gather neighboring passage texts for surrounding context
+            siblings = _dv_records.get(record.document_version_id, [])
+            neighbors = _get_neighbor_texts(record, siblings)
 
-        result = triage_passage(
-            record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
-        )
+            result = triage_passage(
+                record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
+            )
 
-        triage_row = SectionTriageResult(
-            source_record_id=record.id,
-            decision=TriageDecision(result.decision),
-            method=TriageMethod(result.method),
-            confidence=result.confidence,
-            matched_keywords=result.matched_keywords,
-            orrick_terms_checked=result.orrick_terms_checked,
-            llm_reasoning=result.llm_reasoning,
-            ai_signals=result.ai_signals,
-            pdf_quality_score=result.pdf_quality_score,
-            quality_flags=result.quality_flags,
-            model_id=result.model_id,
-        )
-        db.add(triage_row)
+            triage_row = SectionTriageResult(
+                source_record_id=record.id,
+                decision=TriageDecision(result.decision),
+                method=TriageMethod(result.method),
+                confidence=result.confidence,
+                matched_keywords=result.matched_keywords,
+                orrick_terms_checked=result.orrick_terms_checked,
+                llm_reasoning=result.llm_reasoning,
+                ai_signals=result.ai_signals,
+                pdf_quality_score=result.pdf_quality_score,
+                quality_flags=result.quality_flags,
+                model_id=result.model_id,
+            )
+            db.add(triage_row)
 
-        if result.decision == "not_relevant":
-            summary["skipped"] += 1
-        elif result.decision == "relevant":
-            summary["relevant"] += 1
-        else:
-            summary["uncertain"] += 1
+            if result.decision == "not_relevant":
+                summary["skipped"] += 1
+            elif result.decision == "relevant":
+                summary["relevant"] += 1
+            else:
+                summary["uncertain"] += 1
+        except Exception:
+            logger.error("triage_passage_failed", record_id=record.id, exc_info=True)
+            db.rollback()
+            # Record as uncertain/passthrough so it doesn't block extraction
+            try:
+                triage_row = SectionTriageResult(
+                    source_record_id=record.id,
+                    decision=TriageDecision.uncertain,
+                    method=TriageMethod.passthrough,
+                    confidence=0.0,
+                    quality_flags=["triage_error"],
+                )
+                db.add(triage_row)
+                db.commit()
+                summary["uncertain"] += 1
+            except Exception:
+                logger.error("triage_error_record_failed", record_id=record.id, exc_info=True)
+                db.rollback()
 
-        # Commit in batches of 100 for progress visibility
-        if (i + 1) % 100 == 0:
+        # Commit in batches of 10 for progress visibility in the dashboard
+        if (i + 1) % 10 == 0:
             db.commit()
             _log(
                 f"Triaged {i + 1}/{len(records)}: "
