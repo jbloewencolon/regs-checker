@@ -1233,6 +1233,7 @@ def run_triage(
 
             result = triage_passage(
                 record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
+                record_id=record.id,
             )
 
             triage_row = SectionTriageResult(
@@ -1256,8 +1257,13 @@ def run_triage(
                 summary["relevant"] += 1
             else:
                 summary["uncertain"] += 1
-        except Exception:
+        except Exception as exc:
             logger.error("triage_passage_failed", record_id=record.id, exc_info=True)
+            from src.agents.section_triage import _log_triage_warning
+            _log_triage_warning(
+                "passage_exception", f"Unhandled exception: {exc}",
+                record_id=record.id,
+            )
             db.rollback()
             # Record as uncertain/passthrough so it doesn't block extraction
             try:

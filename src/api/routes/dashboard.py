@@ -2003,6 +2003,90 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
+@router.get("/api/triage-warnings")
+def triage_warnings(limit: int = 200) -> HTMLResponse:
+    """Return triage warnings from output/triage_warnings.jsonl."""
+    import json as _json
+    from pathlib import Path
+
+    log_path = Path("output/triage_warnings.jsonl")
+    if not log_path.exists():
+        return HTMLResponse(
+            '<div class="result-panel info">No triage warnings recorded yet.</div>'
+        )
+
+    try:
+        lines = log_path.read_text(encoding="utf-8").strip().splitlines()
+        entries = [_json.loads(line) for line in lines[-limit:]]
+
+        if not entries:
+            return HTMLResponse(
+                '<div class="result-panel info">No triage warnings recorded yet.</div>'
+            )
+
+        # Group by warning type
+        by_type: dict[str, int] = {}
+        for e in entries:
+            wt = e.get("warning_type", "unknown")
+            by_type[wt] = by_type.get(wt, 0) + 1
+
+        summary_chips = " ".join(
+            f'<span class="status-chip" style="background:var(--warning);color:#000;">'
+            f'{wtype}: {count}</span>'
+            for wtype, count in sorted(by_type.items(), key=lambda x: -x[1])
+        )
+
+        rows_html = ""
+        for e in reversed(entries[-100:]):
+            ts = e.get("timestamp", "")[:19].replace("T", " ")
+            wt = html_escape(e.get("warning_type", ""))
+            rid = e.get("record_id", "—")
+            details = html_escape(e.get("details", "")[:200])
+            raw = html_escape(e.get("raw_response", "")[:150])
+            raw_cell = f'<td style="font-size:10px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{html_escape(e.get("raw_response", ""))}">{raw}</td>' if raw else '<td>—</td>'
+
+            rows_html += (
+                f'<tr>'
+                f'<td style="white-space:nowrap;">{ts}</td>'
+                f'<td><code>{wt}</code></td>'
+                f'<td>{rid}</td>'
+                f'<td style="max-width:300px;">{details}</td>'
+                f'{raw_cell}'
+                f'</tr>'
+            )
+
+        return HTMLResponse(
+            f'<div style="margin-bottom:8px;">'
+            f'<strong>{len(entries)}</strong> warnings total. {summary_chips}'
+            f'<button class="btn" style="margin-left:12px;font-size:11px;padding:2px 8px;" '
+            f'hx-post="/dashboard/api/triage-warnings/clear" hx-target="#triage-warnings-panel" '
+            f'hx-swap="innerHTML" hx-confirm="Clear all triage warnings?">Clear Log</button>'
+            f'</div>'
+            f'<div style="max-height:400px;overflow:auto;">'
+            f'<table class="tracker-table" style="font-size:11px;">'
+            f'<thead><tr><th>Time</th><th>Type</th><th>Record</th>'
+            f'<th>Details</th><th>Raw Response</th></tr></thead>'
+            f'<tbody>{rows_html}</tbody>'
+            f'</table></div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            f'<div class="result-panel error">Error reading warnings: {html_escape(str(e))}</div>'
+        )
+
+
+@router.post("/api/triage-warnings/clear")
+def clear_triage_warnings() -> HTMLResponse:
+    """Clear the triage warnings log file."""
+    from pathlib import Path
+    log_path = Path("output/triage_warnings.jsonl")
+    if log_path.exists():
+        log_path.unlink()
+    return HTMLResponse(
+        '<div class="result-panel success">Triage warnings cleared.</div>'
+    )
+
+
 @router.post("/api/run/extract/reset")
 def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     """Clear all extractions and extraction jobs so passages can be re-extracted.
