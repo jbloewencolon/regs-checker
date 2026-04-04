@@ -2,6 +2,46 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### Triage Switched to Qwen2.5-3B-Instruct (2026-04-04)
+- GPT-OSS 20B is a reasoning model — burns all output tokens on `<think>` blocks even for 512 max_tokens, producing garbage or empty JSON
+- `config.py`: Added `local_triage_model: str = "qwen2.5-3b-instruct"` (env var: `REGS_LOCAL_TRIAGE_MODEL`)
+- `section_triage.py`: `llm_provider.call()` now passes `model_override=settings.local_triage_model`; removed `reasoning_effort="low"` (not needed for non-reasoning model)
+- **Files modified**: `src/core/config.py`, `src/agents/section_triage.py`
+
+### Passage Explosion Fixed (14,968 → ~1,300 passages) (2026-04-04)
+- Sub-section markers `(a)`, `(b)`, `(1)`, `(i)` removed from section regex — they appeared dozens of times per bill creating tiny useless fragments
+- `_split_on_paragraphs()` completely rewritten: merges adjacent small paragraphs into ~3k char chunks (TARGET=3k, MAX=15k)
+- Oversized single paragraphs sub-split on `\n` then also merged into chunks
+- `_segment_text()` now also merges small adjacent section matches (TARGET_SECTION_CHARS=3000)
+- **File modified**: `src/ingestion/parser.py`
+
+### Triage Error Visibility (2026-04-04)
+- `GET /dashboard/api/triage-results` endpoint: decision/method breakdown table + quality flags summary
+- LLM failures (method=passthrough) shown first with red row styling + alert badge
+- Quality/confidence issues in separate table below
+- All LLM failures now use `method="passthrough"` with `quality_flags=["llm_error"]` or `["llm_parse_failed"]`
+- **Files modified**: `src/api/routes/dashboard.py`, `templates/dashboard.html`
+
+### S3/MinIO Bypass for Local Ingestion (2026-04-04)
+- MinIO not running — bypassed entirely. `local_ingest.py` stores `local://path` as s3_key instead of uploading
+- `content_bytes` passed directly to `parse_and_normalize()` to skip S3 fetch
+- `parser.py`: `parse_and_normalize()` now accepts `content_bytes: bytes | None = None`
+- `fetch_started_at` + `fetch_completed_at` now set for local file path (were always NULL)
+- **Files modified**: `src/ingestion/local_ingest.py`, `src/ingestion/parser.py`
+
+### Law Tracker Rewired to data/fact_laws.csv (2026-04-04)
+- Was pointing to stale `static/ai_law_tracker.csv` (191 rows) — now uses `data/fact_laws.csv` (241 laws)
+- New TRACKER_FIELDS: law_id, canonical_law_id, bill_number, jurisdiction_id, status_id, effective_date, title, ai_scope_summary, key_requirements_raw, enforcement_penalties, source_id, source_url, last_updated_at, iapp_scope, iapp_section
+- Status mapped from status_id (1=Enacted, 2=Pending, 3=Failed, 4=Repealed, 5=Active)
+- Source mapped from source_id (1=Orrick, 2=IAPP)
+- Template headers updated to match
+- **Files modified**: `src/api/routes/tracker_routes.py`, `src/api/routes/_dashboard_helpers.py`, `templates/dashboard.html`
+
+### Pipeline Reset Script Fix (2026-04-04)
+- `legal_events` was missing from TABLES_TO_CLEAR — DELETE on `document_versions` was failing with FK violation
+- Added savepoints per table so one FK failure doesn't abort the entire transaction
+- **File modified**: `scripts/reset_pipeline.py`
+
 ### LLM Limits Maxed for GPT-OSS 20B 128k (2026-04-04)
 - **Critical fix**: `local_context_length` was 32,768 — dynamic cap in `llm_provider.py` was silently clipping all output tokens to fit 32k window, even though extraction requested 50k tokens. Raised to 131,072.
 - `config.py`: context window 32k→128k, extraction max_tokens 50k→65,536

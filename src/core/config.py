@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     local_llm_url: str = "http://localhost:1234"  # LM Studio default
     local_llm_model: str = "openai/gpt-oss-20b"  # Default model for discovery tasks
     local_extraction_model: str = "openai/gpt-oss-20b"  # Default model for extraction
+    local_triage_model: str = "qwen2.5-3b-instruct"  # Small non-reasoning model for section triage
     local_context_length: int = 131072  # Context window size configured in LM Studio (128k)
     local_extraction_max_tokens: int = 65536  # Max output tokens for extraction
 
