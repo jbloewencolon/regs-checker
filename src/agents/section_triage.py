@@ -517,16 +517,33 @@ def triage_passage(
             r"<\|[^|]+\|>", "", response_text
         ).strip()
 
-        # Find JSON in response
-        json_match = re.search(r"\{[^{}]+\}", response_text)
+        # Find JSON in response — look for object with "relevant" key specifically
+        # to avoid matching random {braces} in think blocks or garbage output
+        json_match = re.search(r'\{[^{}]*"relevant"\s*:[^{}]*\}', response_text)
+        if not json_match:
+            # Fallback: try any JSON-like object
+            json_match = re.search(r"\{[^{}]+\}", response_text)
         if json_match:
             try:
                 result = json.loads(json_match.group())
             except json.JSONDecodeError:
-                # Try fixing common issues: trailing commas, unquoted values
-                cleaned = re.sub(r",\s*}", "}", json_match.group())
-                cleaned = re.sub(r":\s*(true|false)\b", lambda m: ": " + m.group(1).lower(), cleaned)
-                result = json.loads(cleaned)
+                try:
+                    # Try fixing common issues: trailing commas, unquoted values
+                    cleaned = re.sub(r",\s*}", "}", json_match.group())
+                    cleaned = re.sub(r":\s*(true|false)\b", lambda m: ": " + m.group(1).lower(), cleaned)
+                    result = json.loads(cleaned)
+                except json.JSONDecodeError:
+                    # Completely unparseable — treat as parse failure
+                    logger.warning("triage_json_decode_failed", raw=json_match.group()[:200])
+                    return TriageResult(
+                        decision="uncertain",
+                        method="passthrough",
+                        confidence=0.3,
+                        orrick_terms_checked=sorted(orrick_terms)[:20],
+                        llm_reasoning=f"JSON decode failed: {json_match.group()[:300]}",
+                        pdf_quality_score=quality_score,
+                        quality_flags=quality_flags + ["llm_parse_failed"],
+                    )
 
             is_relevant = result.get("relevant", True)  # Default to relevant (conservative)
             conf = float(result.get("confidence", 0.5))
