@@ -113,21 +113,22 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
 
     Returns list of (section_path, text, char_start, char_end).
     """
-    # Pattern for common legislative section markers — covers:
+    # Pattern for top-level legislative section markers — covers:
     #   Section 1, SECTION 1, Sec. 1, SEC. 1, § 1, §1
     #   Article I, ARTICLE 1
     #   Chapter 1, CHAPTER 1, Part 1, PART 1, Title 1, TITLE 1
     #   Rule 1, RULE 1
-    #   (a), (b), (1), (2), (i), (ii)
+    # NOTE: Sub-section markers like (a), (b), (1), (i) are intentionally
+    # excluded — they appear dozens of times per bill and create tiny
+    # fragments that waste triage/extraction tokens.
     section_pattern = re.compile(
         r"(?:^|\n\n?)"
         r"((?:Section|SECTION|Sec\.|SEC\.)\s+\d+[\w.\-]*"
         r"|§\s*\d+[\w.\-]*"
         r"|(?:Article|ARTICLE)\s+\w+"
-        r"|(?:Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE)\s+\d+[\w.\-]*"
-        r"|(?:\(\w+\))\s)"
+        r"|(?:Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE)\s+\d+[\w.\-]*)"
         r"(.*?)(?=\n\n?(?:Section|SECTION|Sec\.|SEC\.|§\s*\d|Article|ARTICLE"
-        r"|Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE|\(\w+\)\s)|\Z)",
+        r"|Chapter|CHAPTER|Part|PART|Title|TITLE|Rule|RULE)|\Z)",
         re.DOTALL,
     )
 
@@ -136,7 +137,7 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     if not matches:
         return _split_on_paragraphs(text)
 
-    passages = []
+    raw_passages = []
     for match in matches:
         section_marker = match.group(1).strip()
         passage_text = (match.group(1) + match.group(2)).strip()
@@ -144,56 +145,149 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
         if len(passage_text) < 10:
             continue
 
-        passages.append((
+        raw_passages.append((
             section_marker,
             passage_text,
             match.start(),
             match.end(),
         ))
 
-    return passages if passages else _split_on_paragraphs(text)
+    if not raw_passages:
+        return _split_on_paragraphs(text)
+
+    # Merge adjacent small section passages into larger chunks.
+    # PDF-extracted text often splits on every "Section X" marker,
+    # producing hundreds of tiny fragments (< 200 chars each).
+    TARGET_SECTION_CHARS = 3000
+    merged = []
+    chunk_parts: list[str] = []
+    chunk_marker = raw_passages[0][0]
+    chunk_start = raw_passages[0][2]
+    chunk_len = 0
+
+    for marker, ptext, start, end in raw_passages:
+        if chunk_parts and chunk_len + len(ptext) > TARGET_SECTION_CHARS:
+            merged_text = "\n\n".join(chunk_parts)
+            merged.append((chunk_marker, merged_text, chunk_start, chunk_start + len(merged_text)))
+            chunk_parts = []
+            chunk_marker = marker
+            chunk_start = start
+            chunk_len = 0
+
+        chunk_parts.append(ptext)
+        chunk_len += len(ptext)
+
+    if chunk_parts:
+        merged_text = "\n\n".join(chunk_parts)
+        merged.append((chunk_marker, merged_text, chunk_start, chunk_start + len(merged_text)))
+
+    return merged
 
 
 def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
     """Fallback paragraph splitter.
 
-    Splits on double-newlines first, then sub-splits any oversized chunks
-    on single newlines to avoid giant single-passage documents.
+    Splits on double-newlines, then merges adjacent small paragraphs into
+    chunks of TARGET_CHUNK_CHARS to avoid thousands of tiny passages from
+    PDF-extracted text (which has double-newlines at every page/column break).
     """
-    paragraphs = re.split(r"\n\s*\n", text)
-    passages = []
-    offset = 0
+    TARGET_CHUNK_CHARS = 3000  # Target size per merged passage
+    MAX_CHUNK_CHARS = 15000   # Hard cap — never exceed this
 
+    paragraphs = re.split(r"\n\s*\n", text)
+    # First pass: collect non-trivial paragraphs with offsets
+    raw_parts: list[tuple[str, int]] = []  # (text, offset)
+    offset = 0
     for para in paragraphs:
         para = para.strip()
-        if len(para) < 10:
-            offset += len(para) + 2
-            continue
+        if len(para) >= 10:
+            raw_parts.append((para, offset))
+        offset += len(para) + 2
 
-        # Sub-split oversized paragraphs on single newlines
-        if len(para) > 15000:
-            sub_parts = para.split("\n")
-            sub_offset = offset
+    if not raw_parts:
+        return []
+
+    # Second pass: merge small adjacent paragraphs into TARGET_CHUNK_CHARS chunks
+    passages = []
+    chunk_parts: list[str] = []
+    chunk_start = raw_parts[0][1]
+    chunk_len = 0
+
+    for para_text, para_offset in raw_parts:
+        # Would adding this paragraph exceed the target?
+        if chunk_parts and chunk_len + len(para_text) > TARGET_CHUNK_CHARS:
+            # Flush current chunk
+            merged = "\n\n".join(chunk_parts)
+            passages.append((
+                f"Paragraph {len(passages) + 1}",
+                merged,
+                chunk_start,
+                chunk_start + len(merged),
+            ))
+            chunk_parts = []
+            chunk_start = para_offset
+            chunk_len = 0
+
+        # Sub-split oversized single paragraphs, then merge into TARGET chunks
+        if len(para_text) > MAX_CHUNK_CHARS:
+            # Flush any pending chunk first
+            if chunk_parts:
+                merged = "\n\n".join(chunk_parts)
+                passages.append((
+                    f"Paragraph {len(passages) + 1}",
+                    merged,
+                    chunk_start,
+                    chunk_start + len(merged),
+                ))
+                chunk_parts = []
+                chunk_len = 0
+
+            sub_parts = para_text.split("\n")
+            sub_chunk: list[str] = []
+            sub_chunk_start = para_offset
+            sub_chunk_len = 0
+            sub_offset = para_offset
             for sub in sub_parts:
                 sub = sub.strip()
                 if len(sub) < 10:
                     sub_offset += len(sub) + 1
                     continue
+                if sub_chunk and sub_chunk_len + len(sub) > TARGET_CHUNK_CHARS:
+                    merged = "\n".join(sub_chunk)
+                    passages.append((
+                        f"Paragraph {len(passages) + 1}",
+                        merged,
+                        sub_chunk_start,
+                        sub_chunk_start + len(merged),
+                    ))
+                    sub_chunk = []
+                    sub_chunk_start = sub_offset
+                    sub_chunk_len = 0
+                sub_chunk.append(sub)
+                sub_chunk_len += len(sub)
+                sub_offset += len(sub) + 1
+            if sub_chunk:
+                merged = "\n".join(sub_chunk)
                 passages.append((
                     f"Paragraph {len(passages) + 1}",
-                    sub,
-                    sub_offset,
-                    sub_offset + len(sub),
+                    merged,
+                    sub_chunk_start,
+                    sub_chunk_start + len(merged),
                 ))
-                sub_offset += len(sub) + 1
+            chunk_start = sub_offset
         else:
-            passages.append((
-                f"Paragraph {len(passages) + 1}",
-                para,
-                offset,
-                offset + len(para),
-            ))
-        offset += len(para) + 2
+            chunk_parts.append(para_text)
+            chunk_len += len(para_text)
+
+    # Flush remaining
+    if chunk_parts:
+        merged = "\n\n".join(chunk_parts)
+        passages.append((
+            f"Paragraph {len(passages) + 1}",
+            merged,
+            chunk_start,
+            chunk_start + len(merged),
+        ))
 
     return passages
 
