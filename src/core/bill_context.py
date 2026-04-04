@@ -60,9 +60,9 @@ _SCOPE_SECTION_PATH = re.compile(
 )
 
 # Budget: max chars for each context section to stay within token limits
-MAX_DEFINITIONS_CHARS = 3000
-MAX_SCOPE_CHARS = 2000
-MAX_STRUCTURE_CHARS = 500
+MAX_DEFINITIONS_CHARS = 8000
+MAX_SCOPE_CHARS = 5000
+MAX_STRUCTURE_CHARS = 1500
 
 
 def build_bill_context(

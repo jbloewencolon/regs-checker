@@ -107,7 +107,7 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     Strategy:
       1. Try section-header splitting (Section X, Article Y, § Z, etc.)
       2. Fall back to paragraph splitting on double-newlines
-      3. If paragraphs are too large (>2000 chars), split them further
+      3. If paragraphs are too large (>5000 chars), split them further
 
     Returns list of (section_path, text, char_start, char_end).
     """
@@ -169,7 +169,7 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
             continue
 
         # Sub-split oversized paragraphs on single newlines
-        if len(para) > 2000:
+        if len(para) > 5000:
             sub_parts = para.split("\n")
             sub_offset = offset
             for sub in sub_parts:
