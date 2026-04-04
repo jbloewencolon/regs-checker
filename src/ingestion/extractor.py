@@ -707,22 +707,21 @@ def _payload_hash(payload: dict) -> str:
 
 
 def _select_agents_for_passage(
-    text: str, all_agents: dict[str, BaseExtractionAgent]
+    text: str,
+    all_agents: dict[str, BaseExtractionAgent],
+    triage_result=None,
 ) -> dict[str, BaseExtractionAgent]:
-    """Select which agents to run via negative screening (recall-safe).
+    """Select which agents to run based on passage content and triage signals.
 
-    Runs ALL agents by default.  Only excludes agents when the passage is
-    definitively irrelevant — boilerplate, enacting clauses, or structural
-    headers.  This prevents false negatives from obligations phrased in
-    non-standard ways (e.g., "developers are expected to", "it is the
-    policy of this state that", "no person may deploy").
-
-    For audit-grade work where missing an obligation is worse than a
-    false positive, this approach prioritises recall over cost savings.
-    The LLM agents will abstain (return detected: false) on irrelevant
-    passages, so false positives are handled downstream.
+    Uses a two-layer approach:
+      1. Text heuristics: skip boilerplate, enacting clauses, bare headers.
+      2. Triage signal routing: use matched_keywords, ai_signals, and
+         llm_reasoning from the triage step to pick only the agents likely
+         to find something.  Falls back to all agents when signals are
+         ambiguous or missing.
     """
     text_stripped = text.strip()
+    text_lower = text_stripped.lower()
 
     # If the entire passage is boilerplate (TOC, page numbers, separators),
     # skip ALL agents — no substantive content to extract.
@@ -730,21 +729,116 @@ def _select_agents_for_passage(
         return {}
 
     # If it's a pure enacting/signing clause, skip all agents.
-    # These are procedural and never contain obligations or definitions.
     if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
         return {}
 
     # Start with all agents selected (recall-safe default)
     selected = dict(all_agents)
 
-    # Definitions section headers ("DEFINITIONS", "As used in this act:")
-    # are only useful for the definition_actor agent.  Other agents won't
-    # find obligations, thresholds, rights, or compliance mechanisms in a
-    # bare header line.
+    # Definitions section headers → definition_actor only
     if _DEFINITIONS_SECTION_HEADER.fullmatch(text_stripped):
         return {k: v for k, v in selected.items() if k == "definition_actor"}
 
+    # --- Signal-based routing (layer 2) ---
+    # Build a combined signal string from triage data + passage text
+    routed = _route_agents_by_signal(text_lower, selected, triage_result)
+    if routed is not None:
+        return routed
+
     return selected
+
+
+# Patterns for signal-based agent routing.  Each maps a set of text
+# signals to the subset of agents that should run.
+_DEFINITION_SIGNALS = re.compile(
+    r'\b(?:defin(?:e[sd]?|ition|ing)|means\b|as used in|for (?:the )?purposes? of)\b',
+    re.IGNORECASE,
+)
+_OBLIGATION_SIGNALS = re.compile(
+    r'\b(?:shall|must|require[sd]?|obligat|mandate[sd]?|prohibit|may not|'
+    r'responsible for|duty to|ensure that)\b',
+    re.IGNORECASE,
+)
+_RIGHTS_SIGNALS = re.compile(
+    r'\b(?:right to|entitled|opt[- ]?out|notice to|consent|'
+    r'appeal|recourse|due process|grievance|redress)\b',
+    re.IGNORECASE,
+)
+_THRESHOLD_SIGNALS = re.compile(
+    r'\b(?:threshold[s]?|exception[s]?|exempt(?:ion[s]?|ed)?|exclusion[s]?|waiver[s]?|'
+    r'does not apply|not subject to|carve[- ]?out[s]?|'
+    r'fewer than|more than|exceed[s]?|minimum|maximum)\b',
+    re.IGNORECASE,
+)
+_COMPLIANCE_SIGNALS = re.compile(
+    r'\b(?:enforc\w*|penalt\w*|fine[sd]?|violation[s]?|compliance|audit[s]?|'
+    r'inspection[s]?|reporting|register|certif\w*|oversight|'
+    r'attorney general|commission|agency)\b',
+    re.IGNORECASE,
+)
+_PREEMPTION_SIGNALS = re.compile(
+    r'\b(?:preempt|pre-empt|supersede|federal|supremacy|'
+    r'state law|local (?:law|ordinance)|uniform|'
+    r'notwithstanding any (?:other|state|local))\b',
+    re.IGNORECASE,
+)
+_AMBIGUITY_SIGNALS = re.compile(
+    r'\b(?:ambigui?t|vague|unclear|undefined|broadly|'
+    r'reasonabl[ey]|appropriate|as (?:determined|necessary)|'
+    r'significant|material|adequate|sufficient)\b',
+    re.IGNORECASE,
+)
+
+_SIGNAL_MAP: list[tuple[re.Pattern, list[str]]] = [
+    (_DEFINITION_SIGNALS,  ["definition_actor"]),
+    (_OBLIGATION_SIGNALS,  ["obligation"]),
+    (_RIGHTS_SIGNALS,      ["rights_protection"]),
+    (_THRESHOLD_SIGNALS,   ["threshold_exception"]),
+    (_COMPLIANCE_SIGNALS,  ["compliance_mechanism"]),
+    (_PREEMPTION_SIGNALS,  ["preemption"]),
+    (_AMBIGUITY_SIGNALS,   ["ambiguity"]),
+]
+
+
+def _route_agents_by_signal(
+    text_lower: str,
+    all_agents: dict[str, BaseExtractionAgent],
+    triage_result,
+) -> dict[str, BaseExtractionAgent] | None:
+    """Use passage text + triage signals to select a subset of agents.
+
+    Returns None if routing is inconclusive (caller should run all agents).
+    """
+    # Combine passage text with triage signals for richer matching
+    signal_text = text_lower
+    if triage_result is not None:
+        if triage_result.ai_signals:
+            signal_text += " " + triage_result.ai_signals.lower()
+        if triage_result.llm_reasoning:
+            signal_text += " " + triage_result.llm_reasoning.lower()
+
+    # Collect which agents are signaled
+    signaled: set[str] = set()
+    for pattern, agent_names in _SIGNAL_MAP:
+        if pattern.search(signal_text):
+            signaled.update(agent_names)
+
+    # If no signals matched at all, don't filter — run everything
+    if not signaled:
+        return None
+
+    # Always include definition_actor when definitions are present — other
+    # agents need definition context.  And always include obligation since
+    # it's the most common extraction type in AI laws.
+    signaled.add("definition_actor")
+    signaled.add("obligation")
+
+    # If fewer than 3 signals matched, the passage is focused — use the
+    # subset.  If 3+ matched, the passage is rich/complex — run all agents.
+    if len(signaled) >= len(all_agents) - 1:
+        return None  # Nearly all agents signaled — just run everything
+
+    return {k: v for k, v in all_agents.items() if k in signaled}
 
 
 def _wrap_passages(
@@ -838,8 +932,12 @@ def extract_single_record(
     if not _check_jurisdiction(db, record, passage.text):
         return 0
 
-    # Select agents based on passage content
-    selected_agents = _select_agents_for_passage(passage.text, agents)
+    # Select agents based on passage content + triage signals
+    triage = getattr(record, "triage_result", None)
+    # triage_result is a list-like backref; grab first if present
+    if isinstance(triage, list):
+        triage = triage[0] if triage else None
+    selected_agents = _select_agents_for_passage(passage.text, agents, triage_result=triage)
 
     if token_usage is not None:
         token_usage.agents_skipped += len(agents) - len(selected_agents)
