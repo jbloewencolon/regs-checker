@@ -2,16 +2,16 @@
 
 ## Active Tasks
 
-- **PIPELINE RESET & RE-RUN** — Local DB has stale rows from old extraction run. Steps:
-  1. In LM Studio: Load `Qwen2.5-3B-Instruct` (search "qwen2.5-3b-instruct" in model browser) — must be loaded alongside GPT-OSS 20B
-  2. Run `python scripts/reset_pipeline.py` (Docker must be running on port 5434)
-  3. Dashboard Step 1 (Seed) — Re-seed from fixed CSV (241 laws)
-  4. Dashboard Step 2 (Fetch/Parse) — Re-ingest local files
-  5. Dashboard Step 3 (Extract) — Run extraction with 7 agents (GPT-OSS 20B)
-  6. Dashboard Step 4.5 (Verify) — Cross-validation + gap detection
-  7. Dashboard Step 5 (Sync) — Push to Supabase
-- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until extraction completes.
-- **Merge feature branch to main** — All work is on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge to `main`.
+- **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (READY TO EXECUTE)**
+  - Pre-flight done: smart routing, title disambiguation, regulatory_category, 4 URL swaps, MN omnibus trim.
+  - User runs: `python scripts/reset_pipeline.py`, then dashboard Steps 1→2→3→5 (`--clear`).
+  - 16 laws with still-quarantined source text will be skipped on re-ingest (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
+
+- **Obtain correct source text for 16 quarantined laws** — See `output/law_texts_quarantine/NEEDED_SOURCES.md`. Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
+
+- **TN quarantine files contain TX bill content** — TX SB 1188, SB 2373, SB 815, SB 20, SB 1621 may be legitimate TX AI laws. Decide whether to add as new TX entries in `fact_laws.csv`.
+
+- **Merge feature branch to main** — All work on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge after Phase 6 validation.
 
 ## Recently Completed
 

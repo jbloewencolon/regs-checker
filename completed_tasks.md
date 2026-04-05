@@ -2,6 +2,38 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### URL-Mismatch Fixes + MN Omnibus Trim (2026-04-05)
+- Diagnosed CSV row-offset bug in old `law_fulltext_report.csv` — 20 `.txt` files had wrong-jurisdiction content
+- Created `scripts/fix_mismatched_sources.py` — quarantines bad files, auto-trims MN MCDPA
+- **4 files swapped back to correct law IDs** using content already in quarantine:
+  - `TMP-TX-AITEXASRESPONS` ← TRAIGA HB 149 text (was mislabeled as TMP-TX-ABUSEUSINGARTI)
+  - `TMP-SC-ESTATEREALESTA` ← SC Real Estate AI statute (was mislabeled as TMP-RI-DECEPTIVEANDFR)
+  - `TMP-VT-AMENDMENTOFNON` ← VT Act 161 intimate image (was mislabeled as TMP-TX-MEDIAUNLAWFULP)
+  - `TMP-WV-AGAINSTCHASTIT` ← WV SB 198 (was mislabeled as TMP-TX-AITEXASRESPONS)
+- **16 laws still need correct source text** — checklist in `output/law_texts_quarantine/NEEDED_SOURCES.md`
+- **MN MCDPA trimmed**: `TMP-MN-DECISIONMINNES.txt` reduced from 9,535 lines (full HF4757 omnibus with cannabis articles 1-4) to 1,533 lines (Article 5 MCDPA only). Full omnibus backed up in quarantine.
+- **Files created**: `scripts/fix_mismatched_sources.py`, `output/law_texts_quarantine/NEEDED_SOURCES.md`
+
+### Title Disambiguation + regulatory_category (2026-04-04, Phase 2)
+- DocumentFamily `canonical_title` now built as `"{state_name} - {title} ({bill_number})"` to disambiguate intentional duplicates
+- Added `_derive_regulatory_category()` — maps `ai_scope_summary` keywords to 13 categories (synthetic_content=86, general_ai=60, political_advertising=16, government_ai=15, data_privacy=13, automated_decision=11, healthcare=9, transparency=8, ...)
+- Category stored in DocumentFamily metadata for future filtering/rollup
+- **File modified**: `src/ingestion/local_ingest.py`
+
+### Signal-Based Agent Routing (2026-04-04)
+- `_select_agents_for_passage()` in `extractor.py` now accepts triage_result and routes to subset of 7 agents based on regex signals + triage ai_signals/reasoning
+- Always-on agents: obligation, definition_actor
+- `_SIGNAL_MAP` with 7 regex patterns (threshold, exception, definition, rights, compliance, preemption, ambiguity)
+- If matched-count ≥ (total - 1), falls back to all agents (safety net)
+- Expected 30-50% reduction in agent calls
+- **File modified**: `src/ingestion/extractor.py`
+
+### Supabase Sync --clear Flag (2026-04-04)
+- Added `clear_supabase_tables()` using PostgREST DELETE with `id=gte.0` filter
+- Clears tables in reverse dependency order before fresh sync
+- Accepts both `REGS_SUPABASE_URL/KEY` and `REGS_SUPABASE_PROJECT_URL/ANON_KEY` env var names
+- **File modified**: `src/scripts/sync_to_supabase.py`
+
 ### Triage Switched to Qwen2.5-3B-Instruct (2026-04-04)
 - GPT-OSS 20B is a reasoning model — burns all output tokens on `<think>` blocks even for 512 max_tokens, producing garbage or empty JSON
 - `config.py`: Added `local_triage_model: str = "qwen2.5-3b-instruct"` (env var: `REGS_LOCAL_TRIAGE_MODEL`)
