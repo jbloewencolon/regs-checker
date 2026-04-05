@@ -255,14 +255,22 @@ def main():
     )
     args = parser.parse_args()
 
-    supabase_url = args.supabase_url or os.environ.get("REGS_SUPABASE_PROJECT_URL")
-    supabase_key = args.supabase_key or os.environ.get("REGS_SUPABASE_ANON_KEY")
+    supabase_url = (
+        args.supabase_url
+        or os.environ.get("REGS_SUPABASE_PROJECT_URL")
+        or os.environ.get("REGS_SUPABASE_URL")
+    )
+    supabase_key = (
+        args.supabase_key
+        or os.environ.get("REGS_SUPABASE_ANON_KEY")
+        or os.environ.get("REGS_SUPABASE_KEY")
+    )
 
     if not supabase_url:
-        print("Error: No Supabase URL. Set --supabase-url or REGS_SUPABASE_PROJECT_URL env var.")
+        print("Error: No Supabase URL. Set --supabase-url or REGS_SUPABASE_URL env var.")
         sys.exit(1)
     if not supabase_key:
-        print("Error: No Supabase key. Set --supabase-key or REGS_SUPABASE_ANON_KEY env var.")
+        print("Error: No Supabase key. Set --supabase-key or REGS_SUPABASE_KEY env var.")
         sys.exit(1)
 
     # Strip trailing slash
