@@ -217,9 +217,13 @@ class TestThresholdExceptionAgent:
 class TestSingleTypeAgents:
     """Tests for agents that produce only one extraction type."""
 
-    def test_ambiguity(self):
+    def test_ambiguity_retired_falls_back_to_obligation(self):
+        # Ambiguity agent retired — findings now embedded as interpretation_risks on
+        # obligation/rights payloads.  AGENT_EXTRACTION_TYPES no longer maps "ambiguity",
+        # so _discriminate_extraction_type falls through to the default (obligation).
+        # Existing DB rows already carry extraction_type='ambiguity' and are unaffected.
         result = _discriminate_extraction_type("ambiguity", {"ambiguous_text": "reasonable"})
-        assert result == ExtractionType.ambiguity
+        assert result == ExtractionType.obligation
 
     def test_rights_protection(self):
         result = _discriminate_extraction_type("rights_protection", {"right_type": "opt_out"})

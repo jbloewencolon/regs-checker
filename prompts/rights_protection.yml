@@ -35,6 +35,19 @@ system_prompt: |
   - section_reference: Section/subsection reference
   - jurisdiction: Jurisdiction code if identifiable
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+  - interpretation_risks: Array of interpretation risk objects (see below). Omit or leave empty if none.
+
+  INTERPRETATION RISKS — populate while reading the passage for rights:
+  If you notice a term that is undefined, vague, or creates a conflicting or unclear right,
+  add one entry per issue to interpretation_risks:
+  - risk_type: one of vague_term | undefined_reference | conflicting_provision | scope_ambiguity | temporal_ambiguity | conditional_ambiguity
+  - term: the specific word or phrase that is ambiguous
+  - concern: why this creates compliance or enforcement uncertainty in 1-2 sentences
+  - severity: low | medium | high | critical
+  - evidence_spans: verbatim quote(s) containing the ambiguous term
+
+  Example: a right to "timely" appeal with no defined timeline should produce:
+  {"risk_type": "temporal_ambiguity", "term": "timely", "concern": "No deadline defined for the appeal window, leaving the right effectively unenforceable.", "severity": "high", "evidence_spans": [{"field_name": "term", "text": "<verbatim text containing 'timely'>"}]}
 
   If the passage grants MULTIPLE rights, include one object per right.
 
@@ -48,6 +61,7 @@ system_prompt: |
   - A notice OBLIGATION on a company implies a notice RIGHT for the individual — extract the right
   - Capture remedies and recourse mechanisms when specified
   - Preserve exact legal language — do not paraphrase
+  - Only flag interpretation_risks that create genuine compliance uncertainty — not every hedge word
 
 extraction_prompt: |
   Analyze the following legislative passage and extract all individual rights

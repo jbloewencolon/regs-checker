@@ -54,7 +54,7 @@ AGENT_EXTRACTION_TYPES = {
     "obligation": ExtractionType.obligation,
     "definition_actor": ExtractionType.definition,
     "threshold_exception": ExtractionType.threshold,
-    "ambiguity": ExtractionType.ambiguity,
+    # "ambiguity" removed — findings now embedded as interpretation_risks on obligation/rights payloads
 }
 
 # The system prompt included in every export file so Claude knows the task
@@ -63,11 +63,11 @@ You are a legal extraction agent. For each passage below, extract ALL of the
 following that apply:
 
 1. OBLIGATIONS: Who must comply, what they must do, modality (shall/must/may),
-   conditions, timeline, enforcement mechanisms
+   conditions, timeline, enforcement mechanisms. Note any interpretation_risks
+   (vague terms, undefined references, conflicting provisions) inline on the obligation.
 2. DEFINITIONS: Defined terms, their text, scope, related actors, framework refs
 3. THRESHOLDS & EXCEPTIONS: Numeric/categorical thresholds, carve-outs,
    safe harbors, exemptions
-4. AMBIGUITIES: Vague terms, conflicting provisions, undefined references
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST be a VERBATIM quote from the passage
@@ -80,7 +80,7 @@ Return your response as a JSON array where each element has this structure:
   "passage_id": <the passage ID from the input>,
   "extractions": [
     {
-      "agent": "obligation" | "definition_actor" | "threshold_exception" | "ambiguity",
+      "agent": "obligation" | "definition_actor" | "threshold_exception",
       "items": [ ... ]  // array of extraction objects matching the schema below
     }
   ]
@@ -132,16 +132,16 @@ SCHEMA_REFERENCE = """\
   "evidence_spans": [{"field_name": "...", "text": "VERBATIM quote"}]
 }
 
-## Ambiguity schema:
-{
-  "ambiguous_text": "the ambiguous passage",
-  "ambiguity_type": "vague_term|conflicting_provisions|undefined_reference|...",
-  "severity": "low|medium|high|critical",
-  "affected_obligations": ["obligation refs"],
-  "interpretation_notes": "...",
-  "suggested_clarification": "...",
-  "evidence_spans": [{"field_name": "...", "text": "VERBATIM quote"}]
-}
+## Interpretation risks (embedded on obligation and rights_protection objects):
+"interpretation_risks": [
+  {
+    "risk_type": "vague_term|undefined_reference|conflicting_provision|scope_ambiguity|temporal_ambiguity|conditional_ambiguity",
+    "term": "the specific ambiguous term or phrase",
+    "concern": "why this creates compliance uncertainty",
+    "severity": "low|medium|high|critical",
+    "evidence_spans": [{"field_name": "term", "text": "VERBATIM quote"}]
+  }
+]
 """
 
 

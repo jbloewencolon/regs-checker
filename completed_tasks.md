@@ -2,6 +2,67 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### Phase 3 Confidence Scoring Improvements (2026-04-05)
+
+#### ANALYSIS-4: Orrick tokenizer Unicode safety
+- Read `src/core/orrick_validation.py` tokenizer: `re.findall(r"[a-z0-9]+", text.lower())`
+- Confirmed immune to Unicode typography variants — dashes/quotes/spaces are all treated as word separators
+- No fix needed; no runtime changes
+
+#### IMPROVEMENT-3: Span length penalty in evidence grounding
+- Added `broad_spans: bool = False` field to `ConfidenceBreakdown`
+- Added `passage_text: str | None = None` parameter to `compute_confidence`
+- Penalty logic: verified span >75% of passage → evidence_score ×0.60; >50% → evidence_score ×0.80
+- Only verified spans count; unverified spans and absent passage_text skip the check
+- `broad_spans=True` set in both return paths (Orrick-gated Tier D and normal)
+- Updated 3 call sites in `src/ingestion/extractor.py` + 1 in `src/scripts/manual_extraction.py` to pass `passage_text`
+- **Files modified**: `src/core/confidence.py`, `src/ingestion/extractor.py`, `src/scripts/manual_extraction.py`
+
+#### IMPROVEMENT-4: Section reference quality sub-signal
+- Added `section_ref_quality: float = 0.0` field to `ConfidenceBreakdown`
+- Added `_score_section_reference(section_ref)` helper: 1.0 / 0.6 / 0.3 / 0.2 / 0.0 scale
+- Blended into completeness: `completeness * 0.80 + section_ref_quality * 0.20`
+- Both return paths in `compute_confidence` return `section_ref_quality` in breakdown
+- 23 tests in `tests/unit/test_confidence_improvements.py` — all passing
+- **Files modified**: `src/core/confidence.py`
+- **Files created**: `tests/unit/test_confidence_improvements.py`
+
+### Phase 1B: Retire Ambiguity Agent (2026-04-05)
+
+#### RESTRUCTURE-1a–1e: Ambiguity agent retired, interpretation_risks embedded
+- Added `InterpretationRisk` model to `src/schemas/extraction.py` with 6 risk_types and 4 severity levels
+- Added `interpretation_risks` list field to `ObligationPayload` and `RightsProtectionPayload`
+- Updated `prompts/obligation.yml` and `prompts/rights_protection.yml` with INTERPRETATION RISKS instructions and worked examples
+- Removed `AmbiguityAgent` from `src/ingestion/extractor.py`, `src/evaluation/harness.py`, `src/scripts/sync_monitor.py`
+- Removed `AMBIGUITY_ALERT_THRESHOLD` from `sync_monitor.py`
+- Removed `"ambiguity"` from `AGENT_EXTRACTION_TYPES` in `extractor.py` and `manual_extraction.py`
+- Archived `src/agents/ambiguity.py` → `src/ingestion/_archived/ambiguity_agent.py`
+- `ExtractionType.ambiguity` enum value kept in DB (read-only for existing rows)
+- Updated `EXTRACTION_SYSTEM_PROMPT` and `SCHEMA_REFERENCE` in `manual_extraction.py`
+- All test files updated: `test_extraction_pipeline.py` (agent count 6→5), `test_manual_extraction.py`, `test_discriminate_extraction_type.py`
+- **Files modified**: `src/schemas/extraction.py`, `src/ingestion/extractor.py`, `src/evaluation/harness.py`, `src/scripts/sync_monitor.py`, `src/scripts/manual_extraction.py`, `prompts/obligation.yml`, `prompts/rights_protection.yml`, `tests/unit/test_extraction_pipeline.py`, `tests/unit/test_manual_extraction.py`, `tests/unit/test_discriminate_extraction_type.py`
+- **Files archived**: `src/ingestion/_archived/ambiguity_agent.py`
+- **Files deleted**: `src/agents/ambiguity.py`
+
+### Phase 1 Quality Fixes (2026-04-05)
+
+#### BUG-4: Unicode normalization in evidence span verification
+- Root cause: `_verify_evidence_spans` normalized whitespace but not Unicode typography. ~1,783 Tier D extractions had zero evidence grounding because source PDFs use U+2011/2013/2014 dashes, U+2018/2019/201C/201D smart quotes, U+00A0 non-breaking spaces while LLMs output ASCII equivalents.
+- Added `_normalize_unicode()` static method to `BaseExtractionAgent` (13 character replacements covering dashes, quotes, spaces)
+- Added `_normalize_text()` chaining Unicode then whitespace normalization
+- `_verify_evidence_spans` now calls `_normalize_text()` on both passage and span before matching
+- 27 new tests in `tests/unit/test_unicode_normalization.py` covering all character classes and end-to-end verification
+- Expected runtime impact: ~1,783 Tier D rows tier-promote on next extraction run
+- **Files modified**: `src/agents/base.py`
+- **Files created**: `tests/unit/test_unicode_normalization.py`
+
+#### IMPROVEMENT-2: Triage keyword expansion
+- `_BASE_AI_KEYWORDS` expanded from ~50 to ~65 entries
+- Added: digital replica, synthetic performer, ai-generated, automated profiling, algorithmic profiling, profiling system, automated risk assessment/scoring, score-based decision, social scoring, companion chatbot, ai companion, conversational ai, algorithmic pricing, surveillance pricing, price optimization algorithm
+- Added `_ADJACENT_AI_KEYWORDS` documented constant (no routing change — keyword misses already fall through to LLM triage)
+- All 24 existing section_triage tests pass. No routing logic changes.
+- **Files modified**: `src/agents/section_triage.py`
+
 ### URL-Mismatch Fixes + MN Omnibus Trim (2026-04-05)
 - Diagnosed CSV row-offset bug in old `law_fulltext_report.csv` — 20 `.txt` files had wrong-jurisdiction content
 - Created `scripts/fix_mismatched_sources.py` — quarantines bad files, auto-trims MN MCDPA
@@ -11,7 +72,7 @@
   - `TMP-VT-AMENDMENTOFNON` ← VT Act 161 intimate image (was mislabeled as TMP-TX-MEDIAUNLAWFULP)
   - `TMP-WV-AGAINSTCHASTIT` ← WV SB 198 (was mislabeled as TMP-TX-AITEXASRESPONS)
 - **16 laws still need correct source text** — checklist in `output/law_texts_quarantine/NEEDED_SOURCES.md`
-- **MN MCDPA trimmed**: `TMP-MN-DECISIONMINNES.txt` reduced from 9,535 lines (full HF4757 omnibus with cannabis articles 1-4) to 1,533 lines (Article 5 MCDPA only). Full omnibus backed up in quarantine.
+- **MN MCDPA trimmed**: `TMP-MN-DECISIONMINNES.txt` reduced from 9,535 lines to 1,533 lines (Article 5 MCDPA only). Full omnibus backed up in quarantine.
 - **Files created**: `scripts/fix_mismatched_sources.py`, `output/law_texts_quarantine/NEEDED_SOURCES.md`
 
 ### Title Disambiguation + regulatory_category (2026-04-04, Phase 2)
@@ -21,9 +82,9 @@
 - **File modified**: `src/ingestion/local_ingest.py`
 
 ### Signal-Based Agent Routing (2026-04-04)
-- `_select_agents_for_passage()` in `extractor.py` now accepts triage_result and routes to subset of 7 agents based on regex signals + triage ai_signals/reasoning
+- `_select_agents_for_passage()` in `extractor.py` now accepts triage_result and routes to subset of agents based on regex signals + triage ai_signals/reasoning
 - Always-on agents: obligation, definition_actor
-- `_SIGNAL_MAP` with 7 regex patterns (threshold, exception, definition, rights, compliance, preemption, ambiguity)
+- `_SIGNAL_MAP` with regex patterns (threshold, exception, definition, rights, compliance, preemption)
 - If matched-count ≥ (total - 1), falls back to all agents (safety net)
 - Expected 30-50% reduction in agent calls
 - **File modified**: `src/ingestion/extractor.py`
@@ -94,81 +155,65 @@
 
 ### CSV Deduplication & IAPP Merge (2026-04-04)
 - Confirmed Orrick/IAPP/CSV are 3 data layers on the same laws, not separate populations
-- Mapped IAPP bill numbers to Orrick law names via old corrupted titles + IAPP tracker cross-reference
 - Found 4 confirmed duplicates: CA AB 2013, CA SB 53, CO SB 205, TX HB 149
 - Merged duplicates: IAPP scope/section data added to Orrick rows, IAPP duplicate rows deleted
-- Remaining 52 IAPP rows are genuinely new (mostly ACTIVE BILLS not tracked by Orrick)
-- Fixed wrong HB 149 merge (was matched to NY law instead of TX)
-- Added `iapp_scope` and `iapp_section` columns to fact_laws.csv
 - Recovered 87 bill numbers for Orrick rows from old corrupted PDF titles
 - CSV reduced from 244 → 241 rows (187 Orrick + 53 IAPP + 1 other)
 - **Files modified**: `data/fact_laws.csv`
 
 ### CSV Title Fix & IAPP Enrichment (2026-04-04)
-- **Root cause**: `fact_laws.csv` `title` column was corrupted during PDF extraction — truncated names, statute references concatenated, words missing
-- Mapped all 187 Orrick CSV rows to 186 legacy document_families (correct titles) via fuzzy matching by jurisdiction
-- Corrected 187 Orrick law titles (e.g., "of Arkansas CSAM HB1877" → "Amendment of Arkansas CSAM Laws")
-- Fixed 2 severely corrupted rows manually (law_id=25 California Employment Regs, law_id=218 Utah AI Impersonation)
-- Enriched 17 IAPP rows with status/scope from `iapp_law_tracker.csv` (e.g., "SB 205" → "SB 205 (Enacted - Automated Decision Systems)")
-- Added 38 new entries to `static/iapp_law_tracker.csv` (65 → 103 rows) from fact_laws IAPP data
-- Identified 15 jurisdiction mismatches: same bill numbers in different states (e.g., AB 1018 is California in tracker, Arkansas in CSV)
+- **Root cause**: `fact_laws.csv` `title` column was corrupted during PDF extraction
+- Corrected 187 Orrick law titles via fuzzy matching against legacy DB
+- Enriched 17 IAPP rows with status/scope from `iapp_law_tracker.csv`
+- Added 38 new entries to `static/iapp_law_tracker.csv` (65 → 103 rows)
 - Created `scripts/fix_csv_titles.py` — reusable mapping script with fuzzy title matching
 - **Files modified**: `data/fact_laws.csv`, `static/iapp_law_tracker.csv`
 - **Files created**: `scripts/fix_csv_titles.py`
 
 ### Supabase Sync (2026-04-04)
-- Fixed BUG-3: Supabase sync "not configured" — `.env` had postgres:// URL instead of https:// REST URL, and no JWT key
-- Added diagnostic error detection in `dashboard.py` for common misconfigs (postgres:// URLs, non-JWT keys, missing env vars)
-- Added `REGS_SUPABASE_PROJECT_URL` fallback to all 4 Supabase dashboard endpoints
-- First sync pushed 47,485/64,995 rows (partial failures from FK cascades on batched inserts)
-- Verified **zero duplicates** via Supabase SQL queries on composite keys and primary keys
+- Fixed BUG-3: Supabase sync "not configured" — `.env` had postgres:// URL instead of https:// REST URL
+- Added diagnostic error detection in `dashboard.py` for common misconfigs
 - Truncated all Supabase tables for clean re-sync (user requested full replacement)
-- Next step: run `python -m src.scripts.sync_to_supabase` for clean full push
 
 ### Runtime Bug Fixes (critical — changed extraction behavior)
 - Fixed `AGENT_EXTRACTION_TYPES` missing `"preemption"` key — was crashing every preemption extraction with KeyError
-- Fixed `preemption_signal` enum not in local Postgres — added `_ensure_extraction_enums()` that auto-adds missing enum values using raw psycopg2 autocommit (ALTER TYPE cannot run in transactions)
-- Fixed FK cascade bug — `db.rollback()` after failed INSERT destroyed the ExtractionJob row, breaking all subsequent extractions for that document. Replaced with `db.begin_nested()` savepoints
-- Fixed extraction type discriminator — penalties tagged as obligations when subject was judicial authority (court, AG). Added enforcement-subject + penalty-verb detection
-- Fixed `generate_summary()` receiving enum object instead of string — summaries were all falling back to generic text
-- Fixed timezone mismatch in RunArchiver — `datetime.now(timezone.utc)` (aware) vs Postgres `func.now()` (naive) caused CSV exports to show 0 rows
-- Fixed `generate_summaries_batch` JSONB filter — double-negative `not_(metadata_["plain_summary"].isnot(None))` was skipping extractions that needed summaries
-- Fixed Alembic migration `create_type=False` syntax error for newer SQLAlchemy/Python versions
+- Fixed `preemption_signal` enum not in local Postgres — added `_ensure_extraction_enums()` using raw psycopg2 autocommit
+- Fixed FK cascade bug — `db.rollback()` after failed INSERT destroyed the ExtractionJob row. Replaced with `db.begin_nested()` savepoints
+- Fixed extraction type discriminator — penalties tagged as obligations when subject was judicial authority
+- Fixed `generate_summary()` receiving enum object instead of string
+- Fixed timezone mismatch in RunArchiver
+- Fixed `generate_summaries_batch` JSONB filter double-negative
 
 ### New Features (current session)
-- **Failed extraction tracking** — New `failed_extraction_attempts` table records every LLM and DB failure with agent name, error type, and retry state
-- **Retry mechanism** — `run_retry_failed()` re-runs only the specific agent+passage pairs that failed. Dashboard endpoint + button.
-- **DB errors feed circuit breaker** — Previously only LLM failures triggered it. Now DB insert errors (enum, FK) also count toward the 3-consecutive threshold.
-- **Retag endpoint** — `POST /dashboard/review/{queue_id}/retag` allows changing extraction_type from the review UI. Dropdown added to every review row.
-- **Two-step sync** — Dashboard now has Step 5 (Local -> Regs Checker Supabase) and Step 6 (Regs Checker -> Policy Navigator) as separate steps with separate endpoints.
-- **JSON truncation repair** — `_repair_truncated_json()` salvages partial LLM output by finding the last complete array element and closing brackets.
-- **Max tokens increased to 65k** — Both `extraction_max_tokens` and `local_extraction_max_tokens`. Context window raised to 128k.
-- **Verification pass filtered to triaged passages only** — Cross-validation and gap detection no longer waste tokens on `not_relevant` passages.
+- **Failed extraction tracking** — New `failed_extraction_attempts` table
+- **Retry mechanism** — `run_retry_failed()` re-runs specific agent+passage pairs that failed
+- **DB errors feed circuit breaker** — DB insert errors now count toward 3-consecutive threshold
+- **Retag endpoint** — `POST /dashboard/review/{queue_id}/retag` allows changing extraction_type from review UI
+- **Two-step sync** — Step 5 (Local → Supabase) and Step 6 (Regs Checker → Policy Navigator)
+- **JSON truncation repair** — `_repair_truncated_json()` salvages partial LLM output
+- **Max tokens increased to 65k** — Context window raised to 128k
 
 ### Infrastructure Fixes (current session)
 - Rewrote `start.ps1` with pure ASCII for PowerShell 5.1 compatibility
-- Pinned MinIO Docker images to specific release tags (`:latest` was returning 500 errors)
-- Postgres starts independently from MinIO in startup script
-- Rewrote `README.md` to match current 7-agent, local-LLM, 3-tier-DB architecture
+- Pinned MinIO Docker images to specific release tags
+- Rewrote `README.md` to match current 6-agent, local-LLM, 3-tier-DB architecture
 
 ## Test Coverage Audit (test-coverage agent — 2026-04-03)
 
 ### Audit & Gap Analysis
 - Ran full test suite: 320 pass, 20 fail, 4 stale test files
-- Produced `agents/test-coverage/test-audit.md` (full classification of every test)
-- Produced `agents/test-coverage/test-gaps.md` (untested features prioritized by risk)
+- Produced `agents/test-coverage/test-audit.md` and `test-gaps.md`
 - Root cause of most failures: Orrick gate (7 tests), stale mocks (5 tests), DB required (7 tests)
 
 ### New Unit Tests (76 tests, all passing)
-- `test_discriminate_extraction_type.py` — 25 tests for extraction type routing across all 7 agents
+- `test_discriminate_extraction_type.py` — 25 tests for extraction type routing across all agents
 - `test_summary_generator.py` — 32 tests covering all 12 template-based summary types
-- `test_repair_truncated_json.py` — 16 tests documenting both repair strategies and known limitations
+- `test_repair_truncated_json.py` — 16 tests
 
 ### Fixed Existing Tests (7 fixed + 3 new Orrick gate tests)
-- Fixed 4 failures in `test_confidence.py` — added mock Orrick data; replaced stale `test_weight_redistribution` with explicit gate test
-- Fixed 3 failures in `test_verification_agents.py` — added mock Orrick data to CV integration tests
-- Added `test_orrick_gate_forces_tier_d`, `test_low_orrick_score_limits_tier`, `test_no_orrick_data_flag`, `test_orrick_gate_overrides_cv`
-- Suite: 403 pass, 13 fail (down from 320 pass, 20 fail)
+- Fixed 4 failures in `test_confidence.py` — added mock Orrick data
+- Fixed 3 failures in `test_verification_agents.py` — added mock Orrick data
+- Suite: 403 pass, 13 fail → 448 pass, 9 fail (after Phases 1–3)
 
 ---
 
@@ -190,7 +235,7 @@
 - Created rollup_matrix.py (aggregates synced_extractions into 4 matrix tables)
 
 ### Phase 4-5: Agent Grouping + UI
-- 7-agent pipeline with VRAM-efficient model grouping
+- 6-agent pipeline (ambiguity retired) with VRAM-efficient model grouping
 - Orrick-gated 6-component confidence scoring (auto-Tier D without Orrick data)
 - Abstraction presentation layer (deterministic template summaries)
 - Run archiver (dated output folders per extraction run)

@@ -49,7 +49,6 @@ import structlog
 from pydantic import ValidationError
 from sqlalchemy import func, inspect as sa_inspect, select
 
-from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
@@ -308,7 +307,7 @@ AGENT_EXTRACTION_TYPES: dict[str, list[ExtractionType]] = {
         ExtractionType.framework_ref,
     ],
     "threshold_exception": [ExtractionType.threshold, ExtractionType.exception],
-    "ambiguity": [ExtractionType.ambiguity],
+    # "ambiguity" retired — findings now embedded as interpretation_risks on obligation/rights payloads
     "rights_protection": [ExtractionType.rights_protection],
     "compliance_mechanism": [ExtractionType.compliance_mechanism],
     "preemption": [ExtractionType.preemption_signal],
@@ -558,7 +557,6 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "obligation": ObligationAgent(),
             "definition_actor": DefinitionActorAgent(),
             "threshold_exception": ThresholdExceptionAgent(),
-            "ambiguity": AmbiguityAgent(),
             "rights_protection": RightsProtectionAgent(),
             "compliance_mechanism": ComplianceMechanismAgent(),
             "preemption": PreemptionAgent(),
@@ -784,13 +782,6 @@ _PREEMPTION_SIGNALS = re.compile(
     r'notwithstanding any (?:other|state|local))\b',
     re.IGNORECASE,
 )
-_AMBIGUITY_SIGNALS = re.compile(
-    r'\b(?:ambigui?t|vague|unclear|undefined|broadly|'
-    r'reasonabl[ey]|appropriate|as (?:determined|necessary)|'
-    r'significant|material|adequate|sufficient)\b',
-    re.IGNORECASE,
-)
-
 _SIGNAL_MAP: list[tuple[re.Pattern, list[str]]] = [
     (_DEFINITION_SIGNALS,  ["definition_actor"]),
     (_OBLIGATION_SIGNALS,  ["obligation"]),
@@ -798,7 +789,7 @@ _SIGNAL_MAP: list[tuple[re.Pattern, list[str]]] = [
     (_THRESHOLD_SIGNALS,   ["threshold_exception"]),
     (_COMPLIANCE_SIGNALS,  ["compliance_mechanism"]),
     (_PREEMPTION_SIGNALS,  ["preemption"]),
-    (_AMBIGUITY_SIGNALS,   ["ambiguity"]),
+    # _AMBIGUITY_SIGNALS removed — ambiguity agent retired; findings embedded as interpretation_risks
 ]
 
 
