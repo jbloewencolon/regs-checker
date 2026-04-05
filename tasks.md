@@ -11,11 +11,11 @@
   - Very old laws (2006-2019 CSAM) included without clear AI nexus
   - **Phased remediation plan:**
     1. **Phase 1 (IN PROGRESS)** — Diagnose root causes: trace extraction write path, check document_family unique constraints, sample null-payload rows, audit fact_laws.csv scope
-    2. **Phase 2** — Fix null-payload bug (add guard against `detected=false` rows, fix payload serialization)
-    3. **Phase 3** — Fix document_family deduplication (enforce unique `canonical_law_id`, find-or-create ingest logic)
-    4. **Phase 4** — Audit & fix fact_laws.csv (reclassify privacy laws, remove pre-AI laws, fix truncated titles)
-    5. **Phase 5** — Cleanup queries for existing bad data
-    6. **Phase 6** — Full reset + clean re-run + re-sync to Supabase
+    2. **Phase 2 (COMPLETE)** — Null-payload rows are schema misunderstanding (each extraction type has different payload fields; reviewer checked fields that only 2/7 types have). Title disambiguation fixed: `canonical_title` now includes bill number. `regulatory_category` metadata added (synthetic_content, data_privacy, automated_decision, etc.) derived from `ai_scope_summary`.
+    3. **Phase 3 (SKIPPED)** — Duplicate document_families are intentional: same statute title with different bill numbers = distinct provisions. Title disambiguation (Phase 2) makes them visually distinct. No dedup needed.
+    4. **Phase 4 (PENDING)** — scope decision made: consumer privacy profiling is in-scope. Old pre-AI laws (CSAM amendments, etc.) are intentional per Orrick/IAPP tracker. Truncated titles in CSV to fix manually.
+    5. **Phase 5 (PENDING)** — Run SQL to confirm payload quality; delete confirmed junk rows if any
+    6. **Phase 6 (NEXT)** — Full reset + re-seed (picks up title/category fixes) + ingest + triage + extract + sync
   - **Open scope decision needed**: Are CCPA/MCDPA/CPA profiling provisions in-scope for AI tracker? (Affects ~3,744 rows)
 
 - **Signal-based agent routing added** — `_select_agents_for_passage` now uses triage signals + regex patterns on passage text to route to subset of agents. Expected 30-50% reduction in agent calls. Not yet validated with a clean re-run.

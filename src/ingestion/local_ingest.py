@@ -116,6 +116,53 @@ def _temporal_status_from_csv(status_id: str) -> TemporalStatus:
 
 
 # ---------------------------------------------------------------------------
+# Regulatory category derivation
+# ---------------------------------------------------------------------------
+
+def _derive_regulatory_category(ai_scope_summary: str, title: str) -> str:
+    """Map ai_scope_summary / title text to a human-readable regulatory category.
+
+    Used as display metadata — does not affect extraction logic.
+    """
+    combined = (ai_scope_summary + " " + title).lower()
+
+    if any(k in combined for k in ("intimate image", "csam", "deepfake", "synthetic content",
+                                    "likeness", "pornograph", "nonconsensual")):
+        return "synthetic_content"
+    if any(k in combined for k in ("political", "election", "campaign", "ballot")):
+        return "political_advertising"
+    if any(k in combined for k in ("automated decision", "algorithmic", "automated-decision",
+                                    "automated making", "admt")):
+        return "automated_decision"
+    if any(k in combined for k in ("consumer privacy", "data privacy", "personal data",
+                                    "ccpa", "gdpr")):
+        return "data_privacy"
+    if any(k in combined for k in ("government", "public sector", "state agency",
+                                    "law enforcement")):
+        return "government_ai"
+    if any(k in combined for k in ("employment", "workplace", "worker", "hiring",
+                                    "employer")):
+        return "employment"
+    if any(k in combined for k in ("healthcare", "health care", "medical", "clinical",
+                                    "patient")):
+        return "healthcare"
+    if any(k in combined for k in ("education", "student", "school", "academic")):
+        return "education"
+    if any(k in combined for k in ("frontier", "foundation model", "general purpose",
+                                    "large language")):
+        return "frontier_models"
+    if any(k in combined for k in ("social media", "social network", "platform")):
+        return "social_media"
+    if any(k in combined for k in ("insurance",)):
+        return "insurance"
+    if any(k in combined for k in ("comprehensive", "all ai", "general ai")):
+        return "comprehensive_ai"
+    if any(k in combined for k in ("transparency", "disclosure", "notice")):
+        return "transparency"
+    return "general_ai"
+
+
+# ---------------------------------------------------------------------------
 # Phase 1: Seed document families from fact_laws.csv
 # ---------------------------------------------------------------------------
 
@@ -187,22 +234,36 @@ def seed_from_csv(
 
         title = row.get("title", "").strip()
         bill_number = row.get("bill_number", "").strip()
+        ai_scope_summary = row.get("ai_scope_summary", "").strip()
+
+        # Build a disambiguated title: append bill number when present so that
+        # two rows with the same statute title (e.g. "California Consumer Privacy
+        # Act") but different bill numbers are clearly distinct in the UI.
+        if title and bill_number:
+            canonical_title = f"{state_name} - {title} ({bill_number})"
+        elif title:
+            canonical_title = f"{state_name} - {title}"
+        else:
+            canonical_title = canonical_law_id
+
+        regulatory_category = _derive_regulatory_category(ai_scope_summary, title)
 
         family = DocumentFamily(
             source_id=source.id,
-            canonical_title=f"{state_name} - {title}" if title else canonical_law_id,
+            canonical_title=canonical_title,
             short_cite=bill_number or canonical_law_id,
             subject_area="artificial_intelligence",
             primary_source_url=source_url,
             metadata_={
                 "canonical_law_id": canonical_law_id,
                 "bill_number": bill_number,
-                "ai_scope_summary": row.get("ai_scope_summary", ""),
+                "ai_scope_summary": ai_scope_summary,
                 "key_requirements": row.get("key_requirements_raw", ""),
                 "enforcement_penalties": row.get("enforcement_penalties", ""),
                 "source_tracker": "orrick" if row.get("source_id") == "1" else "iapp",
                 "iapp_scope": row.get("iapp_scope", ""),
                 "iapp_section": row.get("iapp_section", ""),
+                "regulatory_category": regulatory_category,
             },
         )
         db.add(family)
