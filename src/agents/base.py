@@ -615,9 +615,44 @@ class BaseExtractionAgent(ABC):
         return response.text, response.usage, response.model_id, response.stop_reason
 
     @staticmethod
+    def _normalize_unicode(text: str) -> str:
+        """Normalize typographic Unicode variants to ASCII equivalents.
+
+        Source PDFs and HTML use typographic characters (smart quotes, en/em
+        dashes, non-breaking hyphens) that LLMs replace with ASCII equivalents
+        when reproducing verbatim quotes.  Normalizing both sides before
+        comparison prevents false verification failures on character-level
+        differences that carry no semantic meaning.
+        """
+        return (
+            text
+            # Hyphens and dashes → ASCII hyphen
+            .replace("\u2011", "-")   # non-breaking hyphen
+            .replace("\u2013", "-")   # en-dash
+            .replace("\u2014", "-")   # em-dash
+            .replace("\u2012", "-")   # figure dash
+            # Smart single quotes / apostrophes → ASCII apostrophe
+            .replace("\u2018", "'")   # left single quotation mark
+            .replace("\u2019", "'")   # right single quotation mark
+            .replace("\u201a", "'")   # single low-9 quotation mark
+            # Smart double quotes → ASCII double quote
+            .replace("\u201c", '"')   # left double quotation mark
+            .replace("\u201d", '"')   # right double quotation mark
+            .replace("\u201e", '"')   # double low-9 quotation mark
+            # Non-breaking and special spaces → regular space
+            .replace("\u00a0", " ")   # non-breaking space
+            .replace("\u202f", " ")   # narrow no-break space
+            .replace("\u2009", " ")   # thin space
+        )
+
+    @staticmethod
     def _normalize_whitespace(text: str) -> str:
         """Collapse all whitespace (spaces, newlines, tabs) to single spaces."""
         return " ".join(text.split())
+
+    def _normalize_text(self, text: str) -> str:
+        """Full normalization pipeline: Unicode variants then whitespace."""
+        return self._normalize_whitespace(self._normalize_unicode(text))
 
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
@@ -625,17 +660,16 @@ class BaseExtractionAgent(ABC):
         """Verify evidence spans via string matching (Rec #3).
 
         Confirms each evidence span text appears in the passage.
-        Uses whitespace-normalized matching because source passages
-        often contain newlines and varied spacing that LLMs normalize
-        when quoting.  Falls back to case-insensitive matching for
-        minor casing differences.
+        Applies Unicode normalization (smart quotes, dashes, non-breaking
+        spaces) followed by whitespace normalization, then falls back to
+        case-insensitive matching for minor casing differences.
         """
-        norm_passage = self._normalize_whitespace(passage)
+        norm_passage = self._normalize_text(passage)
         lower_passage = norm_passage.lower()
         verified = []
         for span_data in spans:
             span = EvidenceSpan(**span_data)
-            norm_span = self._normalize_whitespace(span.text)
+            norm_span = self._normalize_text(span.text)
 
             # Try exact match on whitespace-normalized text
             if norm_span in norm_passage:
