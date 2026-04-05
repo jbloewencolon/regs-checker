@@ -47,22 +47,10 @@ Replacements needed:
 **Validation:** Run `pytest tests/unit/` before and after. Evidence grounding rate should increase
 significantly across the dataset after re-scoring (requires re-running confidence scores or fresh extraction).
 
-#### IMPROVEMENT-1: Tighten ambiguity agent routing signals (P1)
-**Root cause:** `_AMBIGUITY_SIGNALS` in `src/ingestion/extractor.py:787-792` includes
-`reasonabl[ey]`, `appropriate`, `significant`, `material`, `adequate`, `sufficient`.
-These terms appear in nearly every legal passage, making ambiguity the highest-volume extraction type
-(2,522 rows, 30% of all extractions) with heavy Tier D representation.
-
-**Fix:** Remove the generic qualifiers from `_AMBIGUITY_SIGNALS`. Keep only terms that signal genuine
-interpretive ambiguity: `ambigui?t`, `vague`, `unclear`, `undefined`, `broadly`, `as (?:determined|necessary)`.
-
-Removed terms: `reasonabl[ey]`, `appropriate`, `significant`, `material`, `adequate`, `sufficient`
-
-**File:** `src/ingestion/extractor.py:787-792`
-**Impact:** Estimated ~20% reduction in ambiguity routing. Ambiguity agent will fire only on passages
-with explicit ambiguity language, not on every passage with a hedge word.
-**Risk:** Low for the removed terms. They are grammatical hedges, not ambiguity indicators.
-**Validation:** Recount ambiguity extractions after next extraction run.
+#### IMPROVEMENT-1: Tighten ambiguity agent routing signals (P1) — SUPERSEDED
+**Superseded by RESTRUCTURE-1 below.** If the ambiguity agent is retired and its findings
+embedded as `interpretation_risks` annotations on obligation/rights extractions, signal-tightening
+becomes irrelevant. Skip this unless RESTRUCTURE-1 is explicitly deferred.
 
 #### IMPROVEMENT-2: Expand triage keyword list (P1)
 **Root cause:** `_BASE_AI_KEYWORDS` in `src/agents/section_triage.py:77-126` has ~50 entries.
@@ -92,6 +80,129 @@ These terms are AI-adjacent but context-dependent: `"data broker"`, `"utilizatio
 **Risk:** Low for Part A (clear AI terms). Part B requires adding conditional routing logic — review with
 care since `section_triage.py` is moderately fragile.
 **Validation:** Compare triage "not_relevant" counts before/after. Check that no new `passthrough` errors appear.
+
+---
+
+### Phase 1B — Pipeline Restructure: Retire Ambiguity Agent, Add interpretation_risks
+
+**Goal:** Eliminate the standalone ambiguity agent. Instead, embed ambiguity findings as
+`interpretation_risks` annotations directly on the obligation and rights_protection payloads.
+The obligation agent already reads each passage closely enough to identify these issues during its
+primary extraction pass. Zero additional LLM calls. Zero additional review queue rows. The findings
+belong as structured metadata on the obligation or right they qualify, not as orphaned extractions.
+
+**Why this is better than signal-tightening (IMPROVEMENT-1):**
+Tightening `_AMBIGUITY_SIGNALS` reduces volume but preserves the structural problem: ambiguity
+findings exist as standalone rows with no link to the obligation they affect. An `interpretation_risks`
+annotation on the obligation row gives the reviewer the ambiguity context exactly where they need it,
+while cutting one full LLM call per passage and eliminating the entire ambiguity review queue.
+
+**Sequencing constraint:** Do this AFTER the current extraction run completes and syncs. Changing
+agent schemas mid-run creates mixed-format payloads in the DB. The restructure applies cleanly to
+a fresh run.
+
+**Escalation required before starting:** This touches `extractor.py`, `db/models.py` (enum handling),
+and `dashboard.py` — all forbidden-list files. Confirm with user before modifying them.
+
+#### RESTRUCTURE-1a: Add InterpretationRisk schema and update ObligationPayload + RightsProtectionPayload
+
+**Schema design** (`src/schemas/extraction.py`):
+```python
+class InterpretationRisk(BaseModel):
+    risk_type: Literal[
+        "vague_term",
+        "undefined_reference",
+        "conflicting_provision",
+        "scope_ambiguity",
+        "temporal_ambiguity",
+        "conditional_ambiguity",
+    ]
+    term: str = Field(description="The specific term or phrase that is ambiguous")
+    concern: str = Field(description="Why this creates compliance uncertainty (1-2 sentences)")
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
+    evidence_spans: list[EvidenceSpan] = []
+```
+
+Add to `ObligationPayload` and `RightsProtectionPayload`:
+```python
+interpretation_risks: list[InterpretationRisk] | None = Field(
+    default=None,
+    description="Ambiguous terms or conflicting provisions that affect this extraction"
+)
+```
+
+**No DB migration needed.** The `payload` column is JSONB — new fields appear automatically in
+stored JSON. Existing rows simply won't have the key (treated as `None` by Pydantic).
+
+**Files:** `src/schemas/extraction.py` only. Safe to edit.
+
+#### RESTRUCTURE-1b: Update obligation and rights_protection system prompts
+
+Add a section to both prompts instructing the model to populate `interpretation_risks` when it
+encounters vague terms, undefined references, or conflicting provisions while doing its primary
+extraction. The model is already reading the passage for the primary extraction — this is a
+zero-cost annotation pass.
+
+Key instruction: "If you notice a term that is undefined, vague, or creates a conflicting
+obligation, populate `interpretation_risks` with one entry per issue. If none, omit the field."
+
+**Files:** `prompts/obligation.yml`, `prompts/rights_protection.yml` (or inline in agent `.py` if
+no YAML prompt exists — check which format each uses).
+
+#### RESTRUCTURE-1c: Remove ambiguity from the extraction pipeline
+
+**Files (all require escalation):**
+- `src/ingestion/extractor.py`: Remove `AmbiguityAgent` import (line ~52), remove from
+  `AGENT_EXTRACTION_TYPES` dict (line ~311), remove from agent instantiation dict (line ~561),
+  remove `_AMBIGUITY_SIGNALS` entry from `_SIGNAL_MAP` (line ~801)
+- `src/db/models.py`: **Do NOT remove `ExtractionType.ambiguity`** — existing rows in production
+  use this enum value. The enum must stay for backward compat. Simply stop routing new passages
+  to it. Add a comment marking it deprecated.
+
+#### RESTRUCTURE-1d: Update downstream systems
+
+These are lighter edits but necessary for a clean codebase:
+- `src/core/summary_generator.py`: Keep `_summarize_ambiguity` for backward compat with existing
+  rows in the review queue. No deletion needed — just leave it in the dispatch dict.
+- `src/core/payload_adapter.py`: Keep `_adapt_ambiguity` for the same reason. Mark deprecated.
+- `src/agents/dependency_builder.py:115-116`: Keep the ambiguity branch for existing rows.
+- `src/scripts/sync_monitor.py:45`: Remove or convert `AMBIGUITY_ALERT_THRESHOLD` — no new
+  ambiguity rows will be created, so the alert will always pass trivially. Consider replacing with
+  an alert on `interpretation_risks` population rate instead.
+- `src/evaluation/harness.py:36,117`: Remove `AmbiguityAgent` import and dict entry.
+- `src/scripts/manual_extraction.py:57,83,138`: Remove ambiguity from manual extraction CLI.
+
+#### RESTRUCTURE-1e: Archive the ambiguity agent
+
+Move `src/agents/ambiguity.py` → `src/ingestion/_archived/ambiguity.py` (following existing
+archive convention). Do not delete — keeps the extraction schema and prompt as reference.
+
+#### RESTRUCTURE-1f: Update review queue display
+
+The review queue currently renders ambiguity rows standalone. After this change, `interpretation_risks`
+will appear as a collapsible annotation within obligation/rights rows, not as separate queue entries.
+
+**File:** `src/api/routes/dashboard.py` (forbidden — escalate), `templates/dashboard.html`
+
+Display pattern: within each obligation review row, if `interpretation_risks` is non-empty, show
+a small "⚠ Interpretation risks" badge that expands to show the risk list inline.
+
+#### Validation
+
+1. Run `pytest tests/unit/` — should pass without ambiguity-related failures
+2. Run a single-law test extraction and verify:
+   - No new `extraction_type='ambiguity'` rows created
+   - Obligation/rights payloads contain `interpretation_risks` where expected
+   - Review queue renders interpretation risks inline on obligation rows
+3. Check that existing `ambiguity` rows in the review queue still render (backward compat)
+
+#### Definition of done
+
+- `interpretation_risks` populated on at least 10% of obligation extractions from a test law with
+  known ambiguous provisions (e.g., a law with "reasonable measures" or undefined scope terms)
+- Zero new `ambiguity`-type rows after the change
+- Existing ambiguity rows in the DB still display correctly in the review queue
+- IMPROVEMENT-1 removed from active backlog (superseded)
 
 ---
 
