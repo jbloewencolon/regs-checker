@@ -10,6 +10,9 @@ Usage:
     # Sync (reads REGS_SUPABASE_PROJECT_URL and REGS_SUPABASE_ANON_KEY from env/.env):
     python -m src.scripts.sync_to_supabase
 
+    # Clear Supabase tables first, then do a fresh full sync:
+    python -m src.scripts.sync_to_supabase --clear
+
     # Or pass explicitly:
     python -m src.scripts.sync_to_supabase \
         --supabase-url https://wjxlimjpaijdogyrqtxc.supabase.co \
@@ -98,11 +101,41 @@ def _supabase_post(
     return resp
 
 
+def clear_supabase_tables(
+    client: httpx.Client, base_url: str, tables: list[str]
+) -> None:
+    """DELETE all rows from Supabase tables in reverse dependency order.
+
+    PostgREST requires a filter on DELETE requests; we use `id=gte.0` which
+    matches every row for integer-id tables. Tables are cleared in reverse
+    order so child rows go first and FK constraints are satisfied.
+    """
+    print("Clearing Supabase tables (reverse dependency order)...")
+    for table_name in reversed(tables):
+        resp = client.delete(
+            f"{base_url}/rest/v1/{table_name}",
+            params={"id": "gte.0"},
+            headers={"Prefer": "return=minimal"},
+        )
+        if resp.status_code in (200, 204):
+            print(f"  {table_name}: cleared")
+        elif resp.status_code == 404:
+            # Table doesn't exist on Supabase — skip silently
+            print(f"  {table_name}: not found (skipped)")
+        else:
+            print(
+                f"  {table_name}: DELETE failed "
+                f"({resp.status_code} {resp.text[:200]})"
+            )
+    print()
+
+
 def sync_tables(
     source_url: str,
     supabase_url: str,
     supabase_key: str,
     dry_run: bool = False,
+    clear: bool = False,
 ) -> dict:
     """Read from local DB, push to Supabase REST API."""
     source_engine = create_engine(source_url)
@@ -115,6 +148,9 @@ def sync_tables(
             "Content-Type": "application/json",
         },
     )
+
+    if clear and not dry_run:
+        clear_supabase_tables(client, supabase_url, SYNC_TABLES)
 
     summary = {}
     total_rows = 0
@@ -212,6 +248,11 @@ def main():
         action="store_true",
         help="Show what would be synced without writing",
     )
+    parser.add_argument(
+        "--clear",
+        action="store_true",
+        help="DELETE all rows from Supabase sync tables before syncing",
+    )
     args = parser.parse_args()
 
     supabase_url = args.supabase_url or os.environ.get("REGS_SUPABASE_PROJECT_URL")
@@ -230,9 +271,13 @@ def main():
     print(f"Source:   {args.source_url}")
     print(f"Target:   {supabase_url}")
     print(f"Mode:     {'DRY RUN' if args.dry_run else 'LIVE SYNC'}")
+    print(f"Clear:    {'YES (delete all rows first)' if args.clear else 'no'}")
     print(f"Method:   REST API (PostgREST)\n")
 
-    summary = sync_tables(args.source_url, supabase_url, supabase_key, dry_run=args.dry_run)
+    summary = sync_tables(
+        args.source_url, supabase_url, supabase_key,
+        dry_run=args.dry_run, clear=args.clear,
+    )
 
     print(f"\n{'=' * 60}")
     if args.dry_run:
