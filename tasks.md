@@ -2,27 +2,16 @@
 
 ## Active Tasks
 
-- **DATA QUALITY CRISIS — 89% of extractions have no description** — After first full pipeline run, 8,473 extractions were produced but analysis shows:
-  - 4,473 rows (53%) have fully-null payloads (no description, jurisdiction, or section_reference)
-  - 7,575 rows (89%) missing description field
-  - 15+ duplicate document_family pairs (same law ingested twice)
-  - Minnesota MCDPA produced 1,526 extractions from one law — massive over-extraction
-  - ~3,744 extractions (44%) are from consumer privacy laws mislabeled as `artificial_intelligence` subject area
-  - Very old laws (2006-2019 CSAM) included without clear AI nexus
-  - **Phased remediation plan:**
-    1. **Phase 1 (IN PROGRESS)** — Diagnose root causes: trace extraction write path, check document_family unique constraints, sample null-payload rows, audit fact_laws.csv scope
-    2. **Phase 2 (COMPLETE)** — Null-payload rows are schema misunderstanding (each extraction type has different payload fields; reviewer checked fields that only 2/7 types have). Title disambiguation fixed: `canonical_title` now includes bill number. `regulatory_category` metadata added (synthetic_content, data_privacy, automated_decision, etc.) derived from `ai_scope_summary`.
-    3. **Phase 3 (SKIPPED)** — Duplicate document_families are intentional: same statute title with different bill numbers = distinct provisions. Title disambiguation (Phase 2) makes them visually distinct. No dedup needed.
-    4. **Phase 4 (PENDING)** — scope decision made: consumer privacy profiling is in-scope. Old pre-AI laws (CSAM amendments, etc.) are intentional per Orrick/IAPP tracker. Truncated titles in CSV to fix manually.
-    5. **Phase 5 (PENDING)** — Run SQL to confirm payload quality; delete confirmed junk rows if any
-    6. **Phase 6 (NEXT)** — Full reset + re-seed (picks up title/category fixes) + ingest + triage + extract + sync
-  - **Open scope decision needed**: Are CCPA/MCDPA/CPA profiling provisions in-scope for AI tracker? (Affects ~3,744 rows)
+- **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (READY TO EXECUTE)**
+  - Pre-flight done: smart routing, title disambiguation, regulatory_category, 4 URL swaps, MN omnibus trim.
+  - User runs: `python scripts/reset_pipeline.py`, then dashboard Steps 1→2→3→5 (`--clear`).
+  - 16 laws with still-quarantined source text will be skipped on re-ingest (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
 
-- **Signal-based agent routing added** — `_select_agents_for_passage` now uses triage signals + regex patterns on passage text to route to subset of agents. Expected 30-50% reduction in agent calls. Not yet validated with a clean re-run.
+- **Obtain correct source text for 16 quarantined laws** — See `output/law_texts_quarantine/NEEDED_SOURCES.md`. Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
 
-- **Triage warnings logged to JSONL** — `output/triage_warnings.jsonl` captures JSON decode failures, LLM parse errors, and exceptions. Dashboard shows them in Step 2 accordion.
+- **TN quarantine files contain TX bill content** — TX SB 1188, SB 2373, SB 815, SB 20, SB 1621 may be legitimate TX AI laws. Decide whether to add as new TX entries in `fact_laws.csv`.
 
-- **Merge feature branch to main** — All work is on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge to `main` after data quality fixes are validated.
+- **Merge feature branch to main** — All work on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge after Phase 6 validation.
 
 ## Recently Completed
 
