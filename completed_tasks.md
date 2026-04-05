@@ -6,7 +6,7 @@
 
 #### ANALYSIS-4: Orrick tokenizer Unicode safety
 - Read `src/core/orrick_validation.py` tokenizer: `re.findall(r"[a-z0-9]+", text.lower())`
-- Confirmed immune to Unicode typography variants — dashes/quotes/spaces are all treated as word separators
+- Confirmed immune to Unicode typography variants — dashes/quotes/spaces are all treated as word separators, never appear in the `[a-z0-9]+` character class
 - No fix needed; no runtime changes
 
 #### IMPROVEMENT-3: Span length penalty in evidence grounding
@@ -38,6 +38,7 @@
 - Removed `"ambiguity"` from `AGENT_EXTRACTION_TYPES` in `extractor.py` and `manual_extraction.py`
 - Archived `src/agents/ambiguity.py` → `src/ingestion/_archived/ambiguity_agent.py`
 - `ExtractionType.ambiguity` enum value kept in DB (read-only for existing rows)
+- `_summarize_ambiguity` / `_adapt_ambiguity` kept in downstream readers for existing rows
 - Updated `EXTRACTION_SYSTEM_PROMPT` and `SCHEMA_REFERENCE` in `manual_extraction.py`
 - All test files updated: `test_extraction_pipeline.py` (agent count 6→5), `test_manual_extraction.py`, `test_discriminate_extraction_type.py`
 - **Files modified**: `src/schemas/extraction.py`, `src/ingestion/extractor.py`, `src/evaluation/harness.py`, `src/scripts/sync_monitor.py`, `src/scripts/manual_extraction.py`, `prompts/obligation.yml`, `prompts/rights_protection.yml`, `tests/unit/test_extraction_pipeline.py`, `tests/unit/test_manual_extraction.py`, `tests/unit/test_discriminate_extraction_type.py`

@@ -1075,6 +1075,7 @@ def extract_single_record(
                         schema_class=schema_class,
                         parse_quality_score=parse_quality,
                         orrick_similarity=orrick_sim,
+                        passage_text=passage.text,
                     )
 
                     extraction_meta: dict = {}
@@ -1833,6 +1834,7 @@ def run_retry_failed(
                             extraction_payload=item,
                             schema_class=schema_class,
                             orrick_similarity=orrick_sim,
+                            passage_text=record.text_content,
                         )
 
                         ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
@@ -2245,6 +2247,7 @@ def run_recovery_extraction(
                                 schema_class=schema_class,
                                 parse_quality_score=parse_quality,
                                 orrick_similarity=orrick_sim,
+                                passage_text=passage.text,
                             )
 
                             extraction = Extraction(

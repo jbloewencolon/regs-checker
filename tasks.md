@@ -71,12 +71,17 @@ Penalizes verified spans >50% of passage length in `src/core/confidence.py`.
 - >50%: 20% penalty on evidence_score (×0.80); `broad_spans=True` in breakdown
 - >75%: 40% penalty on evidence_score (×0.60); `broad_spans=True` in breakdown
 - Only verified spans count; unverified spans and absent `passage_text` skip penalty gracefully
+- `broad_spans` flag propagated through both Orrick-gated (Tier D) and normal paths
 
 #### IMPROVEMENT-4: Section reference quality sub-signal — DONE
 `_score_section_reference()` scores specificity of `section_reference` field (0.0–1.0):
-- 1.0: § + subsection detail; 0.6: § or numeric citation; 0.3: generic label; 0.2: unrecognized; 0.0: absent
-- Blended into completeness at 20% weight. `section_ref_quality` in `ConfidenceBreakdown`.
-- 23 tests in `tests/unit/test_confidence_improvements.py`
+- 1.0: § + subsection detail (e.g. `§ 6-1-1702(3)(a)`) or nested paren notation
+- 0.6: § symbol or clear numeric citation without subsection
+- 0.3: generic label only (Section X, Part Y, Article Z)
+- 0.2: unrecognized non-empty pattern; 0.0: empty/absent
+Blended into completeness at 20% weight — no weight-sum changes.
+`section_ref_quality` reported in `ConfidenceBreakdown`.
+23 tests in `tests/unit/test_confidence_improvements.py`.
 
 ---
 

@@ -409,6 +409,7 @@ def import_extractions(
                             extraction_payload=payload,
                             schema_class=schema_class,
                             parse_quality_score=parse_quality,
+                            passage_text=record.text_content,
                         )
 
                         # Check for duplicates
