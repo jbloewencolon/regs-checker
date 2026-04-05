@@ -1,0 +1,392 @@
+                                                                   S.B.ANo.A2373
+
+
+
+
+1                                     AN ACT
+
+2    relating   to   financial   exploitation    or    financial     abuse   using
+
+3    artificially generated media or phishing communications; providing
+
+4    a civil penalty; creating a criminal offense.
+
+5           BE IT ENACTED BY THE LEGISLATURE OF THE STATE OF TEXAS:
+
+6           SECTIONA1.AATitle 4, Civil Practice and Remedies Code, is
+
+7    amended by adding Chapter 100B to read as follows:
+
+8             CHAPTER 100B. LIABILITY FOR FINANCIAL EXPLOITATION
+
+9           Sec.A100B.001.AADEFINITIONS.       In this chapter:
+
+10               (1)AA"Artificial intelligence" means a machine-based
+
+11   system that can, for a given set of explicit or implicit objectives,
+
+12   make   predictions,   recommendations,    or   decisions   that   influence
+
+13   real or virtual environments.
+
+14               (2)AA"Artificially generated media" means an image, an
+
+15   audio file, a video file, a radio broadcast, written text, or other
+
+16   media created or modified using artificial intelligence or other
+
+17   computer software with the intent to deceive.
+
+18               (3)AA"Financial exploitation" has the meaning assigned
+
+19   by Section 281.001, Finance Code.
+
+20               (4)AA"Phishing    communication"       means   an   attempt   to
+
+21   deceive or manipulate a person into providing personal, financial,
+
+22   or     identifying    information       through     e-mail,       electronic
+
+23   communication, or other digital means.
+
+24          Sec.A100B.002.AACAUSE OF ACTION FOR DISSEMINATION OF CERTAIN
+
+
+
+
+                                         1
+                                                                                       S.B.ANo.A2373
+
+1    COMMUNICATIONS FOR FINANCIAL EXPLOITATION.                       (a)     A person is liable
+
+2    for damages resulting from a knowing or intentional dissemination
+
+3    of artificially generated media or a phishing communication for the
+
+4    purpose of financial exploitation.
+
+5          (b)AAA court shall award a claimant who prevails in an action
+
+6    brought under this section:
+
+7                  (1)AAactual             damages,        including       damages         for     mental
+
+8    anguish    and       the     defendant ’s            profits     attributable                to        the
+
+9    dissemination        of    the    artificially          generated      media          or    phishing
+
+10   communication; and
+
+11                 (2)AAcourt           costs        and     reasonable        attorney ’s              fees
+
+12   incurred in bringing the action.
+
+13         (c)AAA     court       in    which        an    action    is    brought             under    this
+
+14   section,   on    a    motion       of       a   claimant,       may    issue          a    temporary
+
+15   restraining      order      or    a    temporary        or     permanent      injunction               to
+
+16   restrain   and    prevent        the    further       dissemination          of   artificially
+
+17   generated media or a phishing communication to the claimant.
+
+18         (d)AAThis section may not be construed to impose liability,
+
+19   for content provided by another person, on:
+
+20                 (1)AAthe provider of an interactive computer service,
+
+21   as defined by 47 U.S.C. Section 230(f);
+
+22                 (2)AAa       telecommunications             service,       as   defined             by   47
+
+23   U.S.C. Section 153; or
+
+24                 (3)AAa       radio       or   television         station    licensed            by       the
+
+25   Federal Communications Commission.
+
+26         Sec.A100B.003.AACIVIL PENALTY FOR DISSEMINATION OF CERTAIN
+
+27   COMMUNICATIONS       FOR    FINANCIAL           EXPLOITATION.          (a)        A       person       who
+
+
+
+
+                                                      2
+                                                                           S.B.ANo.A2373
+
+1    knowingly     or     intentionally      disseminates       artificially      generated
+
+2    media   or    a    phishing    communication         for   purposes    of    financial
+
+3    exploitation is subject to a civil penalty not to exceed $1,000 per
+
+4    day   the    media    or   communication       is   disseminated.      The   attorney
+
+5    general may bring an action to collect the civil penalty.
+
+6            (b)AAAn action brought by the attorney general under this
+
+7    section shall be filed in a district court:
+
+8                   (1)AAin Travis County; or
+
+9                   (2)AAin any county in which all or part of the events or
+
+10   omissions giving rise to the action occurred.
+
+11           (c)AAThis section may not be construed to impose liability,
+
+12   for content provided by another person, on:
+
+13                  (1)AAthe provider of an interactive computer service,
+
+14   as defined by 47 U.S.C. Section 230(f);
+
+15                  (2)AAa      telecommunications        service,    as   defined    by   47
+
+16   U.S.C. Section 153; or
+
+17                  (3)AAa      radio   or   television     station    licensed      by    the
+
+18   Federal Communications Commission.
+
+19           Sec.A100B.004.AACONFIDENTIAL                IDENTITY     IN    ACTION         FOR
+
+20   DISSEMINATION OF CERTAIN COMMUNICATIONS.                   (a)   In this section,
+
+21   "confidential identity" means:
+
+22                  (1)AAthe use of a pseudonym; and
+
+23                  (2)AAthe absence of any other identifying information,
+
+24   including address, telephone number, and social security number.
+
+25           (b)AAIn an action brought under Section 100B.002 or 100B.003,
+
+26   the court shall:
+
+27                  (1)AAnotify the person who is the subject of the action
+
+
+
+
+                                                3
+                                                                          S.B.ANo.A2373
+
+1    as    early   as   possible   in   the   action   that   the   person   may    use   a
+
+2    confidential identity in relation to the action;
+
+3                   (2)AAallow a person who is the subject of the action to
+
+4    use a confidential identity in all petitions, filings, and other
+
+5    documents presented to the court;
+
+6                   (3)AAuse the person ’s confidential identity in all of
+
+7    the    court ’s    proceedings     and   records   relating     to    the   action,
+
+8    including any appellate proceedings; and
+
+9                   (4)AAmaintain the records relating to the action in a
+
+10   manner that protects the person ’s confidentiality.
+
+11           (c)AAIn an action brought under Section 100B.002 or 100B.003,
+
+12   only    the    following      persons    are   entitled    to    know    the    true
+
+13   identifying information about the person who is the subject of the
+
+14   action:
+
+15                  (1)AAthe court;
+
+16                  (2)AAa party to the action;
+
+17                  (3)AAan attorney representing a party to the action;
+
+18   and
+
+19                  (4)AAa person authorized by a written order of the court
+
+20   specific to that person.
+
+21           (d)AAThe court shall order that a person entitled to know the
+
+22   true identifying information under Subsection (c) may not divulge
+
+23   that information to anyone without a written order of the court.
+
+24   The court shall hold a person who violates the order in contempt.
+
+25           (e)AANotwithstanding Section 22.004, Government Code, the
+
+26   supreme court may not amend or adopt rules in conflict with this
+
+27   section.
+
+
+
+
+                                               4
+                                                                     S.B.ANo.A2373
+
+1          (f)AAA person is not required to use a confidential identity
+
+2    as provided by this section.
+
+3          SECTIONA2.AASubchapter D, Chapter 32, Penal Code, is amended
+
+4    by adding Section 32.56 to read as follows:
+
+5          Sec.A32.56.AAFINANCIAL      ABUSE   USING   ARTIFICIALLY     GENERATED
+
+6    MEDIA OR PHISHING.    (a)   In this section:
+
+7               (1)AA"Artificially      generated      media"   has   the   meaning
+
+8    assigned by Section 100B.001, Civil Practice and Remedies Code.
+
+9               (2)AA"Financial      abuse"    has   the   meaning    assigned   by
+
+10   Section 32.55.
+
+11         (b)AAA person commits an offense if the person knowingly
+
+12   engages in financial abuse:
+
+13              (1)AAthrough the use of artificially generated media
+
+14   disseminated to another person; or
+
+15              (2)AAby deceiving or manipulating another person into
+
+16   providing personal, financial, or identifying information through
+
+17   e-mail, electronic communication, or other digital means.
+
+18         (c)AAAn offense under this section is:
+
+19              (1)AAa Class B misdemeanor if the value of the property
+
+20   taken, appropriated, obtained, retained, or used is less than $100;
+
+21              (2)AAa Class A misdemeanor if the value of the property
+
+22   taken, appropriated, obtained, retained, or used is $100 or more
+
+23   but less than $750;
+
+24              (3)AAa state jail felony if the value of the property
+
+25   taken, appropriated, obtained, retained, or used is $750 or more
+
+26   but less than $2,500;
+
+27              (4)AAa felony of the third degree if the value of the
+
+
+
+
+                                          5
+                                                                    S.B.ANo.A2373
+
+1    property taken, appropriated, obtained, retained, or used is $2,500
+
+2    or more but less than $30,000;
+
+3                (5)AAa felony of the second degree if the value of the
+
+4    property   taken,    appropriated,    obtained,   retained,      or   used     is
+
+5    $30,000 or more but less than $150,000; and
+
+6                (6)AAa felony of the first degree if the value of the
+
+7    property   taken,    appropriated,    obtained,   retained,      or   used     is
+
+8    $150,000 or more.
+
+9          (d)AAThis section does not apply, for content provided by
+
+10   another person, to:
+
+11               (1)AAthe provider of an interactive computer service,
+
+12   as defined by 47 U.S.C. Section 230(f);
+
+13               (2)AAa    telecommunications    service,      as   defined    by   47
+
+14   U.S.C. Section 153; or
+
+15               (3)AAa    radio   or   television   station    licensed      by    the
+
+16   Federal Communications Commission.
+
+17         SECTIONA3.AASection 100B.002, Civil Practice and Remedies
+
+18   Code, as added by this Act, applies only to a cause of action that
+
+19   accrues on or after the effective date of this Act.
+
+20         SECTIONA4.AAThis Act takes effect September 1, 2025.
+
+
+
+
+                                           6
+                                                                  S.B.ANo.A2373
+
+
+
+
+______________________________AAAA______________________________
+     President of the SenateAAAAAAAAAAAAASpeaker of the House
+
+         I hereby certify that S.B.ANo.A2373 passed the Senate on
+
+MayA8,A2025, by the following vote:            YeasA31, NaysA0; and that the
+
+Senate    concurred   in   House   amendment     on   May   31,   2025,   by   the
+
+following vote: YeasA31, NaysA0.
+
+
+
+                                             ______________________________
+                                             AAAASecretary of the Senate
+
+         I hereby certify that S.B.ANo.A2373 passed the House, with
+
+amendment,    on   MayA28,A2025,    by   the    following   vote:     YeasA138,
+
+NaysA0, two present not voting.
+
+
+
+                                             ______________________________
+                                             AAAAChief Clerk of the House
+
+
+Approved:
+
+
+______________________________
+AAAAAAAAAAAAADate
+
+
+
+______________________________
+AAAAAAAAAAAGovernor
+
+
+
+
+                                         7
+
