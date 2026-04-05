@@ -2,16 +2,27 @@
 
 ## Active Tasks
 
-- **PIPELINE RESET & RE-RUN** — Local DB has stale rows from old extraction run. Steps:
-  1. In LM Studio: Load `Qwen2.5-3B-Instruct` (search "qwen2.5-3b-instruct" in model browser) — must be loaded alongside GPT-OSS 20B
-  2. Run `python scripts/reset_pipeline.py` (Docker must be running on port 5434)
-  3. Dashboard Step 1 (Seed) — Re-seed from fixed CSV (241 laws)
-  4. Dashboard Step 2 (Fetch/Parse) — Re-ingest local files
-  5. Dashboard Step 3 (Extract) — Run extraction with 7 agents (GPT-OSS 20B)
-  6. Dashboard Step 4.5 (Verify) — Cross-validation + gap detection
-  7. Dashboard Step 5 (Sync) — Push to Supabase
-- **Re-sync local → Supabase (fresh)** — All Supabase tables were truncated on 2026-04-04. DO NOT sync until extraction completes.
-- **Merge feature branch to main** — All work is on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge to `main`.
+- **DATA QUALITY CRISIS — 89% of extractions have no description** — After first full pipeline run, 8,473 extractions were produced but analysis shows:
+  - 4,473 rows (53%) have fully-null payloads (no description, jurisdiction, or section_reference)
+  - 7,575 rows (89%) missing description field
+  - 15+ duplicate document_family pairs (same law ingested twice)
+  - Minnesota MCDPA produced 1,526 extractions from one law — massive over-extraction
+  - ~3,744 extractions (44%) are from consumer privacy laws mislabeled as `artificial_intelligence` subject area
+  - Very old laws (2006-2019 CSAM) included without clear AI nexus
+  - **Phased remediation plan:**
+    1. **Phase 1 (IN PROGRESS)** — Diagnose root causes: trace extraction write path, check document_family unique constraints, sample null-payload rows, audit fact_laws.csv scope
+    2. **Phase 2** — Fix null-payload bug (add guard against `detected=false` rows, fix payload serialization)
+    3. **Phase 3** — Fix document_family deduplication (enforce unique `canonical_law_id`, find-or-create ingest logic)
+    4. **Phase 4** — Audit & fix fact_laws.csv (reclassify privacy laws, remove pre-AI laws, fix truncated titles)
+    5. **Phase 5** — Cleanup queries for existing bad data
+    6. **Phase 6** — Full reset + clean re-run + re-sync to Supabase
+  - **Open scope decision needed**: Are CCPA/MCDPA/CPA profiling provisions in-scope for AI tracker? (Affects ~3,744 rows)
+
+- **Signal-based agent routing added** — `_select_agents_for_passage` now uses triage signals + regex patterns on passage text to route to subset of agents. Expected 30-50% reduction in agent calls. Not yet validated with a clean re-run.
+
+- **Triage warnings logged to JSONL** — `output/triage_warnings.jsonl` captures JSON decode failures, LLM parse errors, and exceptions. Dashboard shows them in Step 2 accordion.
+
+- **Merge feature branch to main** — All work is on `claude/setup-project-scaffolding-9ApZR`. Needs review and merge to `main` after data quality fixes are validated.
 
 ## Recently Completed
 
