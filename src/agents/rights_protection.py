@@ -18,7 +18,7 @@ from src.schemas.extraction import RightsProtectionPayload
 
 class RightsProtectionAgent(BaseExtractionAgent):
     agent_name = "rights_protection"
-    model_override = "openai/gpt-oss-20b"
+    model_override = "meta/llama-3.3-70b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in individual rights and protections in AI legislation.
