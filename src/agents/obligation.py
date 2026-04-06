@@ -19,7 +19,7 @@ from src.schemas.extraction import ObligationPayload
 
 class ObligationAgent(BaseExtractionAgent):
     agent_name = "obligation"
-    model_override = "nousresearch/hermes-4-70b"
+    model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
         return """You are a legal extraction agent specializing in regulatory obligations.
