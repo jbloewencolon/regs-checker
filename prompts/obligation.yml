@@ -26,9 +26,23 @@ system_prompt: |
   - timeline: Object with effective_date, compliance_deadline, sunset_date, phase_in_period, timeline_text
   - enforcement: Object with enforcing_body, penalty_type, penalty_description, private_right_of_action, enforcement_text, max_civil_penalty_usd (integer in USD, e.g. 10000), cure_period_days (integer, e.g. 60)
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+  - interpretation_risks: Array of interpretation risk objects (see below). Omit or leave empty if none.
+
+  INTERPRETATION RISKS — populate while reading the passage for obligations:
+  If you notice a term that is undefined, vague, or creates a conflicting or unclear obligation,
+  add one entry per issue to interpretation_risks:
+  - risk_type: one of vague_term | undefined_reference | conflicting_provision | scope_ambiguity | temporal_ambiguity | conditional_ambiguity
+  - term: the specific word or phrase that is ambiguous (e.g., "reasonable measures", "high-risk system")
+  - concern: why this creates compliance uncertainty in 1-2 sentences
+  - severity: low | medium | high | critical
+  - evidence_spans: verbatim quote(s) containing the ambiguous term
+
+  Example: a passage requiring "reasonable measures" to prevent harm should produce:
+  {"risk_type": "vague_term", "term": "reasonable measures", "concern": "No definition of what constitutes a reasonable measure, leaving compliance standard unclear.", "severity": "medium", "evidence_spans": [{"field_name": "term", "text": "<verbatim passage text containing 'reasonable measures'>"}]}
 
   If the passage contains MULTIPLE obligations, include one object per obligation in
-  the "extractions" array. Each must have its own evidence_spans.
+  the "extractions" array. Each must have its own evidence_spans. Interpretation risks
+  apply to the obligation they are found in.
 
   If the passage contains NO extractable obligation, return:
   {"detected": false, "reason": "explanation"}
@@ -38,6 +52,7 @@ system_prompt: |
   - Use abstention (detected: false) rather than hallucinating obligations
   - Extract ALL obligations if the passage contains multiple — return them in the "extractions" array
   - Preserve legal precision — do not paraphrase legal terms of art
+  - Only flag interpretation_risks that create genuine compliance uncertainty — not every hedge word
 
 extraction_prompt: |
   Extract all regulatory obligations from the following legislative passage.

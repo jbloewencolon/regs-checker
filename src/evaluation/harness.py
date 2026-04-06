@@ -33,7 +33,6 @@ from typing import Any
 
 import structlog
 
-from src.agents.ambiguity import AmbiguityAgent
 from src.agents.base import BaseExtractionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.agents.definition_actor import DefinitionActorAgent
@@ -114,7 +113,7 @@ class EvaluationHarness:
         "obligation": ObligationAgent,
         "definition": DefinitionActorAgent,
         "threshold_exception": ThresholdExceptionAgent,
-        "ambiguity": AmbiguityAgent,
+        # "ambiguity" removed — findings now embedded as interpretation_risks on obligation/rights payloads
     }
 
     def __init__(self, gold_standard_dir: str | None = None):

@@ -348,18 +348,17 @@ class TestRecallSafeAgentSelection:
     @patch("src.agents.base.get_extraction_provider")
     def _make_agents(self, mock_provider) -> dict:
         """Create a minimal set of agents for testing."""
-        from src.agents.ambiguity import AmbiguityAgent
         from src.agents.compliance_mechanism import ComplianceMechanismAgent
         from src.agents.definition_actor import DefinitionActorAgent
         from src.agents.obligation import ObligationAgent
         from src.agents.rights_protection import RightsProtectionAgent
         from src.agents.threshold_exception import ThresholdExceptionAgent
 
+        # ambiguity agent retired — findings embedded as interpretation_risks on obligation/rights
         return {
             "obligation": ObligationAgent(),
             "definition_actor": DefinitionActorAgent(),
             "threshold_exception": ThresholdExceptionAgent(),
-            "ambiguity": AmbiguityAgent(),
             "rights_protection": RightsProtectionAgent(),
             "compliance_mechanism": ComplianceMechanismAgent(),
         }
@@ -369,7 +368,7 @@ class TestRecallSafeAgentSelection:
         agents = self._make_agents()
         text = "A developer shall implement cybersecurity protections."
         selected = _select_agents_for_passage(text, agents)
-        assert len(selected) == 6  # All agents run
+        assert len(selected) == 5  # All active agents run (ambiguity retired)
 
     def test_nonstandard_obligation_is_expected_to(self):
         """'is expected to' doesn't contain shall/must — must still run obligation agent."""
@@ -468,7 +467,7 @@ class TestRecallSafeAgentSelection:
             "cybersecurity purposes."
         )
         selected = _select_agents_for_passage(text, agents)
-        assert len(selected) == 6  # All agents should run
+        assert len(selected) == 5  # All active agents run (ambiguity retired)  # All agents should run
 
     def test_long_enacting_clause_not_excluded(self):
         """A long passage starting with enacting language should NOT be excluded
@@ -483,7 +482,7 @@ class TestRecallSafeAgentSelection:
         selected = _select_agents_for_passage(text, agents)
         # The passage is > 300 chars, so even though it starts with "Be it enacted",
         # it should NOT be excluded
-        assert len(selected) == 6
+        assert len(selected) == 5  # All active agents run (ambiguity retired)
 
 
 # ---------------------------------------------------------------------------

@@ -120,9 +120,51 @@ _BASE_AI_KEYWORDS: set[str] = {
     "deep fake",
     "synthetic media",
     "synthetic content",
+    "digital replica",
+    "synthetic performer",
+    "ai-generated",
+    "ai generated",
+    # Profiling and automated assessment (confirmed AI-relevant)
+    "automated profiling",
+    "algorithmic profiling",
+    "profiling system",
+    "automated risk assessment",
+    "automated risk scoring",
+    "score-based decision",
+    "social scoring",
+    # AI companion / chatbot laws (CA, NY legislation)
+    "companion chatbot",
+    "ai companion",
+    "conversational ai",
+    # Algorithmic pricing (NY and other state legislation)
+    "algorithmic pricing",
+    "surveillance pricing",
+    "price optimization algorithm",
     # Specific act names that frequently appear
     "artificial intelligence act",
     "ai bill of rights",
+}
+
+# ---------------------------------------------------------------------------
+# Tier-2: AI-adjacent keywords — context-dependent, not auto-relevant.
+#
+# Passages containing ONLY these terms (no tier-1 AI keywords above) are
+# intentionally NOT auto-marked as "relevant".  They fall through to LLM
+# triage, which is already the correct behavior for keyword misses (see
+# triage_passage Step 3).  This set exists as a documented reference for
+# gap analysis and future prompt tuning — it does not affect routing logic.
+#
+# Terms: present in AI-adjacent laws but common enough outside AI contexts
+# that auto-relevance would produce too many false positives.
+# ---------------------------------------------------------------------------
+_ADJACENT_AI_KEYWORDS: set[str] = {
+    "data broker",
+    "utilization review",
+    "dynamic pricing",
+    "electronic surveillance",
+    "credit scoring",
+    "risk score",
+    "automated screening",
 }
 
 # Patterns that match even as substrings (compiled once)

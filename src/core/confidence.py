@@ -44,6 +44,8 @@ class ConfidenceBreakdown:
     tier: str
     orrick_matched_tokens: list[str] = field(default_factory=list)
     orrick_gated: bool = False  # True when tier was forced to D due to missing Orrick data
+    broad_spans: bool = False   # True when a verified span exceeds 50% of passage length
+    section_ref_quality: float = 0.0  # 0.0–1.0 specificity of section_reference field
 
 
 # Component weights (sum to 1.0 when all components are active)
@@ -70,6 +72,7 @@ def compute_confidence(
     parse_quality_score: float | None = None,
     orrick_similarity: "OrrickSimilarityResult | None" = None,
     cross_validation_score: float | None = None,
+    passage_text: str | None = None,
 ) -> ConfidenceBreakdown:
     """Compute the confidence score for an extraction.
 
@@ -91,15 +94,47 @@ def compute_confidence(
     # 1. Schema validity (binary)
     schema_score = 1.0 if schema_valid else 0.0
 
-    # 2. Evidence grounding — proportion of spans that are verified
+    # 2. Evidence grounding — proportion of spans that are verified, with span
+    #    length penalty for spans that copy-paste the bulk of the passage rather
+    #    than quoting a targeted phrase.
+    broad_spans = False
     if evidence_spans:
         verified_count = sum(1 for s in evidence_spans if s.get("verified", False))
         evidence_score = verified_count / len(evidence_spans)
+
+        # Span length penalty: if a verified span is longer than 50% of the
+        # passage, it is not a targeted quote — penalise evidence grounding.
+        if passage_text and len(passage_text) > 0:
+            max_ratio = max(
+                (
+                    len(s.get("text", "")) / len(passage_text)
+                    for s in evidence_spans
+                    if s.get("verified")
+                ),
+                default=0.0,
+            )
+            if max_ratio > 0.75:
+                # Span is nearly the whole passage — heavy penalty
+                evidence_score *= 0.60
+                broad_spans = True
+            elif max_ratio > 0.50:
+                # Span is majority of passage — moderate penalty
+                evidence_score *= 0.80
+                broad_spans = True
     else:
         evidence_score = 0.0
 
     # 3. Completeness — proportion of non-null optional fields
     completeness_score = _compute_completeness(extraction_payload, schema_class)
+
+    # 3a. Section reference quality — continuous sub-signal added to completeness.
+    #     A highly specific section reference (§ 6-1-1702(3)(a)) is stronger
+    #     evidence of grounding than a generic one (Section 5) or none at all.
+    #     Blended into completeness at 20% weight to avoid weight-sum changes.
+    section_ref_quality = _score_section_reference(
+        extraction_payload.get("section_reference")
+    )
+    completeness_score = completeness_score * 0.80 + section_ref_quality * 0.20
 
     # 4. Source quality — from ingestion pipeline
     source_score = parse_quality_score if parse_quality_score is not None else 0.5
@@ -155,6 +190,8 @@ def compute_confidence(
             tier="D",
             orrick_matched_tokens=[],
             orrick_gated=True,
+            broad_spans=broad_spans,
+            section_ref_quality=section_ref_quality,
         )
 
     # Normal path: Orrick data exists — compute weighted average
@@ -183,6 +220,8 @@ def compute_confidence(
         total_score=round(total, 4),
         tier=tier,
         orrick_matched_tokens=matched_tokens,
+        broad_spans=broad_spans,
+        section_ref_quality=section_ref_quality,
     )
 
 
@@ -215,3 +254,40 @@ def _score_to_tier(score: float) -> str:
         return "C"
     else:
         return "D"
+
+
+def _score_section_reference(section_ref: str | None) -> float:
+    """Score the specificity of a section reference on a 0.0–1.0 scale.
+
+    Highly specific references (e.g. '§ 6-1-1702(3)(a)') indicate the
+    extraction is grounded in a precise location in the law — a stronger
+    quality signal than a generic reference ('Section 5') or none at all.
+
+    Scoring:
+      1.0 — Contains subsection notation: § followed by digits and brackets/parens,
+             or explicit subsection letter/number like (3)(a)(ii)
+      0.6 — Has a section symbol (§) or numeric reference but no subsection detail
+      0.3 — Generic label only: 'Section X', 'Part Y', 'Article Z'
+      0.0 — No section reference
+    """
+    import re as _re
+
+    if not section_ref or not section_ref.strip():
+        return 0.0
+
+    ref = section_ref.strip()
+
+    # High specificity: § with subsection detail, or explicit nested notation
+    if _re.search(r"§\s*[\d\w-]+(?:\.\d+)*\s*[\(\[]", ref):
+        return 1.0
+    if _re.search(r"\(\s*\d+\s*\)\s*\(\s*[a-z]\s*\)", ref, _re.IGNORECASE):
+        return 1.0
+    # Medium: has § symbol or clear numeric citation
+    if "§" in ref or _re.search(r"\b\d{1,4}[a-z]?(?:\.\d+)+\b", ref, _re.IGNORECASE):
+        return 0.6
+    # Low: generic label
+    if _re.search(r"\b(?:section|part|article|subsection|paragraph)\b", ref, _re.IGNORECASE):
+        return 0.3
+
+    # Has something but unrecognised pattern — give minimal credit
+    return 0.2

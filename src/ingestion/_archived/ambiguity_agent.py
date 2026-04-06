@@ -1,4 +1,20 @@
-"""Ambiguity Agent — meta-analysis agent (unchanged from original design).
+"""ARCHIVED 2026-04-05 — Ambiguity Agent retired.
+
+Ambiguity findings are now embedded as `interpretation_risks` annotations on
+ObligationPayload and RightsProtectionPayload (src/schemas/extraction.py).
+The obligation and rights agents populate this field during their primary
+extraction pass — zero additional LLM calls, findings attached to the
+obligation or right they affect.
+
+ExtractionType.ambiguity remains in the DB enum for backward compat with
+existing rows. This file is kept as reference for the original schema and
+prompt design.
+
+----
+
+Original docstring:
+
+Ambiguity Agent — meta-analysis agent (unchanged from original design).
 
 Identifies vague, ambiguous, or conflicting language in legislative text.
 Kept separate because it's genuinely different from extraction — it's a

@@ -42,7 +42,6 @@ from sqlalchemy.orm import sessionmaker
 # Alert thresholds — calibrated against batch run baselines
 # ---------------------------------------------------------------------------
 TIER_C_ALERT_THRESHOLD = 0.40       # >40% Tier C = quality regression
-AMBIGUITY_ALERT_THRESHOLD = 0.65    # >65% ambiguity extractions = over-flagging
 SYNC_LAG_ALERT_THRESHOLD = 500      # >500 unsynced extractions = sync stalled
 
 
@@ -209,19 +208,7 @@ def run_health_check(source_url: str, target_url: str) -> HealthReport:
                     f"Investigate prompt or model quality before next batch."
                 )
 
-        # 2. Ambiguity over-flagging
-        total_ambiguity = report.source_by_type.get("ambiguity", 0)
-        if report.source_total_extractions > 0 and total_ambiguity > 0:
-            ambiguity_pct = total_ambiguity / report.source_total_extractions
-            if ambiguity_pct > AMBIGUITY_ALERT_THRESHOLD:
-                report.add_alert(
-                    f"AMBIGUITY: {ambiguity_pct:.0%} of extractions are ambiguity type "
-                    f"({total_ambiguity:,}/{report.source_total_extractions:,}). "
-                    f"Threshold: {AMBIGUITY_ALERT_THRESHOLD:.0%}. "
-                    f"Ambiguity agent may be over-flagging."
-                )
-
-        # 3. Sync lag
+        # 2. Sync lag
         if report.sync_lag > SYNC_LAG_ALERT_THRESHOLD:
             report.add_alert(
                 f"SYNC LAG: {report.sync_lag:,} extractions in Regs Checker "

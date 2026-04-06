@@ -56,7 +56,8 @@ class TestAgentExtractionTypes:
         assert "obligation" in AGENT_EXTRACTION_TYPES
         assert "definition_actor" in AGENT_EXTRACTION_TYPES
         assert "threshold_exception" in AGENT_EXTRACTION_TYPES
-        assert "ambiguity" in AGENT_EXTRACTION_TYPES
+        # ambiguity agent retired — findings embedded as interpretation_risks on obligation/rights payloads
+        assert "ambiguity" not in AGENT_EXTRACTION_TYPES
 
     def test_types_are_extraction_type_enum(self):
         from src.db.models import ExtractionType
@@ -73,7 +74,9 @@ class TestExportConstants:
         assert "Obligation schema" in SCHEMA_REFERENCE
         assert "Definition schema" in SCHEMA_REFERENCE
         assert "Threshold/Exception schema" in SCHEMA_REFERENCE
-        assert "Ambiguity schema" in SCHEMA_REFERENCE
+        # Ambiguity schema replaced by interpretation_risks embedded on obligation/rights
+        assert "Interpretation risks" in SCHEMA_REFERENCE
+        assert "Ambiguity schema" not in SCHEMA_REFERENCE
 
 
 class TestExportPassages:

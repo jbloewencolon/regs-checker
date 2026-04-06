@@ -7,7 +7,7 @@ validated via string matching against the source passage (Recommendation #3).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,6 +26,48 @@ class AbstentionResult(BaseModel):
 
     detected: bool = False
     reason: str = Field(description="Why no extraction was possible")
+
+
+# ---------------------------------------------------------------------------
+# Interpretation risk annotation (embedded on obligation + rights payloads)
+#
+# Replaces the standalone AmbiguityAgent. The obligation and rights agents
+# now populate this field during their primary extraction pass — zero extra
+# LLM calls, findings attached to the obligation or right they affect.
+# ---------------------------------------------------------------------------
+
+
+class InterpretationRisk(BaseModel):
+    """A term, provision, or condition that creates compliance uncertainty.
+
+    Populated inline by the obligation and rights_protection agents when they
+    encounter vague language, undefined references, or conflicting provisions
+    while performing their primary extraction. Not a standalone extraction type.
+    """
+
+    risk_type: Literal[
+        "vague_term",
+        "undefined_reference",
+        "conflicting_provision",
+        "scope_ambiguity",
+        "temporal_ambiguity",
+        "conditional_ambiguity",
+    ] = Field(description="Category of interpretation risk")
+    term: str = Field(
+        description="The specific term, phrase, or provision that is ambiguous"
+    )
+    concern: str = Field(
+        description="Why this creates compliance uncertainty (1-2 sentences)"
+    )
+    severity: Literal["low", "medium", "high", "critical"] = Field(
+        default="medium",
+        description="Compliance impact: low=minor drafting imprecision, "
+        "critical=obligation scope is genuinely unclear",
+    )
+    evidence_spans: list[EvidenceSpan] = Field(
+        default_factory=list,
+        description="Verbatim quotes from the passage containing the ambiguous term",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +129,12 @@ class ObligationPayload(BaseModel):
         default_factory=list,
         description="Verbatim preemption language found in the passage "
         "(e.g., 'this section does not preempt', 'notwithstanding any state law')",
+    )
+    interpretation_risks: list[InterpretationRisk] = Field(
+        default_factory=list,
+        description="Vague terms, undefined references, or conflicting provisions "
+        "noticed during extraction that create compliance uncertainty. "
+        "Omit if none found.",
     )
 
 
@@ -280,6 +328,12 @@ class RightsProtectionPayload(BaseModel):
     )
     section_reference: str | None = None
     jurisdiction: str | None = None
+    interpretation_risks: list[InterpretationRisk] = Field(
+        default_factory=list,
+        description="Vague terms, undefined references, or conflicting provisions "
+        "noticed during extraction that create compliance uncertainty. "
+        "Omit if none found.",
+    )
 
 
 # ---------------------------------------------------------------------------
