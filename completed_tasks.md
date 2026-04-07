@@ -2,6 +2,20 @@
 
 ## Recently Completed (current session — still matters for reasoning)
 
+### Phase 3B: Dashboard Model Configuration (2026-04-07)
+- New `/dashboard/models` page — full UI for assigning LLMs to extraction agents
+- Scans LM Studio `/v1/models` endpoint and populates dropdowns with loaded models
+- Per-agent controls: model selection, max_tokens (512–131072), context_length, temperature (0–2)
+- Persists to `config/agent_models.json` — survives server restarts
+- Save triggers `reload_agents()` — agents pick up new models without server restart
+- Reset to Defaults button restores all agents to GPT-OSS 20B / Qwen 3B
+- `BaseExtractionAgent` gains `max_tokens_override` and `temperature_override` instance attributes
+- `_call_llm()` respects per-agent overrides over global `settings.*` values
+- `_get_agents()` in extractor.py reads config at instantiation time
+- Nav link added to `layout.html` header
+- **Files created**: `src/core/model_config.py`, `config/agent_models.json`, `templates/models.html`
+- **Files modified**: `src/agents/base.py`, `src/ingestion/extractor.py`, `src/api/routes/dashboard.py`, `templates/layout.html`
+
 ### Phase 3 Confidence Scoring Improvements (2026-04-05)
 
 #### ANALYSIS-4: Orrick tokenizer Unicode safety
