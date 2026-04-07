@@ -363,12 +363,17 @@ class TestRecallSafeAgentSelection:
             "compliance_mechanism": ComplianceMechanismAgent(),
         }
 
-    def test_standard_obligation_runs_all_agents(self):
-        """A passage with 'shall' should run all agents (not just obligation)."""
+    def test_standard_obligation_routes_obligation_and_definition(self):
+        """A passage with 'shall' should route to obligation + definition_actor
+        (always-on agents).  Other agents only run when their specific signals
+        are present — this is recall-safe because the triage step already
+        classified the passage as AI-relevant."""
         agents = self._make_agents()
         text = "A developer shall implement cybersecurity protections."
         selected = _select_agents_for_passage(text, agents)
-        assert len(selected) == 5  # All active agents run (ambiguity retired)
+        assert "obligation" in selected
+        assert "definition_actor" in selected
+        assert len(selected) >= 2
 
     def test_nonstandard_obligation_is_expected_to(self):
         """'is expected to' doesn't contain shall/must — must still run obligation agent."""
@@ -481,8 +486,11 @@ class TestRecallSafeAgentSelection:
         )
         selected = _select_agents_for_passage(text, agents)
         # The passage is > 300 chars, so even though it starts with "Be it enacted",
-        # it should NOT be excluded
-        assert len(selected) == 5  # All active agents run (ambiguity retired)
+        # it should NOT be excluded.  Signal routing narrows to obligation +
+        # compliance_mechanism + definition_actor (shall, audits, penalties/fines).
+        assert len(selected) >= 3
+        assert "obligation" in selected
+        assert "compliance_mechanism" in selected
 
 
 # ---------------------------------------------------------------------------

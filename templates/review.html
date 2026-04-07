@@ -119,6 +119,11 @@
                 {{ item.payload | string | truncate(80) }}
               {% endif %}
             </div>
+            {% if item.payload.get('interpretation_risks') %}
+            <span style="font-size:10px; padding:1px 5px; background:var(--warning-bg); color:var(--warning); border-radius:8px; margin-top:2px; display:inline-block;">
+              {{ item.payload.get('interpretation_risks') | length }} risk{{ 's' if item.payload.get('interpretation_risks') | length != 1 }}
+            </span>
+            {% endif %}
             <button class="expand-toggle" onclick="toggleDetail({{ item.queue_id }})"
                     title="Show full details, source passage, and edit fields">
               details &#x25B8;
@@ -285,12 +290,47 @@
               </div>
               {% endif %}
 
+              <!-- Interpretation Risks (obligation + rights_protection only) -->
+              {% set risks = item.payload.get('interpretation_risks', []) %}
+              {% if risks %}
+              <div class="detail-section">
+                <h4>Interpretation Risks ({{ risks | length }})</h4>
+                {% for risk in risks %}
+                <div style="background:var(--warning-bg); border:1px solid #f0d58e; border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:8px;">
+                  <div style="display:flex; gap:8px; align-items:center; margin-bottom:4px;">
+                    <span style="font-weight:600; font-size:13px;">{{ risk.get('risk_type', 'unknown') | replace('_', ' ') | title }}</span>
+                    {% set sev = risk.get('severity', 'medium') %}
+                    <span style="font-size:11px; padding:1px 6px; border-radius:10px;
+                      {% if sev == 'critical' %}background:#fee2e2; color:#dc2626;
+                      {% elif sev == 'high' %}background:#ffedd5; color:#c2410c;
+                      {% elif sev == 'medium' %}background:#fef9c3; color:#a16207;
+                      {% else %}background:#f0fdf4; color:#16a34a;{% endif %}
+                    ">{{ sev }}</span>
+                  </div>
+                  {% if risk.get('term') %}
+                  <div style="font-size:12px; margin-bottom:2px;">
+                    <strong>Term:</strong> <code style="background:var(--surface); padding:1px 4px; border-radius:3px;">{{ risk.get('term') }}</code>
+                  </div>
+                  {% endif %}
+                  <div style="font-size:12px; color:var(--text-muted);">{{ risk.get('concern', '') }}</div>
+                  {% if risk.get('evidence_spans') %}
+                  <div style="margin-top:6px;">
+                    {% for span in risk.get('evidence_spans', []) %}
+                    <blockquote style="font-size:11px; color:var(--text-muted); border-left:2px solid #f0d58e; padding-left:8px; margin:4px 0;">{{ span.get('text', '') }}</blockquote>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
               <!-- Editable Extraction Fields -->
               <div class="detail-section">
                 <h4>Extraction Fields <span style="font-size:10px;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:400;">(edit values, then save)</span></h4>
                 <form class="edit-extraction-form" id="edit-form-{{ item.queue_id }}">
                   <div class="edit-fields-grid">
-                    {% set hidden_fields = ('_model_id', 'exceptions', '_prompt_hash', '_template_version') %}
+                    {% set hidden_fields = ('_model_id', 'exceptions', '_prompt_hash', '_template_version', 'interpretation_risks') %}
                     {% for key, value in item.payload.items() if key not in hidden_fields %}
                     <div class="edit-field-row">
                       <label class="edit-field-label" for="field-{{ item.queue_id }}-{{ key }}">{{ key }}</label>

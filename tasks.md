@@ -3,7 +3,8 @@
 ## Active Tasks
 
 - **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (READY TO EXECUTE)**
-  - Pre-flight done: smart routing, title disambiguation, regulatory_category, 4 URL swaps, MN omnibus trim, ambiguity agent retired, Unicode fix, keyword expansion, confidence improvements.
+  - Pre-flight done: smart routing, title disambiguation, regulatory_category, 4 URL swaps, MN omnibus trim, ambiguity agent retired, Unicode fix, keyword expansion, confidence improvements, **model config UI**.
+  - Model assignments configurable at runtime via `/dashboard/models` (no code changes needed to swap models).
   - User runs: `python scripts/reset_pipeline.py`, then dashboard Steps 1→2→3→4.5→5 (`--clear`).
   - 16 laws with still-quarantined source text will be skipped on re-ingest (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
   - Step 3 uses **6 agents** (ambiguity retired — findings embedded as `interpretation_risks` on obligation/rights payloads)
@@ -37,7 +38,7 @@ additional review queue rows, findings attached to the obligation they affect.
 #### RESTRUCTURE-1c: Remove ambiguity from extraction pipeline — DONE
 #### RESTRUCTURE-1d: Update downstream systems — DONE
 #### RESTRUCTURE-1e: Archive ambiguity agent — DONE (`src/agents/ambiguity.py` → `src/ingestion/_archived/`)
-#### RESTRUCTURE-1f: Dashboard inline display — `templates/dashboard.html` (deferred — lower risk, separate commit)
+#### RESTRUCTURE-1f: Dashboard inline display — DONE (2026-04-07). Review queue shows risk cards with severity badges.
 
 **Definition of done:** No new `ambiguity`-type rows after extraction. `interpretation_risks` populated
 on obligation/rights rows where relevant. Existing `ambiguity` rows in DB still display. Tests pass. ✓
@@ -85,9 +86,22 @@ Blended into completeness at 20% weight — no weight-sum changes.
 
 ---
 
+### Phase 3B — Dashboard Model Configuration — DONE (2026-04-07)
+
+New `/dashboard/models` page for runtime agent ↔ model assignment:
+- Scans LM Studio `/v1/models` for available models
+- Per-agent controls: model, max_tokens, context_length, temperature
+- Persists to `config/agent_models.json`, reloads agents immediately
+- Reset to Defaults button
+- `BaseExtractionAgent` gains `max_tokens_override` + `temperature_override`
+- `_get_agents()` reads config at instantiation; `reload_agents()` for hot-reload
+
+---
+
 ### Phase 4 — Model & Prompt Improvements (requires eval set)
 
 #### IMPROVEMENT-5: Model comparison on eval set
+Now easy to A/B test via the Models page — load two models in LM Studio, assign different agents, compare output.
 #### IMPROVEMENT-6: Few-shot examples in prompts — `prompts/*.yml`
 
 ---
@@ -106,8 +120,7 @@ Blended into completeness at 20% weight — no weight-sum changes.
 - **Sync local → Supabase** — Dashboard Step 5.
 - **Sync Regs Checker → Policy Navigator** — Dashboard Step 6.
 - **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
-- **Review test coverage** — 448 pass, 9 fail (pre-existing). 4 stale import files.
-- **Dashboard: inline interpretation_risks display** — RESTRUCTURE-1f (deferred from Phase 1B).
+- **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
 
 ## Bugs / Issues
 
