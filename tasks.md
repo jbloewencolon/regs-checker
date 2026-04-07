@@ -38,7 +38,7 @@ additional review queue rows, findings attached to the obligation they affect.
 #### RESTRUCTURE-1c: Remove ambiguity from extraction pipeline — DONE
 #### RESTRUCTURE-1d: Update downstream systems — DONE
 #### RESTRUCTURE-1e: Archive ambiguity agent — DONE (`src/agents/ambiguity.py` → `src/ingestion/_archived/`)
-#### RESTRUCTURE-1f: Dashboard inline display — `templates/dashboard.html` (deferred — lower risk, separate commit)
+#### RESTRUCTURE-1f: Dashboard inline display — DONE (2026-04-07). Review queue shows risk cards with severity badges.
 
 **Definition of done:** No new `ambiguity`-type rows after extraction. `interpretation_risks` populated
 on obligation/rights rows where relevant. Existing `ambiguity` rows in DB still display. Tests pass. ✓
@@ -120,8 +120,7 @@ Now easy to A/B test via the Models page — load two models in LM Studio, assig
 - **Sync local → Supabase** — Dashboard Step 5.
 - **Sync Regs Checker → Policy Navigator** — Dashboard Step 6.
 - **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
-- **Review test coverage** — 448 pass, 9 fail (pre-existing). 4 stale import files.
-- **Dashboard: inline interpretation_risks display** — RESTRUCTURE-1f (deferred from Phase 1B).
+- **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
 
 ## Bugs / Issues
 
