@@ -323,6 +323,31 @@ class BaseExtractionAgent(ABC):
                     result["_template_version"] = template_version
                     validated_extractions.append(result)
 
+                # Deduplicate extractions — models in output loops
+                # produce identical items.  Use a content fingerprint
+                # (JSON of the extraction minus metadata keys).
+                if len(validated_extractions) > 1:
+                    seen: set[str] = set()
+                    unique: list[dict] = []
+                    _meta = {"_prompt_hash", "_model_id", "_template_version", "evidence_spans"}
+                    for ext in validated_extractions:
+                        fp = json.dumps(
+                            {k: v for k, v in ext.items() if k not in _meta},
+                            sort_keys=True,
+                            default=str,
+                        )
+                        if fp not in seen:
+                            seen.add(fp)
+                            unique.append(ext)
+                    if len(unique) < len(validated_extractions):
+                        logger.warning(
+                            "extraction_duplicates_removed",
+                            agent=self.agent_name,
+                            original_count=len(validated_extractions),
+                            unique_count=len(unique),
+                        )
+                        validated_extractions = unique
+
                 if was_truncated:
                     logger.warning(
                         "extraction_truncated",
