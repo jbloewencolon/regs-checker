@@ -2,43 +2,43 @@
   "agents": {
     "obligation": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 4096,
       "context_length": 131072,
       "temperature": 0.0
     },
     "rights_protection": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 4096,
       "context_length": 131072,
       "temperature": 0.0
     },
     "definition_actor": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "threshold_exception": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "compliance_mechanism": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 3072,
       "context_length": 131072,
       "temperature": 0.0
     },
     "preemption": {
       "model": "openai/gpt-oss-20b",
-      "max_tokens": 65536,
+      "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "triage": {
       "model": "qwen2.5-vl-3b-instruct",
-      "max_tokens": 16384,
+      "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0
     }
