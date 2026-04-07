@@ -4258,3 +4258,132 @@ def run_verification(
     """
 
     return HTMLResponse(table_html)
+
+
+# ===================================================================
+# MODEL CONFIGURATION — agent ↔ model assignment UI
+# ===================================================================
+
+@router.get("/models", response_class=HTMLResponse)
+def models_page(request: Request):
+    """Full-page model configuration UI."""
+    from src.core.model_config import AGENT_DISPLAY, fetch_available_models, get_config
+
+    cfg = get_config()
+    available = fetch_available_models()
+    model_ids = sorted({m["id"] for m in available}) if available else []
+
+    agents_data = []
+    for name, display in AGENT_DISPLAY.items():
+        acfg = cfg.get(name)
+        agents_data.append({
+            "name": name,
+            "label": display["label"],
+            "description": display["description"],
+            "model": acfg.model,
+            "max_tokens": acfg.max_tokens,
+            "context_length": acfg.context_length,
+            "temperature": acfg.temperature,
+        })
+
+    return _render(request, "models.html", {
+        "agents": agents_data,
+        "available_models": model_ids,
+        "lm_studio_connected": len(available) > 0,
+    })
+
+
+@router.get("/api/models/available")
+def get_available_models():
+    """HTMX endpoint: refresh available models from LM Studio."""
+    from src.core.model_config import fetch_available_models
+
+    available = fetch_available_models()
+    model_ids = sorted({m["id"] for m in available}) if available else []
+
+    if not model_ids:
+        return HTMLResponse(
+            '<div class="alert alert-warning">'
+            "Could not reach LM Studio. Check that it's running on port 1234."
+            "</div>"
+        )
+
+    options_html = "".join(
+        f'<option value="{html_escape(mid)}">{html_escape(mid)}</option>'
+        for mid in model_ids
+    )
+    return HTMLResponse(
+        f'<div class="alert alert-success">'
+        f"Connected &mdash; {len(model_ids)} model(s) available"
+        f"</div>"
+        f'<template id="model-options">{options_html}</template>'
+        f"<script>"
+        f"document.querySelectorAll('select.model-select').forEach(function(sel) {{"
+        f"  var cur = sel.value;"
+        f"  var tpl = document.getElementById('model-options');"
+        f"  sel.innerHTML = '<option value=\"\">(default)</option>' + tpl.innerHTML;"
+        f"  if (cur) {{"
+        f"    var match = sel.querySelector('option[value=\"' + cur + '\"]');"
+        f"    if (match) {{ match.selected = true; }}"
+        f"    else {{"
+        f"      var opt = document.createElement('option');"
+        f"      opt.value = cur; opt.text = cur + ' (not loaded)'; opt.selected = true;"
+        f"      sel.appendChild(opt);"
+        f"    }}"
+        f"  }}"
+        f"}});"
+        f"</script>"
+    )
+
+
+@router.post("/api/models/save")
+async def save_model_config(request: Request):
+    """Save agent model assignments from the UI form."""
+    from src.core.model_config import (
+        AGENT_DISPLAY,
+        AgentModelConfig,
+        ModelConfigStore,
+        save_config,
+    )
+    from src.ingestion.extractor import reload_agents
+
+    form = await request.form()
+    agents = {}
+    for name in AGENT_DISPLAY:
+        model = form.get(f"{name}_model", "")
+        max_tokens = int(form.get(f"{name}_max_tokens", "65536") or "65536")
+        context_length = int(form.get(f"{name}_context_length", "131072") or "131072")
+        temperature = float(form.get(f"{name}_temperature", "0.0") or "0.0")
+        agents[name] = AgentModelConfig(
+            model=model,
+            max_tokens=max_tokens,
+            context_length=context_length,
+            temperature=temperature,
+        )
+
+    store = ModelConfigStore(agents=agents)
+    save_config(store)
+    reload_agents()
+
+    return HTMLResponse(
+        '<div class="alert alert-success" id="save-result">'
+        "Configuration saved. Agents will use new models on next extraction run."
+        "</div>"
+    )
+
+
+@router.post("/api/models/reset")
+def reset_model_config(request: Request):
+    """Reset all agents to default models."""
+    from src.core.model_config import ModelConfigStore, save_config
+    from src.ingestion.extractor import reload_agents
+
+    store = ModelConfigStore.defaults()
+    save_config(store)
+    reload_agents()
+
+    return HTMLResponse(
+        '<div class="alert alert-success">'
+        "Reset to defaults. Reload this page to see updated values."
+        "</div>"
+    )

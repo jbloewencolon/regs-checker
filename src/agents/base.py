@@ -183,6 +183,8 @@ class BaseExtractionAgent(ABC):
     max_retries: int = 2
     model_override: str | None = None
     reasoning_effort: str | None = None
+    max_tokens_override: int | None = None
+    temperature_override: float | None = None
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
@@ -559,15 +561,17 @@ class BaseExtractionAgent(ABC):
             )
 
         # Use lower max_tokens for local models to fit within context window
-        max_tokens = settings.extraction_max_tokens
+        max_tokens = self.max_tokens_override or settings.extraction_max_tokens
         if settings.extraction_provider == "local":
             max_tokens = min(max_tokens, settings.local_extraction_max_tokens)
+
+        temperature = self.temperature_override if self.temperature_override is not None else settings.extraction_temperature
 
         call_kwargs = dict(
             system_prompt=system_prompt,
             user_prompt=prompt,
             max_tokens=max_tokens,
-            temperature=settings.extraction_temperature,
+            temperature=temperature,
             model_override=self.model_override,
             reasoning_effort=self.reasoning_effort,
         )

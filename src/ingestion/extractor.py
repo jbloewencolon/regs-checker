@@ -550,9 +550,15 @@ class MergedPassage:
 
 
 def _get_agents() -> dict[str, BaseExtractionAgent]:
-    """Lazy-init agents (avoids Anthropic client creation at import time)."""
+    """Lazy-init agents (avoids Anthropic client creation at import time).
+
+    Applies per-agent model/token/temperature overrides from
+    ``config/agent_models.json`` (editable via the dashboard Models page).
+    """
     global AGENTS
     if not AGENTS:
+        from src.core.model_config import get_config
+
         AGENTS = {
             "obligation": ObligationAgent(),
             "definition_actor": DefinitionActorAgent(),
@@ -561,7 +567,24 @@ def _get_agents() -> dict[str, BaseExtractionAgent]:
             "compliance_mechanism": ComplianceMechanismAgent(),
             "preemption": PreemptionAgent(),
         }
+        # Apply runtime overrides from config file
+        cfg = get_config()
+        for name, agent in AGENTS.items():
+            acfg = cfg.get(name)
+            if acfg.model:
+                agent.model_override = acfg.model
+            if acfg.max_tokens:
+                agent.max_tokens_override = acfg.max_tokens
+            if acfg.temperature is not None:
+                agent.temperature_override = acfg.temperature
     return AGENTS
+
+
+def reload_agents() -> dict[str, BaseExtractionAgent]:
+    """Force re-create agents with fresh config (called after UI config save)."""
+    global AGENTS
+    AGENTS = {}
+    return _get_agents()
 
 
 def _confidence_to_priority(tier: str) -> int:
