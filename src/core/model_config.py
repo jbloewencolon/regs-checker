@@ -110,7 +110,6 @@ class ModelConfigStore:
                     context_length=settings.local_context_length,
                     temperature=settings.extraction_temperature,
                 )
-                agents[name] = AgentModelConfig(**asdict(default_extraction))
         return cls(agents=agents)
 
     # ------------------------------------------------------------------

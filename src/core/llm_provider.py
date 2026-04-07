@@ -234,14 +234,14 @@ class LocalLLMProvider(BaseLLMProvider):
         if reasoning_effort is not None:
             payload["reasoning_effort"] = reasoning_effort
 
-        # Reasoning models (DeepSeek-R1, Qwen3) spend thousands of tokens
-        # on chain-of-thought before producing JSON — they need a longer
-        # timeout than normal models to avoid client disconnects.
-        is_reasoning_model = any(
+        # Large models and reasoning models need longer timeouts.
+        # Gemma 4 26B at 16k max_tokens can take 3+ minutes on dense
+        # passages.  Use 300s for known slow models, 120s for others.
+        slow_model = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss", "gemma", "70b", "72b")
         )
-        request_timeout = 300.0 if is_reasoning_model else 120.0
+        request_timeout = 300.0 if slow_model else 120.0
 
         response = httpx.post(
             f"{self._base_url}/v1/chat/completions",
