@@ -12,6 +12,7 @@ Configuration via environment variables:
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
@@ -117,6 +118,58 @@ class LocalLLMProvider(BaseLLMProvider):
     @property
     def model_id(self) -> str:
         return self.normalize_model_id(self._model)
+
+    @staticmethod
+    def _truncate_repetition(text: str, min_block: int = 40) -> tuple[str, bool]:
+        """Detect and truncate repetitive output loops.
+
+        Some models (especially at high token budgets) fall into loops
+        where they repeat the same block of text over and over.  This
+        wastes tokens and produces unparseable output.
+
+        Strategy: find the longest substring of length >= *min_block*
+        that appears 3+ times.  If found, keep only up to the start of
+        the third occurrence, then let the JSON repair handle closing.
+
+        Returns (possibly_truncated_text, was_looping).
+        """
+        if len(text) < min_block * 3:
+            return text, False
+
+        # Try progressively smaller block sizes to find a repeating loop
+        best_block = ""
+        for block_len in range(min(200, len(text) // 4), min_block - 1, -1):
+            # Sample from the second half of the text (loops develop later)
+            mid = len(text) // 2
+            sample = text[mid : mid + block_len]
+            if not sample.strip():
+                continue
+            count = text.count(sample)
+            if count >= 3:
+                best_block = sample
+                break
+
+        if not best_block:
+            return text, False
+
+        # Keep up to the second occurrence, cut at the third
+        first = text.index(best_block)
+        second_start = text.index(best_block, first + len(best_block))
+        second_end = second_start + len(best_block)
+        try:
+            third_start = text.index(best_block, second_end)
+        except ValueError:
+            return text, False
+
+        truncated = text[:third_start].rstrip()
+        logger.warning(
+            "llm_output_loop_detected",
+            repeated_block_len=len(best_block),
+            repeat_count=text.count(best_block),
+            original_len=len(text),
+            truncated_len=len(truncated),
+        )
+        return truncated, True
 
     @staticmethod
     def _estimate_tokens(text: str) -> int:
@@ -257,6 +310,9 @@ class LocalLLMProvider(BaseLLMProvider):
             )
             text = stripped
 
+        # Detect and truncate output loops before returning
+        text, was_looping = self._truncate_repetition(text)
+
         effective_model_id = self.normalize_model_id(effective_model)
 
         logger.debug(
@@ -267,6 +323,7 @@ class LocalLLMProvider(BaseLLMProvider):
             output_tokens=usage.output_tokens,
             finish_reason=finish_reason,
             response_length=len(text),
+            looping_detected=was_looping,
         )
 
         return LLMResponse(
