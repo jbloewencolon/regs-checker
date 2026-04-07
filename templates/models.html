@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+{% set title = "Model Configuration" %}
+{% set active_nav = "models" %}
+
+{% block content %}
+
+<section class="section">
+  <div class="section-header">
+    <h2>Model Configuration</h2>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn btn-primary"
+              hx-get="/dashboard/api/models/available"
+              hx-target="#lm-status"
+              hx-swap="innerHTML">
+        <span class="btn-label">Scan LM Studio</span>
+        <span class="htmx-indicator"><span class="spinner"></span> Scanning...</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="lm-status" style="margin-bottom: 16px;">
+    {% if lm_studio_connected %}
+      <div style="padding:8px 12px; background:var(--success-bg); color:var(--success); border-radius:var(--radius-sm); font-size:13px;">
+        Connected &mdash; {{ available_models|length }} model(s) loaded
+      </div>
+    {% else %}
+      <div style="padding:8px 12px; background:var(--warning-bg); color:var(--warning); border-radius:var(--radius-sm); font-size:13px;">
+        LM Studio not reachable. Models can still be configured manually.
+      </div>
+    {% endif %}
+  </div>
+
+  <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">
+    Assign which LLM each extraction agent uses. Changes are saved to
+    <code>config/agent_models.json</code> and take effect on the next extraction run.
+    Click <strong>Scan LM Studio</strong> to populate dropdowns with loaded models.
+  </p>
+</section>
+
+<form hx-post="/dashboard/api/models/save"
+      hx-target="#save-result"
+      hx-swap="innerHTML">
+
+  <section class="section">
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap:16px;">
+
+      {% for agent in agents %}
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h3 style="font-size:15px; font-weight:600; margin:0;">{{ agent.label }}</h3>
+          {% if agent.name == 'triage' %}
+            <span style="font-size:11px; padding:2px 8px; background:var(--auto-bg); color:var(--auto-text); border-radius:12px;">Triage</span>
+          {% else %}
+            <span style="font-size:11px; padding:2px 8px; background:var(--primary-light); color:var(--primary); border-radius:12px;">Extraction</span>
+          {% endif %}
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">{{ agent.description }}</p>
+
+        <div style="display:grid; gap:8px;">
+          <!-- Model -->
+          <div>
+            <label style="font-size:12px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+              Model
+            </label>
+            <select name="{{ agent.name }}_model"
+                    class="model-select"
+                    style="width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface);">
+              <option value="">(default)</option>
+              {% for mid in available_models %}
+                <option value="{{ mid }}" {% if mid == agent.model %}selected{% endif %}>{{ mid }}</option>
+              {% endfor %}
+              {% if agent.model and agent.model not in available_models %}
+                <option value="{{ agent.model }}" selected>{{ agent.model }} (not loaded)</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <!-- Settings row -->
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Max Tokens
+              </label>
+              <input type="number" name="{{ agent.name }}_max_tokens"
+                     value="{{ agent.max_tokens }}"
+                     min="512" max="131072" step="512"
+                     style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Context Window
+              </label>
+              <input type="number" name="{{ agent.name }}_context_length"
+                     value="{{ agent.context_length }}"
+                     min="4096" max="1048576" step="1024"
+                     style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Temperature
+              </label>
+              <input type="number" name="{{ agent.name }}_temperature"
+                     value="{{ agent.temperature }}"
+                     min="0" max="2" step="0.05"
+                     style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </section>
+
+  <section class="section" style="display:flex; gap:12px; align-items:center;">
+    <button type="submit" class="btn btn-primary">
+      <span class="btn-label">Save Configuration</span>
+      <span class="htmx-indicator"><span class="spinner"></span> Saving...</span>
+    </button>
+    <button type="button" class="btn btn-danger"
+            hx-post="/dashboard/api/models/reset"
+            hx-target="#save-result"
+            hx-swap="innerHTML"
+            hx-confirm="Reset all agents to default models?">
+      Reset to Defaults
+    </button>
+    <div id="save-result" style="flex:1;"></div>
+  </section>
+
+</form>
+
+{% endblock %}
