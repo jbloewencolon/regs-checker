@@ -79,24 +79,37 @@ class ModelConfigStore:
 
     @classmethod
     def defaults(cls) -> "ModelConfigStore":
-        """Built-in defaults matching the current hardcoded class attributes."""
-        default_extraction = AgentModelConfig(
-            model=settings.local_extraction_model,
-            max_tokens=settings.local_extraction_max_tokens,
-            context_length=settings.local_context_length,
-            temperature=settings.extraction_temperature,
-        )
-        triage = AgentModelConfig(
-            model=settings.local_triage_model,
-            max_tokens=16384,
-            context_length=settings.local_context_length,
-            temperature=0.0,
-        )
+        """Built-in defaults — tuned for legislative extraction workload.
+
+        Large input context, small output: models ingest full bill passages
+        but only produce a single JSON object per extraction.
+        """
+        # Per-agent max_tokens based on output schema complexity
+        _AGENT_MAX_TOKENS: dict[str, int] = {
+            "obligation": 4096,
+            "rights_protection": 4096,
+            "definition_actor": 2048,
+            "threshold_exception": 2048,
+            "compliance_mechanism": 3072,
+            "preemption": 2048,
+            "triage": 1024,
+        }
         agents = {}
         for name in AGENT_DISPLAY:
             if name == "triage":
-                agents[name] = AgentModelConfig(**asdict(triage))
+                agents[name] = AgentModelConfig(
+                    model=settings.local_triage_model,
+                    max_tokens=_AGENT_MAX_TOKENS[name],
+                    context_length=settings.local_context_length,
+                    temperature=0.0,
+                )
             else:
+                agents[name] = AgentModelConfig(
+                    model=settings.local_extraction_model,
+                    max_tokens=_AGENT_MAX_TOKENS.get(name, 4096),
+                    context_length=settings.local_context_length,
+                    temperature=settings.extraction_temperature,
+                )
                 agents[name] = AgentModelConfig(**asdict(default_extraction))
         return cls(agents=agents)
 
