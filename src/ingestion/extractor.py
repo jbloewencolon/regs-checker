@@ -116,7 +116,7 @@ _payload_hash_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
-CIRCUIT_BREAKER_THRESHOLD = 3
+CIRCUIT_BREAKER_THRESHOLD = 10
 
 def _ensure_extraction_enums(db, _log=None) -> None:
     """Ensure all ExtractionType enum values exist in the local Postgres enum.
@@ -1668,6 +1668,12 @@ def run_extraction(
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
+
+                # Reset consecutive failure counter between passages.
+                # One bad passage may fail multiple agents, but that shouldn't
+                # cascade into tripping the breaker on the next passage.
+                if tracker is not None and tracker.consecutive_failures > 0:
+                    tracker._consecutive = 0
 
                 # Commit in batches of 10 to avoid holding huge transactions
                 if (i + 1) % 10 == 0:

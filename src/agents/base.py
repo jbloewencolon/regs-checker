@@ -419,22 +419,32 @@ class BaseExtractionAgent(ABC):
     def _repair_json(text: str) -> str:
         """Attempt to repair common JSON issues from local LLMs.
 
-        Handles three patterns that gpt-oss-20b and similar models produce:
+        Handles four patterns that local models produce:
 
-        1. **Extra data after first object**: Model outputs two JSON objects
+        1. **Invalid control characters**: Models like Gemma emit raw
+           control chars (\\x00-\\x1f except \\t, \\n, \\r) inside JSON
+           strings. Strip them before parsing.
+
+        2. **Extra data after first object**: Model outputs two JSON objects
            concatenated (e.g., ``{"a":1}{"b":2}``).  We extract just the
            first valid top-level object/array.
 
-        2. **Stringified objects in arrays**: Model wraps inner objects in
+        3. **Stringified objects in arrays**: Model wraps inner objects in
            quotes instead of embedding them directly, producing arrays like
            ``[{...}, "{...}", "{...}"]``.  We parse the escaped strings
            back into proper objects.
 
-        3. **Trailing commas**: ``[1, 2, 3,]`` → ``[1, 2, 3]``
+        4. **Trailing commas**: ``[1, 2, 3,]`` → ``[1, 2, 3]``
         """
         text = text.strip()
         if not text:
             return text
+
+        # --- Fix 0: Strip invalid control characters ---
+        # JSON allows \t (0x09), \n (0x0a), \r (0x0d) but not other
+        # C0 control characters.  Some models emit them in strings.
+        import re as _re
+        text = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
 
         # --- Fix 1: Extract first complete JSON object/array ---
         # If json.loads fails on the full text, try to find the first
