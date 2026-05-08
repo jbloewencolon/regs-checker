@@ -119,47 +119,42 @@ text references a penalty defined in another section the agent never sees).
 structured record per law mapped directly to product tables. Layer on top of existing per-passage
 agents — don't replace them.
 
-#### Phase 7A — Enforcement Context Injection (Quick Win, ~2h)
-Stopgap before bill-level agents land. Inject bill enforcement/penalty sections into the existing
-obligation agent's context block, alongside `bill_definitions` and `bill_scope`.
-- Add `bill_enforcement` collector to `src/core/bill_context.py` — keyword match on "penalty",
-  "fine", "civil action", "enforcement", "violation", "liable for"
-- Extend `_append_bill_context` in `src/agents/base.py` to inject the new block
-- Re-run obligation agent on existing passages; measure non-null rate of `enforcement.max_civil_penalty_usd`
-- **Decision gate**: if non-null rate jumps meaningfully, deprioritize Phase 7C; if not, proceed
+#### Phase 7A — Enforcement Context Injection — DONE (2026-05-08)
+Injects bill enforcement/penalty sections into obligation agent context block.
+- `src/core/bill_context.py`: `_ENFORCEMENT_PATTERNS` + `_ENFORCEMENT_SECTION_PATH` regexes,
+  collects enforcement passages into `bill_context["enforcement"]`, budgeted at 10k chars
+- `src/ingestion/extractor.py`: maps `bill_context["enforcement"]` → `ctx["bill_enforcement"]`
+  in both context-building paths
+- `src/agents/base.py`: new `BILL ENFORCEMENT & PENALTIES` block in `_append_bill_context()`
+- Decision gate: measure non-null rate on `obligation.enforcement.max_civil_penalty_usd` after next run
 
-#### Phase 7B — Bill-Level Agent Infrastructure (~1-2d)
-Foundation for Phase 7C–E. No user-visible output yet.
-- New orchestration pattern: post-passage pass that runs bill-level agents per `document_version`
-- Add `BillLevelAgent` base class (parallel to `BaseExtractionAgent`) — input is full law text +
-  per-passage extraction results, output is one `BillLevelExtraction` row
-- New `bill_level_extractions` table or extend `extractions` with `scope='bill'`
-- Add new `ExtractionType` enum values: `enforcement_summary`, `applicability_summary`, `compliance_timeline`
-- Monitor + dashboard support for bill-level agent runs
+#### Phase 7B — Bill-Level Agent Infrastructure — DONE (2026-05-08)
+- `src/agents/bill_level_base.py`: `BillLevelAgent` abstract base + `BillLevelResult` dataclass;
+  reads model config from `agent_models.json`; LLM calling, JSON repair, retry logic
+- `src/db/models.py`: `BillLevelExtraction` model keyed by `(document_version_id, agent_name)`
+  with unique constraint (one row per law per agent, re-runs upsert)
+- `alembic/versions/k7h3i9j1f612_add_bill_level_extractions.py`: migration creating the table
+- `src/ingestion/extractor.py`: `_get_bill_level_agents()` lazy-imports agent classes;
+  `_run_bill_level_agents()` assembles full text, runs agents, upserts; called after each dv loop
 
-#### Phase 7C — Enforcement Agent (~1-2d)
-Bill-level agent producing one structured enforcement record per law.
-- Output schema: `max_civil_penalty_usd`, `penalty_per` (violation/day/occurrence),
-  `cure_period_days`, `enforcing_body`, `private_right_of_action` (bool), `criminal_penalties` (bool),
-  `enforcement_text` (evidence)
-- Maps directly to `law_enforcement_details`
-- Backfill all ~190 laws (≈3-6h at Gemma speeds)
+#### Phase 7C — Enforcement Agent — DONE (2026-05-08)
+`src/agents/enforcement_agent.py` — `EnforcementAgent` (1024 max_tokens)
+- Extracts: `enforcing_body`, `max_civil_penalty_usd`, `penalty_per`, `cure_period_days`,
+  `private_right_of_action`, `criminal_penalties`, `enforcement_text`
+- Maps to `law_enforcement_details`
 
-#### Phase 7D — Applicability Agent (~1-2d)
-Bill-level agent producing one structured applicability record per law.
-- Output schema: `covered_entity_types`, `covered_sectors`, `ai_system_types_in_scope`,
-  `size_thresholds` (revenue/employees/data volume), `geographic_scope`, `key_exemptions`,
-  `government_only` (bool — resolves the currently-manual field)
-- Maps to `law_triggering_thresholds`, feeds `anonymous_audit_profiles` matching engine
-- Backfill all laws
+#### Phase 7D — Applicability Agent — DONE (2026-05-08)
+`src/agents/applicability_agent.py` — `ApplicabilityAgent` (2048 max_tokens)
+- Extracts: `covered_entity_types`, `covered_sectors`, `ai_system_types_in_scope`,
+  `size_thresholds` (revenue/employees/data/FLOPS), `geographic_scope`, `key_exemptions`,
+  `government_only`
+- Maps to `law_triggering_thresholds`, feeds `anonymous_audit_profiles` matching
 
-#### Phase 7E — Compliance Timeline Agent (~1d)
-Bill-level agent for deadlines and frequencies.
-- Output schema: `law_effective_date`, `enforcement_start_date`, `key_deadlines[]` (action,
-  deadline_type, relative_days, frequency_months), `cure_period_days`, `sunset_date`
-- Maps to `law_obligation_flags.impact_assessment_frequency_months`,
-  `law_enforcement_details.cure_period_days`, LawCard deadline view
-- Backfill all laws
+#### Phase 7E — Compliance Timeline Agent — DONE (2026-05-08)
+`src/agents/compliance_timeline_agent.py` — `ComplianceTimelineAgent` (2048 max_tokens)
+- Extracts: `law_effective_date`, `enforcement_start_date`, `key_deadlines[]`,
+  `impact_assessment_frequency_months`, `consumer_request_response_days`, `cure_period_days`
+- Maps to `law_obligation_flags` + LawCard deadline view
 
 #### Phase 7F — Threshold Agent Restructure (~2-3d, lower priority)
 Split flat `threshold_type` output into three sub-types with distinct schemas:
