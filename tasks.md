@@ -156,12 +156,15 @@ Injects bill enforcement/penalty sections into obligation agent context block.
   `impact_assessment_frequency_months`, `consumer_request_response_days`, `cure_period_days`
 - Maps to `law_obligation_flags` + LawCard deadline view
 
-#### Phase 7F — Threshold Agent Restructure (~2-3d, lower priority)
-Split flat `threshold_type` output into three sub-types with distinct schemas:
-- **Scope thresholds** → `law_triggering_thresholds` (revenue, employees, processing volume, FLOPS)
-- **Temporal thresholds** → Phase 7E timeline (deadlines, frequencies, response windows)
-- **Exemptions** → `law_triggering_thresholds.exemptions` (carve-outs, safe harbors, excluded entities)
-- Migration path required for existing 28 rows in `law_triggering_thresholds`
+#### Phase 7F — Threshold Agent Restructure — DONE (2026-05-08)
+Additive approach — no DB migration needed; existing 28 rows remain valid (sub_type: null).
+- `threshold_sub_type: "scope"|"temporal"|"exemption"|"other"` added to `ThresholdExceptionPayload`
+- `revenue_threshold_usd`, `employee_threshold`, `consumer_data_threshold` (typed int fields)
+  replace buried free-text values for scope thresholds
+- `threshold_type` demoted to specific type within sub_type (numeric, compute, carve_out, etc.)
+- Prompt restructured around three-category framework with examples
+- `_determine_extraction_type` in extractor routes on `threshold_sub_type` when present,
+  falls back to legacy heuristic for existing rows without it
 
 #### Phase 7G — Safe Harbor + Missing Data Types — DONE (2026-05-08)
 Added to `src/schemas/extraction.py` + updated all affected prompts:
