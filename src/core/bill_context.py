@@ -17,6 +17,10 @@ import structlog
 
 logger = structlog.get_logger()
 
+# Bump this when build_bill_context() output structure changes so that
+# stale cached contexts in DocumentVersion.metadata_ are rebuilt automatically.
+_BILL_CONTEXT_VERSION = "v2"
+
 # ── Section classification patterns ──────────────────────────────────────────
 
 # Patterns that identify definition sections (case-insensitive)
@@ -169,6 +173,7 @@ def build_bill_context(
             unique_terms.append(term)
 
     context = {
+        "_version": _BILL_CONTEXT_VERSION,
         "definitions": definitions_text,
         "scope": scope_text,
         "enforcement": enforcement_text,
@@ -308,10 +313,14 @@ def get_or_build_bill_context(
     if not dv:
         return {}
 
-    # Check cache
+    # Check cache — version-gated so stale contexts are rebuilt when structure changes
     meta = dv.metadata_ or {}
     cached = meta.get("bill_context")
-    if cached and not isinstance(cached, str):
+    if (
+        cached
+        and not isinstance(cached, str)
+        and cached.get("_version") == _BILL_CONTEXT_VERSION
+    ):
         return cached
 
     # Load passages if not provided

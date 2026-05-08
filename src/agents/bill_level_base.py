@@ -65,14 +65,19 @@ class BillLevelAgent(ABC):
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
-        # Apply model config overrides from agent_models.json
-        cfg = get_config().get(self.agent_name)
-        if cfg.model:
-            self.model_override = cfg.model
-        if cfg.max_tokens:
-            self.max_tokens_override = cfg.max_tokens
-        if cfg.temperature is not None:
-            self.temperature_override = cfg.temperature
+        # Only apply model config overrides when this agent is explicitly
+        # present in agent_models.json.  The fallback from get() uses generic
+        # extraction defaults (65536 tokens) that override the class-level
+        # max_tokens_override set for each bill-level agent.
+        cfg_store = get_config()
+        if self.agent_name in cfg_store.agents:
+            cfg = cfg_store.get(self.agent_name)
+            if cfg.model:
+                self.model_override = cfg.model
+            if cfg.max_tokens:
+                self.max_tokens_override = cfg.max_tokens
+            if cfg.temperature is not None:
+                self.temperature_override = cfg.temperature
 
     # ------------------------------------------------------------------
     # Abstract interface
