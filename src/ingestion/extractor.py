@@ -656,12 +656,14 @@ def _build_context(
         if iapp_topic:
             ctx["iapp_ai_topic"] = iapp_topic
 
-    # Inject bill-level context (definitions, scope, structure, defined terms)
+    # Inject bill-level context (definitions, scope, enforcement, structure, defined terms)
     if bill_context:
         if bill_context.get("definitions"):
             ctx["bill_definitions"] = bill_context["definitions"]
         if bill_context.get("scope"):
             ctx["bill_scope"] = bill_context["scope"]
+        if bill_context.get("enforcement"):
+            ctx["bill_enforcement"] = bill_context["enforcement"]
         if bill_context.get("structure"):
             ctx["bill_structure"] = bill_context["structure"]
         if bill_context.get("defined_terms"):
@@ -1328,13 +1330,15 @@ def run_triage(
     for i, record in enumerate(records):
         try:
             ctx = _build_context(db, record)
-            # Inject bill-level context (definitions, scope, structure)
+            # Inject bill-level context (definitions, scope, enforcement, structure)
             bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
             if bill_ctx:
                 if bill_ctx.get("definitions"):
                     ctx["bill_definitions"] = bill_ctx["definitions"]
                 if bill_ctx.get("scope"):
                     ctx["bill_scope"] = bill_ctx["scope"]
+                if bill_ctx.get("enforcement"):
+                    ctx["bill_enforcement"] = bill_ctx["enforcement"]
                 if bill_ctx.get("structure"):
                     ctx["bill_structure"] = bill_ctx["structure"]
                 if bill_ctx.get("defined_terms"):

@@ -253,6 +253,16 @@ class BaseExtractionAgent(ABC):
                 f"{bill_scope}"
             )
 
+        bill_enforcement = context.get("bill_enforcement")
+        if bill_enforcement:
+            parts.append(
+                "BILL ENFORCEMENT & PENALTIES (verbatim from the bill — "
+                "use to populate enforcement fields such as max_civil_penalty_usd, "
+                "cure_period_days, enforcing_body, and private_right_of_action when "
+                "the passage above references these provisions):\n"
+                f"{bill_enforcement}"
+            )
+
         if parts:
             prompt += "\n\n" + "\n\n".join(parts)
 
