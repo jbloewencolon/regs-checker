@@ -163,16 +163,16 @@ Split flat `threshold_type` output into three sub-types with distinct schemas:
 - **Exemptions** → `law_triggering_thresholds.exemptions` (carve-outs, safe harbors, excluded entities)
 - Migration path required for existing 28 rows in `law_triggering_thresholds`
 
-#### Phase 7G — Safe Harbor + Missing Data Types (~3-5d, lowest priority)
-Layer on after Phase 7C–E prove out.
-- **Safe Harbor**: boolean flag + framework reference (NIST AI RMF, etc.) + conditions; either as
-  obligation field or compliance_mechanism sub-type. Feeds `resp_*` framework tables.
-- **Protected subjects** on rights_protection: consumers, employees, candidates, students, patients, minors
-- **Notification/consent**: `consent_type` (opt-in/opt-out/notice), `timing`, `method`
-- **Data retention**: `retention_period_months`, `retention_subject`
-- **Incident reporting**: `ag_incident_reporting_hours` (already exists, currently empty)
-- **Cross-law references**: structured links instead of ambiguity findings; feeds `law_scope_exclusions`
-  and `jurisdictional_conflicts`
+#### Phase 7G — Safe Harbor + Missing Data Types — DONE (2026-05-08)
+Added to `src/schemas/extraction.py` + updated all affected prompts:
+- **`SafeHarbor`** model (framework, conditions, protection, evidence_text) → `ObligationPayload.safe_harbor`
+- **`ConsentRequirement`** model (consent_type, timing, method, subject_matter) → `ObligationPayload.consent_requirements`
+- **`protected_categories: list[str]`** → `RightsProtectionPayload` (consumer, employee, candidate, student, patient, minor, tenant, borrower, job_applicant)
+- **`retention_period_months: int`** + **`retention_subject: str`** → `ComplianceMechanismPayload` alongside existing `record_retention_period` text field
+- **`CrossLawReference`** model (reference_type, law_name, section, description) + **`cross_law_refs: list`** → `PreemptionSignalPayload`
+- **`incident_reporting_hours`** already in schema — prompt now explicitly surfaces X-hour/X-day windows
+- `preemption.yml` gained a full `system_prompt` (was missing); documents cross_law_refs vocabulary
+- All new fields are optional (None/[]) — existing extractions remain valid
 
 #### Sequencing & Decision Gates
 - 7A is independent, ship first.
