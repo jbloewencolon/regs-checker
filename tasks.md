@@ -106,6 +106,88 @@ Now easy to A/B test via the Models page — load two models in LM Studio, assig
 
 ---
 
+### Phase 7 — Product-Aligned Extraction (Multi-phase Restructure)
+
+**Problem:** The pipeline extracts legal provisions (obligations, definitions, thresholds) but the
+Policy Navigator product needs compliance decision-support data (does this apply to me? what do I
+have to do? what penalty if I don't?). Empty/sparse product tables: `law_enforcement_details` (0
+rows), `law_triggering_thresholds` (28 partial), `law_obligation_flags` (56, none derived from
+extractions). Root cause: per-passage agents can't see cross-section context (e.g. the obligation
+text references a penalty defined in another section the agent never sees).
+
+**Strategy:** Add **bill-level agents** that run once per law with full bill text, producing one
+structured record per law mapped directly to product tables. Layer on top of existing per-passage
+agents — don't replace them.
+
+#### Phase 7A — Enforcement Context Injection (Quick Win, ~2h)
+Stopgap before bill-level agents land. Inject bill enforcement/penalty sections into the existing
+obligation agent's context block, alongside `bill_definitions` and `bill_scope`.
+- Add `bill_enforcement` collector to `src/core/bill_context.py` — keyword match on "penalty",
+  "fine", "civil action", "enforcement", "violation", "liable for"
+- Extend `_append_bill_context` in `src/agents/base.py` to inject the new block
+- Re-run obligation agent on existing passages; measure non-null rate of `enforcement.max_civil_penalty_usd`
+- **Decision gate**: if non-null rate jumps meaningfully, deprioritize Phase 7C; if not, proceed
+
+#### Phase 7B — Bill-Level Agent Infrastructure (~1-2d)
+Foundation for Phase 7C–E. No user-visible output yet.
+- New orchestration pattern: post-passage pass that runs bill-level agents per `document_version`
+- Add `BillLevelAgent` base class (parallel to `BaseExtractionAgent`) — input is full law text +
+  per-passage extraction results, output is one `BillLevelExtraction` row
+- New `bill_level_extractions` table or extend `extractions` with `scope='bill'`
+- Add new `ExtractionType` enum values: `enforcement_summary`, `applicability_summary`, `compliance_timeline`
+- Monitor + dashboard support for bill-level agent runs
+
+#### Phase 7C — Enforcement Agent (~1-2d)
+Bill-level agent producing one structured enforcement record per law.
+- Output schema: `max_civil_penalty_usd`, `penalty_per` (violation/day/occurrence),
+  `cure_period_days`, `enforcing_body`, `private_right_of_action` (bool), `criminal_penalties` (bool),
+  `enforcement_text` (evidence)
+- Maps directly to `law_enforcement_details`
+- Backfill all ~190 laws (≈3-6h at Gemma speeds)
+
+#### Phase 7D — Applicability Agent (~1-2d)
+Bill-level agent producing one structured applicability record per law.
+- Output schema: `covered_entity_types`, `covered_sectors`, `ai_system_types_in_scope`,
+  `size_thresholds` (revenue/employees/data volume), `geographic_scope`, `key_exemptions`,
+  `government_only` (bool — resolves the currently-manual field)
+- Maps to `law_triggering_thresholds`, feeds `anonymous_audit_profiles` matching engine
+- Backfill all laws
+
+#### Phase 7E — Compliance Timeline Agent (~1d)
+Bill-level agent for deadlines and frequencies.
+- Output schema: `law_effective_date`, `enforcement_start_date`, `key_deadlines[]` (action,
+  deadline_type, relative_days, frequency_months), `cure_period_days`, `sunset_date`
+- Maps to `law_obligation_flags.impact_assessment_frequency_months`,
+  `law_enforcement_details.cure_period_days`, LawCard deadline view
+- Backfill all laws
+
+#### Phase 7F — Threshold Agent Restructure (~2-3d, lower priority)
+Split flat `threshold_type` output into three sub-types with distinct schemas:
+- **Scope thresholds** → `law_triggering_thresholds` (revenue, employees, processing volume, FLOPS)
+- **Temporal thresholds** → Phase 7E timeline (deadlines, frequencies, response windows)
+- **Exemptions** → `law_triggering_thresholds.exemptions` (carve-outs, safe harbors, excluded entities)
+- Migration path required for existing 28 rows in `law_triggering_thresholds`
+
+#### Phase 7G — Safe Harbor + Missing Data Types (~3-5d, lowest priority)
+Layer on after Phase 7C–E prove out.
+- **Safe Harbor**: boolean flag + framework reference (NIST AI RMF, etc.) + conditions; either as
+  obligation field or compliance_mechanism sub-type. Feeds `resp_*` framework tables.
+- **Protected subjects** on rights_protection: consumers, employees, candidates, students, patients, minors
+- **Notification/consent**: `consent_type` (opt-in/opt-out/notice), `timing`, `method`
+- **Data retention**: `retention_period_months`, `retention_subject`
+- **Incident reporting**: `ag_incident_reporting_hours` (already exists, currently empty)
+- **Cross-law references**: structured links instead of ambiguity findings; feeds `law_scope_exclusions`
+  and `jurisdictional_conflicts`
+
+#### Sequencing & Decision Gates
+- 7A is independent, ship first.
+- 7B is a prerequisite for 7C, 7D, 7E (do it once, three agents reuse it).
+- 7C/7D/7E are independent of each other after 7B — can parallelize if desired.
+- 7F and 7G are layered enhancements; defer until bill-level pattern is validated.
+- After each new agent ships, measure product-table population rate before proceeding to the next.
+
+---
+
 ## Blocked Tasks
 - **Cross-validation scoring** — Needs extraction to complete.
 - **Phase 4** — Requires eval set (ANALYSIS-1).
