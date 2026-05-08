@@ -420,12 +420,20 @@ def _discriminate_extraction_type(
 
     # --- Threshold & Exception agent: threshold vs exception ---
     if agent_name == "threshold_exception":
+        sub_type = payload.get("threshold_sub_type") or ""
         has_threshold = bool(
             payload.get("threshold_type") or payload.get("threshold_value")
             or payload.get("threshold_condition")
         )
         exceptions = payload.get("exceptions") or []
 
+        # Use structured sub_type when available (new extractions)
+        if sub_type == "exemption":
+            return ExtractionType.exception
+        if sub_type in ("scope", "temporal", "other"):
+            return ExtractionType.threshold
+
+        # Fall back to legacy heuristic for old extractions (sub_type absent)
         if not has_threshold and exceptions:
             return ExtractionType.exception
 

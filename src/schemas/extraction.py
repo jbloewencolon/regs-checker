@@ -253,8 +253,18 @@ class ThresholdExceptionPayload(BaseModel):
     extractions — when does the obligation apply, and when doesn't it?
     """
 
+    threshold_sub_type: str | None = Field(
+        default=None,
+        description="High-level category: "
+        "scope=who/what triggers applicability (size, volume, FLOPS, sector); "
+        "temporal=deadlines, response windows, phase-in periods; "
+        "exemption=carve-outs, safe harbors, excluded entity types; "
+        "other=doesn't fit the above",
+    )
     threshold_type: str | None = Field(
-        default=None, description="Type of threshold (numeric, categorical, etc.)"
+        default=None,
+        description="Specific type within the sub_type (numeric, categorical, "
+        "monetary, date, compute, entity_type, sector, etc.)",
     )
     threshold_value: str | None = None
 
@@ -286,6 +296,19 @@ class ThresholdExceptionPayload(BaseModel):
         default=None,
         description="Consequential decision sectors: healthcare, employment, "
         "credit, housing, insurance, criminal_justice, education, government",
+    )
+    # Scope sub-type structured fields
+    revenue_threshold_usd: int | None = Field(
+        default=None,
+        description="Annual revenue threshold in USD that triggers applicability (scope sub-type only)",
+    )
+    employee_threshold: int | None = Field(
+        default=None,
+        description="Employee count threshold that triggers applicability (scope sub-type only)",
+    )
+    consumer_data_threshold: int | None = Field(
+        default=None,
+        description="Number of consumers' data processed that triggers applicability (scope sub-type only)",
     )
 
 
