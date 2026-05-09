@@ -516,7 +516,7 @@ def main():
     parser.add_argument(
         "--mode",
         choices=[
-            "seed-local",
+            "seed-local", "enrich-orrick",
             "manual", "pdf", "fetch", "export-passages", "import-extractions",
             "extract", "recover", "evaluate", "retry-failed",
             "fix-urls", "check-completeness", "check-stale",
@@ -526,6 +526,7 @@ def main():
         help=(
             "Pipeline mode: "
             "'seed-local' seeds from data/fact_laws.csv + ingests local files (PRIMARY), "
+            "'enrich-orrick' populates Orrick summaries for all laws before extraction, "
             "'fetch' re-parses already-ingested documents, "
             "'extract' runs AI extraction agents via API, "
             "'recover' re-extracts passages with partial results (missing agents), "
@@ -570,6 +571,12 @@ def main():
         default=15,
         help="Passages per export file in export-passages mode (default: 15)",
     )
+    parser.add_argument(
+        "--no-llm",
+        action="store_true",
+        default=False,
+        help="In enrich-orrick mode, only run the backfill phase (no LLM calls)",
+    )
     args = parser.parse_args()
 
     db = SessionLocal()
@@ -591,6 +598,23 @@ def main():
                 print(f"  Jobs failed:       {summary.get('failed', 0)}")
                 print(f"  No file found:     {summary.get('skipped_no_file', 0)}")
                 print(f"  Total passages:    {summary.get('total_passages', 0)}")
+        elif args.mode == "enrich-orrick":
+            from src.ingestion.orrick_enrichment import run_orrick_enrichment
+            summary = run_orrick_enrichment(
+                db,
+                limit=args.limit,
+                llm_enabled=not args.no_llm,
+                on_progress=print,
+            )
+            print(f"\n{'=' * 60}")
+            print("Orrick enrichment complete:")
+            print(f"  Total families:     {summary['total']}")
+            print(f"  Already complete:   {summary['already_complete']}")
+            print(f"  Backfilled (CSV):   {summary['backfilled']}")
+            if not args.no_llm:
+                print(f"  LLM generated:     {summary['llm_generated']}")
+                print(f"  LLM failed:        {summary['llm_failed']}")
+                print(f"  No text file:      {summary['llm_skipped_no_text']}")
         elif args.mode == "manual":
             job1 = seed_colorado_sb205(db)
             job2 = seed_federal_nist_ai_rmf(db)
