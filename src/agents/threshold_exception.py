@@ -17,45 +17,66 @@ class ThresholdExceptionAgent(BaseExtractionAgent):
     model_override = "openai/gpt-oss-20b"
 
     def get_system_prompt(self) -> str:
-        return """You are a legal extraction agent specializing in thresholds and exceptions.
+        return """You are a legal extraction agent specializing in thresholds and exceptions in AI legislation.
 
-Your task is to extract boundary conditions from legislative text:
-- THRESHOLDS: Numeric or categorical conditions that determine when an obligation applies
-  (e.g., "companies with more than 50 employees", "systems that process more than 10,000 records")
-- EXCEPTIONS: Carve-outs, safe harbors, exemptions, and conditions under which an obligation
-  does NOT apply (e.g., "except for small businesses", "does not apply to research purposes")
+Your task is to extract boundary conditions from legislative text and classify each into
+one of three sub-types:
+
+SCOPE THRESHOLDS (threshold_sub_type: "scope")
+Conditions that determine WHO or WHAT the law applies to based on size, volume, or sector:
+- Entity size: revenue (revenue_threshold_usd), employee count (employee_threshold),
+  consumers' data processed (consumer_data_threshold)
+- Compute: FLOPS thresholds for model training (compute_flops + compute_description)
+- Sector: consequential decision sectors (sector_applicability)
+- Entity type: developer-only, deployer-only, government-only
+
+TEMPORAL THRESHOLDS (threshold_sub_type: "temporal")
+Conditions that determine WHEN an obligation kicks in:
+- "applies only after January 1, 2026", "effective 18 months after enactment"
+- Note: purely administrative deadlines ("report within 30 days") belong in compliance_mechanism.
+  Extract temporal thresholds when they gate WHETHER an obligation applies at all.
+
+EXEMPTIONS (threshold_sub_type: "exemption")
+Conditions under which the law does NOT apply:
+- "does not apply to small businesses", "excludes nonprofits", "except for research use"
+- Safe harbors that shield entities from liability
 
 OUTPUT FORMAT:
 Return a JSON object with a top-level "extractions" array. Each element includes:
-- threshold_type: Type of threshold (numeric, categorical, temporal, etc.)
-- threshold_value: The threshold value
-- threshold_unit: Unit of measurement if applicable
+- threshold_sub_type: "scope" | "temporal" | "exemption" | "other" — ALWAYS set this
+- threshold_type: Specific type (numeric, categorical, monetary, date, compute, entity_type,
+  sector, carve_out, safe_harbor, use_exemption, etc.)
+- threshold_value: The threshold value as a string (e.g. "50", "25000000")
+- threshold_unit: Unit (employees, USD, consumers, months, FLOPS, etc.)
 - threshold_condition: The full condition expression
 - applies_to_obligation: Which obligation this threshold modifies
-- exceptions: Array of {exception_type, description, conditions, scope}
-- evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
+- exceptions: Array of {exception_type, description, conditions, scope} — for exemption sub-type
+- compute_flops: Numeric FLOPS value (e.g., 1e26). Null if not a compute threshold.
+- compute_description: Human-readable compute threshold text. Null if not applicable.
+- sector_applicability: Array of sectors: "healthcare", "employment", "credit", "housing",
+  "insurance", "criminal_justice", "education", "government". Null if not sector-specific.
+- revenue_threshold_usd: Integer USD for revenue scope thresholds. Null otherwise.
+- employee_threshold: Integer employee count for size scope thresholds. Null otherwise.
+- consumer_data_threshold: Integer consumer count for data-volume scope thresholds. Null otherwise.
+- evidence_spans: Array of {field_name, text} where text is VERBATIM from the passage
 
 If the passage contains MULTIPLE boundary conditions, include one object per condition.
 
 If the passage contains NO extractable thresholds or exceptions, return:
-{"detected": false, "reason": "<describe why no thresholds or exceptions were found>"}
+{"detected": false, "reason": "<describe why>"}
 
 CRITICAL RULES:
 - Every evidence_spans[].text MUST appear VERBATIM in the source passage
-- Use abstention (detected: false) rather than hallucinating boundaries
-- Distinguish clearly between thresholds (when it applies) and exceptions (when it doesn't)
-- Capture exact numeric values and units
+- Always set threshold_sub_type — never leave it null in an extraction
+- For scope thresholds: populate revenue_threshold_usd, employee_threshold, or
+  consumer_data_threshold as integers when the bill states them explicitly
+- Copy evidence spans EXACTLY — same capitalization, punctuation, spacing; do NOT paraphrase
 
-EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
-- Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
-- Do NOT paraphrase, summarize, or reword the text
-- Do NOT fix typos, grammar, or formatting in the quoted text
-- Include enough context for the span to be meaningful (usually 10-40 words)
-
-EXAMPLE (for a passage containing "This section does not apply to a covered entity that employs fewer than 50 employees."):
-  CORRECT: {"field_name": "text", "text": "This section does not apply to a covered entity that employs fewer than 50 employees."}
-  WRONG:   {"field_name": "text", "text": "Does not apply to covered entities with fewer than 50 employees."}
-The second is wrong because it paraphrases instead of copying the exact text."""
+EXAMPLE (passage: "This section does not apply to a covered entity that employs fewer than 50 employees."):
+  CORRECT: {"threshold_sub_type": "exemption", "threshold_type": "numeric", "threshold_value": "50",
+    "threshold_unit": "employees", "employee_threshold": 50,
+    "evidence_spans": [{"field_name": "threshold_condition",
+      "text": "This section does not apply to a covered entity that employs fewer than 50 employees."}]}"""
 
     def get_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
         prompt = f"""Extract all thresholds and exceptions from the following legislative passage.

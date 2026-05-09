@@ -48,12 +48,12 @@ def upgrade() -> None:
         ),
         sa.Column("decision", sa.Enum(
             "relevant", "not_relevant", "uncertain",
-            name="triagedecision", create_constraint=False,
+            name="triagedecision", create_constraint=False, create_type=False,
         ), nullable=False),
         sa.Column("method", sa.Enum(
             "keyword", "orrick_cross_check", "llm_generic",
             "quality_fail", "passthrough",
-            name="triagemethod", create_constraint=False,
+            name="triagemethod", create_constraint=False, create_type=False,
         ), nullable=False),
         sa.Column("confidence", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("matched_keywords", JSONB, server_default="[]"),

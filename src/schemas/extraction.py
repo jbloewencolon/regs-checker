@@ -76,6 +76,49 @@ class InterpretationRisk(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class SafeHarbor(BaseModel):
+    """An affirmative defense or safe harbor provision embedded in an obligation."""
+
+    framework: str | None = Field(
+        default=None,
+        description="The framework or standard that triggers the safe harbor "
+        "(e.g., 'NIST AI RMF', 'ISO/IEC 42001', 'FTC guidelines')",
+    )
+    conditions: str | None = Field(
+        default=None,
+        description="What the entity must do to qualify for the safe harbor",
+    )
+    protection: str | None = Field(
+        default=None,
+        description="What legal protection the safe harbor provides "
+        "(e.g., 'affirmative defense against liability', 'rebuttable presumption of compliance')",
+    )
+    evidence_text: str | None = Field(
+        default=None, description="Verbatim safe harbor language from the passage"
+    )
+
+
+class ConsentRequirement(BaseModel):
+    """A notice or consent mechanism associated with an obligation."""
+
+    consent_type: str | None = Field(
+        default=None,
+        description="Type: opt_in, opt_out, notice, notice_and_choice, disclosure",
+    )
+    timing: str | None = Field(
+        default=None,
+        description="When consent/notice must be obtained: before, at, after (the AI interaction or decision)",
+    )
+    method: str | None = Field(
+        default=None,
+        description="How consent must be obtained: written, electronic, verbal, in_app, posted",
+    )
+    subject_matter: str | None = Field(
+        default=None,
+        description="What the consent or notice covers (AI use, data processing, automated decision)",
+    )
+
+
 class TimelineInfo(BaseModel):
     """Timeline associated with an obligation."""
 
@@ -129,6 +172,14 @@ class ObligationPayload(BaseModel):
         default_factory=list,
         description="Verbatim preemption language found in the passage "
         "(e.g., 'this section does not preempt', 'notwithstanding any state law')",
+    )
+    safe_harbor: SafeHarbor | None = Field(
+        default=None,
+        description="Safe harbor or affirmative defense provision associated with this obligation, if any",
+    )
+    consent_requirements: ConsentRequirement | None = Field(
+        default=None,
+        description="Consent or notice mechanism required for this obligation, if any",
     )
     interpretation_risks: list[InterpretationRisk] = Field(
         default_factory=list,
@@ -202,8 +253,18 @@ class ThresholdExceptionPayload(BaseModel):
     extractions — when does the obligation apply, and when doesn't it?
     """
 
+    threshold_sub_type: str | None = Field(
+        default=None,
+        description="High-level category: "
+        "scope=who/what triggers applicability (size, volume, FLOPS, sector); "
+        "temporal=deadlines, response windows, phase-in periods; "
+        "exemption=carve-outs, safe harbors, excluded entity types; "
+        "other=doesn't fit the above",
+    )
     threshold_type: str | None = Field(
-        default=None, description="Type of threshold (numeric, categorical, etc.)"
+        default=None,
+        description="Specific type within the sub_type (numeric, categorical, "
+        "monetary, date, compute, entity_type, sector, etc.)",
     )
     threshold_value: str | None = None
 
@@ -235,6 +296,19 @@ class ThresholdExceptionPayload(BaseModel):
         default=None,
         description="Consequential decision sectors: healthcare, employment, "
         "credit, housing, insurance, criminal_justice, education, government",
+    )
+    # Scope sub-type structured fields
+    revenue_threshold_usd: int | None = Field(
+        default=None,
+        description="Annual revenue threshold in USD that triggers applicability (scope sub-type only)",
+    )
+    employee_threshold: int | None = Field(
+        default=None,
+        description="Employee count threshold that triggers applicability (scope sub-type only)",
+    )
+    consumer_data_threshold: int | None = Field(
+        default=None,
+        description="Number of consumers' data processed that triggers applicability (scope sub-type only)",
     )
 
 
@@ -309,6 +383,11 @@ class RightsProtectionPayload(BaseModel):
     )
     right_holder_normalized: str | None = Field(
         default=None, description="Normalized category (consumer, employee, public)"
+    )
+    protected_categories: list[str] = Field(
+        default_factory=list,
+        description="Subject categories explicitly protected: consumer, employee, candidate, "
+        "student, patient, minor, tenant, borrower, job_applicant",
     )
     right_type: str = Field(
         description="Type: notice, explanation, opt_out, appeal, deletion, "
@@ -391,7 +470,16 @@ class ComplianceMechanismPayload(BaseModel):
         default_factory=list, description="Specific audit/assessment requirements"
     )
     record_retention_period: str | None = Field(
-        default=None, description="How long records must be kept"
+        default=None, description="How long records must be kept (raw text, e.g. '3 years')"
+    )
+    retention_period_months: int | None = Field(
+        default=None,
+        description="Record retention period in months (e.g. 36 for 3 years, 12 for 1 year)",
+    )
+    retention_subject: str | None = Field(
+        default=None,
+        description="What must be retained (e.g. 'impact assessments', 'audit results', "
+        "'consumer requests', 'training data documentation')",
     )
     reporting_frequency: str | None = Field(
         default=None, description="How often reports must be filed"
@@ -434,6 +522,26 @@ class ComplianceMechanismPayload(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class CrossLawReference(BaseModel):
+    """A structured reference to another law or statute."""
+
+    reference_type: str = Field(
+        description="Relationship: supersedes, incorporates, conflicts_with, "
+        "defined_by, supplements, notwithstanding, subject_to"
+    )
+    law_name: str | None = Field(
+        default=None,
+        description="Name or citation of the referenced law "
+        "(e.g., 'CCPA', 'Federal AI Act', '15 U.S.C. § 45')",
+    )
+    section: str | None = Field(
+        default=None, description="Specific section of the referenced law, if given"
+    )
+    description: str | None = Field(
+        default=None, description="Plain-language description of the reference"
+    )
+
+
 class PreemptionSignalPayload(BaseModel):
     """Extraction payload for the Preemption Signal Agent.
 
@@ -460,6 +568,11 @@ class PreemptionSignalPayload(BaseModel):
         default=None,
         description="Verbatim preemption clause from the passage if present "
         "(e.g., 'nothing in this section shall preempt federal law')",
+    )
+    cross_law_refs: list[CrossLawReference] = Field(
+        default_factory=list,
+        description="Structured references to other laws or statutes this passage "
+        "references, incorporates, supersedes, or conflicts with",
     )
     section_reference: str | None = None
     jurisdiction: str | None = None

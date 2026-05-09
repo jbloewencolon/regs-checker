@@ -106,6 +106,86 @@ Now easy to A/B test via the Models page — load two models in LM Studio, assig
 
 ---
 
+### Phase 7 — Product-Aligned Extraction (Multi-phase Restructure)
+
+**Problem:** The pipeline extracts legal provisions (obligations, definitions, thresholds) but the
+Policy Navigator product needs compliance decision-support data (does this apply to me? what do I
+have to do? what penalty if I don't?). Empty/sparse product tables: `law_enforcement_details` (0
+rows), `law_triggering_thresholds` (28 partial), `law_obligation_flags` (56, none derived from
+extractions). Root cause: per-passage agents can't see cross-section context (e.g. the obligation
+text references a penalty defined in another section the agent never sees).
+
+**Strategy:** Add **bill-level agents** that run once per law with full bill text, producing one
+structured record per law mapped directly to product tables. Layer on top of existing per-passage
+agents — don't replace them.
+
+#### Phase 7A — Enforcement Context Injection — DONE (2026-05-08)
+Injects bill enforcement/penalty sections into obligation agent context block.
+- `src/core/bill_context.py`: `_ENFORCEMENT_PATTERNS` + `_ENFORCEMENT_SECTION_PATH` regexes,
+  collects enforcement passages into `bill_context["enforcement"]`, budgeted at 10k chars
+- `src/ingestion/extractor.py`: maps `bill_context["enforcement"]` → `ctx["bill_enforcement"]`
+  in both context-building paths
+- `src/agents/base.py`: new `BILL ENFORCEMENT & PENALTIES` block in `_append_bill_context()`
+- Decision gate: measure non-null rate on `obligation.enforcement.max_civil_penalty_usd` after next run
+
+#### Phase 7B — Bill-Level Agent Infrastructure — DONE (2026-05-08)
+- `src/agents/bill_level_base.py`: `BillLevelAgent` abstract base + `BillLevelResult` dataclass;
+  reads model config from `agent_models.json`; LLM calling, JSON repair, retry logic
+- `src/db/models.py`: `BillLevelExtraction` model keyed by `(document_version_id, agent_name)`
+  with unique constraint (one row per law per agent, re-runs upsert)
+- `alembic/versions/k7h3i9j1f612_add_bill_level_extractions.py`: migration creating the table
+- `src/ingestion/extractor.py`: `_get_bill_level_agents()` lazy-imports agent classes;
+  `_run_bill_level_agents()` assembles full text, runs agents, upserts; called after each dv loop
+
+#### Phase 7C — Enforcement Agent — DONE (2026-05-08)
+`src/agents/enforcement_agent.py` — `EnforcementAgent` (1024 max_tokens)
+- Extracts: `enforcing_body`, `max_civil_penalty_usd`, `penalty_per`, `cure_period_days`,
+  `private_right_of_action`, `criminal_penalties`, `enforcement_text`
+- Maps to `law_enforcement_details`
+
+#### Phase 7D — Applicability Agent — DONE (2026-05-08)
+`src/agents/applicability_agent.py` — `ApplicabilityAgent` (2048 max_tokens)
+- Extracts: `covered_entity_types`, `covered_sectors`, `ai_system_types_in_scope`,
+  `size_thresholds` (revenue/employees/data/FLOPS), `geographic_scope`, `key_exemptions`,
+  `government_only`
+- Maps to `law_triggering_thresholds`, feeds `anonymous_audit_profiles` matching
+
+#### Phase 7E — Compliance Timeline Agent — DONE (2026-05-08)
+`src/agents/compliance_timeline_agent.py` — `ComplianceTimelineAgent` (2048 max_tokens)
+- Extracts: `law_effective_date`, `enforcement_start_date`, `key_deadlines[]`,
+  `impact_assessment_frequency_months`, `consumer_request_response_days`, `cure_period_days`
+- Maps to `law_obligation_flags` + LawCard deadline view
+
+#### Phase 7F — Threshold Agent Restructure — DONE (2026-05-08)
+Additive approach — no DB migration needed; existing 28 rows remain valid (sub_type: null).
+- `threshold_sub_type: "scope"|"temporal"|"exemption"|"other"` added to `ThresholdExceptionPayload`
+- `revenue_threshold_usd`, `employee_threshold`, `consumer_data_threshold` (typed int fields)
+  replace buried free-text values for scope thresholds
+- `threshold_type` demoted to specific type within sub_type (numeric, compute, carve_out, etc.)
+- Prompt restructured around three-category framework with examples
+- `_determine_extraction_type` in extractor routes on `threshold_sub_type` when present,
+  falls back to legacy heuristic for existing rows without it
+
+#### Phase 7G — Safe Harbor + Missing Data Types — DONE (2026-05-08)
+Added to `src/schemas/extraction.py` + updated all affected prompts:
+- **`SafeHarbor`** model (framework, conditions, protection, evidence_text) → `ObligationPayload.safe_harbor`
+- **`ConsentRequirement`** model (consent_type, timing, method, subject_matter) → `ObligationPayload.consent_requirements`
+- **`protected_categories: list[str]`** → `RightsProtectionPayload` (consumer, employee, candidate, student, patient, minor, tenant, borrower, job_applicant)
+- **`retention_period_months: int`** + **`retention_subject: str`** → `ComplianceMechanismPayload` alongside existing `record_retention_period` text field
+- **`CrossLawReference`** model (reference_type, law_name, section, description) + **`cross_law_refs: list`** → `PreemptionSignalPayload`
+- **`incident_reporting_hours`** already in schema — prompt now explicitly surfaces X-hour/X-day windows
+- `preemption.yml` gained a full `system_prompt` (was missing); documents cross_law_refs vocabulary
+- All new fields are optional (None/[]) — existing extractions remain valid
+
+#### Sequencing & Decision Gates
+- 7A is independent, ship first.
+- 7B is a prerequisite for 7C, 7D, 7E (do it once, three agents reuse it).
+- 7C/7D/7E are independent of each other after 7B — can parallelize if desired.
+- 7F and 7G are layered enhancements; defer until bill-level pattern is validated.
+- After each new agent ships, measure product-table population rate before proceeding to the next.
+
+---
+
 ## Blocked Tasks
 - **Cross-validation scoring** — Needs extraction to complete.
 - **Phase 4** — Requires eval set (ANALYSIS-1).

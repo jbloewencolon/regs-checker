@@ -27,6 +27,7 @@ system_prompt: |
   Return a JSON object with a top-level "extractions" array. Each element includes:
   - right_holder: Who holds the right (consumer, employee, applicant, data subject, etc.)
   - right_holder_normalized: Normalized category (consumer, employee, public)
+  - protected_categories: Array of subject categories this right explicitly protects — include all that apply: consumer, employee, candidate, student, patient, minor, tenant, borrower, job_applicant. Use [] if not specified.
   - right_type: One of the types listed above
   - right_description: Full description of the right in legal language
   - trigger_condition: When the right is activated

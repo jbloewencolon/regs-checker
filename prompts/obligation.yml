@@ -25,6 +25,8 @@ system_prompt: |
   - section_reference: Section/subsection reference
   - timeline: Object with effective_date, compliance_deadline, sunset_date, phase_in_period, timeline_text
   - enforcement: Object with enforcing_body, penalty_type, penalty_description, private_right_of_action, enforcement_text, max_civil_penalty_usd (integer in USD, e.g. 10000), cure_period_days (integer, e.g. 60)
+  - safe_harbor: Object or null — if the passage includes a safe harbor or affirmative defense provision associated with this obligation: {framework (e.g. "NIST AI RMF"), conditions (what entity must do to qualify), protection (what legal protection it provides), evidence_text (verbatim quote)}. Null if none.
+  - consent_requirements: Object or null — if the obligation requires consent, opt-out, or notice from an individual: {consent_type (opt_in|opt_out|notice|notice_and_choice|disclosure), timing (before|at|after), method (written|electronic|verbal|in_app|posted), subject_matter}. Null if none.
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
   - interpretation_risks: Array of interpretation risk objects (see below). Omit or leave empty if none.
 

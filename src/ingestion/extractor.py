@@ -118,6 +118,14 @@ _payload_hash_available: bool | None = None
 # Prevents silently skipping data when LM Studio/GPU is down.
 CIRCUIT_BREAKER_THRESHOLD = 10
 
+# Bill-level agents to run after per-passage extraction for each document version.
+# Import lazily to avoid circular imports.
+_BILL_LEVEL_AGENT_CLASSES: list[str] = [
+    "src.agents.enforcement_agent.EnforcementAgent",
+    "src.agents.applicability_agent.ApplicabilityAgent",
+    "src.agents.compliance_timeline_agent.ComplianceTimelineAgent",
+]
+
 def _ensure_extraction_enums(db, _log=None) -> None:
     """Ensure all ExtractionType enum values exist in the local Postgres enum.
 
@@ -412,12 +420,20 @@ def _discriminate_extraction_type(
 
     # --- Threshold & Exception agent: threshold vs exception ---
     if agent_name == "threshold_exception":
+        sub_type = payload.get("threshold_sub_type") or ""
         has_threshold = bool(
             payload.get("threshold_type") or payload.get("threshold_value")
             or payload.get("threshold_condition")
         )
         exceptions = payload.get("exceptions") or []
 
+        # Use structured sub_type when available (new extractions)
+        if sub_type == "exemption":
+            return ExtractionType.exception
+        if sub_type in ("scope", "temporal", "other"):
+            return ExtractionType.threshold
+
+        # Fall back to legacy heuristic for old extractions (sub_type absent)
         if not has_threshold and exceptions:
             return ExtractionType.exception
 
@@ -656,12 +672,14 @@ def _build_context(
         if iapp_topic:
             ctx["iapp_ai_topic"] = iapp_topic
 
-    # Inject bill-level context (definitions, scope, structure, defined terms)
+    # Inject bill-level context (definitions, scope, enforcement, structure, defined terms)
     if bill_context:
         if bill_context.get("definitions"):
             ctx["bill_definitions"] = bill_context["definitions"]
         if bill_context.get("scope"):
             ctx["bill_scope"] = bill_context["scope"]
+        if bill_context.get("enforcement"):
+            ctx["bill_enforcement"] = bill_context["enforcement"]
         if bill_context.get("structure"):
             ctx["bill_structure"] = bill_context["structure"]
         if bill_context.get("defined_terms"):
@@ -1328,13 +1346,15 @@ def run_triage(
     for i, record in enumerate(records):
         try:
             ctx = _build_context(db, record)
-            # Inject bill-level context (definitions, scope, structure)
+            # Inject bill-level context (definitions, scope, enforcement, structure)
             bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
             if bill_ctx:
                 if bill_ctx.get("definitions"):
                     ctx["bill_definitions"] = bill_ctx["definitions"]
                 if bill_ctx.get("scope"):
                     ctx["bill_scope"] = bill_ctx["scope"]
+                if bill_ctx.get("enforcement"):
+                    ctx["bill_enforcement"] = bill_ctx["enforcement"]
                 if bill_ctx.get("structure"):
                     ctx["bill_structure"] = bill_ctx["structure"]
                 if bill_ctx.get("defined_terms"):
@@ -1411,6 +1431,108 @@ def run_triage(
         f"out of {summary['total']} passages"
     )
     return summary
+
+
+def _get_bill_level_agents():
+    """Lazily import and instantiate available bill-level agents.
+
+    Skips any that fail to import (e.g. not yet implemented).
+    """
+    import importlib
+    agents = []
+    for dotted_path in _BILL_LEVEL_AGENT_CLASSES:
+        try:
+            module_path, class_name = dotted_path.rsplit(".", 1)
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
+            agents.append(cls())
+        except (ImportError, AttributeError):
+            pass  # Agent not yet implemented — skip silently
+    return agents
+
+
+def _run_bill_level_agents(
+    db,
+    document_version_id: int,
+    passages: list,
+    bill_context: dict,
+    _log=None,
+) -> int:
+    """Run all bill-level agents for one document version.
+
+    Assembles full bill text from sorted passages, runs each agent,
+    upserts results to bill_level_extractions.  Returns count of agents
+    that produced a non-error payload.
+    """
+    from src.db.models import BillLevelExtraction, ReviewStatus
+
+    if _log is None:
+        _log = lambda msg: None
+
+    agents = _get_bill_level_agents()
+    if not agents:
+        return 0
+
+    # Assemble full bill text in document order
+    sorted_passages = sorted(passages, key=lambda r: r.ordinal)
+    full_text = "\n\n".join(
+        p.text_content for p in sorted_passages if p.text_content
+    )
+
+    if not full_text.strip():
+        return 0
+
+    succeeded = 0
+    for agent in agents:
+        try:
+            result = agent.extract_bill(full_text, context=bill_context)
+
+            # Upsert: one row per (document_version_id, agent_name)
+            from sqlalchemy import select as sa_select
+            existing = db.scalars(
+                sa_select(BillLevelExtraction).where(
+                    BillLevelExtraction.document_version_id == document_version_id,
+                    BillLevelExtraction.agent_name == agent.agent_name,
+                )
+            ).first()
+
+            has_error = "_error" in result.payload
+            if existing:
+                existing.payload = result.payload
+                existing.model_id = result.model_id
+                existing.input_tokens = result.input_tokens
+                existing.output_tokens = result.output_tokens
+                existing.truncated = result.truncated
+                existing.review_status = ReviewStatus.pending
+            else:
+                db.add(BillLevelExtraction(
+                    document_version_id=document_version_id,
+                    agent_name=agent.agent_name,
+                    payload=result.payload,
+                    model_id=result.model_id,
+                    input_tokens=result.input_tokens,
+                    output_tokens=result.output_tokens,
+                    truncated=result.truncated,
+                    review_status=ReviewStatus.pending,
+                ))
+
+            if not has_error:
+                succeeded += 1
+                _log(f"  [bill-level] {agent.agent_name}: OK")
+            else:
+                _log(f"  [bill-level] {agent.agent_name}: failed — {result.payload.get('_error', '')[:100]}")
+
+        except Exception as e:
+            logger.error(
+                "bill_level_agent_error",
+                agent=agent.agent_name,
+                document_version_id=document_version_id,
+                error=str(e),
+            )
+            _log(f"  [bill-level] {agent.agent_name}: error — {e}")
+
+    db.flush()
+    return succeeded
 
 
 def run_extraction(
@@ -1703,6 +1825,14 @@ def run_extraction(
                     record_id=passage.primary_record.id,
                     error=str(e),
                 )
+
+        # Run bill-level agents for this document version (once per law)
+        bill_level_count = _run_bill_level_agents(
+            db, dv_id, dv_group, bill_ctx, _log=_log
+        )
+        if bill_level_count:
+            summary.setdefault("bill_level_extractions", 0)
+            summary["bill_level_extractions"] += bill_level_count
 
         # Finalize extraction job
         extraction_job.status = "completed" if job_failures == 0 else "completed_with_errors"

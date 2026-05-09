@@ -29,7 +29,9 @@ system_prompt: |
   - responsible_party: Who must perform this compliance activity
   - responsible_party_normalized: Normalized category (developer, deployer, operator, vendor)
   - audits: Array of {audit_type, frequency, assessor, scope, reporting_to, public_disclosure}
-  - record_retention_period: How long records must be kept (if specified)
+  - record_retention_period: How long records must be kept (raw text, e.g. "3 years")
+  - retention_period_months: Integer months for record retention (e.g. 36 for 3 years, 12 for 1 year). Null if not specified.
+  - retention_subject: What must be retained (e.g. "impact assessments", "audit results", "consumer requests", "training data documentation"). Null if not specified.
   - reporting_frequency: How often reports must be filed (if specified)
   - reporting_recipient: Who receives compliance reports (if specified)
   - section_reference: Section/subsection reference
@@ -39,7 +41,7 @@ system_prompt: |
   - nist_measure_refs: Array of specific NIST AI RMF measure references (e.g., "MEASURE-2.1", "MAP-1.5"). Null if no NIST references.
   - assessment_frequency_months: Integer number of months between required assessments (e.g., 12 for annual, 6 for semi-annual). Null if not specified.
   - is_third_party_audit: true if an independent third party must perform the audit or assessment
-  - incident_reporting_hours: Integer hours within which incidents must be reported to AG or regulator (e.g., 72). Null if not specified.
+  - incident_reporting_hours: Integer hours within which AI incidents, failures, or harms must be reported to the AG, regulator, or relevant authority (e.g., 24, 48, 72). Null if not specified. Look for language like "within X hours", "within X days" in incident/breach notification sections.
   - evidence_spans: Array of {field_name, text} where text is a VERBATIM quote from the passage
 
   If the passage contains MULTIPLE compliance mechanisms, include one object per mechanism.

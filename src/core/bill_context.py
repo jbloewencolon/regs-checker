@@ -17,6 +17,10 @@ import structlog
 
 logger = structlog.get_logger()
 
+# Bump this when build_bill_context() output structure changes so that
+# stale cached contexts in DocumentVersion.metadata_ are rebuilt automatically.
+_BILL_CONTEXT_VERSION = "v2"
+
 # ── Section classification patterns ──────────────────────────────────────────
 
 # Patterns that identify definition sections (case-insensitive)
@@ -59,9 +63,37 @@ _SCOPE_SECTION_PATH = re.compile(
     r"(?i)(?:scope|applicab|purpose|finding|intent|short.title|exempt)"
 )
 
+# Patterns that identify enforcement/penalty sections
+_ENFORCEMENT_PATTERNS = re.compile(
+    r"(?i)"
+    r"(?:^|\b)"
+    r"(?:"
+    r"penalt(?:y|ies)"
+    r"|civil (?:penalty|action|fine|liability|remedy|remedies)"
+    r"|criminal (?:penalty|penalties|offense)"
+    r"|enforcement"
+    r"|violation[s]?"
+    r"|liable? (?:for|to)"
+    r"|fine[s]? (?:of|not to exceed|up to)"
+    r"|right of action"
+    r"|private right"
+    r"|attorney general"
+    r"|cause[s]? of action"
+    r"|injunctive relief"
+    r"|cure period"
+    r"|notice and cure"
+    r")"
+)
+
+# Section paths that strongly signal enforcement/penalty sections
+_ENFORCEMENT_SECTION_PATH = re.compile(
+    r"(?i)(?:penalt|enforc|violation|remedy|remedies|sanction|fine|liability|action)"
+)
+
 # Budget: max chars for each context section to stay within token limits
 MAX_DEFINITIONS_CHARS = 30000
 MAX_SCOPE_CHARS = 20000
+MAX_ENFORCEMENT_CHARS = 10000
 MAX_STRUCTURE_CHARS = 5000
 
 
@@ -85,6 +117,7 @@ def build_bill_context(
     """
     definitions_parts: list[tuple[int, str]] = []  # (ordinal, text)
     scope_parts: list[tuple[int, str]] = []
+    enforcement_parts: list[tuple[int, str]] = []
     section_paths: list[tuple[int, str]] = []
     defined_terms: list[str] = []
 
@@ -98,16 +131,21 @@ def build_bill_context(
 
         is_def = _is_definition_passage(text, section_path)
         is_scope = _is_scope_passage(text, section_path)
+        is_enforcement = _is_enforcement_passage(text, section_path)
 
         if is_def:
             definitions_parts.append((ordinal, text))
             defined_terms.extend(_extract_defined_terms(text))
         if is_scope:
             scope_parts.append((ordinal, text))
+        if is_enforcement and not is_def:
+            # Skip definition sections that mention penalties in passing
+            enforcement_parts.append((ordinal, text))
 
     # Sort by ordinal to preserve document order
     definitions_parts.sort(key=lambda x: x[0])
     scope_parts.sort(key=lambda x: x[0])
+    enforcement_parts.sort(key=lambda x: x[0])
     section_paths.sort(key=lambda x: x[0])
 
     # Assemble and truncate
@@ -118,6 +156,10 @@ def build_bill_context(
     scope_text = _assemble_and_truncate(
         [text for _, text in scope_parts],
         MAX_SCOPE_CHARS,
+    )
+    enforcement_text = _assemble_and_truncate(
+        [text for _, text in enforcement_parts],
+        MAX_ENFORCEMENT_CHARS,
     )
     structure_text = _build_structure_outline(section_paths, MAX_STRUCTURE_CHARS)
 
@@ -131,13 +173,16 @@ def build_bill_context(
             unique_terms.append(term)
 
     context = {
+        "_version": _BILL_CONTEXT_VERSION,
         "definitions": definitions_text,
         "scope": scope_text,
+        "enforcement": enforcement_text,
         "structure": structure_text,
         "defined_terms": unique_terms,
         "stats": {
             "definition_passages": len(definitions_parts),
             "scope_passages": len(scope_parts),
+            "enforcement_passages": len(enforcement_parts),
             "total_passages": len(passages),
             "defined_terms_count": len(unique_terms),
         },
@@ -147,10 +192,12 @@ def build_bill_context(
         "bill_context_built",
         definition_passages=len(definitions_parts),
         scope_passages=len(scope_parts),
+        enforcement_passages=len(enforcement_parts),
         defined_terms=len(unique_terms),
         total_passages=len(passages),
         definitions_chars=len(definitions_text),
         scope_chars=len(scope_text),
+        enforcement_chars=len(enforcement_text),
     )
 
     return context
@@ -170,6 +217,15 @@ def _is_scope_passage(text: str, section_path: str) -> bool:
     if _SCOPE_SECTION_PATH.search(section_path):
         return True
     if _SCOPE_PATTERNS.search(text[:500]):
+        return True
+    return False
+
+
+def _is_enforcement_passage(text: str, section_path: str) -> bool:
+    """Determine if a passage is an enforcement/penalty section."""
+    if _ENFORCEMENT_SECTION_PATH.search(section_path):
+        return True
+    if _ENFORCEMENT_PATTERNS.search(text[:500]):
         return True
     return False
 
@@ -257,10 +313,14 @@ def get_or_build_bill_context(
     if not dv:
         return {}
 
-    # Check cache
+    # Check cache — version-gated so stale contexts are rebuilt when structure changes
     meta = dv.metadata_ or {}
     cached = meta.get("bill_context")
-    if cached and not isinstance(cached, str):
+    if (
+        cached
+        and not isinstance(cached, str)
+        and cached.get("_version") == _BILL_CONTEXT_VERSION
+    ):
         return cached
 
     # Load passages if not provided

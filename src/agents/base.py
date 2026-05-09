@@ -209,12 +209,22 @@ class BaseExtractionAgent(ABC):
         return self.get_system_prompt()
 
     def _resolve_extraction_prompt(self, passage: str, context: dict | None = None) -> str:
-        """Resolve extraction prompt from template or inline fallback."""
+        """Resolve extraction prompt from template or inline fallback.
+
+        When a YAML extraction_prompt exists it takes precedence over the
+        inline get_extraction_prompt() method.  Bill-level context blocks
+        (definitions, scope, enforcement) are too large for Jinja2 variable
+        substitution, so _append_bill_context() is called after rendering
+        regardless of which path produced the base prompt.
+        """
         if self._template and "extraction_prompt" in self._template:
             render_ctx = {"passage": passage}
             if context:
                 render_ctx.update(context)
-            return render_prompt(self._template["extraction_prompt"], render_ctx)
+            prompt = render_prompt(self._template["extraction_prompt"], render_ctx)
+            # Append bill-level context blocks — these are NOT in the Jinja2
+            # templates (too large), so must be appended after rendering.
+            return self._append_bill_context(prompt, context)
         return self.get_extraction_prompt(passage, context)
 
     @staticmethod
@@ -251,6 +261,16 @@ class BaseExtractionAgent(ABC):
                 "BILL SCOPE & APPLICABILITY (verbatim from the bill — "
                 "use to understand what entities and systems this bill covers):\n"
                 f"{bill_scope}"
+            )
+
+        bill_enforcement = context.get("bill_enforcement")
+        if bill_enforcement:
+            parts.append(
+                "BILL ENFORCEMENT & PENALTIES (verbatim from the bill — "
+                "use to populate enforcement fields such as max_civil_penalty_usd, "
+                "cure_period_days, enforcing_body, and private_right_of_action when "
+                "the passage above references these provisions):\n"
+                f"{bill_enforcement}"
             )
 
         if parts:

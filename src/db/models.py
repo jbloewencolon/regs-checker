@@ -629,3 +629,52 @@ class ExportJob(Base):
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
+
+
+# ---------------------------------------------------------------------------
+# Bill-Level Extractions
+# ---------------------------------------------------------------------------
+
+
+class BillLevelExtraction(Base):
+    """One structured record per law per bill-level agent.
+
+    Unlike Extraction (which is passage-scoped), BillLevelExtraction runs
+    once per DocumentVersion with the full bill text as input.  This lets
+    agents resolve cross-section references (e.g. penalty in §X referenced
+    by obligation in §Y) that per-passage agents cannot see.
+
+    Agents: enforcement_agent, applicability_agent, compliance_timeline_agent.
+    Each writes exactly one row per law; re-runs overwrite via upsert.
+    """
+
+    __tablename__ = "bill_level_extractions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_version_id = Column(
+        Integer, ForeignKey("document_versions.id"), nullable=False, index=True
+    )
+    agent_name = Column(String(100), nullable=False)
+    payload = Column(JSONB, nullable=False, default=dict)
+    confidence_score = Column(Float, nullable=True)
+    review_status = Column(
+        Enum(ReviewStatus), nullable=False, default=ReviewStatus.pending
+    )
+    model_id = Column(String(100))
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+    truncated = Column(Boolean, default=False)
+    metadata_ = Column("metadata", JSONB, default=dict)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    document_version = relationship("DocumentVersion")
+
+    __table_args__ = (
+        # One row per law per agent — re-runs upsert rather than duplicate
+        Index(
+            "uq_bill_level_extractions",
+            "document_version_id", "agent_name",
+            unique=True,
+        ),
+    )
