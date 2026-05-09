@@ -1,20 +1,22 @@
-"""Extraction run archiver — creates dated output folders for each extraction run.
+"""Extraction run archiver — manages a single active session folder for extractions.
 
-Each extraction run gets its own timestamped folder under output/extraction_runs/
-containing a summary JSON and a CSV export of all extractions created in that run.
+All batch runs accumulate into one active folder. Only a full reset archives the
+active folder and starts a fresh one.
 
 Folder structure:
     output/extraction_runs/
-        2026-04-02_143022_extract/
-            run_summary.json        — run metadata, counts, token usage, timing
-            extractions.csv         — all extractions from this run
-            agent_stats.json        — per-agent performance breakdown
-        2026-04-02_160500_extract/
-            ...
+        active/                         ← current session (always up-to-date)
+            run_summary.json
+            extractions.csv             ← ALL extractions in DB (rebuilt on each batch)
+            agent_stats.json
+        2026-04-02_143022_extract/      ← archived previous session (after reset)
+            run_summary.json
+            extractions.csv
+            agent_stats.json
 
 Usage in extractor.py:
-    archiver = RunArchiver.start("extract")
-    # ... run extraction ...
+    archiver = RunArchiver.start("extract", is_fresh_run=True)   # resets active folder
+    archiver = RunArchiver.start("extract", is_fresh_run=False)  # continues active folder
     archiver.finalize(db, summary)
 """
 
@@ -23,6 +25,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -34,10 +37,31 @@ from sqlalchemy.orm import Session
 logger = structlog.get_logger()
 
 RUNS_DIR = Path(__file__).resolve().parents[2] / "output" / "extraction_runs"
+ACTIVE_DIR = RUNS_DIR / "active"
+
+
+def archive_active_folder() -> Path | None:
+    """Move the active folder to a timestamped archive and return the archive path.
+
+    Called by run_extraction() on reset (full run that purges all data). Safe to
+    call even if no active folder exists.
+    """
+    if not ACTIVE_DIR.exists():
+        return None
+    now = datetime.utcnow()
+    archive_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_extract"
+    archive_path = RUNS_DIR / archive_name
+    shutil.move(str(ACTIVE_DIR), str(archive_path))
+    logger.info("run_archiver_archived", archive_dir=str(archive_path))
+    return archive_path
 
 
 class RunArchiver:
-    """Creates and manages a dated output folder for a single extraction run."""
+    """Manages the active extraction session folder.
+
+    Batch runs update the active folder in-place; only a full reset (is_fresh_run=True)
+    archives the previous session first.
+    """
 
     def __init__(self, run_dir: Path, run_type: str, started_at: datetime) -> None:
         self.run_dir = run_dir
@@ -45,23 +69,27 @@ class RunArchiver:
         self.started_at = started_at
 
     @classmethod
-    def start(cls, run_type: str = "extract") -> RunArchiver:
-        """Create a new dated run folder and return an archiver instance.
+    def start(cls, run_type: str = "extract", is_fresh_run: bool = False) -> RunArchiver:
+        """Open (or create) the active run folder.
 
         Args:
-            run_type: Label for the run (e.g., "extract", "re-extract", "triage").
+            run_type: Label for the run (e.g., "extract", "re-extract").
+            is_fresh_run: When True, archive the current active folder first so
+                the CSV reflects only the new run's extractions. Pass True on
+                full resets; False on batch/partial runs.
         """
         # Use naive UTC datetime to match Postgres func.now() which returns
         # naive timestamps. Using timezone-aware datetimes here causes the
         # CSV export query (WHERE created_at >= started_at) to return 0 rows
         # because SQLAlchemy can't compare aware vs naive datetimes correctly.
         now = datetime.utcnow()
-        folder_name = f"{now.strftime('%Y-%m-%d_%H%M%S')}_{run_type}"
-        run_dir = RUNS_DIR / folder_name
-        run_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("run_archiver_started", run_dir=str(run_dir))
-        return cls(run_dir=run_dir, run_type=run_type, started_at=now)
+        if is_fresh_run and ACTIVE_DIR.exists():
+            archive_active_folder()
+
+        ACTIVE_DIR.mkdir(parents=True, exist_ok=True)
+        logger.info("run_archiver_started", run_dir=str(ACTIVE_DIR), fresh=is_fresh_run)
+        return cls(run_dir=ACTIVE_DIR, run_type=run_type, started_at=now)
 
     def finalize(
         self,
@@ -119,7 +147,13 @@ class RunArchiver:
         db: Session,
         extraction_job_ids: list[int] | None,
     ) -> Path:
-        """Export all extractions from this run to CSV."""
+        """Export extractions to the active folder CSV.
+
+        Always exports ALL extractions currently in the DB so the CSV reflects
+        the complete accumulated state after each batch run. When
+        extraction_job_ids are supplied they are used as a fallback filter only
+        if the ALL-extractions query would be empty (shouldn't happen in practice).
+        """
         from src.db.models import (
             DocumentFamily,
             DocumentVersion,
@@ -129,55 +163,31 @@ class RunArchiver:
             Source,
         )
 
-        # Build query for extractions created during this run
-        if extraction_job_ids:
-            query = (
-                select(
-                    Extraction.id,
-                    Extraction.extraction_type,
-                    Extraction.confidence_score,
-                    Extraction.confidence_tier,
-                    Extraction.model_id,
-                    Extraction.payload,
-                    Extraction.evidence_spans,
-                    Extraction.created_at,
-                    NormalizedSourceRecord.section_path,
-                    NormalizedSourceRecord.text_content,
-                    Source.jurisdiction_code,
-                    DocumentFamily.short_cite,
-                    DocumentFamily.canonical_title,
-                )
-                .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
-                .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
-                .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
-                .join(Source, DocumentFamily.source_id == Source.id)
-                .where(Extraction.extraction_job_id.in_(extraction_job_ids))
-                .order_by(Source.jurisdiction_code, Extraction.id)
-            )
-        else:
-            query = (
-                select(
-                    Extraction.id,
-                    Extraction.extraction_type,
-                    Extraction.confidence_score,
-                    Extraction.confidence_tier,
-                    Extraction.model_id,
-                    Extraction.payload,
-                    Extraction.evidence_spans,
-                    Extraction.created_at,
-                    NormalizedSourceRecord.section_path,
-                    NormalizedSourceRecord.text_content,
-                    Source.jurisdiction_code,
-                    DocumentFamily.short_cite,
-                    DocumentFamily.canonical_title,
-                )
-                .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
-                .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
-                .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
-                .join(Source, DocumentFamily.source_id == Source.id)
-                .where(Extraction.created_at >= self.started_at)
-                .order_by(Source.jurisdiction_code, Extraction.id)
-            )
+        _common_cols = (
+            Extraction.id,
+            Extraction.extraction_type,
+            Extraction.confidence_score,
+            Extraction.confidence_tier,
+            Extraction.model_id,
+            Extraction.payload,
+            Extraction.evidence_spans,
+            Extraction.created_at,
+            NormalizedSourceRecord.section_path,
+            NormalizedSourceRecord.text_content,
+            Source.jurisdiction_code,
+            DocumentFamily.short_cite,
+            DocumentFamily.canonical_title,
+        )
+        _joins = (
+            lambda q: q
+            .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+            .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+            .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+            .join(Source, DocumentFamily.source_id == Source.id)
+        )
+
+        # Always export the full DB state so batch runs accumulate correctly.
+        query = _joins(select(*_common_cols)).order_by(Source.jurisdiction_code, Extraction.id)
 
         rows = db.execute(query).all()
 

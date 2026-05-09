@@ -1653,9 +1653,11 @@ def run_extraction(
             if on_progress:
                 on_progress(f"Purged {old_ext_count} old extractions. Starting fresh run.")
 
-    # Create a dated output folder for this run
+    # Open (or create) the active run folder.
+    # Full runs purge all extractions first and start a fresh session.
+    # Batch runs (with limit) accumulate into the existing active folder.
     from src.core.run_archiver import RunArchiver
-    archiver = RunArchiver.start("extract")
+    archiver = RunArchiver.start("extract", is_fresh_run=(limit is None))
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
