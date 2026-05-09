@@ -2525,6 +2525,9 @@ def get_extraction_monitor() -> HTMLResponse:
         for name, stats in sorted(d["agent_stats"].items()):
             afr = stats["failure_rate"]
             afr_color = "var(--success)" if afr < 0.05 else "var(--warning)" if afr < 0.2 else "var(--danger)"
+            avg_ms = stats.get("avg_duration_ms", 0)
+            dur_color = "var(--success)" if avg_ms < 10000 else "var(--warning)" if avg_ms < 30000 else "var(--danger)"
+            dur_label = f"{avg_ms/1000:.1f}s" if avg_ms else "—"
             agent_rows += f"""
             <tr>
               <td><code>{html_escape(name)}</code></td>
@@ -2534,6 +2537,7 @@ def get_extraction_monitor() -> HTMLResponse:
               <td style="color:{'var(--danger)' if stats['errors'] > 0 else 'var(--text-muted)'};">{stats['errors']}</td>
               <td style="color:{afr_color};">{afr:.0%}</td>
               <td>{stats['tokens']:,}</td>
+              <td style="color:{dur_color};">{dur_label}</td>
             </tr>
             """
         agent_html = f"""
@@ -2542,7 +2546,7 @@ def get_extraction_monitor() -> HTMLResponse:
           <table class="data-table" style="font-size:12px;">
             <thead><tr>
               <th>Agent</th><th>Calls</th><th>OK</th><th>Abstain</th>
-              <th>Errors</th><th>Fail%</th><th>Tokens</th>
+              <th>Errors</th><th>Fail%</th><th>Tokens</th><th>Avg Time</th>
             </tr></thead>
             <tbody>{agent_rows}</tbody>
           </table>

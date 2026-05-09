@@ -39,6 +39,7 @@ import hashlib
 import json
 import re
 import threading
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -905,13 +906,17 @@ def _run_agent(
     agent: BaseExtractionAgent,
     passage: str,
     context: dict,
-) -> tuple[str, ExtractionResult | Exception]:
-    """Run a single agent (designed for ThreadPoolExecutor)."""
+) -> tuple[str, ExtractionResult | Exception, int]:
+    """Run a single agent (designed for ThreadPoolExecutor).
+
+    Returns (agent_name, result_or_exception, duration_ms).
+    """
+    t0 = time.perf_counter()
     try:
         result = agent.extract(passage, context)
-        return agent_name, result
+        return agent_name, result, int((time.perf_counter() - t0) * 1000)
     except Exception as e:
-        return agent_name, e
+        return agent_name, e, int((time.perf_counter() - t0) * 1000)
 
 
 def _group_agents_by_model(
@@ -983,7 +988,7 @@ def extract_single_record(
     # Group agents by model to minimise LM Studio VRAM model swaps.
     # Each group runs sequentially; agents within a group run concurrently.
     model_groups = _group_agents_by_model(selected_agents)
-    agent_results: list[tuple[str, str, ExtractionResult | Exception]] = []
+    agent_results: list[tuple[str, str, ExtractionResult | Exception, int]] = []
 
     for group in model_groups:
         with ThreadPoolExecutor(max_workers=len(group)) as executor:
@@ -1007,15 +1012,15 @@ def extract_single_record(
             # Collect results for this model group
             for future in as_completed(futures):
                 agent_name, content_hash = futures[future]
-                name, result = future.result()
-                agent_results.append((name, content_hash, result))
+                name, result, duration_ms = future.result()
+                agent_results.append((name, content_hash, result, duration_ms))
 
     # Import monitor for live event emission
     from src.core.extraction_monitor import get_monitor
     monitor = get_monitor()
 
     # Process results (back on main thread for DB writes)
-    for name, content_hash, result in agent_results:
+    for name, content_hash, result, duration_ms in agent_results:
         if isinstance(result, Exception):
             logger.error(
                 "agent_extraction_failed",
@@ -1057,6 +1062,7 @@ def extract_single_record(
             abstained=result.abstention is not None,
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
+            duration_ms=duration_ms,
             template_version=result.template_version,
         )
 
@@ -1067,6 +1073,7 @@ def extract_single_record(
                 abstained=True,
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
+                duration_ms=duration_ms,
             )
             continue
 
@@ -1156,6 +1163,9 @@ def extract_single_record(
                         prompt_hash=result.prompt_hash,
                         template_version=result.template_version,
                         model_id=result.model_id,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        duration_ms=duration_ms,
                         extraction_job_id=extraction_job.id if extraction_job else None,
                         metadata_=extraction_meta if extraction_meta else {},
                     )
@@ -1197,6 +1207,7 @@ def extract_single_record(
                         extraction_count=1,
                         input_tokens=result.input_tokens,
                         output_tokens=result.output_tokens,
+                        duration_ms=duration_ms,
                         confidence_tier=confidence.tier,
                         truncated=result.truncated,
                     )
