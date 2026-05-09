@@ -2055,15 +2055,30 @@ def triage_warnings(limit: int = 200) -> HTMLResponse:
                 f'</tr>'
             )
 
+        copy_js = (
+            "var rows = document.querySelectorAll('#triage-warn-table tbody tr');"
+            "var lines = ['Time\\tType\\tRecord\\tDetails\\tRaw Response'];"
+            "rows.forEach(function(r){"
+            "  var cells = r.querySelectorAll('td');"
+            "  lines.push(Array.from(cells).map(function(c){return c.innerText;}).join('\\t'));"
+            "});"
+            "navigator.clipboard.writeText(lines.join('\\n'))"
+            ".then(function(){alert('Copied ' + rows.length + ' rows to clipboard.');})"
+            ".catch(function(){alert('Copy failed — use Download CSV instead.');});"
+        )
         return HTMLResponse(
-            f'<div style="margin-bottom:8px;">'
+            f'<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
             f'<strong>{len(entries)}</strong> warnings total. {summary_chips}'
-            f'<button class="btn" style="margin-left:12px;font-size:11px;padding:2px 8px;" '
+            f'<a class="btn" style="font-size:11px;padding:2px 8px;" '
+            f'href="/dashboard/api/triage-warnings/export.csv">&#11015; Download CSV</a>'
+            f'<button class="btn" style="font-size:11px;padding:2px 8px;" '
+            f'onclick="{html_escape(copy_js)}">&#128203; Copy to Clipboard</button>'
+            f'<button class="btn" style="font-size:11px;padding:2px 8px;" '
             f'hx-post="/dashboard/api/triage-warnings/clear" hx-target="#triage-warnings-panel" '
             f'hx-swap="innerHTML" hx-confirm="Clear all triage warnings?">Clear Log</button>'
             f'</div>'
             f'<div style="max-height:400px;overflow:auto;">'
-            f'<table class="tracker-table" style="font-size:11px;">'
+            f'<table id="triage-warn-table" class="tracker-table" style="font-size:11px;">'
             f'<thead><tr><th>Time</th><th>Type</th><th>Record</th>'
             f'<th>Details</th><th>Raw Response</th></tr></thead>'
             f'<tbody>{rows_html}</tbody>'
@@ -2084,6 +2099,71 @@ def clear_triage_warnings() -> HTMLResponse:
         log_path.unlink()
     return HTMLResponse(
         '<div class="result-panel success">Triage warnings cleared.</div>'
+    )
+
+
+@router.get("/api/triage-warnings/export.csv")
+def export_triage_warnings_csv() -> StreamingResponse:
+    """Download all triage warnings as a CSV file."""
+    import csv, io, json as _json
+    from pathlib import Path
+
+    log_path = Path("output/triage_warnings.jsonl")
+    entries = []
+    if log_path.exists():
+        for line in log_path.read_text(encoding="utf-8").strip().splitlines():
+            try:
+                entries.append(_json.loads(line))
+            except Exception:
+                pass
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["timestamp", "warning_type", "record_id", "details", "raw_response"])
+    for e in entries:
+        writer.writerow([
+            e.get("timestamp", ""),
+            e.get("warning_type", ""),
+            e.get("record_id", ""),
+            e.get("details", ""),
+            e.get("raw_response", ""),
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=triage_warnings.csv"},
+    )
+
+
+@router.get("/api/failed-extractions/export.csv")
+def export_failed_extractions_csv(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download all failed extraction attempts as a CSV file."""
+    import csv, io
+    from src.db.models import FailedExtractionAttempt
+
+    rows = db.scalars(
+        select(FailedExtractionAttempt).order_by(FailedExtractionAttempt.created_at.desc())
+    ).all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "id", "source_record_id", "agent_name", "error_type",
+        "error_message", "extraction_job_id", "retried", "retry_succeeded", "created_at",
+    ])
+    for r in rows:
+        writer.writerow([
+            r.id, r.source_record_id, r.agent_name, r.error_type,
+            r.error_message, r.extraction_job_id, r.retried, r.retry_succeeded, r.created_at,
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=failed_extractions.csv"},
     )
 
 
@@ -2825,6 +2905,8 @@ def get_failed_extractions_count(db: Session = Depends(get_db)) -> HTMLResponse:
                 f'hx-post="/dashboard/api/run/retry-failed" '
                 f'hx-target="#retry-result" '
                 f'hx-swap="innerHTML">Retry Failed</button> '
+                f'<a class="btn btn-sm" href="/dashboard/api/failed-extractions/export.csv" '
+                f'style="margin-left:4px;">&#11015; Download CSV</a> '
                 f'<span id="retry-result"></span>'
             )
         return HTMLResponse('<span class="badge success">No failures</span>')
