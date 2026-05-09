@@ -50,6 +50,7 @@ import structlog
 from pydantic import ValidationError
 from sqlalchemy import func, inspect as sa_inspect, select
 
+from src.core.config import settings
 from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
@@ -901,19 +902,48 @@ def _wrap_passages(
     ]
 
 
+def _scale_tokens_for_passage(passage_len: int, configured_max: int) -> int:
+    """Scale the agent token budget down for short passages.
+
+    LLM inference time is roughly linear with max_tokens (the model streams
+    until it hits the budget or produces EOS).  Short legislative passages
+    will never fill 8 k output tokens — scaling down avoids wasted GPU time.
+
+    Scaling tiers (based on passage length in characters):
+      < 400  chars → 25 % of budget  (single sub-clause, header, citation)
+      400-800      → 50 %            (typical paragraph)
+      800-2000     → 75 %            (dense multi-clause section)
+      ≥ 2000       → 100 %           (long provision; full budget needed)
+
+    A minimum floor of 1024 tokens prevents JSON truncation for complex
+    nested schemas regardless of passage length.
+    """
+    if passage_len < 400:
+        scale = 0.25
+    elif passage_len < 800:
+        scale = 0.50
+    elif passage_len < 2000:
+        scale = 0.75
+    else:
+        scale = 1.0
+    return max(1024, int(configured_max * scale))
+
+
 def _run_agent(
     agent_name: str,
     agent: BaseExtractionAgent,
     passage: str,
     context: dict,
+    call_max_tokens: int | None = None,
 ) -> tuple[str, ExtractionResult | Exception, int]:
     """Run a single agent (designed for ThreadPoolExecutor).
 
     Returns (agent_name, result_or_exception, duration_ms).
+    call_max_tokens: pre-scaled token budget for this specific passage.
     """
     t0 = time.perf_counter()
     try:
-        result = agent.extract(passage, context)
+        result = agent.extract(passage, context, call_max_tokens=call_max_tokens)
         return agent_name, result, int((time.perf_counter() - t0) * 1000)
     except Exception as e:
         return agent_name, e, int((time.perf_counter() - t0) * 1000)
@@ -964,8 +994,17 @@ def extract_single_record(
             structure, defined_terms) from bill_context.get_or_build_bill_context.
     """
     record = passage.primary_record
-    ctx = _build_context(db, record, bill_context=bill_context)
     extractions_created = 0
+
+    # Fast-path: if every agent's content hash is already in existing_hashes,
+    # this passage was fully processed in a previous run — skip entirely.
+    if existing_hashes is not None and all(
+        _content_hash(name, passage.text) in existing_hashes for name in agents
+    ):
+        logger.debug("passage_fully_deduped", record_id=record.id)
+        return 0
+
+    ctx = _build_context(db, record, bill_context=bill_context)
 
     # Jurisdiction cross-check: skip if document state doesn't match law state
     if not _check_jurisdiction(db, record, passage.text):
@@ -984,6 +1023,12 @@ def extract_single_record(
     if not selected_agents:
         logger.debug("all_agents_skipped", record_id=record.id)
         return 0
+
+    # Calculate per-passage token budget.  Short passages never produce
+    # large outputs — scaling down avoids wasted GPU time waiting for tokens
+    # the model would never fill.  The base budget comes from each agent's
+    # max_tokens_override (pre-doubling for reasoning models).
+    passage_len = len(passage.text)
 
     # Group agents by model to minimise LM Studio VRAM model swaps.
     # Each group runs sequentially; agents within a group run concurrently.
@@ -1004,8 +1049,14 @@ def extract_single_record(
                     )
                     continue
 
+                # Scale token budget to passage length so short passages don't
+                # consume GPU time waiting for tokens they'll never produce.
+                base_tokens = agent.max_tokens_override or settings.extraction_max_tokens
+                scaled_tokens = _scale_tokens_for_passage(passage_len, base_tokens)
+
                 future = executor.submit(
-                    _run_agent, agent_name, agent, passage.text, ctx
+                    _run_agent, agent_name, agent, passage.text, ctx,
+                    call_max_tokens=scaled_tokens,
                 )
                 futures[future] = (agent_name, content_hash)
 

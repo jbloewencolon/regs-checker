@@ -279,13 +279,17 @@ class BaseExtractionAgent(ABC):
         return prompt
 
     def extract(
-        self, passage: str, context: dict | None = None
+        self, passage: str, context: dict | None = None,
+        call_max_tokens: int | None = None,
     ) -> ExtractionResult:
         """Run extraction on a single passage.
 
         Returns an ExtractionResult containing either a list of validated
         extractions or an abstention. Supports multi-extraction (multiple
         items from a single passage).
+
+        call_max_tokens: optional per-call token cap (overrides max_tokens_override).
+        Used by the extraction pipeline to scale budgets based on passage length.
         """
         prompt = self._resolve_extraction_prompt(passage, context)
         prompt_hash = self._prompt_hash(prompt)
@@ -294,7 +298,9 @@ class BaseExtractionAgent(ABC):
 
         while attempt <= self.max_retries:
             try:
-                raw_output, usage, response_model_id, stop_reason = self._call_llm(prompt, attempt)
+                raw_output, usage, response_model_id, stop_reason = self._call_llm(
+                    prompt, attempt, call_max_tokens=call_max_tokens
+                )
                 logger.debug(
                     "extraction_pre_parse",
                     agent=self.agent_name,
@@ -573,7 +579,7 @@ class BaseExtractionAgent(ABC):
 
         return text
 
-    def _call_llm(self, prompt: str, attempt: int) -> tuple[str, Any, str]:
+    def _call_llm(self, prompt: str, attempt: int, call_max_tokens: int | None = None) -> tuple[str, Any, str]:
         """Make a single LLM API call via the provider abstraction.
 
         Returns (text, usage, model_id) where usage is an LLMUsage dataclass
@@ -615,8 +621,11 @@ class BaseExtractionAgent(ABC):
                 "Double-check all evidence spans are verbatim quotes from the passage."
             )
 
-        # Use lower max_tokens for local models to fit within context window
-        max_tokens = self.max_tokens_override or settings.extraction_max_tokens
+        # Use lower max_tokens for local models to fit within context window.
+        # call_max_tokens (from dynamic scaling) takes priority over the
+        # per-agent override so short passages don't waste GPU time waiting
+        # for tokens they can never produce.
+        max_tokens = call_max_tokens or self.max_tokens_override or settings.extraction_max_tokens
         if settings.extraction_provider == "local":
             max_tokens = min(max_tokens, settings.local_extraction_max_tokens)
 
