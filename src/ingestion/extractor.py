@@ -115,6 +115,7 @@ MIN_PASSAGE_LENGTH = 150
 
 # Set at module-load or first extraction run — True once migration adds column
 _payload_hash_available: bool | None = None
+_token_columns_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
@@ -910,23 +911,21 @@ def _scale_tokens_for_passage(passage_len: int, configured_max: int) -> int:
     will never fill 8 k output tokens — scaling down avoids wasted GPU time.
 
     Scaling tiers (based on passage length in characters):
-      < 400  chars → 25 % of budget  (single sub-clause, header, citation)
-      400-800      → 50 %            (typical paragraph)
-      800-2000     → 75 %            (dense multi-clause section)
-      ≥ 2000       → 100 %           (long provision; full budget needed)
+      < 500  chars → 50 % of budget  (single sub-clause, header, citation)
+      500-1500     → 75 %            (typical paragraph / dense section)
+      ≥ 1500       → 100 %           (long provision; full budget needed)
 
-    A minimum floor of 1024 tokens prevents JSON truncation for complex
-    nested schemas regardless of passage length.
+    Floor of 2048 tokens.  Reasoning models (Gemma, DeepSeek-R1, Qwen3)
+    have their budget doubled in llm_provider.py, so the effective minimum
+    is 4096 — enough for a ~2 k think block plus JSON output.
     """
-    if passage_len < 400:
-        scale = 0.25
-    elif passage_len < 800:
+    if passage_len < 500:
         scale = 0.50
-    elif passage_len < 2000:
+    elif passage_len < 1500:
         scale = 0.75
     else:
         scale = 1.0
-    return max(1024, int(configured_max * scale))
+    return max(2048, int(configured_max * scale))
 
 
 def _run_agent(
@@ -1214,12 +1213,13 @@ def extract_single_record(
                         prompt_hash=result.prompt_hash,
                         template_version=result.template_version,
                         model_id=result.model_id,
-                        input_tokens=result.input_tokens,
-                        output_tokens=result.output_tokens,
-                        duration_ms=duration_ms,
                         extraction_job_id=extraction_job.id if extraction_job else None,
                         metadata_=extraction_meta if extraction_meta else {},
                     )
+                    if _token_columns_available:
+                        extraction_kwargs["input_tokens"] = result.input_tokens
+                        extraction_kwargs["output_tokens"] = result.output_tokens
+                        extraction_kwargs["duration_ms"] = duration_ms
                     if _payload_hash_available:
                         extraction_kwargs["payload_hash"] = p_hash
                     extraction = Extraction(**extraction_kwargs)
@@ -1655,14 +1655,17 @@ def run_extraction(
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
-    # Check whether payload_hash column exists (migration may not have run yet)
-    global _payload_hash_available
+    # Check whether optional columns exist (migrations may not have run yet)
+    global _payload_hash_available, _token_columns_available
     try:
-        _payload_hash_available = "payload_hash" in {
+        _existing_cols = {
             c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
         }
+        _payload_hash_available = "payload_hash" in _existing_cols
+        _token_columns_available = "duration_ms" in _existing_cols
     except Exception:
         _payload_hash_available = False
+        _token_columns_available = False
 
     # Build set of existing content hashes for deduplication.
     # Pre-populate from DB so re-runs don't re-call agents on passages that
