@@ -868,20 +868,16 @@ def _route_agents_by_signal(
         if pattern.search(signal_text):
             signaled.update(agent_names)
 
-    # If no signals matched at all, don't filter — run everything
+    # If no signals matched at all, don't filter — run everything.
+    # Preserves recall for passages that don't use standard legal keywords.
     if not signaled:
         return None
 
-    # Always include definition_actor when definitions are present — other
-    # agents need definition context.  And always include obligation since
-    # it's the most common extraction type in AI laws.
-    signaled.add("definition_actor")
-    signaled.add("obligation")
-
-    # If fewer than 3 signals matched, the passage is focused — use the
-    # subset.  If 3+ matched, the passage is rich/complex — run all agents.
+    # If nearly all agents are signaled the passage is complex enough to
+    # warrant running everything (one more call is not worth the filtering
+    # overhead and the marginal recall risk).
     if len(signaled) >= len(all_agents) - 1:
-        return None  # Nearly all agents signaled — just run everything
+        return None
 
     return {k: v for k, v in all_agents.items() if k in signaled}
 
@@ -1631,30 +1627,31 @@ def run_extraction(
     # Ensure failed_extraction_attempts table exists for error tracking
     _ensure_failed_attempts_table(db, on_progress)
 
-    # --- Auto-purge previous extraction run ---
-    # Each extraction run replaces the prior run entirely. This ensures the
-    # review queue and sync pipeline only ever contain data from the latest
-    # run. The run archiver (below) preserves a CSV snapshot of the old data
-    # before deletion.
+    # --- Auto-purge previous extraction run (full runs only) ---
+    # Only purge when running without a limit (i.e. a full/production run).
+    # Partial/test runs (limit != None) must never wipe existing extractions —
+    # users rely on "Extract 5 (Test)" to verify agent behaviour without losing
+    # results from a prior full run.
     from sqlalchemy import delete as sa_delete
-    old_ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
-    if old_ext_count > 0:
-        if on_progress:
-            on_progress(f"Purging {old_ext_count} extractions from previous run...")
-        # Delete in FK order
-        db.execute(sa_delete(ApplicabilityCondition))
-        db.execute(sa_delete(ObligationDependency))
-        db.execute(sa_delete(ReviewAction))
-        db.execute(sa_delete(ReviewQueueItem))
-        try:
-            db.execute(sa_delete(FailedExtractionAttempt))
-        except Exception:
-            pass
-        db.execute(sa_delete(Extraction))
-        db.execute(sa_delete(ExtractionJob))
-        db.commit()
-        if on_progress:
-            on_progress(f"Purged {old_ext_count} old extractions. Starting fresh run.")
+    if limit is None:
+        old_ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
+        if old_ext_count > 0:
+            if on_progress:
+                on_progress(f"Purging {old_ext_count} extractions from previous run...")
+            # Delete in FK order
+            db.execute(sa_delete(ApplicabilityCondition))
+            db.execute(sa_delete(ObligationDependency))
+            db.execute(sa_delete(ReviewAction))
+            db.execute(sa_delete(ReviewQueueItem))
+            try:
+                db.execute(sa_delete(FailedExtractionAttempt))
+            except Exception:
+                pass
+            db.execute(sa_delete(Extraction))
+            db.execute(sa_delete(ExtractionJob))
+            db.commit()
+            if on_progress:
+                on_progress(f"Purged {old_ext_count} old extractions. Starting fresh run.")
 
     # Create a dated output folder for this run
     from src.core.run_archiver import RunArchiver
