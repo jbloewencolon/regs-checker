@@ -528,11 +528,64 @@ class BaseExtractionAgent(ABC):
         if not text:
             return text
 
-        # --- Fix 0: Strip invalid control characters ---
-        # JSON allows \t (0x09), \n (0x0a), \r (0x0d) but not other
-        # C0 control characters.  Some models emit them in strings.
+        # --- Fix 0: Strip absolute junk control chars ---
+        # Remove chars that are never valid in JSON regardless of context.
         import re as _re
         text = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
+
+        # --- Fix 0b: String-aware escape and control-char repair ---
+        # Walk the JSON tracking string state.  Inside strings:
+        #   - Invalid escape sequences (\d, \s, \p…) → double the backslash
+        #   - Raw \n \r \t inside strings → proper JSON escape sequences
+        # This handles "Invalid \escape" and "Invalid control character" errors.
+        def _repair_string_contents(s: str) -> str:
+            _VALID_ESCAPES = set('"\\\/bfnrtu')
+            _CONTROL_ESCAPES = {'\n': '\\n', '\r': '\\r', '\t': '\\t',
+                                '\b': '\\b', '\f': '\\f'}
+            out: list[str] = []
+            in_str = False
+            idx = 0
+            while idx < len(s):
+                ch = s[idx]
+                if not in_str:
+                    out.append(ch)
+                    if ch == '"':
+                        in_str = True
+                    idx += 1
+                else:
+                    if ch == '\\':
+                        nxt = s[idx + 1] if idx + 1 < len(s) else ''
+                        if nxt in _VALID_ESCAPES:
+                            out.append(ch)
+                            out.append(nxt)
+                            idx += 2
+                            # Pass through full \uXXXX sequence
+                            if nxt == 'u':
+                                for _ in range(4):
+                                    if idx < len(s):
+                                        out.append(s[idx])
+                                        idx += 1
+                        else:
+                            out.append('\\\\')  # double the backslash
+                            idx += 1            # next char processed on its own
+                    elif ch == '"':
+                        in_str = False
+                        out.append(ch)
+                        idx += 1
+                    elif ch in _CONTROL_ESCAPES:
+                        # Raw newline/tab/CR inside a string — escape it
+                        out.append(_CONTROL_ESCAPES[ch])
+                        idx += 1
+                    else:
+                        out.append(ch)
+                        idx += 1
+            return ''.join(out)
+
+        try:
+            # Only pay the O(n) walk cost when standard parse fails
+            json.loads(text)
+        except json.JSONDecodeError:
+            text = _repair_string_contents(text)
 
         # --- Fix 1: Extract first complete JSON object/array ---
         # If json.loads fails on the full text, try to find the first
@@ -798,7 +851,12 @@ class BaseExtractionAgent(ABC):
         lower_passage = norm_passage.lower()
         verified = []
         for span_data in spans:
-            span = EvidenceSpan(**span_data)
+            if not isinstance(span_data, dict) or not span_data.get("text"):
+                continue  # skip empty dicts and spans with missing/null text
+            try:
+                span = EvidenceSpan(**span_data)
+            except Exception:
+                continue
             norm_span = self._normalize_text(span.text)
 
             # Try exact match on whitespace-normalized text

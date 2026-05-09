@@ -248,6 +248,21 @@ class LocalLLMProvider(BaseLLMProvider):
             json=payload,
             timeout=request_timeout,
         )
+        if response.status_code == 400 and payload.get("reasoning_effort") is not None:
+            # Some models (e.g. Gemma 4 on LM Studio) don't support the
+            # reasoning_effort parameter and return 400 when it's present.
+            # Retry once without it so we don't lose the call entirely.
+            logger.warning(
+                "local_llm_reasoning_effort_rejected",
+                model=effective_model,
+                reasoning_effort=payload["reasoning_effort"],
+            )
+            del payload["reasoning_effort"]
+            response = httpx.post(
+                f"{self._base_url}/v1/chat/completions",
+                json=payload,
+                timeout=request_timeout,
+            )
         if response.status_code >= 400:
             # Include response body in error for diagnostics (LM Studio
             # often returns useful model-not-loaded messages in the body)
