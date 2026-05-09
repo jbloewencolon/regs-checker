@@ -177,10 +177,27 @@ class ObligationPayload(BaseModel):
         default=None,
         description="Safe harbor or affirmative defense provision associated with this obligation, if any",
     )
+
+    @field_validator("safe_harbor", mode="before")
+    @classmethod
+    def _coerce_safe_harbor(cls, v: Any) -> Any:
+        # LLMs occasionally emit a list when only one value is expected.
+        # Take the first element to keep the schema singular.
+        if isinstance(v, list):
+            return v[0] if v else None
+        return v
+
     consent_requirements: ConsentRequirement | None = Field(
         default=None,
         description="Consent or notice mechanism required for this obligation, if any",
     )
+
+    @field_validator("consent_requirements", mode="before")
+    @classmethod
+    def _coerce_consent_requirements(cls, v: Any) -> Any:
+        if isinstance(v, list):
+            return v[0] if v else None
+        return v
     interpretation_risks: list[InterpretationRisk] = Field(
         default_factory=list,
         description="Vague terms, undefined references, or conflicting provisions "
@@ -319,6 +336,14 @@ class ExceptionItem(BaseModel):
     description: str
     conditions: str | None = None
     scope: str | None = None
+
+    @field_validator("conditions", "scope", mode="before")
+    @classmethod
+    def _coerce_list_to_str(cls, v: Any) -> Any:
+        # LLMs sometimes emit a list of conditions; join them into a string.
+        if isinstance(v, list):
+            return "; ".join(str(item) for item in v) if v else None
+        return v
 
 
 # Forward reference update
@@ -469,6 +494,16 @@ class ComplianceMechanismPayload(BaseModel):
     audits: list[AuditRequirement] = Field(
         default_factory=list, description="Specific audit/assessment requirements"
     )
+
+    @field_validator("audits", "nist_measure_refs", mode="before")
+    @classmethod
+    def _coerce_none_to_empty_list(cls, v: Any) -> Any:
+        # LLMs sometimes emit null for empty list fields; coerce to [].
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        return v
     record_retention_period: str | None = Field(
         default=None, description="How long records must be kept (raw text, e.g. '3 years')"
     )
@@ -562,7 +597,9 @@ class PreemptionSignalPayload(BaseModel):
         "'US Constitution Art. I § 8')",
     )
     severity: str = Field(
-        description="high / medium / low — based on likelihood and compliance impact"
+        default="medium",
+        description="high / medium / low — based on likelihood and compliance impact. "
+        "Defaults to 'medium' when LLM omits the field.",
     )
     preemption_language: str | None = Field(
         default=None,

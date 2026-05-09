@@ -430,6 +430,28 @@ class BaseExtractionAgent(ABC):
                     error=str(e),
                 )
                 self._last_error = str(e)
+
+                # If the model truncated mid-output, escalating tokens on retry
+                # is more likely to succeed than re-running at the same budget.
+                # `stop_reason` is set by _call_llm before parse is attempted;
+                # only check JSONDecodeError since validation errors aren't
+                # caused by truncation.
+                if isinstance(e, json.JSONDecodeError):
+                    _last_stop = locals().get("stop_reason")
+                    if _last_stop == "length":
+                        _prev = current_max_tokens or settings.extraction_max_tokens
+                        _cap = settings.local_extraction_max_tokens
+                        _doubled = min(_prev * 2, _cap)
+                        if _doubled > _prev:
+                            logger.warning(
+                                "extraction_parse_failed_escalating_tokens",
+                                agent=self.agent_name,
+                                attempt=attempt,
+                                prev_budget=_prev,
+                                new_budget=_doubled,
+                            )
+                            current_max_tokens = _doubled
+
                 attempt += 1
                 if attempt > self.max_retries:
                     raise
