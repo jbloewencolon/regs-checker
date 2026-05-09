@@ -868,20 +868,16 @@ def _route_agents_by_signal(
         if pattern.search(signal_text):
             signaled.update(agent_names)
 
-    # If no signals matched at all, don't filter — run everything
+    # If no signals matched at all, don't filter — run everything.
+    # Preserves recall for passages that don't use standard legal keywords.
     if not signaled:
         return None
 
-    # Always include definition_actor when definitions are present — other
-    # agents need definition context.  And always include obligation since
-    # it's the most common extraction type in AI laws.
-    signaled.add("definition_actor")
-    signaled.add("obligation")
-
-    # If fewer than 3 signals matched, the passage is focused — use the
-    # subset.  If 3+ matched, the passage is rich/complex — run all agents.
+    # If nearly all agents are signaled the passage is complex enough to
+    # warrant running everything (one more call is not worth the filtering
+    # overhead and the marginal recall risk).
     if len(signaled) >= len(all_agents) - 1:
-        return None  # Nearly all agents signaled — just run everything
+        return None
 
     return {k: v for k, v in all_agents.items() if k in signaled}
 
