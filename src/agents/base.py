@@ -194,6 +194,19 @@ class BaseExtractionAgent(ABC):
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
         self._template = load_prompt_template(self.agent_name)
+        # Apply per-agent config overrides from agent_models.json
+        from src.core.model_config import get_config
+        cfg_store = get_config()
+        if self.agent_name in cfg_store.agents:
+            cfg = cfg_store.get(self.agent_name)
+            if cfg.model:
+                self.model_override = cfg.model
+            if cfg.max_tokens:
+                self.max_tokens_override = cfg.max_tokens
+            if cfg.temperature is not None:
+                self.temperature_override = cfg.temperature
+            if cfg.reasoning_effort is not None:
+                self.reasoning_effort = cfg.reasoning_effort
 
     @abstractmethod
     def get_system_prompt(self) -> str:

@@ -62,6 +62,7 @@ class BillLevelAgent(ABC):
     model_override: str | None = None
     max_tokens_override: int | None = None
     temperature_override: float | None = None
+    reasoning_effort: str | None = None
 
     def __init__(self) -> None:
         self._provider = get_extraction_provider()
@@ -78,6 +79,8 @@ class BillLevelAgent(ABC):
                 self.max_tokens_override = cfg.max_tokens
             if cfg.temperature is not None:
                 self.temperature_override = cfg.temperature
+            if cfg.reasoning_effort is not None:
+                self.reasoning_effort = cfg.reasoning_effort
 
     # ------------------------------------------------------------------
     # Abstract interface
@@ -176,14 +179,16 @@ class BillLevelAgent(ABC):
             if self.temperature_override is not None
             else settings.extraction_temperature
         )
-        raw, usage, model_id, stop_reason = self._provider.call(
-            prompt=prompt,
+        response = self._provider.call(
+            system_prompt="You are a legal analyst. Output only valid JSON as instructed.",
+            user_prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,
             model_override=self.model_override,
+            reasoning_effort=self.reasoning_effort,
         )
-        truncated = stop_reason == "length"
-        return raw, usage.input_tokens, usage.output_tokens, model_id, truncated
+        truncated = response.stop_reason == "length"
+        return response.text, response.usage.input_tokens, response.usage.output_tokens, response.model_id, truncated
 
     # ------------------------------------------------------------------
     # JSON repair helpers (same logic as BaseExtractionAgent)

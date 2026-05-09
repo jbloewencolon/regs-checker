@@ -41,6 +41,7 @@ class AgentModelConfig:
     max_tokens: int = 65536
     context_length: int = 131072
     temperature: float = 0.0
+    reasoning_effort: str | None = None  # "low", "medium", "high", or None (model default)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -61,8 +62,9 @@ class ModelConfigStore:
         if CONFIG_PATH.exists():
             try:
                 raw = json.loads(CONFIG_PATH.read_text())
+                valid_fields = {f.name for f in AgentModelConfig.__dataclass_fields__.values()}
                 agents = {
-                    name: AgentModelConfig(**cfg)
+                    name: AgentModelConfig(**{k: v for k, v in cfg.items() if k in valid_fields})
                     for name, cfg in raw.get("agents", {}).items()
                 }
                 return cls(agents=agents)
@@ -84,35 +86,39 @@ class ModelConfigStore:
         Large input context, small output: models ingest full bill passages
         but only produce a single JSON object per extraction.
         """
-        # Per-agent max_tokens based on output schema complexity
-        # These are PRE-DOUBLING values. Reasoning models (Gemma, Qwen3,
-        # DeepSeek-R1) have their budget doubled in llm_provider.py to
-        # reserve half for the <think> block and half for JSON output.
-        # e.g. triage 4096 → 8192 effective for Gemma.
-        _AGENT_MAX_TOKENS: dict[str, int] = {
-            "obligation": 8192,
-            "rights_protection": 8192,
-            "definition_actor": 4096,
-            "threshold_exception": 4096,
-            "compliance_mechanism": 8192,
-            "preemption": 4096,
-            "triage": 4096,
+        # Per-agent max_tokens — tuned for structured JSON output.
+        # Agents that need chain-of-thought to interpret legal text get
+        # reasoning_effort="medium" (provider doubles their budget for the
+        # thinking phase).  Agents doing simple slot-filling or classification
+        # get "low" (no doubling, no thinking tokens).
+        # The adaptive retry in base.py still escalates on truncation.
+        _AGENT_SETTINGS: dict[str, dict] = {
+            "obligation":           {"max_tokens": 2048, "reasoning_effort": "medium"},
+            "rights_protection":    {"max_tokens": 1024, "reasoning_effort": "medium"},
+            "definition_actor":     {"max_tokens":  768, "reasoning_effort": "low"},
+            "threshold_exception":  {"max_tokens": 2048, "reasoning_effort": "medium"},
+            "compliance_mechanism": {"max_tokens": 1024, "reasoning_effort": "medium"},
+            "preemption":           {"max_tokens":  768, "reasoning_effort": "medium"},
+            "triage":               {"max_tokens":  256, "reasoning_effort": "low"},
         }
         agents = {}
         for name in AGENT_DISPLAY:
+            s = _AGENT_SETTINGS.get(name, {"max_tokens": 1024, "reasoning_effort": "medium"})
             if name == "triage":
                 agents[name] = AgentModelConfig(
                     model=settings.local_triage_model,
-                    max_tokens=_AGENT_MAX_TOKENS[name],
+                    max_tokens=s["max_tokens"],
                     context_length=settings.local_context_length,
                     temperature=0.0,
+                    reasoning_effort=s["reasoning_effort"],
                 )
             else:
                 agents[name] = AgentModelConfig(
                     model=settings.local_extraction_model,
-                    max_tokens=_AGENT_MAX_TOKENS.get(name, 4096),
+                    max_tokens=s["max_tokens"],
                     context_length=settings.local_context_length,
                     temperature=settings.extraction_temperature,
+                    reasoning_effort=s["reasoning_effort"],
                 )
         return cls(agents=agents)
 
