@@ -650,15 +650,23 @@ def _build_context(
         if df.iapp_reference_url:
             ctx["iapp_reference_url"] = df.iapp_reference_url
 
-    # Inject Orrick tracker metadata as context when available
+    # Inject Orrick tracker metadata as context when available.
+    # orrick_summary is a combined field written by local_ingest/enrich_orrick
+    # that captures whichever of key_requirements / enforcement_penalties was
+    # non-empty in the source CSV.  Use it as a fallback so no Orrick text is
+    # silently discarded when only one column was populated.
     if df and df.metadata_:
         bill_id = df.metadata_.get("bill_id")
         if bill_id:
             ctx["bill_id"] = bill_id
-        key_reqs = df.metadata_.get("key_requirements")
+        orrick_summary = (df.metadata_.get("orrick_summary") or "").strip()
+        key_reqs = (df.metadata_.get("key_requirements") or "").strip()
+        enforcement = (df.metadata_.get("enforcement_penalties") or "").strip()
+        # Fall back to combined summary when the individual column is empty
+        if not key_reqs:
+            key_reqs = orrick_summary
         if key_reqs:
             ctx["key_requirements"] = key_reqs
-        enforcement = df.metadata_.get("enforcement_penalties")
         if enforcement:
             ctx["enforcement_summary"] = enforcement
         ai_scope = df.metadata_.get("ai_scope_summary")

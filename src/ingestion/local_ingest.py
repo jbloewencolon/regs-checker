@@ -248,6 +248,13 @@ def seed_from_csv(
 
         regulatory_category = _derive_regulatory_category(ai_scope_summary, title)
 
+        # Combine both Orrick columns so no data is lost when only one is
+        # populated (the CSV alternates between the two columns depending on
+        # how Orrick formatted each row).
+        key_req = row.get("key_requirements_raw", "").strip()
+        enforcement = row.get("enforcement_penalties", "").strip()
+        orrick_summary = " ".join(p for p in [key_req, enforcement] if p)
+
         family = DocumentFamily(
             source_id=source.id,
             canonical_title=canonical_title,
@@ -258,8 +265,9 @@ def seed_from_csv(
                 "canonical_law_id": canonical_law_id,
                 "bill_number": bill_number,
                 "ai_scope_summary": ai_scope_summary,
-                "key_requirements": row.get("key_requirements_raw", ""),
-                "enforcement_penalties": row.get("enforcement_penalties", ""),
+                "key_requirements": key_req,
+                "enforcement_penalties": enforcement,
+                "orrick_summary": orrick_summary,
                 "source_tracker": "orrick" if row.get("source_id") == "1" else "iapp",
                 "iapp_scope": row.get("iapp_scope", ""),
                 "iapp_section": row.get("iapp_section", ""),
