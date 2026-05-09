@@ -1529,8 +1529,15 @@ def _run_bill_level_agents(
     Assembles full bill text from sorted passages, runs each agent,
     upserts results to bill_level_extractions.  Returns count of agents
     that produced a non-error payload.
+
+    Option B — Orrick efficiency: before running any LLM call, parse
+    structured facts from the Orrick text in bill_context.  Agents whose
+    domain is already covered by Orrick are skipped; a synthetic
+    BillLevelExtraction is written with model_id="orrick_facts_parser".
     """
     from src.db.models import BillLevelExtraction, ReviewStatus
+    from src.agents.bill_level_base import BillLevelResult
+    from src.ingestion.orrick_facts_parser import parse_orrick_facts
 
     if _log is None:
         _log = lambda msg: None
@@ -1548,10 +1555,41 @@ def _run_bill_level_agents(
     if not full_text.strip():
         return 0
 
+    # Parse Orrick facts once for all agents
+    orrick = parse_orrick_facts(bill_context)
+
+    # Map agent_name → (orrick_payload, covered_flag)
+    _ORRICK_COVERAGE: dict[str, tuple[dict, bool]] = {
+        "enforcement_agent": (orrick.enforcement, orrick.enforcement_covered),
+        "applicability_agent": (orrick.applicability, orrick.applicability_covered),
+        "compliance_timeline_agent": (orrick.timeline, orrick.timeline_covered),
+    }
+
     succeeded = 0
     for agent in agents:
         try:
-            result = agent.extract_bill(full_text, context=bill_context)
+            orrick_payload, is_covered = _ORRICK_COVERAGE.get(
+                agent.agent_name, ({}, False)
+            )
+
+            if is_covered:
+                # Orrick has enough data — skip the LLM call
+                result = BillLevelResult(
+                    payload=orrick_payload,
+                    model_id="orrick_facts_parser",
+                    input_tokens=0,
+                    output_tokens=0,
+                    raw_output="",
+                    truncated=False,
+                )
+                _log(f"  [bill-level] {agent.agent_name}: skipped (Orrick covered)")
+                logger.info(
+                    "bill_level_orrick_skip",
+                    agent=agent.agent_name,
+                    document_version_id=document_version_id,
+                )
+            else:
+                result = agent.extract_bill(full_text, context=bill_context)
 
             # Upsert: one row per (document_version_id, agent_name)
             from sqlalchemy import select as sa_select
@@ -1584,7 +1622,8 @@ def _run_bill_level_agents(
 
             if not has_error:
                 succeeded += 1
-                _log(f"  [bill-level] {agent.agent_name}: OK")
+                if result.model_id != "orrick_facts_parser":
+                    _log(f"  [bill-level] {agent.agent_name}: OK")
             else:
                 _log(f"  [bill-level] {agent.agent_name}: failed — {result.payload.get('_error', '')[:100]}")
 
