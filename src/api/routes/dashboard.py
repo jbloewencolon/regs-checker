@@ -2167,6 +2167,165 @@ def export_failed_extractions_csv(db: Session = Depends(get_db)) -> StreamingRes
     )
 
 
+@router.get("/api/low-confidence/export.csv")
+def export_low_confidence_extractions_csv(
+    db: Session = Depends(get_db),
+    tier: str | None = None,
+) -> StreamingResponse:
+    """Download low-confidence extractions (Tier C and/or D) as CSV for LLM review.
+
+    Query params:
+      - tier: filter by 'C', 'D', or 'C,D' (default: both)
+    """
+    import csv, io, json as _json
+    from src.db.models import ConfidenceTier, NormalizedSourceRecord
+
+    tiers_to_export = []
+    if tier:
+        if 'C' in tier.upper():
+            tiers_to_export.append(ConfidenceTier.c)
+        if 'D' in tier.upper():
+            tiers_to_export.append(ConfidenceTier.d)
+    else:
+        tiers_to_export = [ConfidenceTier.c, ConfidenceTier.d]
+
+    # Fetch extractions with full context
+    from sqlalchemy import and_, or_
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .where(Extraction.confidence_tier.in_(tiers_to_export))
+        .order_by(Extraction.confidence_score.asc(), Extraction.created_at.desc())
+    )
+
+    rows = db.execute(query).all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "extraction_id",
+        "law_jurisdiction",
+        "law_title",
+        "extraction_type",
+        "confidence_score",
+        "confidence_tier",
+        "passage_text",
+        "evidence_spans",
+        "payload_summary",
+        "full_payload_json",
+        "review_status",
+        "created_at",
+    ])
+
+    for ext, rec, dv in rows:
+        doc_family = dv.document_family
+        jurisdiction = doc_family.source.jurisdiction_code if doc_family.source else "Unknown"
+
+        # Build payload summary (first 300 chars of JSON representation)
+        payload_json = _json.dumps(ext.payload, default=str)
+        payload_summary = payload_json[:300] + ("..." if len(payload_json) > 300 else "")
+
+        # Format evidence spans
+        spans_str = "; ".join([
+            f"{s.get('text', '')[:50]}... (conf: {s.get('confidence_score', 0):.2f})"
+            for s in (ext.evidence_spans or [])
+        ]) if ext.evidence_spans else "No evidence spans"
+
+        writer.writerow([
+            ext.id,
+            jurisdiction,
+            doc_family.canonical_title,
+            ext.extraction_type.value,
+            f"{ext.confidence_score:.3f}",
+            ext.confidence_tier.value,
+            (rec.normalized_text or "")[:500],  # First 500 chars of passage
+            spans_str[:200],  # Truncate for CSV
+            payload_summary,
+            payload_json,  # Full JSON for reference
+            ext.review_status.value,
+            ext.created_at.isoformat() if ext.created_at else "",
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=low_confidence_extractions.csv"},
+    )
+
+
+@router.get("/api/low-confidence/export.jsonl")
+def export_low_confidence_extractions_jsonl(
+    db: Session = Depends(get_db),
+    tier: str | None = None,
+) -> StreamingResponse:
+    """Download low-confidence extractions as JSONL for batch LLM processing.
+
+    Query params:
+      - tier: filter by 'C', 'D', or 'C,D' (default: both)
+
+    Each line is a complete JSON object with full context:
+      - extraction metadata (id, type, confidence, tier)
+      - law metadata (jurisdiction, title, bill_number)
+      - passage text and evidence spans
+      - full extraction payload
+    """
+    import json as _json
+    from src.db.models import ConfidenceTier, NormalizedSourceRecord
+
+    tiers_to_export = []
+    if tier:
+        if 'C' in tier.upper():
+            tiers_to_export.append(ConfidenceTier.c)
+        if 'D' in tier.upper():
+            tiers_to_export.append(ConfidenceTier.d)
+    else:
+        tiers_to_export = [ConfidenceTier.c, ConfidenceTier.d]
+
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .where(Extraction.confidence_tier.in_(tiers_to_export))
+        .order_by(Extraction.confidence_score.asc(), Extraction.created_at.desc())
+    )
+
+    rows = db.execute(query).all()
+
+    def generate():
+        for ext, rec, dv in rows:
+            doc_family = dv.document_family
+            obj = {
+                "extraction": {
+                    "id": ext.id,
+                    "type": ext.extraction_type.value,
+                    "confidence_score": float(ext.confidence_score),
+                    "confidence_tier": ext.confidence_tier.value,
+                    "review_status": ext.review_status.value,
+                    "created_at": ext.created_at.isoformat() if ext.created_at else None,
+                    "payload": ext.payload,
+                },
+                "law": {
+                    "jurisdiction": doc_family.source.jurisdiction_code if doc_family.source else "Unknown",
+                    "title": doc_family.canonical_title,
+                    "bill_number": doc_family.metadata_.get("bill_number", "") if doc_family.metadata_ else "",
+                },
+                "passage": {
+                    "text": rec.normalized_text,
+                    "source_record_id": rec.id,
+                },
+                "evidence_spans": ext.evidence_spans or [],
+            }
+            yield _json.dumps(obj, default=str) + "\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=low_confidence_extractions.jsonl"},
+    )
+
+
 @router.post("/api/run/extract/reset")
 def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     """Clear all extractions and extraction jobs so passages can be re-extracted.
@@ -2586,6 +2745,20 @@ def get_extraction_monitor() -> HTMLResponse:
                 f'<div style="width:{pct}%;background:{tier_colors[tier]};height:100%;'
                 f'display:inline-block;" title="Tier {tier}: {tiers[tier]}"></div>'
             )
+    # Add export buttons if there are low-confidence items
+    export_button = ""
+    if tiers["C"] + tiers["D"] > 0:
+        export_button = (
+            f'<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">'
+            f'<a href="/dashboard/api/low-confidence/export.csv" '
+            f'class="btn btn-sm" title="Export as CSV for spreadsheet review"> '
+            f'&#11015; CSV ({tiers["C"] + tiers["D"]}) </a>'
+            f'<a href="/dashboard/api/low-confidence/export.jsonl" '
+            f'class="btn btn-sm" title="Export as JSONL for batch LLM processing"> '
+            f'&#11015; JSONL ({tiers["C"] + tiers["D"]}) </a>'
+            f'</div>'
+        )
+
     conf_html = f"""
     <div style="margin-bottom:12px;">
       <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Confidence Distribution</div>
@@ -2595,6 +2768,7 @@ def get_extraction_monitor() -> HTMLResponse:
       <div style="display:flex;gap:12px;font-size:11px;margin-top:3px;color:var(--text-muted);">
         {''.join(f'<span><span style="color:{tier_colors[t]};">&#9632;</span> {t}: {tiers[t]}</span>' for t in ["A","B","C","D"])}
       </div>
+      {export_button}
     </div>
     """
 
