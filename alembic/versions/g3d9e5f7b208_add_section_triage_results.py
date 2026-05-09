@@ -21,6 +21,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Drop orphaned enum types left behind by a previously failed run.
+    # The sa.Enum() in create_table will recreate them cleanly.
+    op.execute("DROP TYPE IF EXISTS triagedecision")
+    op.execute("DROP TYPE IF EXISTS triagemethod")
+
     op.create_table(
         "section_triage_results",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
