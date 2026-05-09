@@ -85,14 +85,18 @@ class ModelConfigStore:
         but only produce a single JSON object per extraction.
         """
         # Per-agent max_tokens based on output schema complexity
+        # These are PRE-DOUBLING values. Reasoning models (Gemma, Qwen3,
+        # DeepSeek-R1) have their budget doubled in llm_provider.py to
+        # reserve half for the <think> block and half for JSON output.
+        # e.g. triage 4096 → 8192 effective for Gemma.
         _AGENT_MAX_TOKENS: dict[str, int] = {
-            "obligation": 4096,
-            "rights_protection": 4096,
-            "definition_actor": 2048,
-            "threshold_exception": 2048,
-            "compliance_mechanism": 3072,
-            "preemption": 2048,
-            "triage": 1024,
+            "obligation": 8192,
+            "rights_protection": 8192,
+            "definition_actor": 4096,
+            "threshold_exception": 4096,
+            "compliance_mechanism": 8192,
+            "preemption": 4096,
+            "triage": 4096,
         }
         agents = {}
         for name in AGENT_DISPLAY:
