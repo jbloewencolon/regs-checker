@@ -300,11 +300,15 @@ class BaseExtractionAgent(ABC):
         prompt_hash = self._prompt_hash(prompt)
         template_version = self._template.get("version") if self._template else None
         attempt = 0
+        # current_max_tokens is mutable — doubles on truncation so short passages
+        # start with a scaled budget and escalate only when the model actually
+        # needs more tokens.
+        current_max_tokens = call_max_tokens
 
         while attempt <= self.max_retries:
             try:
                 raw_output, usage, response_model_id, stop_reason = self._call_llm(
-                    prompt, attempt, call_max_tokens=call_max_tokens
+                    prompt, attempt, call_max_tokens=current_max_tokens
                 )
                 logger.debug(
                     "extraction_pre_parse",
@@ -380,12 +384,30 @@ class BaseExtractionAgent(ABC):
                         validated_extractions = unique
 
                 if was_truncated:
+                    # Retry with doubled budget when we have attempts left and
+                    # the budget can still be increased.  Cheap passages start
+                    # at a scaled budget and escalate only when they need to.
+                    _prev = current_max_tokens or settings.extraction_max_tokens
+                    _cap = settings.local_extraction_max_tokens
+                    _doubled = min(_prev * 2, _cap)
+                    if _doubled > _prev and attempt < self.max_retries:
+                        logger.warning(
+                            "extraction_truncated_retrying",
+                            agent=self.agent_name,
+                            attempt=attempt,
+                            prev_budget=_prev,
+                            new_budget=_doubled,
+                        )
+                        current_max_tokens = _doubled
+                        attempt += 1
+                        continue
                     logger.warning(
                         "extraction_truncated",
                         agent=self.agent_name,
                         model_id=response_model_id,
                         output_tokens=usage.output_tokens,
                         extractions_count=len(validated_extractions),
+                        budget_exhausted=(_doubled == _prev),
                     )
 
                 return ExtractionResult(
