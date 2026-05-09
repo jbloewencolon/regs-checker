@@ -41,6 +41,7 @@ class AgentModelConfig:
     max_tokens: int = 65536
     context_length: int = 131072
     temperature: float = 0.0
+    reasoning_effort: str | None = None  # "low", "medium", "high", or None (model default)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -61,8 +62,9 @@ class ModelConfigStore:
         if CONFIG_PATH.exists():
             try:
                 raw = json.loads(CONFIG_PATH.read_text())
+                valid_fields = {f.name for f in AgentModelConfig.__dataclass_fields__.values()}
                 agents = {
-                    name: AgentModelConfig(**cfg)
+                    name: AgentModelConfig(**{k: v for k, v in cfg.items() if k in valid_fields})
                     for name, cfg in raw.get("agents", {}).items()
                 }
                 return cls(agents=agents)
@@ -84,19 +86,19 @@ class ModelConfigStore:
         Large input context, small output: models ingest full bill passages
         but only produce a single JSON object per extraction.
         """
-        # Per-agent max_tokens based on output schema complexity
-        # These are PRE-DOUBLING values. Reasoning models (Gemma, Qwen3,
-        # DeepSeek-R1) have their budget doubled in llm_provider.py to
-        # reserve half for the <think> block and half for JSON output.
-        # e.g. triage 4096 → 8192 effective for Gemma.
+        # Per-agent max_tokens — tuned for JSON-only output with reasoning_effort="low".
+        # With reasoning disabled the provider no longer doubles these values, so
+        # they represent actual API max_tokens sent.  The adaptive retry in base.py
+        # will escalate (double, cap at local_extraction_max_tokens) when truncation
+        # is detected, so setting these conservatively is safe.
         _AGENT_MAX_TOKENS: dict[str, int] = {
-            "obligation": 8192,
-            "rights_protection": 8192,
-            "definition_actor": 4096,
-            "threshold_exception": 4096,
-            "compliance_mechanism": 8192,
-            "preemption": 4096,
-            "triage": 4096,
+            "obligation":           1536,  # up to ~4 obligation items × ~300 tokens
+            "rights_protection":    1024,  # high abstain rate; short when it fires
+            "definition_actor":      768,  # compact key→value definitions
+            "threshold_exception":  1536,  # multiple exception items possible
+            "compliance_mechanism": 1024,  # moderate schema
+            "preemption":            512,  # simple preemption signal JSON
+            "triage":                256,  # single decision + one-line reason
         }
         agents = {}
         for name in AGENT_DISPLAY:
@@ -106,13 +108,15 @@ class ModelConfigStore:
                     max_tokens=_AGENT_MAX_TOKENS[name],
                     context_length=settings.local_context_length,
                     temperature=0.0,
+                    reasoning_effort="low",
                 )
             else:
                 agents[name] = AgentModelConfig(
                     model=settings.local_extraction_model,
-                    max_tokens=_AGENT_MAX_TOKENS.get(name, 4096),
+                    max_tokens=_AGENT_MAX_TOKENS.get(name, 1024),
                     context_length=settings.local_context_length,
                     temperature=settings.extraction_temperature,
+                    reasoning_effort="low",
                 )
         return cls(agents=agents)
 
