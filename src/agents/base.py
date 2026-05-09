@@ -132,7 +132,9 @@ def _repair_truncated_json(text: str) -> str:
         closing = "".join(reversed(stack))
         return truncated + closing
 
-    # Strategy 2: Simple fallback — just close all open brackets
+    # Strategy 2: Close unterminated strings and open brackets.
+    # When the model truncates mid-JSON-string (e.g. "value that was cu),
+    # we must close the string before closing brackets.
     stack = []
     in_string = False
     escape_next = False
@@ -155,8 +157,11 @@ def _repair_truncated_json(text: str) -> str:
         elif ch in "}]" and stack:
             stack.pop()
 
-    if stack:
-        return text + "".join(reversed(stack))
+    suffix = ""
+    if in_string:
+        suffix = '"'
+    if stack or in_string:
+        return text + suffix + "".join(reversed(stack))
 
     return text
 
