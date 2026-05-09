@@ -87,38 +87,39 @@ class ModelConfigStore:
         but only produce a single JSON object per extraction.
         """
         # Per-agent max_tokens — tuned for structured JSON output.
-        # Agents that need chain-of-thought to interpret legal text get
-        # reasoning_effort="medium" (provider doubles their budget for the
-        # thinking phase).  Agents doing simple slot-filling or classification
-        # get "low" (no doubling, no thinking tokens).
+        # All agents use reasoning_effort="off" because:
+        #   - Gemma 4 only supports "on"/"off" (not "low"/"medium"); passing
+        #     unsupported values causes LM Studio to fall back to "on"
+        #   - With "on", Gemma produces reasoning_tokens=1 (empty) anyway,
+        #     so "off" just eliminates the overhead without quality loss
         # The adaptive retry in base.py still escalates on truncation.
-        _AGENT_SETTINGS: dict[str, dict] = {
-            "obligation":           {"max_tokens": 2048, "reasoning_effort": "medium"},
-            "rights_protection":    {"max_tokens": 1024, "reasoning_effort": "medium"},
-            "definition_actor":     {"max_tokens":  768, "reasoning_effort": "low"},
-            "threshold_exception":  {"max_tokens": 2048, "reasoning_effort": "medium"},
-            "compliance_mechanism": {"max_tokens": 1024, "reasoning_effort": "medium"},
-            "preemption":           {"max_tokens":  768, "reasoning_effort": "medium"},
-            "triage":               {"max_tokens":  256, "reasoning_effort": "low"},
+        _AGENT_SETTINGS: dict[str, int] = {
+            "obligation":           2048,
+            "rights_protection":    1024,
+            "definition_actor":      768,
+            "threshold_exception":  2048,
+            "compliance_mechanism": 1024,
+            "preemption":            768,
+            "triage":                256,
         }
         agents = {}
         for name in AGENT_DISPLAY:
-            s = _AGENT_SETTINGS.get(name, {"max_tokens": 1024, "reasoning_effort": "medium"})
+            max_tok = _AGENT_SETTINGS.get(name, 1024)
             if name == "triage":
                 agents[name] = AgentModelConfig(
                     model=settings.local_triage_model,
-                    max_tokens=s["max_tokens"],
+                    max_tokens=max_tok,
                     context_length=settings.local_context_length,
                     temperature=0.0,
-                    reasoning_effort=s["reasoning_effort"],
+                    reasoning_effort="off",
                 )
             else:
                 agents[name] = AgentModelConfig(
                     model=settings.local_extraction_model,
-                    max_tokens=s["max_tokens"],
+                    max_tokens=max_tok,
                     context_length=settings.local_context_length,
                     temperature=settings.extraction_temperature,
-                    reasoning_effort=s["reasoning_effort"],
+                    reasoning_effort="off",
                 )
         return cls(agents=agents)
 
