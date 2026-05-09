@@ -158,8 +158,8 @@ class ObligationPayload(BaseModel):
     subject_normalized: str | None = Field(
         default=None, description="Normalized subject category"
     )
-    modality: str = Field(description="Must / shall / may / should / prohibited")
-    action: str = Field(description="What the subject must do or refrain from doing")
+    modality: str = Field(default="", description="Must / shall / may / should / prohibited")
+    action: str = Field(default="", description="What the subject must do or refrain from doing")
     object_: str | None = Field(
         default=None, alias="object", description="What the action applies to"
     )
