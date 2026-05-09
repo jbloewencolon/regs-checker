@@ -5,49 +5,70 @@
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "medium"
+      "reasoning_effort": "off"
     },
     "rights_protection": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "medium"
+      "reasoning_effort": "off"
     },
     "definition_actor": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 768,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "off"
     },
     "threshold_exception": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "medium"
+      "reasoning_effort": "off"
     },
     "compliance_mechanism": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "medium"
+      "reasoning_effort": "off"
     },
     "preemption": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 768,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "medium"
+      "reasoning_effort": "off"
     },
     "triage": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 256,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "off"
+    },
+    "enforcement_agent": {
+      "model": "google/gemma-4-26b-a4b",
+      "max_tokens": 1024,
+      "context_length": 131072,
+      "temperature": 0.0,
+      "reasoning_effort": "off"
+    },
+    "applicability_agent": {
+      "model": "google/gemma-4-26b-a4b",
+      "max_tokens": 1536,
+      "context_length": 131072,
+      "temperature": 0.0,
+      "reasoning_effort": "off"
+    },
+    "compliance_timeline_agent": {
+      "model": "google/gemma-4-26b-a4b",
+      "max_tokens": 1536,
+      "context_length": 131072,
+      "temperature": 0.0,
+      "reasoning_effort": "off"
     }
   }
 }
