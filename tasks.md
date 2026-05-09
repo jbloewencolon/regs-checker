@@ -2,18 +2,26 @@
 
 ## Active Tasks
 
-- **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (READY TO EXECUTE)**
-  - Pre-flight done: smart routing, title disambiguation, regulatory_category, 4 URL swaps, MN omnibus trim, ambiguity agent retired, Unicode fix, keyword expansion, confidence improvements, **model config UI**.
-  - Model assignments configurable at runtime via `/dashboard/models` (no code changes needed to swap models).
-  - User runs: `python scripts/reset_pipeline.py`, then dashboard Steps 1→2→3→4.5→5 (`--clear`).
+- **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (IN PROGRESS)**
+  - Triage run started; ~19 passages failed triage due to Gemma token exhaustion (now fixed — `gemma` added to reasoning model list, budgets raised).
+  - **Next: selective triage reset** on the ~19 failed passages (use "Reset Triage" on Triage page, then re-run triage).
+  - **Next: run `alembic upgrade head`** to apply migration `l8i4j0k2g713` (adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table).
+  - After triage is clean: proceed to extraction (Step 3), then sync (Steps 5→6).
   - 16 laws with still-quarantined source text will be skipped on re-ingest (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
-  - Step 3 uses **6 agents** (ambiguity retired — findings embedded as `interpretation_risks` on obligation/rights payloads)
+  - Step 3 uses **6 agents** (ambiguity retired) + **3 bill-level agents** (enforcement, applicability, compliance_timeline).
+  - Model: `google/gemma-4-26b-a4b` — all agents configured in `config/agent_models.json` with pre-doubling token budgets.
+
+- **Apply pending Alembic migration** — Run `alembic upgrade head` to add `duration_ms` / `input_tokens` / `output_tokens` columns to the `extractions` table (migration `l8i4j0k2g713`).
+
+- **Selective triage reset** — Re-triage ~19 passages that failed with `finish_reason=length` (Gemma token exhaustion, now fixed). Use Triage page → Reset Failed → re-run triage.
 
 - **Obtain correct source text for 16 quarantined laws** — See `output/law_texts_quarantine/NEEDED_SOURCES.md`. Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
 
 - **TN quarantine files contain TX bill content** — TX SB 1188, SB 2373, SB 815, SB 20, SB 1621 may be legitimate TX AI laws. Decide whether to add as new TX entries in `fact_laws.csv`.
 
 - **Merge feature branch to main** — All work on `claude/onboard-government-project-3bq7i`. Needs review and merge after Phase 6 validation.
+
+- **LM Studio update** — Two passages failed with HTTP 400 `<|channel>thought` token parsing error (Gemma structured-thinking token LM Studio can't parse). Check for LM Studio update that fixes Gemma 4 compatibility.
 
 ---
 
@@ -177,11 +185,46 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 - `preemption.yml` gained a full `system_prompt` (was missing); documents cross_law_refs vocabulary
 - All new fields are optional (None/[]) — existing extractions remain valid
 
+#### Phase 7H — Pre-flight Bug Fixes — DONE (2026-05-09)
+- `src/agents/base.py`: `_resolve_extraction_prompt()` now calls `_append_bill_context()` after YAML rendering (bill context was silently dropped for YAML-prompt agents)
+- `src/agents/bill_level_base.py`: `__init__` only applies config overrides when agent explicitly in `cfg_store.agents` (prevented crash on absent agent keys)
+- `src/core/bill_context.py`: Added `_BILL_CONTEXT_VERSION = "v2"` and version-gated cache check (stale v1 cache was returned without rebuild)
+- `alembic/versions/g3d9e5f7b208_*`: Removed manual `DO $$ BEGIN CREATE TYPE ... END $$` blocks that collided with SQLAlchemy enum DDL; let `sa.Enum(create_constraint=False)` own type creation
+
+#### Phase 7I — Gemma 4 Thinking Model Support — DONE (2026-05-09)
+- `src/core/llm_provider.py`: Added `"gemma"` to `is_reasoning` tag list so Gemma 4 26B-A4B gets `max_tokens × 2` (reserves half for `<think>` block)
+- `config/agent_models.json` + `src/core/model_config.py`: Updated all agent token budgets to correct pre-doubling values for Gemma (obligation/rights_protection/compliance_mechanism: 8192 → 16384 effective; definition_actor/threshold_exception/preemption/triage: 4096 → 8192 effective)
+
+#### Phase 7J — Per-Agent Timing + Error Export — DONE (2026-05-09)
+- `src/db/models.py`: Added `duration_ms`, `input_tokens`, `output_tokens` columns to `Extraction` model
+- `alembic/versions/l8i4j0k2g713_*`: Migration adding those three columns to `extractions` table (pending `alembic upgrade head`)
+- `src/ingestion/extractor.py`: `_run_agent()` returns 3-tuple with `duration_ms` via `time.perf_counter()`; all callers updated; value stored on `Extraction` row
+- `src/core/extraction_monitor.py`: `AgentStats` gains `total_duration_ms` + `avg_duration_ms` property; `record_agent_result()` accepts `duration_ms` param
+- `src/api/routes/dashboard.py`: Agent Performance table shows "Avg Time" column with color-coded latency
+- `src/api/routes/dashboard.py`: Added `GET /api/triage-warnings/export.csv` and `GET /api/failed-extractions/export.csv` download endpoints
+- Triage Warnings table: "Download CSV" link + "Copy to Clipboard" JS button (`navigator.clipboard.writeText`)
+- Failed Extractions widget: "Download CSV" link alongside "Retry Failed" button
+
+#### Phase 7K — Setup Documentation — DONE (2026-05-09)
+- `SETUP.md`: Comprehensive setup guide (prerequisites, venv, .env, Docker, migrations, LM Studio, multi-PC, troubleshooting)
+- `QUICKSTART.md`: 2-minute fast path for returning developers
+- `setup.ps1`: Windows automated setup (checks Python 3.11+, Git, Docker; creates venv; installs deps; copies .env; starts Docker; runs migrations)
+- `setup.sh`: macOS/Linux automated setup (same flow)
+- `SETUP_ISSUES_AND_OPTIMIZATIONS.md`: Issues found during setup review + Tier 1-3 optimization roadmap
+
+#### Phase 7L — Extraction Efficiency Improvements — DONE (2026-05-09)
+- `src/agents/base.py`: Added `call_max_tokens: int | None` parameter to `extract()` and `_call_llm()` for per-call token budget override (thread-safe; doesn't mutate agent state)
+- `src/ingestion/extractor.py`: Added `_scale_tokens_for_passage(passage_len, configured_max)` — scales budget 25/50/75/100% for passages <400/800/2000/∞ chars, floor 1024 tokens
+- Per-call scaled budget passed through `executor.submit()` so short passages don't burn GPU time on unused token headroom
+- Fast-path dedup: before building context or running agents, check if all agent content hashes are already in `existing_hashes`; skip passage entirely if so (speeds up re-runs)
+- Removed stale "Setup instructions" `<details>` block from dashboard Extract tab
+
 #### Sequencing & Decision Gates
 - 7A is independent, ship first.
 - 7B is a prerequisite for 7C, 7D, 7E (do it once, three agents reuse it).
 - 7C/7D/7E are independent of each other after 7B — can parallelize if desired.
 - 7F and 7G are layered enhancements; defer until bill-level pattern is validated.
+- 7H-7L completed as pre-flight fixes and efficiency work ahead of the first full extraction run.
 - After each new agent ships, measure product-table population rate before proceeding to the next.
 
 ---
@@ -195,12 +238,16 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 - Is MinIO/S3 actually needed? Pipeline works without it.
 - Who performs lawyer review for eval set (ANALYSIS-1)?
 
-## Next Tasks (after extraction completes)
+## Next Tasks (after triage reset + extraction completes)
 
-- **Sync local → Supabase** — Dashboard Step 5.
-- **Sync Regs Checker → Policy Navigator** — Dashboard Step 6.
-- **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
-- **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
+1. **`alembic upgrade head`** — apply migration `l8i4j0k2g713` before extraction starts
+2. **Selective triage reset** — re-triage ~19 Gemma-failure passages
+3. **Run extraction** — Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget
+4. **Validate bill-level agents** — check `bill_level_extractions` table is populated after run
+5. **Sync local → Supabase** — Dashboard Step 5
+6. **Sync Regs Checker → Policy Navigator** — Dashboard Step 6
+7. **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
+8. **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
 
 ## Bugs / Issues
 
@@ -210,3 +257,9 @@ Only 2 Orrick laws + 53 IAPP active bills lack Orrick data. The 53 IAPP bills ar
 ### BUG-2: Failed extraction retry — FIXED
 ### BUG-3: Supabase sync "not configured" — FIXED
 ### BUG-4: Unicode normalization in evidence spans — FIXED (Phase 1, 2026-04-05)
+
+### BUG-5: Gemma 4 `<|channel>thought` HTTP 400 — KNOWN / WORKAROUND
+LM Studio + Gemma 4 26B-A4B occasionally emits a structured thinking token that triggers a 400 error. Affects ~2 passages per run; they fall through as `uncertain` triage. Fix: update LM Studio when a Gemma-4-compatible release is available.
+
+### BUG-6: Alembic migration `g3d9e5f7b208` DuplicateObject — FIXED (2026-05-09)
+`triagedecision` / `triagemethod` enum types collided between manual `CREATE TYPE` and SQLAlchemy DDL. Fixed by removing manual blocks; SQLAlchemy owns enum creation via `sa.Enum(create_constraint=False)`.

@@ -1,6 +1,60 @@
 # Regs Checker — Completed Tasks
 
-## Recently Completed (current session — still matters for reasoning)
+## Recently Completed (2026-05-09)
+
+### Phase 7L: Extraction Efficiency Improvements
+- **Dynamic token scaling**: `_scale_tokens_for_passage(passage_len, configured_max)` added to `extractor.py` — scales per-agent token budget to 25/50/75/100% based on passage length (<400/800/2000/∞ chars), floor 1024 tokens. For Gemma at 8192 pre-doubling, a 300-char sub-clause now requests 2048 tokens (→4096 effective) instead of 8192 (→16384), roughly halving inference time on the majority of short passages.
+- **Per-call token override**: `BaseExtractionAgent.extract()` and `_call_llm()` gained `call_max_tokens: int | None` parameter; thread-safe (doesn't mutate agent state); passed from `executor.submit()` in `extract_single_record()`.
+- **Fast-path dedup skip**: Before building context or running jurisdiction checks, `extract_single_record()` now tests whether all agent content hashes for the passage exist in `existing_hashes`. If so, skip entirely — zero DB or LLM work. Speeds up re-runs of interrupted jobs.
+- **Dashboard cleanup**: Removed stale "Setup instructions" `<details>` block from Extract tab. Guidance lives in `SETUP.md` / `QUICKSTART.md`.
+- **Files modified**: `src/agents/base.py`, `src/ingestion/extractor.py`, `templates/dashboard.html`
+
+### Phase 7K: Setup Documentation
+- `SETUP.md` — comprehensive guide: prerequisites, venv, .env, Docker, migrations, LM Studio, multi-PC deployment, troubleshooting (13+ scenarios)
+- `QUICKSTART.md` — 2-minute fast path for returning developers
+- `setup.ps1` — Windows automated setup: checks Python 3.11+/Git/Docker, creates venv, installs deps, copies .env, starts Docker, runs migrations
+- `setup.sh` — macOS/Linux equivalent
+- `SETUP_ISSUES_AND_OPTIMIZATIONS.md` — 8 issues found + Tier 1-3 optimization roadmap
+- **Files created**: `SETUP.md`, `QUICKSTART.md`, `setup.ps1`, `setup.sh`, `SETUP_ISSUES_AND_OPTIMIZATIONS.md`
+
+### Phase 7J: Per-Agent Timing + Error Export
+- **duration_ms tracking**: `_run_agent()` in `extractor.py` wraps each agent call with `time.perf_counter()` and returns `duration_ms`; stored on `Extraction` row; passed to `extraction_monitor.record_agent_result()`
+- **DB columns**: `duration_ms` (nullable int), `input_tokens` (int, default 0), `output_tokens` (int, default 0) added to `Extraction` model and `extractions` table via migration `l8i4j0k2g713`
+- **Monitor**: `AgentStats` gains `total_duration_ms` field and `avg_duration_ms` property; snapshot serialization adds `"avg_duration_ms"` per agent
+- **Dashboard Agent Performance table**: new "Avg Time" column with color-coded latency (green <10s, amber <30s, red ≥30s)
+- **CSV export endpoints**: `GET /api/triage-warnings/export.csv` streams `triage_warnings.jsonl` as downloadable CSV; `GET /api/failed-extractions/export.csv` streams `failed_extraction_attempts` table
+- **Copy-to-clipboard**: Triage Warnings table has JS "Copy to Clipboard" button (`navigator.clipboard.writeText`); falls back to alert if clipboard blocked
+- **Failed Extractions widget**: "Download CSV" link added alongside "Retry Failed" button
+- **Files modified**: `src/db/models.py`, `src/ingestion/extractor.py`, `src/core/extraction_monitor.py`, `src/api/routes/dashboard.py`
+- **Files created**: `alembic/versions/l8i4j0k2g713_add_duration_ms_to_extractions.py`
+
+### Phase 7I: Gemma 4 Thinking Model Support
+- `src/core/llm_provider.py`: Added `"gemma"` to `is_reasoning` tag list — Gemma 4 26B-A4B emits `<think>...</think>` blocks that consume output tokens; adding it ensures `max_tokens × 2` is sent to LM Studio to reserve half for thinking
+- `config/agent_models.json` + `src/core/model_config.py`: Updated all agent token budgets to correct pre-doubling values (obligation/rights_protection/compliance_mechanism: 8192; definition_actor/threshold_exception/preemption/triage: 4096). Added docstring explaining pre-doubling semantics.
+- **Files modified**: `src/core/llm_provider.py`, `config/agent_models.json`, `src/core/model_config.py`
+
+### Phase 7H: Pre-flight Bug Fixes
+- `src/agents/base.py` — `_resolve_extraction_prompt()` now calls `_append_bill_context()` after YAML rendering; previously bill context was silently dropped for YAML-prompt agents
+- `src/agents/bill_level_base.py` — `__init__` guards config override block with `if self.agent_name in cfg_store.agents`; prevented KeyError crash for agents not yet in config file
+- `src/core/bill_context.py` — Added `_BILL_CONTEXT_VERSION = "v2"` and version-gated cache check; stale v1 cache entries were returned without rebuild
+- `alembic/versions/g3d9e5f7b208_*` — Removed manual `DO $$ BEGIN CREATE TYPE triagedecision ... END $$` blocks that collided with SQLAlchemy `sa.Enum()` DDL (`psycopg2.errors.DuplicateObject`); SQLAlchemy now owns enum creation via `sa.Enum(create_constraint=False)`
+- **Files modified**: `src/agents/base.py`, `src/agents/bill_level_base.py`, `src/core/bill_context.py`, `alembic/versions/g3d9e5f7b208_add_section_triage_results.py`
+
+### Phase 7A–7G: Product-Aligned Extraction (2026-05-08)
+*(Full detail in tasks.md Phase 7 section)*
+- **7A** — Enforcement context injection: bill enforcement/penalty sections injected into obligation agent context via `bill_context["enforcement"]`
+- **7B** — Bill-level agent infrastructure: `BillLevelAgent` base class, `BillLevelExtraction` DB model, migration `k7h3i9j1f612`, `_run_bill_level_agents()` in extractor
+- **7C** — `EnforcementAgent`: extracts enforcing_body, penalties, cure period, PRA, criminal penalties (1024 max_tokens)
+- **7D** — `ApplicabilityAgent`: extracts covered entities, sectors, AI system types, size thresholds, geographic scope, exemptions (2048 max_tokens)
+- **7E** — `ComplianceTimelineAgent`: extracts effective dates, enforcement start, key deadlines, assessment frequency, response windows (2048 max_tokens)
+- **7F** — Threshold agent restructure: added `threshold_sub_type` field + typed numeric threshold fields; `_discriminate_extraction_type` routes on sub_type when present
+- **7G** — Safe harbor + missing data types: `SafeHarbor`, `ConsentRequirement`, `protected_categories`, `retention_period_months`, `CrossLawReference`, `cross_law_refs` added to schemas and prompts
+- **Files created**: `src/agents/enforcement_agent.py`, `src/agents/applicability_agent.py`, `src/agents/compliance_timeline_agent.py`, `alembic/versions/k7h3i9j1f612_*`
+- **Files modified**: `src/agents/bill_level_base.py`, `src/db/models.py`, `src/ingestion/extractor.py`, `src/core/bill_context.py`, `src/agents/base.py`, `src/schemas/extraction.py`, `prompts/threshold_exception.yml`, `prompts/preemption.yml`, plus other prompt files
+
+---
+
+## Previously Completed (2026-04-04 – 2026-04-07)
 
 ### Phase 3B: Dashboard Model Configuration (2026-04-07)
 - New `/dashboard/models` page — full UI for assigning LLMs to extraction agents
