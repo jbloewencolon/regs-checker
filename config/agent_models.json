@@ -2,17 +2,17 @@
   "agents": {
     "obligation": {
       "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1536,
+      "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "medium"
     },
     "rights_protection": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "medium"
     },
     "definition_actor": {
       "model": "google/gemma-4-26b-a4b",
@@ -23,24 +23,24 @@
     },
     "threshold_exception": {
       "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1536,
+      "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "medium"
     },
     "compliance_mechanism": {
       "model": "google/gemma-4-26b-a4b",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "medium"
     },
     "preemption": {
       "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 512,
+      "max_tokens": 768,
       "context_length": 131072,
       "temperature": 0.0,
-      "reasoning_effort": "low"
+      "reasoning_effort": "medium"
     },
     "triage": {
       "model": "google/gemma-4-26b-a4b",

@@ -86,37 +86,39 @@ class ModelConfigStore:
         Large input context, small output: models ingest full bill passages
         but only produce a single JSON object per extraction.
         """
-        # Per-agent max_tokens — tuned for JSON-only output with reasoning_effort="low".
-        # With reasoning disabled the provider no longer doubles these values, so
-        # they represent actual API max_tokens sent.  The adaptive retry in base.py
-        # will escalate (double, cap at local_extraction_max_tokens) when truncation
-        # is detected, so setting these conservatively is safe.
-        _AGENT_MAX_TOKENS: dict[str, int] = {
-            "obligation":           1536,  # up to ~4 obligation items × ~300 tokens
-            "rights_protection":    1024,  # high abstain rate; short when it fires
-            "definition_actor":      768,  # compact key→value definitions
-            "threshold_exception":  1536,  # multiple exception items possible
-            "compliance_mechanism": 1024,  # moderate schema
-            "preemption":            512,  # simple preemption signal JSON
-            "triage":                256,  # single decision + one-line reason
+        # Per-agent max_tokens — tuned for structured JSON output.
+        # Agents that need chain-of-thought to interpret legal text get
+        # reasoning_effort="medium" (provider doubles their budget for the
+        # thinking phase).  Agents doing simple slot-filling or classification
+        # get "low" (no doubling, no thinking tokens).
+        # The adaptive retry in base.py still escalates on truncation.
+        _AGENT_SETTINGS: dict[str, dict] = {
+            "obligation":           {"max_tokens": 2048, "reasoning_effort": "medium"},
+            "rights_protection":    {"max_tokens": 1024, "reasoning_effort": "medium"},
+            "definition_actor":     {"max_tokens":  768, "reasoning_effort": "low"},
+            "threshold_exception":  {"max_tokens": 2048, "reasoning_effort": "medium"},
+            "compliance_mechanism": {"max_tokens": 1024, "reasoning_effort": "medium"},
+            "preemption":           {"max_tokens":  768, "reasoning_effort": "medium"},
+            "triage":               {"max_tokens":  256, "reasoning_effort": "low"},
         }
         agents = {}
         for name in AGENT_DISPLAY:
+            s = _AGENT_SETTINGS.get(name, {"max_tokens": 1024, "reasoning_effort": "medium"})
             if name == "triage":
                 agents[name] = AgentModelConfig(
                     model=settings.local_triage_model,
-                    max_tokens=_AGENT_MAX_TOKENS[name],
+                    max_tokens=s["max_tokens"],
                     context_length=settings.local_context_length,
                     temperature=0.0,
-                    reasoning_effort="low",
+                    reasoning_effort=s["reasoning_effort"],
                 )
             else:
                 agents[name] = AgentModelConfig(
                     model=settings.local_extraction_model,
-                    max_tokens=_AGENT_MAX_TOKENS.get(name, 1024),
+                    max_tokens=s["max_tokens"],
                     context_length=settings.local_context_length,
                     temperature=settings.extraction_temperature,
-                    reasoning_effort="low",
+                    reasoning_effort=s["reasoning_effort"],
                 )
         return cls(agents=agents)
 
