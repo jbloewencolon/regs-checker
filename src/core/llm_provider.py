@@ -195,7 +195,7 @@ class LocalLLMProvider(BaseLLMProvider):
         # Skip doubling when reasoning_effort="low" — caller wants minimal thinking.
         is_reasoning = any(
             tag in effective_model.lower()
-            for tag in ("deepseek-r1", "qwen3", "gpt-oss")
+            for tag in ("deepseek-r1", "qwen3", "gpt-oss", "gemma")
         )
         if is_reasoning and reasoning_effort != "low":
             adjusted_max = max_tokens * 2

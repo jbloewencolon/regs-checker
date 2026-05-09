@@ -348,6 +348,9 @@ class Extraction(Base):
     prompt_hash = Column(String(24))  # SHA-256 prefix of rendered prompt
     template_version = Column(String(50))  # version from YAML template
     model_id = Column(String(100))
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+    duration_ms = Column(Integer, nullable=True)  # wall-clock LLM call time in milliseconds
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
     payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
     metadata_ = Column("metadata", JSONB, default=dict)

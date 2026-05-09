@@ -21,22 +21,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the enum types via raw SQL (idempotent)
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE triagedecision AS ENUM ('relevant', 'not_relevant', 'uncertain');
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END $$
-    """)
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE triagemethod AS ENUM (
-                'keyword', 'orrick_cross_check', 'llm_generic',
-                'quality_fail', 'passthrough'
-            );
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END $$
-    """)
+    # Drop orphaned enum types left behind by a previously failed run.
+    # The sa.Enum() in create_table will recreate them cleanly.
+    op.execute("DROP TYPE IF EXISTS triagedecision")
+    op.execute("DROP TYPE IF EXISTS triagemethod")
 
     op.create_table(
         "section_triage_results",
@@ -48,12 +36,12 @@ def upgrade() -> None:
         ),
         sa.Column("decision", sa.Enum(
             "relevant", "not_relevant", "uncertain",
-            name="triagedecision", create_constraint=False, create_type=False,
+            name="triagedecision", create_constraint=False,
         ), nullable=False),
         sa.Column("method", sa.Enum(
             "keyword", "orrick_cross_check", "llm_generic",
             "quality_fail", "passthrough",
-            name="triagemethod", create_constraint=False, create_type=False,
+            name="triagemethod", create_constraint=False,
         ), nullable=False),
         sa.Column("confidence", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("matched_keywords", JSONB, server_default="[]"),

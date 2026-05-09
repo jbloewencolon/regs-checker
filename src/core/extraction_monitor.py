@@ -96,12 +96,19 @@ class AgentStats:
     errors: int = 0
     total_input_tokens: int = 0
     total_output_tokens: int = 0
+    total_duration_ms: int = 0  # cumulative wall-clock time across all calls
 
     @property
     def failure_rate(self) -> float:
         if self.calls == 0:
             return 0.0
         return self.errors / self.calls
+
+    @property
+    def avg_duration_ms(self) -> float:
+        if self.calls == 0:
+            return 0.0
+        return self.total_duration_ms / self.calls
 
 
 @dataclass
@@ -289,6 +296,7 @@ class ExtractionMonitor:
         extraction_count: int = 0,
         input_tokens: int = 0,
         output_tokens: int = 0,
+        duration_ms: int = 0,
         confidence_tier: str | None = None,
         truncated: bool = False,
     ) -> None:
@@ -298,6 +306,7 @@ class ExtractionMonitor:
             stats.calls += 1
             stats.total_input_tokens += input_tokens
             stats.total_output_tokens += output_tokens
+            stats.total_duration_ms += duration_ms
             self._total_tokens += input_tokens + output_tokens
 
             if error:
@@ -402,6 +411,7 @@ class ExtractionMonitor:
                     "errors": stats.errors,
                     "failure_rate": round(stats.failure_rate, 3),
                     "tokens": stats.total_input_tokens + stats.total_output_tokens,
+                    "avg_duration_ms": round(stats.avg_duration_ms),
                 }
 
             total_calls = sum(s.calls for s in self._agent_stats.values())
