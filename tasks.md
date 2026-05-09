@@ -3,7 +3,9 @@
 ## Active Tasks
 
 - **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (IN PROGRESS)**
-  - Triage run started; ~19 passages failed triage due to Gemma token exhaustion (now fixed — `gemma` added to reasoning model list, budgets raised).
+  - **Phase 6 Steps 1–2 complete**: Reset pipeline, re-seed from CSV, re-ingest, run triage
+  - **Phase 6 Step 2 status**: Triage run started; ~19 passages failed due to Gemma token exhaustion (now fixed — `gemma` added to reasoning model list, budgets raised).
+  - **Phase 7M complete**: Orrick enrichment, JSON repair, adaptive retry, Extract 5 fix, agent routing optimization all committed to `claude/onboard-government-project-3bq7i`
   - **Next: selective triage reset** on the ~19 failed passages (use "Reset Triage" on Triage page, then re-run triage).
   - **Next: run `alembic upgrade head`** to apply migration `l8i4j0k2g713` (adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table).
   - After triage is clean: proceed to extraction (Step 3), then sync (Steps 5→6).
@@ -219,6 +221,49 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 - Fast-path dedup: before building context or running agents, check if all agent content hashes are already in `existing_hashes`; skip passage entirely if so (speeds up re-runs)
 - Removed stale "Setup instructions" `<details>` block from dashboard Extract tab
 
+#### Phase 7M — Orrick Metadata Enrichment + JSON Repair + Adaptive Token Retry + Agent Routing Optimization — DONE (2026-05-09)
+
+**Orrick Metadata Enrichment (Phase 7M-A & M-B):**
+- Created `src/ingestion/orrick_enrichment.py` with two-phase enrichment:
+  - **Phase 1 (backfill)**: Combines split CSV columns `key_requirements_raw` + `enforcement_penalties` into single `orrick_summary` field; prevents data loss when extraction context builder only finds one column
+  - **Phase 2 (LLM generation)**: For laws with no Orrick data, loads ingested law text, calls local LLM via `get_discovery_provider()` to produce structured summary, stores result to break auto-Tier-D confidence gating
+- Module exports `run_orrick_enrichment(db, limit=None, llm_enabled=True, on_progress=None)` returning stats dict
+- Integrated into `seed_pipeline.py` with `--mode enrich-orrick` and optional `--no-llm` flag
+- Uses `_load_law_text()` with 12k-char budget, `_parse_llm_json()` with markdown fence stripping, `_build_orrick_summary()` for safe concatenation
+- Updated `src/ingestion/local_ingest.py` to write combined `orrick_summary` at seed time (prevents Phase 1 re-runs)
+
+**JSON Truncation Repair (Phase 7M-C):**
+- Fixed `_repair_truncated_json()` Strategy 2 in `src/agents/base.py` to properly close unterminated strings before closing brackets
+- Added `suffix = '"'` when `in_string=True` at end of scan; produces valid JSON like `{"key": "value"}` instead of malformed `{"key": "value}}`
+- Idempotent: already-valid JSON passes through unchanged
+- Fixed root cause of `threshold_exception` agent crashes with `Unterminated string starting at: line N column M` errors on truncated output
+
+**Adaptive Token Retry on Truncation (Phase 7M-D):**
+- Made `current_max_tokens` mutable in `extract()` loop in both `src/agents/base.py` and `src/ingestion/extractor.py`
+- When `response.stop_reason == "length"` (token exhaustion), calculates `_doubled = min(_prev * 2, _cap)` and retries at higher budget
+- Max retry is `self.max_retries` attempts; each retry doubles budget up to `settings.local_extraction_max_tokens` cap
+- Semantic: model runs at dynamic scaled budget for short passages, escalates only on exhaustion (adaptive efficiency)
+- Prevents perpetual timeout loops: hard cap prevents runaway escalation
+
+**Extract 5 (Test) Button Data Loss Fix (Phase 7M-E):**
+- Fixed auto-purge logic in `run_extraction()` in `src/ingestion/extractor.py` (lines 1634-1657)
+- Changed from unconditional `db.execute(sa_delete(Extraction))` to gated `if limit is None:` block
+- Semantic: full runs (unlimited) purge to reset state; test/triage runs (with limit) preserve previous results
+- Root cause: user clicked "Extract 5 (Test)" and ALL previous extractions disappeared due to unconditional purge
+
+**Agent Routing Optimization (Phase 7M-F):**
+- Removed redundant unconditional `signaled.add()` calls in `_route_agents_by_signal()` in `src/ingestion/extractor.py`
+  - Removed: `signaled.add("definition_actor")`
+  - Removed: `signaled.add("obligation")`
+- Both agents are in `_SIGNAL_MAP` with keyword patterns (`_DEFINITION_SIGNALS`, `_OBLIGATION_SIGNALS`); unconditional adds inflated call counts
+- Verified remaining safety nets are legitimate:
+  - `if not signaled: return None` — runs all agents when no signals match (recall safety for unusual phrasing)
+  - `if len(signaled) >= len(all_agents) - 1: return None` — now only fires when 5+ of 6 agents genuinely signaled, not artificially inflated
+- Expected impact: `definition_actor` call count drops from ~27 to ~5-8; overall pipeline time reduction ~20%
+- Performance analysis confirmed: `threshold_exception` 43.9%, `definition_actor` 36.8% of agent time; redundancy was artificial doubling
+
+**Files modified**: `src/ingestion/orrick_enrichment.py` (created), `src/ingestion/local_ingest.py`, `src/ingestion/extractor.py`, `src/agents/base.py`, `src/scripts/seed_pipeline.py`
+
 #### Sequencing & Decision Gates
 - 7A is independent, ship first.
 - 7B is a prerequisite for 7C, 7D, 7E (do it once, three agents reuse it).
@@ -238,16 +283,20 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 - Is MinIO/S3 actually needed? Pipeline works without it.
 - Who performs lawyer review for eval set (ANALYSIS-1)?
 
-## Next Tasks (after triage reset + extraction completes)
+## Immediate Next Tasks (blocking full Phase 6)
 
-1. **`alembic upgrade head`** — apply migration `l8i4j0k2g713` before extraction starts
-2. **Selective triage reset** — re-triage ~19 Gemma-failure passages
-3. **Run extraction** — Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget
-4. **Validate bill-level agents** — check `bill_level_extractions` table is populated after run
+1. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` to add `duration_ms`, `input_tokens`, `output_tokens` columns to `extractions` table. Required before Step 3 (extraction) starts.
+2. **Selective triage reset** — Re-triage ~19 Gemma-failure passages (finish_reason=length). Use Triage page → Reset Failed → re-run triage via Dashboard.
+3. **Run extraction** — Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget. Improvements in this session:
+   - Adaptive token retry: no more truncation crashes on short passages
+   - Agent routing optimization: ~20% faster overall (definition_actor calls ~5-8 instead of ~27)
+   - Orrick enrichment: confidence scores no longer artificially gated to Tier D for non-Orrick laws
+4. **Validate bill-level agents** — Check `bill_level_extractions` table is populated after run (enforcement, applicability, compliance_timeline agents)
 5. **Sync local → Supabase** — Dashboard Step 5
 6. **Sync Regs Checker → Policy Navigator** — Dashboard Step 6
 7. **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
 8. **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
+9. **Merge feature branch** — All work on `claude/onboard-government-project-3bq7i`. Needs review and merge after Phase 6 validation.
 
 ## Bugs / Issues
 

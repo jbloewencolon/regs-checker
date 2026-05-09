@@ -2,6 +2,17 @@
 
 ## Recently Completed (2026-05-09)
 
+### Phase 7M: Orrick Metadata Enrichment + JSON Repair + Adaptive Token Retry + Agent Routing Optimization
+- **Orrick enrichment (Phase 7M-A & 7M-B)**: Created `src/ingestion/orrick_enrichment.py` with two-phase enrichment (Phase 1: backfill split CSV columns into combined `orrick_summary`; Phase 2: LLM-generate summaries for laws missing Orrick data). Integrated into `seed_pipeline.py` with `--mode enrich-orrick` and `--no-llm` flag. Breaks the auto-Tier-D confidence gating by populating Orrick metadata for IAPP-only laws.
+- **JSON repair (Phase 7M-C)**: Fixed `_repair_truncated_json()` Strategy 2 in `src/agents/base.py` to properly close unterminated strings before closing brackets (added `suffix = '"'` when `in_string=True`). Fixes root cause of `threshold_exception` agent crashes with "Unterminated string starting at: line N column M" errors on truncated output.
+- **Adaptive token retry (Phase 7M-D)**: Made `current_max_tokens` mutable in `extract()` loop; when `response.stop_reason == "length"`, retries at `_doubled = min(_prev * 2, _cap)` up to `max_retries` attempts. Short passages run at dynamic scaled budget; escalates only on token exhaustion. Prevents runaway escalation with hard cap to `settings.local_extraction_max_tokens`.
+- **Extract 5 fix (Phase 7M-E)**: Fixed auto-purge logic in `run_extraction()` from unconditional `db.execute(sa_delete(Extraction))` to gated `if limit is None:`. Full runs (unlimited) purge to reset state; test/triage runs (with limit) preserve previous results. Fixed user-reported data loss when clicking "Extract 5 (Test)".
+- **Agent routing optimization (Phase 7M-F)**: Removed redundant unconditional `signaled.add("definition_actor")` and `signaled.add("obligation")` calls in `_route_agents_by_signal()` in `src/ingestion/extractor.py`. Both agents are in `_SIGNAL_MAP` with keyword patterns; unconditional adds artificially doubled call counts. Verified remaining safety nets are legitimate (`if not signaled: return None` for recall safety; `if len(signaled) >= len(all_agents) - 1: return None` for catch-all). Expected impact: `definition_actor` calls drop from ~27 to ~5-8; overall pipeline time reduction ~20%.
+- **Files modified**: `src/ingestion/orrick_enrichment.py` (created), `src/ingestion/local_ingest.py`, `src/ingestion/extractor.py`, `src/agents/base.py`, `src/scripts/seed_pipeline.py`
+- **Related commits**: see branch `claude/onboard-government-project-3bq7i`
+
+## Previously Completed (2026-05-09)
+
 ### Phase 7L: Extraction Efficiency Improvements
 - **Dynamic token scaling**: `_scale_tokens_for_passage(passage_len, configured_max)` added to `extractor.py` — scales per-agent token budget to 25/50/75/100% based on passage length (<400/800/2000/∞ chars), floor 1024 tokens. For Gemma at 8192 pre-doubling, a 300-char sub-clause now requests 2048 tokens (→4096 effective) instead of 8192 (→16384), roughly halving inference time on the majority of short passages.
 - **Per-call token override**: `BaseExtractionAgent.extract()` and `_call_llm()` gained `call_max_tokens: int | None` parameter; thread-safe (doesn't mutate agent state); passed from `executor.submit()` in `extract_single_record()`.
