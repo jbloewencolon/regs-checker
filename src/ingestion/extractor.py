@@ -1631,30 +1631,31 @@ def run_extraction(
     # Ensure failed_extraction_attempts table exists for error tracking
     _ensure_failed_attempts_table(db, on_progress)
 
-    # --- Auto-purge previous extraction run ---
-    # Each extraction run replaces the prior run entirely. This ensures the
-    # review queue and sync pipeline only ever contain data from the latest
-    # run. The run archiver (below) preserves a CSV snapshot of the old data
-    # before deletion.
+    # --- Auto-purge previous extraction run (full runs only) ---
+    # Only purge when running without a limit (i.e. a full/production run).
+    # Partial/test runs (limit != None) must never wipe existing extractions —
+    # users rely on "Extract 5 (Test)" to verify agent behaviour without losing
+    # results from a prior full run.
     from sqlalchemy import delete as sa_delete
-    old_ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
-    if old_ext_count > 0:
-        if on_progress:
-            on_progress(f"Purging {old_ext_count} extractions from previous run...")
-        # Delete in FK order
-        db.execute(sa_delete(ApplicabilityCondition))
-        db.execute(sa_delete(ObligationDependency))
-        db.execute(sa_delete(ReviewAction))
-        db.execute(sa_delete(ReviewQueueItem))
-        try:
-            db.execute(sa_delete(FailedExtractionAttempt))
-        except Exception:
-            pass
-        db.execute(sa_delete(Extraction))
-        db.execute(sa_delete(ExtractionJob))
-        db.commit()
-        if on_progress:
-            on_progress(f"Purged {old_ext_count} old extractions. Starting fresh run.")
+    if limit is None:
+        old_ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
+        if old_ext_count > 0:
+            if on_progress:
+                on_progress(f"Purging {old_ext_count} extractions from previous run...")
+            # Delete in FK order
+            db.execute(sa_delete(ApplicabilityCondition))
+            db.execute(sa_delete(ObligationDependency))
+            db.execute(sa_delete(ReviewAction))
+            db.execute(sa_delete(ReviewQueueItem))
+            try:
+                db.execute(sa_delete(FailedExtractionAttempt))
+            except Exception:
+                pass
+            db.execute(sa_delete(Extraction))
+            db.execute(sa_delete(ExtractionJob))
+            db.commit()
+            if on_progress:
+                on_progress(f"Purged {old_ext_count} old extractions. Starting fresh run.")
 
     # Create a dated output folder for this run
     from src.core.run_archiver import RunArchiver
