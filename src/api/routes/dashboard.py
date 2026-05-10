@@ -2219,8 +2219,8 @@ def export_low_confidence_extractions_csv(
     ])
 
     for ext, rec, dv in rows:
-        doc_family = dv.document_family
-        jurisdiction = doc_family.source.jurisdiction_code if doc_family.source else "Unknown"
+        doc_family = dv.family
+        jurisdiction = doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown"
 
         # Build payload summary (first 300 chars of JSON representation)
         payload_json = _json.dumps(ext.payload, default=str)
@@ -2235,7 +2235,7 @@ def export_low_confidence_extractions_csv(
         writer.writerow([
             ext.id,
             jurisdiction,
-            doc_family.canonical_title,
+            doc_family.canonical_title if doc_family else "",
             ext.extraction_type.value,
             f"{ext.confidence_score:.3f}",
             ext.confidence_tier.value,
@@ -2295,7 +2295,7 @@ def export_low_confidence_extractions_jsonl(
 
     def generate():
         for ext, rec, dv in rows:
-            doc_family = dv.document_family
+            doc_family = dv.family
             obj = {
                 "extraction": {
                     "id": ext.id,
@@ -2307,9 +2307,9 @@ def export_low_confidence_extractions_jsonl(
                     "payload": ext.payload,
                 },
                 "law": {
-                    "jurisdiction": doc_family.source.jurisdiction_code if doc_family.source else "Unknown",
-                    "title": doc_family.canonical_title,
-                    "bill_number": doc_family.metadata_.get("bill_number", "") if doc_family.metadata_ else "",
+                    "jurisdiction": doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown",
+                    "title": doc_family.canonical_title if doc_family else "",
+                    "bill_number": doc_family.metadata_.get("bill_number", "") if doc_family and doc_family.metadata_ else "",
                 },
                 "passage": {
                     "text": rec.normalized_text,
