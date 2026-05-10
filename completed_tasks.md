@@ -1,5 +1,70 @@
 # Regs Checker — Completed Tasks
 
+## Recently Completed (2026-05-10)
+
+### Phase 8: Export Bugs + Gemma Model Fixes + Low-Confidence Persistence
+
+#### Phase 8A: Export Endpoints Bug Fix
+- **Bug**: Dashboard low-confidence export endpoints (`/api/low-confidence/export.csv` and `/api/low-confidence/export.jsonl`) threw internal service error when trying to access `dv.document_family`
+- **Root cause**: SQLAlchemy relationship on DocumentVersion is named `family`, not `document_family`
+- **Fix**: Changed both occurrences to `dv.family` and added null guards before accessing `.source`, `.canonical_title`, `.metadata_` on the family object
+- **Files modified**: `src/api/routes/dashboard.py` (lines 2222-2223, 2298-2312)
+
+#### Phase 8B: Gemma Token Doubling + reasoning_effort Caching
+- **Bug**: ~50% of extractions failing with "Empty response from local LLM (finish_reason=length)"
+- **Root cause**: `config/agent_models.json` had `reasoning_effort: "off"` for all agents. Gemma rejects this parameter (HTTP 400). On retry, the parameter was dropped but token doubling logic had already decided NOT to double (because reasoning_effort was explicitly "off"). Result: Gemma ran full thinking mode with no budget for JSON output.
+- **Fix 1**: Removed `reasoning_effort: "off"` from all agent configs; restored pre-doubling values (obligation/rights_protection/compliance_mechanism: 4096→8192; definition_actor/threshold_exception/preemption/triage: 2048→4096 effective)
+- **Fix 2**: Added `_reasoning_effort_unsupported: set[str]` class variable to `LocalLLMProvider` to cache models that reject reasoning_effort; skip including parameter in future calls to those models
+- **Fix 3**: Modified `stop_reason` return to "loop" instead of "length" when repetition detected (prevents token escalation retry — more tokens just extend the loop)
+- **Files modified**: `config/agent_models.json`, `src/core/llm_provider.py` (lines 239, 256-265, 359)
+
+#### Phase 8C: Channel-Thought Recovery from HTTP 400
+- **Bug**: ~14% of extractions failing with HTTP 400 containing `<|channel>thought` tokens
+- **Root cause**: Gemma 4 emits `<|channel>thought\n<channel|>JSON` structured-thinking tokens that LM Studio can't tokenize; actual JSON appears in error body after `<channel|>` marker
+- **Fix**: Added recovery logic in `LocalLLMProvider.call()` (lines 273-295) to:
+  - Detect HTTP 400 with `<channel|>` marker in error body
+  - Extract JSON from error body after marker
+  - Validate JSON before returning (raises if not valid)
+  - Return as valid `LLMResponse` with `stop_reason="stop"`
+- **Files modified**: `src/core/llm_provider.py` (lines 273-304)
+
+#### Phase 8D: JSON Key Whitespace Stripping
+- **Bug**: Some models emit tab-prefixed JSON keys like `"\tterm"` instead of `"term"`, causing parse failures
+- **Fix**: Added recursive `_strip_keys()` helper in `_repair_json()` (lines 699-710) that:
+  - Recursively traverses dict structure
+  - Strips leading/trailing whitespace from all keys
+  - Only re-serializes JSON if at least one key changed
+  - Logs "json_repair_stripped_whitespace_keys" event on changes
+- **Files modified**: `src/agents/base.py` (lines 699-710)
+
+#### Phase 8E: Low-Confidence Persistence to Disk
+- **Bug**: Low-confidence export CSV/JSONL disappeared after extraction reset (app reset)
+- **Root cause**: Endpoints only queried live DB; when DB was reset, rows vanished
+- **Solution**: Implemented `_export_low_confidence()` in `RunArchiver` to write persistent files at end of every run:
+  - `output/extraction_runs/active/low_confidence_extractions.csv` — spreadsheet format with 12 columns
+  - `output/extraction_runs/active/low_confidence_extractions.jsonl` — one JSON object per line with full payload
+- **Features**:
+  - Filters to Tier C/D only (confidence_tier.in_([ConfidenceTier.c, ConfidenceTier.d]))
+  - Orders by confidence_score ascending (worst first)
+  - Catches exceptions and logs as warnings to prevent run failure
+  - Files survive resets (archived to timestamped folder with active folder)
+  - Called from `finalize()` after `_export_extractions()` and before `_export_agent_stats()`
+- **Files modified**: `src/core/run_archiver.py` (added ~127 lines)
+
+**Files committed** (branch `claude/onboard-government-project-PyyB9`):
+1. "fix: use correct relationship name dv.family in low-confidence export endpoints"
+2. "fix: cache reasoning_effort rejections + use stop_reason=loop to block token escalation"
+3. "fix: restore Gemma token doubling, recover channel-thought 400s, strip tab keys"
+4. "feat: persist low-confidence extractions to disk at end of each extraction run"
+
+**Expected impact on next extraction run**:
+- Empty response errors should drop significantly with token doubling restored
+- HTTP 400 channel-thought errors should be successfully recovered
+- Tab-key JSON errors should be fixed
+- Low-confidence extractions persisted to disk in `output/extraction_runs/active/`, surviving resets
+
+---
+
 ## Recently Completed (2026-05-09)
 
 ### Phase 7M: Orrick Metadata Enrichment + JSON Repair + Adaptive Token Retry + Agent Routing Optimization
