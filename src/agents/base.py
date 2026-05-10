@@ -692,6 +692,22 @@ class BaseExtractionAgent(ABC):
                     )
                     return json.dumps(parsed)
 
+        # --- Fix 5: Tab/whitespace-prefixed JSON keys ---
+        # Some models emit `"\tterm"` instead of `"term"` (the indentation
+        # tab ends up inside the quoted key).  Strip leading/trailing whitespace
+        # from all string keys recursively so schema validation can match them.
+        def _strip_keys(obj: Any) -> Any:
+            if isinstance(obj, dict):
+                return {(k.strip() if isinstance(k, str) else k): _strip_keys(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [_strip_keys(i) for i in obj]
+            return obj
+
+        stripped = _strip_keys(parsed)
+        if stripped != parsed:
+            logger.debug("json_repair_stripped_whitespace_keys")
+            return json.dumps(stripped)
+
         return text
 
     def _call_llm(self, prompt: str, attempt: int, call_max_tokens: int | None = None) -> tuple[str, Any, str]:

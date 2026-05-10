@@ -269,6 +269,42 @@ class LocalLLMProvider(BaseLLMProvider):
                 json=payload,
                 timeout=request_timeout,
             )
+
+        # Gemma 4 structured thinking: model emits <|channel>thought\n<channel|>JSON
+        # which LM Studio can't tokenize and returns HTTP 400. The actual JSON output
+        # appears after the <channel|> marker in the error body — recover it.
+        if response.status_code == 400:
+            try:
+                err_body = response.json()
+                err_msg = err_body.get("error", "")
+                marker = "<channel|>"
+                if marker in err_msg:
+                    recovered_text = err_msg[err_msg.index(marker) + len(marker):].strip()
+                    if recovered_text:
+                        # Validate it looks like JSON before trusting it
+                        import json as _json
+                        _json.loads(recovered_text)  # raises if not valid JSON
+                        logger.warning(
+                            "local_llm_channel_thought_recovered",
+                            model=effective_model,
+                            recovered_len=len(recovered_text),
+                        )
+                        text = recovered_text
+                        finish_reason = "stop"
+                        usage = LLMUsage(
+                            input_tokens=0,
+                            output_tokens=len(recovered_text) // 4,
+                        )
+                        text, was_looping = self._truncate_repetition(text)
+                        return LLMResponse(
+                            text=text,
+                            usage=usage,
+                            model_id=self.normalize_model_id(effective_model),
+                            stop_reason="loop" if was_looping else finish_reason,
+                        )
+            except Exception:
+                pass  # Not recoverable; fall through to standard error
+
         if response.status_code >= 400:
             # Include response body in error for diagnostics (LM Studio
             # often returns useful model-not-loaded messages in the body)
