@@ -80,6 +80,11 @@ class LocalLLMProvider(BaseLLMProvider):
       - text-generation-inference
     """
 
+    # Models confirmed to reject the reasoning_effort parameter (HTTP 400).
+    # Populated at runtime on first rejection; shared across all instances so
+    # subsequent calls skip the parameter entirely instead of wasting a round-trip.
+    _reasoning_effort_unsupported: set[str] = set()
+
     def __init__(
         self,
         base_url: str | None = None,
@@ -231,7 +236,7 @@ class LocalLLMProvider(BaseLLMProvider):
             "stream": False,
         }
 
-        if reasoning_effort is not None:
+        if reasoning_effort is not None and effective_model not in self._reasoning_effort_unsupported:
             payload["reasoning_effort"] = reasoning_effort
 
         # Large models and reasoning models need longer timeouts.
@@ -251,7 +256,8 @@ class LocalLLMProvider(BaseLLMProvider):
         if response.status_code == 400 and payload.get("reasoning_effort") is not None:
             # Some models (e.g. Gemma 4 on LM Studio) don't support the
             # reasoning_effort parameter and return 400 when it's present.
-            # Retry once without it so we don't lose the call entirely.
+            # Cache this so future calls skip the parameter entirely.
+            self._reasoning_effort_unsupported.add(effective_model)
             logger.warning(
                 "local_llm_reasoning_effort_rejected",
                 model=effective_model,
@@ -345,7 +351,12 @@ class LocalLLMProvider(BaseLLMProvider):
             text=text,
             usage=usage,
             model_id=effective_model_id,
-            stop_reason=finish_reason,
+            # When a repetition loop was detected the text has already been
+            # truncated to just before the third repetition.  Report "loop"
+            # rather than the raw finish_reason ("length") so the retry logic
+            # in extract() does NOT escalate the token budget — more tokens
+            # only extend the loop; the repaired fragment is the best we can do.
+            stop_reason="loop" if was_looping else finish_reason,
         )
 
 
