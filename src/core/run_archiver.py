@@ -126,7 +126,10 @@ class RunArchiver:
         # 2. Export extractions created during this run
         extractions_path = self._export_extractions(db, extraction_job_ids)
 
-        # 3. Write agent stats if available from the monitor
+        # 3. Export low-confidence (Tier C/D) extractions for review
+        self._export_low_confidence(db)
+
+        # 4. Write agent stats if available from the monitor
         self._export_agent_stats()
 
         # Add folder path to the summary so callers can reference it
@@ -219,6 +222,129 @@ class RunArchiver:
 
         logger.info("run_archiver_exported_csv", path=str(csv_path), row_count=len(rows))
         return csv_path
+
+    def _export_low_confidence(self, db: Session) -> tuple[Path, Path] | None:
+        """Export Tier C and D extractions to CSV + JSONL for offline review.
+
+        Written at the end of every run so the files survive an extraction
+        reset (the DB rows are gone after reset but the files remain in the
+        active session folder).
+
+        Files written:
+          active/low_confidence_extractions.csv   — spreadsheet-friendly
+          active/low_confidence_extractions.jsonl — one JSON object per line
+        """
+        from src.db.models import (
+            ConfidenceTier,
+            DocumentFamily,
+            DocumentVersion,
+            Extraction,
+            NormalizedSourceRecord,
+            Source,
+        )
+
+        try:
+            query = (
+                select(
+                    Extraction.id,
+                    Extraction.extraction_type,
+                    Extraction.confidence_score,
+                    Extraction.confidence_tier,
+                    Extraction.review_status,
+                    Extraction.payload,
+                    Extraction.evidence_spans,
+                    Extraction.created_at,
+                    NormalizedSourceRecord.text_content,
+                    Source.jurisdiction_code,
+                    DocumentFamily.canonical_title,
+                    DocumentFamily.metadata_,
+                )
+                .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+                .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+                .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+                .join(Source, DocumentFamily.source_id == Source.id)
+                .where(Extraction.confidence_tier.in_([ConfidenceTier.c, ConfidenceTier.d]))
+                .order_by(Extraction.confidence_score.asc(), Extraction.id)
+            )
+            rows = db.execute(query).all()
+
+            if not rows:
+                return None
+
+            csv_path = self.run_dir / "low_confidence_extractions.csv"
+            jsonl_path = self.run_dir / "low_confidence_extractions.jsonl"
+
+            csv_fieldnames = [
+                "extraction_id", "jurisdiction", "law_title",
+                "extraction_type", "confidence_score", "confidence_tier",
+                "review_status", "passage_text", "evidence_spans",
+                "payload_summary", "full_payload_json", "created_at",
+            ]
+
+            with (
+                open(csv_path, "w", newline="", encoding="utf-8") as csv_f,
+                open(jsonl_path, "w", encoding="utf-8") as jsonl_f,
+            ):
+                writer = csv.DictWriter(csv_f, fieldnames=csv_fieldnames)
+                writer.writeheader()
+
+                for row in rows:
+                    (
+                        ext_id, ext_type, conf_score, conf_tier, review_status,
+                        payload, evidence_spans, created_at,
+                        passage_text, jurisdiction, law_title, family_meta,
+                    ) = row
+
+                    payload_json = json.dumps(payload, default=str) if payload else ""
+                    spans = evidence_spans or []
+                    spans_str = "; ".join(
+                        f"{s.get('text', '')[:60]}{'...' if len(s.get('text',''))>60 else ''}"
+                        f" (verified={s.get('verified', False)})"
+                        for s in spans
+                    ) if spans else ""
+
+                    writer.writerow({
+                        "extraction_id": ext_id,
+                        "jurisdiction": jurisdiction or "",
+                        "law_title": law_title or "",
+                        "extraction_type": ext_type.value if hasattr(ext_type, "value") else str(ext_type),
+                        "confidence_score": round(float(conf_score), 4) if conf_score else "",
+                        "confidence_tier": conf_tier.value if hasattr(conf_tier, "value") else str(conf_tier),
+                        "review_status": review_status.value if hasattr(review_status, "value") else str(review_status),
+                        "passage_text": (passage_text or "")[:500],
+                        "evidence_spans": spans_str[:300],
+                        "payload_summary": payload_json[:300] + ("..." if len(payload_json) > 300 else ""),
+                        "full_payload_json": payload_json,
+                        "created_at": created_at.isoformat() if created_at else "",
+                    })
+
+                    obj = {
+                        "extraction_id": ext_id,
+                        "jurisdiction": jurisdiction or "",
+                        "law_title": law_title or "",
+                        "bill_number": (family_meta or {}).get("bill_number", ""),
+                        "extraction_type": ext_type.value if hasattr(ext_type, "value") else str(ext_type),
+                        "confidence_score": round(float(conf_score), 4) if conf_score else None,
+                        "confidence_tier": conf_tier.value if hasattr(conf_tier, "value") else str(conf_tier),
+                        "review_status": review_status.value if hasattr(review_status, "value") else str(review_status),
+                        "passage_text": passage_text or "",
+                        "evidence_spans": spans,
+                        "payload": payload or {},
+                        "created_at": created_at.isoformat() if created_at else None,
+                    }
+                    jsonl_f.write(json.dumps(obj, default=str) + "\n")
+
+            logger.info(
+                "run_archiver_exported_low_confidence",
+                csv_path=str(csv_path),
+                jsonl_path=str(jsonl_path),
+                row_count=len(rows),
+            )
+            return csv_path, jsonl_path
+
+        except Exception as e:
+            logger.warning("run_archiver_low_confidence_export_failed", error=str(e))
+            return None
 
     def _export_agent_stats(self) -> Path | None:
         """Export agent performance stats from the extraction monitor."""
