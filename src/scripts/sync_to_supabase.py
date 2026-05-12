@@ -37,7 +37,8 @@ from sqlalchemy import create_engine, text
 # Load .env from project root
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
-# Application tables to sync (in dependency order for FK constraints)
+# Application tables to sync (in dependency order for FK constraints).
+# The order matters for both INSERT (parents first) and DELETE/--clear (reversed).
 SYNC_TABLES = [
     "sources",
     "document_families",
@@ -55,9 +56,29 @@ SYNC_TABLES = [
     "applicability_conditions",
     "api_keys",
     "export_jobs",
+    "bill_level_extractions",       # depends on document_versions
+    "failed_extraction_attempts",   # depends on normalized_source_records + extraction_jobs
 ]
 
 BATCH_SIZE = 500
+
+# Per-table natural unique key columns for PostgREST ON CONFLICT target.
+# PostgREST's default resolution=ignore-duplicates targets the PRIMARY KEY only.
+# Tables whose logical unique identity lives on a non-PK column need the
+# column(s) named here so additive syncs skip duplicates without 409 errors.
+# Multi-column keys are comma-separated (e.g. "col_a,col_b").
+TABLE_CONFLICT_COLUMNS: dict[str, str] = {
+    # sha256_hash is the content-addressable identity; id can differ across reseeds
+    "raw_artifacts": "sha256_hash",
+    # one passage per (document_version, ordinal) position
+    "normalized_source_records": "document_version_id,ordinal",
+    # one triage decision per source record
+    "section_triage_results": "source_record_id",
+    # one review queue entry per extraction
+    "review_queue": "extraction_id",
+    # one bill-level result per (law, agent)
+    "bill_level_extractions": "document_version_id,agent_name",
+}
 
 
 def _json_default(obj):
@@ -92,9 +113,24 @@ def _serialize_rows(rows: list[dict]) -> list[dict]:
 def _supabase_post(
     client: httpx.Client, base_url: str, table: str, rows: list[dict]
 ) -> httpx.Response:
-    """POST rows to Supabase PostgREST with upsert (Prefer: resolution=ignore)."""
+    """POST rows to Supabase PostgREST with ON CONFLICT DO NOTHING semantics.
+
+    For tables in TABLE_CONFLICT_COLUMNS, passes ``on_conflict=<columns>`` as a
+    query parameter so PostgREST generates ``ON CONFLICT (col) DO NOTHING`` on
+    the correct unique constraint.  Without this, PostgREST targets the primary
+    key only, and a conflict on a different unique column (e.g. sha256_hash)
+    still raises a 409 error.
+
+    Tables not in TABLE_CONFLICT_COLUMNS fall back to PK-based conflict handling,
+    which is correct for additive syncs where new rows have new IDs.
+    """
+    params: dict[str, str] = {}
+    if table in TABLE_CONFLICT_COLUMNS:
+        params["on_conflict"] = TABLE_CONFLICT_COLUMNS[table]
+
     resp = client.post(
         f"{base_url}/rest/v1/{table}",
+        params=params or None,
         json=rows,
         headers={"Prefer": "resolution=ignore-duplicates,return=minimal"},
     )
@@ -106,9 +142,10 @@ def clear_supabase_tables(
 ) -> None:
     """DELETE all rows from Supabase tables in reverse dependency order.
 
-    PostgREST requires a filter on DELETE requests; we use `id=gte.0` which
-    matches every row for integer-id tables. Tables are cleared in reverse
-    order so child rows go first and FK constraints are satisfied.
+    PostgREST requires at least one filter on DELETE. We use ``id=gte.0``
+    which matches every row for integer-id tables (all current sync tables use
+    serial integer PKs). Tables are cleared in reverse order so child rows are
+    deleted first and FK constraints are satisfied.
     """
     print("Clearing Supabase tables (reverse dependency order)...")
     for table_name in reversed(tables):
