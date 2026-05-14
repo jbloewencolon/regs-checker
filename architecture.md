@@ -19,16 +19,41 @@ Extracts structured legal obligations from ~180 US state and federal AI laws usi
 - Only `relevant` + `uncertain` passages proceed to extraction
 
 ### 3. Extraction (`src/ingestion/extractor.py`)
-- 7 agents run against each triaged passage:
-  - `obligation` (Qwen model) — obligations, timelines, enforcement
-  - `definition_actor` (GPT-OSS 20B) — definitions, actors, framework refs
-  - `threshold_exception` (GPT-OSS 20B) — thresholds, exceptions, compute FLOPS
-  - `ambiguity` (GPT-OSS 20B) — vague terms, conflicting provisions
-  - `rights_protection` (GPT-OSS 20B) — individual rights
-  - `compliance_mechanism` (GPT-OSS 20B) — audits, bias testing, reporting
-  - `preemption` (GPT-OSS 20B) — federal preemption, Commerce Clause tensions
-- Agents grouped by model to minimize VRAM swaps in LM Studio
-- Each extraction gets: Pydantic validation, evidence span verification, Orrick similarity scoring, 6-component confidence score, plain-English summary
+
+#### Passage-level agents (6 agents per triaged passage)
+
+Signal-based routing (`_route_agents_by_signal()`) checks each passage for keyword signals and skips agents unlikely to find content. Falls back to running all 6 when fewer than 2 signals fire (recall safety net). All agents use `google/gemma-4-26b-a4b` via LM Studio; token budget is doubled at call time to reserve half for Gemma's `<think>` blocks. Configured `max_tokens` in `config/agent_models.json` are pre-doubling values.
+
+| Agent | Extracts |
+|---|---|
+| `obligation` | Obligations, timelines, enforcement, safe harbor, consent requirements, `interpretation_risks` |
+| `definition_actor` | Definitions, actor mappings, framework refs |
+| `threshold_exception` | Scope/temporal/exemption thresholds; typed numeric fields (revenue, employees, consumer data) |
+| `rights_protection` | Individual rights (opt-out, appeal, disclosure); protected categories; `interpretation_risks` |
+| `compliance_mechanism` | Audits, bias testing, red teaming, NIST alignment, reporting, data retention |
+| `preemption` | Federal preemption signals, Commerce Clause tensions, cross-law references |
+
+**Ambiguity agent retired (Phase 1B):** The standalone `ambiguity` agent no longer runs. Ambiguity findings are embedded as `interpretation_risks: list[InterpretationRisk]` directly on `ObligationPayload` and `RightsProtectionPayload` — zero extra LLM calls, findings attached to the obligation they affect. Archived at `src/ingestion/_archived/ambiguity_agent.py`. `ExtractionType.ambiguity` enum value kept read-only for existing DB rows.
+
+**Bill enforcement context injection:** Before extraction, the obligation agent receives a `BILL ENFORCEMENT & PENALTIES` context block assembled from enforcement-pattern sections of the same bill (`src/core/bill_context.py`). Enables cross-section penalty attribution (penalty in §X attributed to obligation in §Y).
+
+#### Bill-level agents (3 agents, once per law)
+
+After all passage extraction for a document version, three agents run with the full bill text, producing one upserted row in `bill_level_extractions` per law. Solves cross-section context problems that per-passage agents cannot resolve.
+
+| Agent | Output table | Extracts |
+|---|---|---|
+| `enforcement_agent` | `law_enforcement_details` | Enforcing body, max penalty, penalty unit, cure period, private right of action, criminal penalties |
+| `applicability_agent` | `law_triggering_thresholds` | Covered entities/sectors, AI system types, size thresholds, geographic scope, key exemptions |
+| `compliance_timeline_agent` | `law_obligation_flags` | Effective date, enforcement start, key deadlines, assessment frequency, response windows |
+
+#### Per-extraction processing (all agents)
+- Pydantic v2 schema validation of payload
+- Unicode-normalized evidence span verification (verified spans gate confidence score)
+- Orrick similarity scoring via token Jaccard
+- 6-component confidence score → tier A/B/C/D
+- Deterministic plain-English summary from `summary_generator.py`
+- Adaptive token retry: if `stop_reason=length`, retries at 2× budget up to `local_extraction_max_tokens` cap
 - Failed attempts tracked in `failed_extraction_attempts` for retry
 
 ### 4. Confidence Scoring (`src/core/confidence.py`)
@@ -71,6 +96,7 @@ CSV + local files
     -> normalized_source_records (passages)
     -> section_triage_results
     -> extractions + review_queue
+    -> bill_level_extractions  (one row per law per bill-level agent)
     -> failed_extraction_attempts
     |
     v (sync_to_supabase.py)
@@ -89,8 +115,8 @@ CSV + local files
 ## Key Dependencies
 
 - **Python 3.11+**, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic
-- **LM Studio** on localhost:1234 with GPT-OSS 20B loaded
-- **Docker Desktop** for local Postgres (port 5434) + MinIO
+- **LM Studio** on localhost:1234 with `google/gemma-4-26b-a4b` loaded
+- **Docker Desktop** for local Postgres (port 5434)
 - **Supabase** (2 projects: Regs Checker us-east-1, Policy Navigator us-east-2)
 
 ## Known Hacks / Fragile Areas
@@ -109,4 +135,4 @@ CSV + local files
 - 2 integration test files in `tests/integration/`
 - Run: `pytest tests/`
 - Config: `pyproject.toml` `[tool.pytest.ini_options]`
-- **Gap**: Tests predate 7-agent pipeline. No tests for preemption agent, failed_extraction_attempts, retag endpoint, retry mechanism, or JSON truncation repair.
+- **Gap**: Tests predate the current 6-agent + 3-bill-level-agent pipeline. No tests for: bill-level agents (enforcement, applicability, compliance_timeline), interpretation_risks embedding, signal-based routing, adaptive token retry, failed_extraction_attempts, retag endpoint, or JSON repair strategies 3–5.
