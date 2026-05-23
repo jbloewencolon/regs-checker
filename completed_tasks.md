@@ -1,5 +1,103 @@
 # Regs Checker — Completed Tasks
 
+## Recently Completed (2026-05-23)
+
+### Phase 8: Critical Extraction Issues (COMPLETED)
+**Completion Date**: 2026-05-23
+**Duration**: Session spanning context compaction
+**Priority**: P0 (blocking export, sync, and downstream pipeline)
+
+**Problem Summary**
+Extraction pipeline hit three cascading failures preventing data export and downstream sync:
+1. **Export endpoint crash**: CSV/JSON flagger downloader (low-confidence warnings) failed mid-stream with internal service error
+2. **Supabase sync 409 conflict**: raw_artifacts uniqueness on sha256_hash not respected by PostgREST; local DB reseeds with new IDs caused duplicates
+3. **Supabase sync 400 bad request**: extractions table missing 3 columns (duration_ms, input_tokens, output_tokens); bill_level_extractions and failed_extraction_attempts tables didn't exist
+
+**Sub-fix 1: Export endpoints (Phase 8A)**
+- **Cause**: Buffered response not rewound before writing to temp file; second read returned EOF
+- **Fix**: Wrapped response in `io.BytesIO()` with `seek(0)` before write. Both CSV and JSON endpoints verified.
+- **Files changed**: src/api/routes/dashboard.py (export handlers)
+- **Test**: Downloaded both formats; files verified non-empty and parseable
+
+**Sub-fix 2: Low-confidence persistence (Phase 8E)**
+- **Cause**: Flagger UI downloaded files, but no persistent storage on reset (lost when uvicorn restarted)
+- **Design**: RunArchiver pattern (active `_active/<extraction_run>/` folder + timestamped backups on reset)
+- **Files changed**: src/core/low_confidence_extractor.py, src/api/routes/dashboard.py
+- **Output path**: `_active/<extraction_run>/low_confidence_extractions/{warnings.csv|warnings.json}`
+- **Archive on reset**: `_archived/<timestamp>_extraction/low_confidence_extractions/`
+- **Test**: Flagger downloaded + reset + verified files persisted in _active and _archived
+
+**Sub-fix 3a: Supabase sync — raw_artifacts 409**
+- **Cause**: PostgREST's default `resolution=ignore-duplicates` generates `ON CONFLICT (id) DO NOTHING`, but raw_artifacts has unique constraint on sha256_hash, not id. Local reseeds with new IDs → 409 on sha256_hash collision.
+- **Design**: New TABLE_CONFLICT_COLUMNS dict mapping tables to their natural unique keys; _supabase_post() now passes `?on_conflict=<columns>` query param
+- **Files changed**: src/scripts/sync_to_supabase.py
+  - Added SYNC_TABLES entries: bill_level_extractions, failed_extraction_attempts (correct FK order)
+  - New TABLE_CONFLICT_COLUMNS dict (5 entries):
+    * raw_artifacts → sha256_hash
+    * normalized_source_records → document_version_id,ordinal
+    * section_triage_results → source_record_id
+    * review_queue → extraction_id
+    * bill_level_extractions → document_version_id,agent_name
+  - Modified _supabase_post() to accept and pass on_conflict param to PostgREST
+- **Impact**: Enables future non-destructive (additive) syncs; re-extractions can push new rows without --clear flag
+
+**Sub-fix 3b: Supabase schema alignment**
+- **Cause**: extractions table was missing 3 columns added in local migration l8i4j0k2g713; bill_level_extractions and failed_extraction_attempts tables never created on Supabase
+- **Fix**: Applied DDL directly to wjxlimjpaijdogyrqtxc Supabase project:
+  - Added to extractions: duration_ms (int, nullable), input_tokens (int, default 0), output_tokens (int, default 0)
+  - Created bill_level_extractions: FK to document_versions, agent_name (string), payload (JSONB), review_status enum, model_id, input/output_tokens, truncated, metadata, unique (document_version_id, agent_name), index on document_version_id
+  - Created failed_extraction_attempts: FK to normalized_source_records + extraction_jobs, error_type/message text, retried/retry_succeeded booleans, index on (retried, agent_name)
+- **Test**: Dry-run sync showed 16,322 rows; full sync completed zero errors
+
+**Sub-fix 4: README.md documentation**
+- **Cause**: README claimed Qwen obligation agent + GPT-OSS 20B group; claimed 7 agents total; no token doubling or Gemma 4 context
+- **Fix**: Completely rewrote agent section:
+  - Corrected all agents to google/gemma-4-26b-a4b
+  - Changed 7-agent list to: 6 passage-level (obligation, definition_actor, threshold_exception, rights_protection, compliance_mechanism, preemption) + 3 bill-level (enforcement, applicability, compliance_timeline)
+  - Added LocalLLMProvider section explaining token doubling, channel-thought recovery, loop detection, reasoning_effort caching
+  - Added bill-level agents table with output tables
+  - Removed MinIO as required; noted local:// path support
+  - Updated run archiver section with low_confidence_extractions files
+- **Files changed**: README.md (agent section, LocalLLMProvider section, run archiver section)
+
+**Sub-fix 5: architecture.md reconciliation**
+- **Cause**: Section 3 claimed "7 agents per passage"; no bill-level agent documentation; ambiguity agent still listed as active; no signal-based routing detail; no enforcement context injection detail
+- **Fix**: Completely rewrote Section 3 (Extraction):
+  - Documented signal-based routing with fallback to all-6 when <2 signals fire
+  - Listed 6 passage-level agents with what each extracts
+  - Documented ambiguity agent retirement (Phase 1B) with archive path (src/ingestion/_archived/ambiguity_agent.py)
+  - Explained interpretation_risks embedding on ObligationPayload and RightsProtectionPayload
+  - Added bill enforcement context injection from src/core/bill_context.py
+  - Added bill-level agents table with output tables and frequency
+  - Documented per-extraction processing (Unicode normalization, Orrick similarity, confidence scoring, adaptive retry, failed_extraction_attempts tracking)
+  - Updated Key Dependencies (Gemma 4-26b, removed MinIO)
+  - Updated Test Infrastructure gap list (6 + 3 agent pipeline, added missing test categories)
+- **Files changed**: architecture.md (Section 3, Key Dependencies, Test Infrastructure)
+
+**Taxonomy Strategy Review (Text-only analysis, no code changes)**
+- **Input**: Reviewed taxonomy_strategy_summary.md and taxonomy_dev_plan.md against current codebase
+- **Findings**: Identified 6 factual drift items and 3 sequencing gaps (documented for Phase 1 launch)
+- **Outcome**: Deferred code patch pending review; documented gaps in Immediate Next Tasks
+
+**Test Results**
+- ✓ CSV/JSON flagger export: Files downloaded, verified non-empty, parse-able
+- ✓ Low-confidence persistence: Files in _active and _archived after reset
+- ✓ Supabase sync: 16,322 rows across all tables, zero errors
+- ✓ Bill-level table structure: Verified unique constraint and index
+- ✓ Documentation: cross-referenced all code files; no false claims
+
+**Blockers Removed**
+- ✓ Can now export low-confidence warnings persistently
+- ✓ Can sync new extractions without --clear flag (additive syncs possible)
+- ✓ Schema parity across local/regs-checker/policy-navigator databases
+- ✓ Documentation now matches pipeline reality
+
+**Files committed**: All work committed to branch `claude/onboard-government-project-PyyB9`; 4 extraction sub-fixes + 2 file edits for sync script + comprehensive documentation rewrites.
+
+**Next Steps**: Run extraction to populate bill_level_extractions (prerequisite for Phase 1 taxonomy work)
+
+---
+
 ## Recently Completed (2026-05-10)
 
 ### Phase 8: Export Bugs + Gemma Model Fixes + Low-Confidence Persistence

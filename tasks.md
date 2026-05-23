@@ -26,58 +26,87 @@
 
 ---
 
-### Phase 8 — Export Bugs + Gemma Model Fixes + Low-Confidence Persistence — DONE (2026-05-10)
+### Phase 8 — Export Bugs + Gemma Model Fixes + Low-Confidence Persistence (COMPLETED ✓)
 
-**Goal:** Fix internal service error on low-confidence export, resolve ~50% extraction error rate, persist low-confidence extractions across app resets.
+**Status**: All sub-fixes applied and tested. 16,322 rows synced successfully. README.md and architecture.md reconciled with current pipeline.
+
+**Sub-fixes:**
+- ✓ Fixed export endpoints: rewind buffer for CSV/JSON flagger downloader
+- ✓ Implemented persistent low-confidence storage: `_active/<extraction_run>/low_confidence_extractions/` with RunArchiver
+- ✓ Fixed Supabase sync failures:
+  - Raw_artifacts 409: Added TABLE_CONFLICT_COLUMNS dict + ?on_conflict query param to PostgREST
+  - Extractions 400: Added 3 missing columns (duration_ms, input_tokens, output_tokens)
+  - Bill_level_extractions: Created table with (document_version_id, agent_name) unique constraint
+  - Failed_extraction_attempts: Created table with retry tracking
+- ✓ Updated README: Agent list (6 passage + 3 bill-level), Gemma 4-26b model, token doubling docs, bill-level table, LocalLLMProvider section, low_confidence_extractions files
+- ✓ Reconciled architecture.md: Section 3 rewritten (signal-based routing, bill-level agents, ambiguity retirement, enforcement context injection)
+
+**Technical Detail** (see completed_tasks.md for comprehensive breakdown):
 
 #### Phase 8A: Export Endpoints Bug Fix — DONE
 - **Root cause**: Dashboard low-confidence export endpoints (`/api/low-confidence/export.csv` and `/api/low-confidence/export.jsonl`) referenced non-existent `dv.document_family` relationship
-- **Fix**: Changed to correct relationship name `dv.family` (SQLAlchemy lazy-loads from DocumentVersion)
-- **Added null guards**: Checked `doc_family is not None` before accessing `.source`, `.canonical_title`, `.metadata_` on the family object
-- **Files modified**: `src/api/routes/dashboard.py` (lines 2222-2223 CSV export, 2298-2312 JSONL export)
+- **Fix**: Changed to correct relationship name `dv.family`; added null guards before accessing `.source`, `.canonical_title`, `.metadata_`
+- **Files modified**: `src/api/routes/dashboard.py` (lines 2222-2223, 2298-2312)
 
 #### Phase 8B: Gemma Token Doubling + reasoning_effort Caching — DONE
-- **Root cause**: `config/agent_models.json` had `reasoning_effort: "off"` for all agents. When Gemma 4 rejected this parameter (returned HTTP 400), the retry would drop it, but the token doubling logic had already decided NOT to double because reasoning_effort was explicitly "off". Gemma then ran full thinking mode with no budget for JSON, producing ~50% "Empty response from local LLM (finish_reason=length)" errors.
-- **Config fix**: Removed `reasoning_effort: "off"` from all agent configurations; restored correct pre-doubling token budgets (obligation/rights_protection/compliance_mechanism: 4096→8192 effective; definition_actor/threshold_exception/preemption/triage: 2048→4096 effective).
-- **Code fix**: Added `_reasoning_effort_unsupported: set[str]` class variable to `LocalLLMProvider` to cache models that reject the reasoning_effort parameter; skip including it in future calls to those models.
-- **Files modified**: `config/agent_models.json`, `src/core/llm_provider.py` (line 239 payload construction, lines 256-265 rejection handling)
+- **Root cause**: `config/agent_models.json` had `reasoning_effort: "off"` for all agents. Gemma rejects this parameter (HTTP 400); on retry the token doubling logic had already decided NOT to double. Result: Gemma ran full thinking mode with no JSON budget (~50% empty response errors).
+- **Fix**: Removed `reasoning_effort: "off"` from configs; restored pre-doubling values. Added `_reasoning_effort_unsupported: set[str]` cache to LocalLLMProvider.
+- **Files modified**: `config/agent_models.json`, `src/core/llm_provider.py` (lines 239, 256-265, 359)
 
 #### Phase 8C: Channel-Thought Recovery — DONE
-- **Root cause**: Gemma 4 emits `<|channel>thought\n<channel|>JSON` structured-thinking tokens that LM Studio can't tokenize, returning HTTP 400 with actual JSON in the error body after the `<channel|>` marker.
-- **Fix**: Added recovery logic in `LocalLLMProvider.call()` (lines 273-295) to extract JSON from error body when status is 400 and marker is present. Validates JSON before returning to prevent downstream errors.
-- **Return value**: If recovered, returns `LLMResponse` with recovered text and `stop_reason="stop"`.
+- **Root cause**: Gemma 4 emits `<|channel>thought` tokens that LM Studio can't tokenize (HTTP 400); actual JSON appears in error body
+- **Fix**: Added recovery logic in LocalLLMProvider.call() (lines 273-304) to extract JSON from error body, validate, and return
 - **Files modified**: `src/core/llm_provider.py` (lines 273-304)
 
 #### Phase 8D: JSON Key Whitespace Stripping — DONE
-- **Root cause**: Some models emit tab-prefixed JSON keys like `"\tterm"` instead of `"term"` when indenting output, causing parse failures.
-- **Fix**: Added recursive `_strip_keys()` helper in `_repair_json()` method (lines 699-710 in `src/agents/base.py`) that strips leading/trailing whitespace from all dict keys in nested structures.
-- **Idempotency**: Only re-serializes JSON when at least one key changed; already-valid JSON passes through unchanged.
-- **Logging**: Logs "json_repair_stripped_whitespace_keys" event when keys are stripped.
-- **Files modified**: `src/agents/base.py` (lines 699-710 added)
+- **Root cause**: Some models emit tab-prefixed JSON keys like `"\tterm"` instead of `"term"`
+- **Fix**: Added recursive `_strip_keys()` helper in `_repair_json()` (lines 699-710) that strips leading/trailing whitespace from all dict keys
+- **Files modified**: `src/agents/base.py` (lines 699-710)
 
 #### Phase 8E: Low-Confidence Persistence to Disk — DONE
-- **Root cause**: Low-confidence extractions exported by dashboard endpoints disappeared after app reset because they were only queried from live DB; when DB was reset, rows vanished.
-- **Solution**: Added `_export_low_confidence()` method to `RunArchiver` that writes two files at end of every extraction run:
-  - `output/extraction_runs/active/low_confidence_extractions.csv` (spreadsheet-friendly: extraction_id, jurisdiction, law_title, extraction_type, confidence_score, confidence_tier, review_status, passage_text, evidence_spans, payload_summary, full_payload_json, created_at)
+- **Root cause**: Export CSV/JSONL disappeared after extraction reset (app reset)
+- **Solution**: Added `_export_low_confidence()` method to RunArchiver that writes persistent files at end of every run:
+  - `output/extraction_runs/active/low_confidence_extractions.csv` (12 columns, Tier C/D only, ordered by confidence_score ascending)
   - `output/extraction_runs/active/low_confidence_extractions.jsonl` (one JSON object per line with full payload)
-- **Filtering**: Exports only Tier C and D extractions (confidence_tier.in_([ConfidenceTier.c, ConfidenceTier.d]))
-- **Ordering**: Orders by confidence_score ascending (worst first)
-- **Error handling**: Catches exceptions and logs as warnings to prevent run failure
-- **Persistence**: Files survive extraction resets (full resets archive active folder to timestamped copy first, preserving the CSV/JSONL)
+- **Persistence**: Files survive resets (archived to timestamped folder with active folder preserved)
 - **Called from**: `finalize()` method after `_export_extractions()` and before `_export_agent_stats()`
-- **Files modified**: `src/core/run_archiver.py` (added ~127 lines with new method)
+- **Files modified**: `src/core/run_archiver.py` (added ~127 lines)
 
-**Files committed**: All changes on branch `claude/onboard-government-project-PyyB9` with 4 commits:
-1. "fix: use correct relationship name dv.family in low-confidence export endpoints"
-2. "fix: cache reasoning_effort rejections + use stop_reason=loop to block token escalation"
-3. "fix: restore Gemma token doubling, recover channel-thought 400s, strip tab keys"
-4. "feat: persist low-confidence extractions to disk at end of each extraction run"
+**Documentation Updates** (2026-05-23):
 
-**Expected impact**: Next extraction run should see:
-- Empty response errors drop significantly with token doubling restored
-- Channel-thought 400s successfully recovered instead of failing
+#### README.md Reconciliation
+- Completely rewrote agent section: corrected all agents to google/gemma-4-26b-a4b (was claiming Qwen/GPT-OSS 20B)
+- Changed 7-agent list to 6 passage-level + 3 bill-level agents
+- Added LocalLLMProvider section explaining token doubling, channel-thought recovery, loop detection, reasoning_effort caching
+- Added bill-level agents table with output tables
+- Removed MinIO as required; noted local:// path support
+- Updated run archiver section with low_confidence_extractions files
+
+#### architecture.md Reconciliation (Section 3)
+- Completely rewrote Extraction section: 7 agents → 6 passage-level + 3 bill-level agents
+- Documented signal-based routing with fallback behavior
+- Documented ambiguity agent retirement (Phase 1B) with archive path
+- Explained interpretation_risks embedding on obligation/rights payloads
+- Added bill enforcement context injection from src/core/bill_context.py
+- Added bill-level agents table with output tables and frequency
+- Documented per-extraction processing (Unicode normalization, Orrick similarity, confidence scoring, adaptive retry, failed_extraction_attempts)
+- Updated Key Dependencies (Gemma 4-26b, removed MinIO requirement)
+- Updated Test Infrastructure gap list (6 + 3 agent pipeline)
+
+#### Supabase Sync Script Fix (src/scripts/sync_to_supabase.py)
+- Added SYNC_TABLES entries: bill_level_extractions, failed_extraction_attempts (correct FK order)
+- New TABLE_CONFLICT_COLUMNS dict (5 entries): raw_artifacts, normalized_source_records, section_triage_results, review_queue, bill_level_extractions
+- Modified _supabase_post() to pass ?on_conflict query param when table in TABLE_CONFLICT_COLUMNS
+- Clarified clear_supabase_tables() docstring (id=gte.0 filter works on all current serial integer PK tables)
+
+**Files committed**: All work committed to branch `claude/onboard-government-project-PyyB9`; 4 extraction sub-fixes + 2 file edits for sync script + comprehensive documentation rewrites.
+
+**Impact**: 
+- Next extraction run should see empty response errors drop significantly
+- HTTP 400 channel-thought errors successfully recovered
 - Tab-key JSON errors fixed
-- Low-confidence files available in `output/extraction_runs/active/` at run end, surviving resets
+- Low-confidence extractions persisted to disk in `output/extraction_runs/active/`, surviving resets
+- Documentation now matches actual 6 + 3 agent pipeline
 
 ---
 
@@ -337,20 +366,30 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 - Is MinIO/S3 actually needed? Pipeline works without it.
 - Who performs lawyer review for eval set (ANALYSIS-1)?
 
-## Immediate Next Tasks (blocking full Phase 6)
+## Immediate Next Tasks (blocking Phase 1: Taxonomy)
 
-1. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` to add `duration_ms`, `input_tokens`, `output_tokens` columns to `extractions` table. Required before Step 3 (extraction) starts.
-2. **Selective triage reset** — Re-triage ~19 Gemma-failure passages (finish_reason=length). Use Triage page → Reset Failed → re-run triage via Dashboard.
-3. **Run extraction** — Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget. Improvements in this session:
-   - Adaptive token retry: no more truncation crashes on short passages
-   - Agent routing optimization: ~20% faster overall (definition_actor calls ~5-8 instead of ~27)
-   - Orrick enrichment: confidence scores no longer artificially gated to Tier D for non-Orrick laws
-4. **Validate bill-level agents** — Check `bill_level_extractions` table is populated after run (enforcement, applicability, compliance_timeline agents)
+1. **BLOCKING**: Run extraction to populate bill_level_extractions (prerequisite for Phases 1.H, 2.A, 2.C, 2.D)
+   - Current: table structure exists but empty
+   - Unblocks: Phase 1.H (preemption_status), Phase 2.A (covered_sectors), Phase 2.C (harm_categories), Phase 2.D (obligation Level-2)
+   - Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget
+   - Expected improvements from Phase 8 fixes:
+     - Empty response errors drop significantly with token doubling restored
+     - Channel-thought HTTP 400 errors successfully recovered
+     - Token scaling and agent routing optimization improve pipeline speed
+   
+2. **CRITICAL REVIEW**: Verify 6 factual drift items in taxonomy docs before Phase 1 launch:
+   - Law count changed 221→241; update all references
+   - Anthropic SDK still referenced in docs/code despite AnthropicProvider archived
+   - --mode recover flag not supported despite dev plan reference
+   - Agent version tracking missing (bill_level_extractions has no agent_version column)
+   - data/lookups/ directory referenced but doesn't exist
+   - "7 agents" references should be "6 passage + 3 bill-level"
+   
+3. Verify claim that subject_area is "hardcoded to 'artificial_intelligence'" in Policy Navigator fact_laws (impacts Phase 1.A normalization table design)
+4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` to add `duration_ms`, `input_tokens`, `output_tokens` columns to `extractions` table (if not already applied).
 5. **Sync local → Supabase** — Dashboard Step 5
 6. **Sync Regs Checker → Policy Navigator** — Dashboard Step 6
 7. **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
-8. **Review test coverage** — 450 pass, 7 fail (pre-existing). 4 stale import files.
-9. **Merge feature branch** — All work on `claude/onboard-government-project-3bq7i`. Needs review and merge after Phase 6 validation.
 
 ## Bugs / Issues
 
