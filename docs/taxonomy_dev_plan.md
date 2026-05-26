@@ -79,7 +79,7 @@ Each phase = one feature branch. Sub-tracks within a phase = PRs against the fea
 
 ### 3.1 Why this phase exists
 
-The most visible failure of the current taxonomy is `fact_laws.subject_area` — 37 inconsistent freetext values across 221 laws, 64 of which are null. This is the field that powers LawCard's law-type badge and the first-pass "what kind of law is this" filter. Until this is normalized, no other taxonomy work has a stable foundation, because every other dimension depends on knowing the law's primary category.
+The most visible failure of the current taxonomy is `fact_laws.subject_area` — 37 inconsistent freetext values across 232 laws (the current seed in `data/fact_laws.csv`), a meaningful fraction of which are null. The exact null count predates the latest seed and should be re-verified against the current corpus before Phase 1.H sizing. This is the field that powers LawCard's law-type badge and the first-pass "what kind of law is this" filter. Until this is normalized, no other taxonomy work has a stable foundation, because every other dimension depends on knowing the law's primary category.
 
 This phase also establishes the patterns the rest of the plan reuses: dim table design, lookup tables, the rollup normalization stage, and the vocab committee workflow.
 
@@ -183,6 +183,8 @@ CREATE INDEX ix_fact_laws_law_category_id ON fact_laws(law_category_id);
 
 A static lookup table maintained in version control. JSON or CSV in `data/lookups/subject_area_to_law_category.json`.
 
+> **Phase 1 prerequisite:** the `data/lookups/` directory does not exist yet (verified 2026-05-26). Create it as the first action of this track, alongside `data/lookups/README.md` documenting file naming convention, lookup-key normalization rules (lowercased, articles stripped at lookup time, raw keys preserved for audit), and the committee-approval process for adding new entries. All subsequent lookup files (Track 2.B `subject_to_actor_code.json`, Phase 2 sector lookups, etc.) land here.
+
 ```json
 {
   "artificial_intelligence": "comprehensive_ai",
@@ -209,7 +211,7 @@ This is a partial example — the full set is the 37 distinct values from the au
 
 - The case-sensitivity issue is real. `"AI governance"` and `"ai_governance"` are different keys in the JSON file. Don't normalize the *keys* — the lookup logic strips the keys' case/style at lookup time. This preserves the audit trail of what raw values existed.
 - Some values are genuinely ambiguous. `"election deepfakes"` could be either `ai_content_integrity` or `sector_specific_ai` (sector = elections). Use the **dominant intent** — laws called "election deepfakes" are usually content-integrity laws applied to a sector. When ambiguous, flag for LKA review.
-- 64 of the 221 laws have null `subject_area`. The lookup doesn't help these — they go through Track 1.H.
+- A meaningful fraction of the 232 laws have null `subject_area` (audit count: 64 in the pre-2026-05 seed; re-verify against the current corpus before sizing Track 1.H). The lookup doesn't help these — they go through Track 1.H.
 
 **Files touched:**
 - `data/lookups/subject_area_to_law_category.json`
@@ -333,17 +335,19 @@ def normalize_law_categories(session) -> dict:
 
 ---
 
-#### Track 1.H — Re-extract for the 64 null `subject_area` laws
+#### Track 1.H — Re-extract for null `subject_area` laws
 
 **Owner:** NLP (agent prep) + DO (orchestration) + RPR (manual review of low-confidence results)
-**Depends on:** 1.A, 1.B
+**Depends on:** 1.A, 1.B, **and a completed extraction run populating `bill_level_extractions`** (see prerequisite note below)
 **Parallelizable with:** 1.D, 1.E
+
+> **Prerequisite — not a dependency on a prior track, but on a pipeline run:** `bill_level_extractions` is currently empty (verified 2026-05-26). Track 1.H cannot start until the user runs Dashboard Step 3 ("Extract All") to populate `applicability_agent` rows for every law. Tracks 1.A–1.G can proceed in parallel with the extraction run; 1.H is gated on the run completing.
 
 **What to build:**
 
 The Applicability Agent already extracts enough information to infer `law_category` (it identifies AI system types, sectors, and entity types from the full bill text). Write a post-processing step:
 
-1. For each of the 64 nulls, retrieve the most recent `applicability_agent` bill-level extraction.
+1. For each law with null `subject_area`, retrieve the most recent `applicability_agent` bill-level extraction.
 2. Apply a deterministic mapping from Applicability Agent output → `law_category`:
    - If `ai_system_types_in_scope` contains `generative_ai` and is the dominant type → `generative_ai`
    - If exactly one `covered_sectors` value and it's not `general` → `sector_specific_ai`
@@ -356,13 +360,13 @@ The Applicability Agent already extracts enough information to infer `law_catego
 - Don't write an LLM prompt for this. The Applicability Agent ran already; its output is in `bill_level_extractions`. This is a rule-based mapping over existing data.
 - Existing `bill_level_extractions` rows have `agent_name = 'applicability_agent'`. Query that.
 - If a law has no Applicability Agent extraction yet, queue it for the next extraction batch — don't try to invent a category.
-- The Orrick Gate (auto-Tier D when no Orrick data) means some of the 64 nulls might have no validated Applicability extraction. These go to RPR manually.
+- The Orrick Gate (auto-Tier D when no Orrick data) means some null-`subject_area` laws might have no validated Applicability extraction. These go to RPR manually.
 
 ### 3.4 Phase 1 acceptance criteria
 
 | Criterion | Owner verifies |
 |---|---|
-| All 221 laws have non-null `law_category_id` | DO + automated test |
+| All 232 laws have non-null `law_category_id` | DO + automated test |
 | `dim_law_categories` is FK-enforced from `fact_laws` | DevOps |
 | `rollup_matrix.py` normalization stage is idempotent (re-runs produce zero changes) | BE + automated test |
 | LawCard renders the new badge for all laws | FE + manual QA |
@@ -919,9 +923,12 @@ Phased re-extraction:
 
 **Important context for the engineer:**
 
-- The pipeline already has `--mode recover` for the 637 failed extractions (see HANDOFF.md). Use the same pattern.
-- Confidence tier shifts are the biggest risk. Store new extractions as `bill_level_extractions` rows with a different `agent_version` so old and new coexist. Don't overwrite until validated.
-- Cost: re-extraction is the heaviest step in the entire plan. Budget for it. The pipeline supports Sonnet for higher quality (`REGS_EXTRACTION_MODEL=claude-sonnet-4-20250514`) — consider Sonnet for the sample run, Haiku for bulk.
+- The pipeline has a `--mode recover` flag (`src/scripts/seed_pipeline.py:521`) for re-running failed extractions. Use the same pattern for the sample / Tier C/D / fill-in passes.
+- **Model:** All extraction is local via LM Studio. The default model is `google/gemma-4-26b-a4b` per `config/agent_models.json`. Re-extraction with a new prompt does not require a different model — agent quality is governed by the prompt change and the per-agent token budget. If a different model is needed for a quality experiment, swap via the Dashboard Models page (`/dashboard/models`) which writes to `agent_models.json` and hot-reloads agents. The `AnthropicProvider` is archived; there is no Claude/Sonnet/Haiku path.
+- **Run orchestration:** Sample runs (~50 laws) go through Dashboard "Extract N (Test)" with a `limit` parameter; the auto-purge logic now preserves prior extractions when `limit` is set (Phase 7M-E fix). Full-corpus runs go through Dashboard Step 3 ("Extract All"). Targeted Tier C/D re-runs can be driven by Dashboard "Reset Failed" + re-run; for a more selective re-run set, the rollup script (or a one-off query) tags candidate `extraction_id`s and `--mode recover` consumes them.
+- **Versioned re-extraction (A/B store) — `agent_name` suffix convention:** The `bill_level_extractions` table has no `agent_version` column; the unique constraint is `(document_version_id, agent_name)`, so re-runs overwrite via upsert. To keep old and new payloads coexisting during validation, suffix the agent name when running the new prompt: `applicability_agent` → `applicability_agent_v2`. Rollup queries point at the latest version per agent family (`agent_name LIKE 'applicability_agent%'` ordered by `created_at DESC`) unless an `?include_legacy=true` query parameter is passed. Once the new version is validated, the previous version is soft-retired (rows kept; rollup stops querying them). If A/B store usage gets heavy across the project, promote this convention to a real `agent_version` column in a future migration; until then, the suffix avoids a three-database schema change for a Phase-3-only need.
+- **Confidence tier shifts** are the biggest risk. Monitor the Tier A/B/C/D distribution before/after each re-extraction batch; >10% A→B drops trigger a prompt review.
+- **Cost:** Re-extraction is the heaviest step in the entire plan. Budget GPU time per agent (see Phase 7J per-agent timing in `extractions.duration_ms`). Sample-first sequencing is non-optional.
 
 ---
 
@@ -994,7 +1001,7 @@ Soft-delete the conflated 10 values in `dim_requirement_types` after the new sys
 
 - Agent prompt: revert YAML file; pipeline runs with old prompt. New fields stop populating but existing data is fine.
 - Level-1 crosswalk: drop the new columns; LawCard falls back to old (cosmetic) grouping.
-- Re-extracted rows: each has `agent_version`; drop new-version rows, keep old-version rows.
+- Re-extracted rows: each carries a versioned `agent_name` (e.g. `applicability_agent_v2`); delete the new-version rows, retain the original `applicability_agent` rows, and revert rollup queries to drop the `LIKE 'agent_v2%'` filter.
 
 ---
 
@@ -1090,7 +1097,7 @@ Defer to Phase 5 planning. Same patterns.
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Re-extraction tier shifts (Phase 3) destabilize the review queue | High | Sample-first rollout; A/B store; rollback by `agent_version` |
+| Re-extraction tier shifts (Phase 3) destabilize the review queue | High | Sample-first rollout; A/B store via `agent_name` suffix convention (e.g. `applicability_agent_v2`); rollback by deleting the suffixed rows |
 | Vocab committee becomes a bottleneck | Medium | Fast-lane rule for low-ambiguity additions; weekly cadence |
 | Profile-side vocab drift from law-side | Medium | Phase 2.E uses dim tables for FE dropdowns; Phase 3+ hardens to FK |
 | Cross-database sync lag during migrations | High | Run migrations during low-traffic windows; `sync_monitor.py` checks parity |

@@ -103,19 +103,29 @@ LawCard UI + matching engine queries (clean JOINs, no freetext)
 
 ### Phase 1 success gates
 
-**Data quality:** Zero nulls in `law_category`, `legislative_status`, `enforcement_status` across 241 laws. All `subject_area` freetext reconciled. `dim_actor_types` populated; `obligation.subject_normalized` joins to it for >95% of obligations.
+Each phase ships independently per the incremental-shipping decision (§2). Phase 1's gates are scoped to law-level normalization only; gates that depend on Phase 2 deliverables (actor classification, matching engine swap) are listed under "Phase 2 success gates" below.
 
-**LawCard filtering:** Every filter renders from a controlled-vocab field. Validation test: 20 manually-classified laws return 100% expected matches, zero false positives. Same set whether queried by sector filter or LawCard category browse.
+**Data quality (law-level):** Zero nulls in `law_category_id`, `legislative_status_id`, `enforcement_status_id` across 232 laws. All `subject_area` freetext either mapped via lookup or routed to `vocab_review_queue` for committee triage. `dim_law_categories`, `dim_legislative_statuses`, `dim_enforcement_statuses` populated and FK-enforced from `fact_laws`.
 
-**Matching engine:** Test profile returns stable, expected applicable laws. ≤5% drop in matched laws vs. current engine (any drops audited). All four matching dimensions work without freetext fallbacks.
+**LawCard filtering (law-category only in Phase 1):** The `law_category` filter chip renders from a controlled-vocab field. Validation test: 20 manually-classified laws return 100% expected matches, zero false positives. (Sector, actor, and obligation-domain filters ship in later phases.)
+
+**Process:** Vocab committee operational with ≥1 batch processed. `vocab_review_queue` triaged at least once.
 
 **Framework readiness (structural only):** `resp_*` tables structurally aligned. `framework_refs` extractions retained. Mapping plan to NIST AI RMF documented but not executed.
+
+### Phase 2 success gates
+
+**Obligation-level normalization:** `dim_actor_types` populated with the expanded 6-value vocab + `actor_scope` enum. `obligation_actor` junction populated; >95% of obligations have at least one row joining to `dim_actor_types`. `law_ai_scopes` and `law_sectors` junctions populated for every law.
+
+**Matching engine:** Test profile returns stable, expected applicable laws via the new FK-based JOINs (no freetext fallbacks). ≤5% drop in matched laws vs. the current freetext engine (any drops audited); net additions are acceptable. All four matching dimensions (sector, actor, AI scope, jurisdiction) work without freetext fallbacks.
+
+**Profile alignment:** `anonymous_audit_profiles` insert path reads option lists from dim tables (soft enforcement; hardens in Phase 3).
 
 ### Phase 2+ incremental gates
 
 | Sub-phase | Deliverable | Gate |
 |---|---|---|
-| 1a | `law_category` live | All 241 laws non-null; LawCard badge renders |
+| 1a | `law_category` live | All 232 laws non-null; LawCard badge renders |
 | 1b | `actor_classification` normalized | >95% of obligations have non-null actor matching profile vocab |
 | 1c | Status split | LawCard distinguishes signed-not-effective from effective |
 | 2a | `covered_sectors` standalone | Matching engine returns expected results for sector profile |
@@ -180,3 +190,6 @@ LawCard UI + matching engine queries (clean JOINs, no freetext)
 | Session 1 | Hybrid enforcement (strict law-side, soft profile-side) | Explicit user choice |
 | Session 1 | Readable strings, snake_case style | Recommendation accepted |
 | Session 1 | Phased success criteria (Phase 1 gates + incremental gates after) | Recommendation accepted |
+| 2026-05-26 | Authoritative law count = 232 (matches `data/fact_laws.csv` data rows) | Explicit user choice |
+| 2026-05-26 | Phase 1 success gates rewritten to be Phase-1-internal; actor-classification + matching-engine gates moved to new Phase 2 gates section | Codebase drift correction |
+| 2026-05-26 | Versioned re-extraction handled via `agent_name` suffix convention (e.g. `applicability_agent_v2`); no `agent_version` column added to `bill_level_extractions` | Recommendation accepted |
