@@ -22,6 +22,8 @@ Each phase is structured the same way:
 
 Sequential dependencies are noted explicitly. Anything not marked as a dependency can be parallelized.
 
+**Start here for execution:** §2.5 foregrounds the one prerequisite that blocks real work today (Phase 0 — the extraction run), gives an at-a-glance execution sequence across all phases, and lists the recurring cross-role handoff chains. Read it before picking up a track.
+
 ---
 
 ## 1. Role Definitions
@@ -72,6 +74,94 @@ New vocab values flow through the review queue. The committee meets weekly to ap
 ### Branch and PR workflow
 
 Each phase = one feature branch. Sub-tracks within a phase = PRs against the feature branch. Phase merges to `main` only after acceptance criteria pass.
+
+---
+
+## 2.5 Phase 0 Prerequisite & Execution Sequence
+
+Added during the 2026-05-26 planning pass. This section introduces no new deliverables — it sequences the phases below and foregrounds the one prerequisite that currently blocks real work. Roles are defined in Section 1; per-track dependencies live in each phase's "Depends on / Parallelizable with" notes.
+
+### Phase 0 — Prerequisite: populate `bill_level_extractions`
+
+**Status: BLOCKING.** `bill_level_extractions` is empty as of 2026-05-26.
+
+**Why it blocks.** Three later tracks read bill-level (especially `applicability_agent`) output:
+- **Track 1.H** — infers `law_category` for null-`subject_area` laws from `applicability_agent` rows.
+- **Phase 2** (2.B, 2.C, 2.D) — actor / AI-scope / sector normalization all read applicability output.
+- **Phase 3.F** — re-extraction needs a populated baseline to compare against.
+
+**What runs.** The user runs Dashboard Step 3 ("Extract All") on the local stack (LM Studio + Gemma 4 26B + Docker Postgres :5434). Apply pending Alembic migration `l8i4j0k2g713` first (adds `duration_ms` / `input_tokens` / `output_tokens` to `extractions`).
+
+**Owner: User (infrastructure operator).** This step cannot run in the web/remote environment — it needs the local GPU + database. Tracks 1.A–1.G proceed in parallel while the run completes.
+
+**Done when** every law has an `applicability_agent` row in `bill_level_extractions`, or is explicitly accounted for as text-missing (quarantine queue) or Orrick-gated. NLP + RPR spot-check a sample before declaring readiness.
+
+### Execution sequence at a glance
+
+Phases are sequential (1 → 2 → 3 → 4 → 5); tracks within a phase parallelize per their individual flags. The single hard cross-phase gate is Phase 0, which unblocks 1.H, Phase 2, and Phase 3.F.
+
+| Step | What | Lead role(s) | Blocked by |
+|---|---|---|---|
+| **0** | Extract → populate `bill_level_extractions` | User (infra); NLP + RPR verify | migration `l8i4j0k2g713` applied |
+| 1.F | Stand up vocab committee | PTPL + VC | — |
+| 1.A–1.C | `dim_law_categories`, FK column, freetext lookup | SDPA, LKA, RPR, DO | — |
+| 1.D | Normalization stage in `rollup_matrix.py` | BE | 1.A, 1.B, 1.C |
+| 1.E | LawCard law-category badge + filter | FE | 1.A, 1.B, 1.D |
+| 1.G | Status split (legislative + enforcement) | SDPA, LKA, RPR, BE, FE | — (parallel with 1.A–1.E) |
+| 1.H | Re-extract null `subject_area` laws | NLP, DO, RPR | **Phase 0**, 1.A, 1.B |
+| gate | Phase 1 acceptance criteria (§3.4) | DO + automated tests | all Phase 1 tracks |
+| 2.A–2.D | Actor / AI-scope / sector dims + junctions | SDPA, LKA, BE | **Phase 1 complete** |
+| 2.B | Actor normalization | BE, RPR, DO | 2.A, **Phase 0** |
+| 2.E | Profile-side vocab alignment (soft) | BE, FE | 2.A, 2.C, 2.D |
+| 2.F | Matching engine swap (FK joins) | BE, FE, PTPL | 2.B, 2.C, 2.D, 2.E |
+| 2.G | Retire `*` wildcard | SDPA, DO | 2.C |
+| gate | Phase 2 acceptance criteria (§4.4) | PTPL + automated tests | all Phase 2 tracks |
+| 3.A–3.C | Obligation domains / types / modifiers | SDPA, LKA | **Phase 2 complete** |
+| 3.D | Rule-based Level-1 crosswalk | BE, RPR | 3.A |
+| 3.E | Agent prompt update (Level-2 codes) | NLP | 3.B |
+| 3.F | Targeted re-extraction | NLP, DevOps, RPR, PTPL | 3.E, **Phase 0** |
+| 3.G | LawCard obligation grouping | FE, PTPL, LKA | 3.A, 3.D |
+| 3.H | Retire old `dim_requirement_types` | SDPA | 3.D, 3.F |
+| gate | Phase 3 acceptance criteria (§5.4) | NLP + automated tests | all Phase 3 tracks |
+| 4.A–4.F | Harm categories + preemption | LKA, NLP, RPR, SME, SDPA, BE, FE | **Phase 3 complete** |
+| 5.A–5.F | Framework crosswalk (NIST / ISO) | LKA, RPR, SME, SDPA, BE, FE | **Phase 4 complete** |
+
+### Cross-role handoff chains (reusable workflows)
+
+Most tracks are not single-role. These three chains recur across phases; run the steps in order and pass each role's output to the next.
+
+**Standing up a new `dim_*` table** (Tracks 1.A, 1.G, 2.A, 2.C, 2.D, 3.A, 3.B, 4.A, 4.D):
+1. LKA defines codes + display labels + descriptions →
+2. SDPA designs schema + writes Alembic migration + Supabase DDL →
+3. DevOps applies to all three DBs →
+4. RPR builds the freetext → code lookup →
+5. VC approves the lookup →
+6. DO populates `data/lookups/<file>.json` →
+7. BE writes the normalization stage in `rollup_matrix.py` →
+8. DO runs it; triages `vocab_review_queue` →
+9. FE renders the dimension in LawCard →
+10. DO runs the phase acceptance SQL.
+
+**Re-extraction with a new prompt** (Tracks 3.F, 4.C):
+1. NLP drafts prompt + Pydantic delta (new fields optional) + eval fixtures →
+2. NLP sample-runs ~50 laws via Dashboard "Extract N (Test)" →
+3. RPR reviews the sample; flags tier shifts →
+4. NLP iterates if needed →
+5. PTPL approves budget for the next batch →
+6. NLP runs Tier C/D, then Tier A/B fill-in (suffix `agent_name` → `<agent>_v2`) →
+7. RPR spot-checks →
+8. NLP analyzes tier-distribution delta; decides on full corpus →
+9. BE points rollup queries at the latest version (`agent_name LIKE '<agent>%'`) →
+10. DO verifies downstream tables.
+
+**Resolving an ambiguous freetext value** (continuous, every phase):
+1. DO surfaces it in weekly `vocab_review_queue` triage →
+2. RPR drafts a recommendation →
+3. LKA rules on interpretation (dominant-intent) if legal judgment is needed →
+4. VC approves (fast-lane) or deliberates (full committee) →
+5. DO updates the lookup JSON →
+6. BE re-runs normalization (idempotent; picks up the new mapping) →
+7. DO confirms the queue item cleared; logs the decision in `taxonomy_strategy_summary.md` §9.
 
 ---
 
