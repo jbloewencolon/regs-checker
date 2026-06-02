@@ -377,13 +377,15 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
      - Channel-thought HTTP 400 errors successfully recovered
      - Token scaling and agent routing optimization improve pipeline speed
    
-2. **CRITICAL REVIEW**: Verify 6 factual drift items in taxonomy docs before Phase 1 launch:
-   - Law count changed 221→241; update all references
-   - Anthropic SDK still referenced in docs/code despite AnthropicProvider archived
-   - --mode recover flag not supported despite dev plan reference
-   - Agent version tracking missing (bill_level_extractions has no agent_version column)
-   - data/lookups/ directory referenced but doesn't exist
-   - "7 agents" references should be "6 passage + 3 bill-level"
+2. **DONE 2026-05-26 — Taxonomy doc drift reconciled.** Planning docs now in `docs/taxonomy_strategy_summary.md` and `docs/taxonomy_dev_plan.md`. Verified-real drift fixed:
+   - Law count: authoritative count is **232** (matches `data/fact_laws.csv` data rows). Strategy + dev plan updated.
+   - Anthropic SDK refs (dev plan §5.3 Track 3.F): replaced with local Gemma / LM Studio reality.
+   - Agent version tracking: `bill_level_extractions` has no `agent_version` column; agreed to use `agent_name` suffix convention (e.g. `applicability_agent_v2`). Dev plan §5.3 + §5.7 + §8 cross-phase risks updated.
+   - `data/lookups/` directory: confirmed missing; Phase 1 Track 1.C now creates it as the first action.
+   - `--mode recover`: **drift claim was wrong** — flag exists at `src/scripts/seed_pipeline.py:521,665`. Dev plan reference is correct.
+   - "7 agents" references: **not present** in these two planning docs. Drift, if any, lives in older handoffs / older README sections; flag for a separate pass if needed.
+   - Phase 1 success gates (strategy §6) had cross-phase contamination (`dim_actor_types` join + matching-engine deltas were Phase 2 work); rewritten to be Phase-1-internal, with a new "Phase 2 success gates" section added.
+   - Phase 1 Track 1.H given an explicit "blocked until extraction populates `bill_level_extractions`" note.
    
 3. Verify claim that subject_area is "hardcoded to 'artificial_intelligence'" in Policy Navigator fact_laws (impacts Phase 1.A normalization table design)
 4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` to add `duration_ms`, `input_tokens`, `output_tokens` columns to `extractions` table (if not already applied).
