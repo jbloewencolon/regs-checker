@@ -43,3 +43,6 @@ output/extraction_runs/*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Personal (not project documentation) — keep local, do not publish
+docs/resume_blurbs.md
