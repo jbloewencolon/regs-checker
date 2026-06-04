@@ -1,12 +1,12 @@
 # Regs Checker
 
-AI-powered regulatory obligation extraction and compliance serving platform. Ingests legislative text from ~241 US state and federal AI laws, extracts structured obligations using local LLM agents, validates against Orrick law firm data, and syncs results to the Policy Navigator product database.
+AI-powered regulatory obligation extraction and compliance serving platform. Ingests legislative text from ~232 US state and federal AI laws, extracts structured obligations using local LLM agents, validates against Orrick law firm data, and syncs results to the Policy Navigator product database.
 
 ## Current State
 
 | Metric | Value |
 |---|---|
-| Laws in CSV | 241 |
+| Laws in CSV | 232 |
 | Passage-level agents | 6 (obligation, definition_actor, threshold_exception, rights_protection, compliance_mechanism, preemption) |
 | Bill-level agents | 3 (enforcement, applicability, compliance_timeline) |
 | Default extraction model | `google/gemma-4-26b-a4b` (all agents) |
@@ -121,7 +121,7 @@ src/
     applicability_agent.py#   Bill-level: covered entities, sectors, size thresholds, exemptions
     compliance_timeline_agent.py # Bill-level: effective dates, deadlines, response windows
   ingestion/
-    local_ingest.py       # Seeds 241 laws from CSV; ingests local files
+    local_ingest.py       # Seeds 232 laws from CSV; ingests local files
     orrick_enrichment.py  # Two-phase Orrick metadata enrichment (backfill + LLM generate)
     parser.py             # HTML / PDF / TXT → passage chunking
     extractor.py          # Extraction orchestrator (triage, agents, confidence, archiver)
@@ -170,6 +170,8 @@ output/
 docker/                   # Docker Compose (Postgres)
 alembic/                  # Database migrations
 _archived/                # Archived code (old fetchers, Anthropic provider, etc.)
+docs/                     # Strategy + phased plans (see Documentation below)
+archive/                  # Historical planning docs + dated engineering handoffs
 ```
 
 ## Extraction Agents
@@ -317,8 +319,22 @@ See `SETUP.md` for the full `.env` template.
 - **Product-table population:** Bill-level agents produce one structured record per law mapped directly to product tables (`law_enforcement_details`, `law_triggering_thresholds`, `law_obligation_flags`), enabling compliance decision support without cross-section reasoning at passage level.
 - **Local-first inference:** All LLM calls use local models via the OpenAI-compatible API. No cloud API keys required for extraction.
 
+## Documentation
+
+| Doc | Purpose |
+|---|---|
+| [`architecture.md`](architecture.md) | Reality-based system map: components, data flow, known hacks, fragile areas |
+| [`tasks.md`](tasks.md) | Active + upcoming work queue — the current source of truth for what's next |
+| [`completed_tasks.md`](completed_tasks.md) | Log of recently completed work that still matters |
+| [`SETUP.md`](SETUP.md) / [`QUICKSTART.md`](QUICKSTART.md) | Full setup guide / 2-minute returning-developer path |
+| [`docs/taxonomy_strategy_summary.md`](docs/taxonomy_strategy_summary.md) | Taxonomy redesign — decisions log |
+| [`docs/taxonomy_dev_plan.md`](docs/taxonomy_dev_plan.md) | Taxonomy redesign — phased dev plan (Phase 0 prerequisite + execution sequence) |
+| [`docs/pipeline_rebuild_plan.md`](docs/pipeline_rebuild_plan.md) | Alternative path — gated ground-up rebuild proposal |
+
+The taxonomy redesign and the pipeline rebuild are **mutually exclusive strategic paths**; see each plan's own framing for how they relate.
+
 ## Archive
 
 - `_archived/` — Archived ingestion connectors, web scrapers, AnthropicProvider
 - `src/ingestion/_archived/` — Old URL-fetching pipeline and retired ambiguity agent
-- `archive/` — Historical planning documents
+- `archive/` — Historical planning documents and dated engineering handoffs
