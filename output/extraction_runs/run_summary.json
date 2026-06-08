@@ -1,0 +1,21 @@
+{
+  "run_type": "extract",
+  "started_at": "2026-05-10T02:48:38.631259",
+  "finished_at": "2026-05-11T02:15:37.237265",
+  "duration_seconds": 84418.6,
+  "folder": "G:\\App Dev\\regs-checker\\output\\extraction_runs\\active",
+  "total_records": 660,
+  "total_extractions": 6274,
+  "records_processed": 660,
+  "records_failed": 0,
+  "records_skipped_short": 0,
+  "passages_merged": 0,
+  "agents_skipped_by_signal": 1646,
+  "token_usage": {
+    "input_tokens": 6080345,
+    "output_tokens": 3862125,
+    "total_tokens": 9942470,
+    "total_calls": 2043
+  },
+  "bill_level_extractions": 472
+}
