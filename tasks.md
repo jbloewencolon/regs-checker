@@ -9,22 +9,23 @@
 
 ### Phase 0 — Run-integrity residuals & lookup foundation
 - ✅ **0.3 Relocate agent→type map** — moved `config/agent_type_map.json` → `data/lookups/agent_to_extraction_type.json`; added `data/lookups/README.md` (C-7 + unification).
+- ✅ **0.4 Reconcile model-of-record** — `CLAUDE.md` updated to `google/gemma-4-26b-a4b`; agent count corrected (6 clause-level + 3 bill-level; ambiguity retired).
+- ✅ **0.2 C-2 root cause identified** — `run_summary` = successful-result tokens only; `agent_stats` = all-attempt tokens incl. adaptive retries. Both scopes valid; need scope label in `agent_stats.json`. See `docs/r1_findings_supplement.md`.
+- ⏳ **0.2a Add scope label to `agent_stats.json` writer** — emit `"scope": "all call attempts including adaptive retries"` in `ExtractionMonitor.to_dict()` or `snapshot()`. One-liner. *(BE)*
 - ⏳ **0.1 Verify bill-level rows** — confirm the 472 `bill_level_extractions` rows exist in DB incl. `applicability_agent`; NLP+RPR spot-check (needs Docker/psql). *(C-1 residual)*
-- ⏳ **0.2 C-2 token telemetry** — investigate monitor accumulation across sessions (`run_summary` vs `agent_stats` ~4×). *(log analysis)*
-- ⏳ **0.4 Reconcile model-of-record** — `CLAUDE.md` says `gpt-oss-20b`; `config/agent_models.json` says `gemma-4-26b-a4b`. Pin one before any `_prompt_hash`-derived artifact is committed.
 
 ### Phase 1 — Coverage backfill (C-3, C-8)
-- ⏳ **1.1** Seed 135 `text_ready` laws → ingest → triage → extract (`docs/missing_laws_ingest_queue.csv`).
-- ⏳ **1.2** Re-fetch text for 8 BAD_TEXT laws — **SB 205 (Colorado AI Act) highest priority**.
+- ⏳ **1.1** Seed 135 `text_ready` laws → ingest → triage → extract (`docs/missing_laws_ingest_queue.csv`). Confirm `law_fulltext_report.csv` entries first. See `docs/r1_findings_supplement.md` for step-by-step operator checklist.
+- ⏳ **1.2** Re-fetch text for BAD_TEXT laws. Priority: **US-CO-SB205** (confirmed bad — colorado.gov), then **SB_2966** (❌ file missing entirely). Verify remaining 6 before committing to re-fetch. See `docs/r1_findings_supplement.md` for file-status table.
 - ⏳ **1.3** Re-run obligation agent on 2 GENUINE_MISS laws (`TMP-CA-AICALIFORNIACO`, `TMP-MO-ANDRELATEDOFFE`).
 - ⏳ **1.4** Inspect 6 DB-only laws (AB 2602, HB 4762, HB178, SB 1361, SB 20, SB25) in `normalized_source_records`.
 - 🔒 **1.5** Confirm `enforcement_status` derived-field design with SDPA/LKA.
 
 ### Phase 2 — Evidence-span verbatim quoting (E-1) ★ highest value
-- ⏳ **2.1** Add verbatim-quote instructions to `obligation`/`rights_protection`/`definition_actor`/`compliance_mechanism` prompts (copy exact statutory text, no paraphrase).
-- ⏳ **2.2** Capture eval baseline (verified-span rate + tier distribution) **before** 2.1.
-- ⏳ **2.3** 10–20 law test batch (`agent_name` `_v2` suffix); measure verified-span rate + A+B lift.
-- ⏳ **2.4** Audit Orrick-alignment distribution on non-gated laws (secondary C-5 cause).
+- ✅ **2.1** Verbatim-quote instructions added to all 4 prompts (obligation/rights_protection/definition_actor/compliance_mechanism v1.1). Each now includes a process instruction + bad/good example + extraction_prompt reminder co-located with the passage. Prompt versions bumped 1.0→1.1 to segment future harvests.
+- ⏳ **2.2** Capture eval baseline (verified-span rate + tier distribution) **before** running 2.3 test batch. Use `output/extraction_runs/active/extractions.csv` + `low_confidence_extractions.csv`.
+- ⏳ **2.3** 10–20 law test batch with `agent_name` `_v2` suffix; measure verified-span rate + A+B lift.
+- ⏳ **2.4** Audit Orrick-alignment distribution on non-gated laws (secondary C-5 cause; query `bill_level_extractions` + `extractions` join).
 - **Gate:** A+B ≥30–40% on test batch → Track 3.F justified; else evaluate alternative model.
 
 ### Phase 3 — Vocabulary harvest job (D-1)

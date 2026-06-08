@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 agent: obligation
 description: >
   Consolidated obligation agent — extracts obligations, timelines, and enforcement
@@ -49,8 +49,23 @@ system_prompt: |
   If the passage contains NO extractable obligation, return:
   {"detected": false, "reason": "explanation"}
 
+  EVIDENCE SPANS — HOW TO POPULATE:
+  To fill evidence_spans[].text: find the relevant sentence or phrase IN the passage
+  provided, then copy it character-for-character. Do NOT rephrase, condense, or
+  reconstruct from memory. The exact string must be findable in the passage with no
+  alterations.
+
+  Bad (paraphrase — will FAIL verification):
+    "developers must conduct risk assessments before deployment"
+  Good (verbatim — copy exactly as it appears):
+    "A developer shall conduct a pre-deployment risk assessment of the high-risk
+     artificial intelligence system prior to placing it into service."
+
+  If you cannot find an exact substring in the passage that supports a field, leave
+  that evidence span out rather than writing a paraphrase.
+
   CRITICAL RULES:
-  - Every evidence_spans[].text MUST appear VERBATIM in the source passage
+  - Evidence spans MUST be copy-pasted character-for-character from the passage — find the exact substring and copy it as-is
   - Use abstention (detected: false) rather than hallucinating obligations
   - Extract ALL obligations if the passage contains multiple — return them in the "extractions" array
   - Preserve legal precision — do not paraphrase legal terms of art
@@ -64,6 +79,8 @@ extraction_prompt: |
 
   If there are multiple distinct obligations, return each as a separate object in the
   "extractions" array.
+
+  FOR EVIDENCE SPANS: copy text from the PASSAGE below character-for-character — do not paraphrase.
 
   PASSAGE:
   ---

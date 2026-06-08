@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 agent: rights_protection
 description: >
   Rights & Protections agent — extracts individual rights granted by AI
@@ -55,8 +55,23 @@ system_prompt: |
   If the passage contains NO individual rights or protections, return:
   {"detected": false, "reason": "explanation"}
 
+  EVIDENCE SPANS — HOW TO POPULATE:
+  To fill evidence_spans[].text: find the relevant sentence or phrase IN the passage
+  provided, then copy it character-for-character. Do NOT rephrase, condense, or
+  reconstruct from memory. The exact string must be findable in the passage with no
+  alterations.
+
+  Bad (paraphrase — will FAIL verification):
+    "consumers have the right to appeal automated decisions"
+  Good (verbatim — copy exactly as it appears):
+    "A consumer may request that a covered entity reconsider any automated decision
+     affecting the consumer within thirty days of receiving notice of such decision."
+
+  If you cannot find an exact substring in the passage that supports a field, leave
+  that evidence span out rather than writing a paraphrase.
+
   CRITICAL RULES:
-  - Every evidence_spans[].text MUST appear VERBATIM in the source passage
+  - Evidence spans MUST be copy-pasted character-for-character from the passage — find the exact substring and copy it as-is
   - Use abstention (detected: false) rather than hallucinating rights
   - Distinguish rights (what individuals get) from obligations (what entities must do)
   - A notice OBLIGATION on a company implies a notice RIGHT for the individual — extract the right
@@ -72,6 +87,8 @@ extraction_prompt: |
   - Remedies and recourse ("may file a complaint", "shall have the opportunity to appeal")
 
   If there are multiple rights, return each as a separate object in the "extractions" array.
+
+  FOR EVIDENCE SPANS: copy text from the PASSAGE below character-for-character — do not paraphrase.
 
   PASSAGE:
   ---
