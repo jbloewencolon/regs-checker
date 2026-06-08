@@ -1,0 +1,107 @@
+{
+  "_comment": "Single source of truth for agent→extraction_type mapping. Consumed by rollup normalization (Tracks 1.D, 2.B) and the Level-1 crosswalk (Track 3.D). Do not hard-code these relationships elsewhere. See C-7 in docs/extraction_run_corrections_eng.md.",
+  "_table_note": "Clause-level agents write to the 'extractions' table. Bill-level agents write to 'bill_level_extractions'. The triage agent labels passages in-place (no extractions row).",
+
+  "clause_level_agents": {
+    "obligation": {
+      "table": "extractions",
+      "extraction_types": ["obligation", "timeline", "enforcement"],
+      "default_type": "obligation",
+      "disambiguation": "payload-driven: presence of penalty/enforcement fields → enforcement; effective_date fields → timeline; otherwise → obligation"
+    },
+    "definition_actor": {
+      "table": "extractions",
+      "extraction_types": ["definition", "actor_mapping", "framework_ref"],
+      "default_type": "definition",
+      "disambiguation": "payload-driven: actor list present → actor_mapping; framework_ref list present → framework_ref; otherwise → definition",
+      "name_note": "agent name 'definition_actor' maps to extraction_type 'definition' (and variants); the two names differ by design"
+    },
+    "threshold_exception": {
+      "table": "extractions",
+      "extraction_types": ["threshold", "exception"],
+      "default_type": "threshold",
+      "disambiguation": "payload-driven: threshold_sub_type='exemption' or exceptions list present → exception; otherwise → threshold",
+      "name_note": "one agent produces two distinct extraction_type values"
+    },
+    "rights_protection": {
+      "table": "extractions",
+      "extraction_types": ["rights_protection"],
+      "default_type": "rights_protection"
+    },
+    "compliance_mechanism": {
+      "table": "extractions",
+      "extraction_types": ["compliance_mechanism"],
+      "default_type": "compliance_mechanism"
+    },
+    "preemption": {
+      "table": "extractions",
+      "extraction_types": ["preemption_signal"],
+      "default_type": "preemption_signal",
+      "name_note": "agent name 'preemption' maps to extraction_type 'preemption_signal'"
+    }
+  },
+
+  "bill_level_agents": {
+    "applicability_agent": {
+      "table": "bill_level_extractions",
+      "extraction_types": null,
+      "note": "Structured JSONB payload; no ExtractionType enum value. Feeds Tracks 1.H (law_category), 2.C (ai_system_types_in_scope), 2.D (covered_sectors)."
+    },
+    "enforcement_agent": {
+      "table": "bill_level_extractions",
+      "extraction_types": null,
+      "note": "Bill-level enforcement structure. Primary structured source for enforcement_status (supersedes the 15 clause-level 'enforcement' extractions). See C-8 enforcement sparsity discussion."
+    },
+    "compliance_timeline_agent": {
+      "table": "bill_level_extractions",
+      "extraction_types": null,
+      "note": "Bill-level effective dates and compliance deadlines."
+    }
+  },
+
+  "triage_agent": {
+    "triage": {
+      "table": "normalized_source_records (label field)",
+      "extraction_types": null,
+      "note": "Labels each passage relevant/uncertain/not_relevant. Passages marked not_relevant skip the 6-agent clause battery entirely."
+    }
+  },
+
+  "retired_types": {
+    "ambiguity": {
+      "status": "retired",
+      "note": "Ambiguity findings are now embedded as interpretation_risks fields on obligation and rights_protection payloads. The ExtractionType.ambiguity enum value remains for legacy row compatibility only."
+    }
+  },
+
+  "consumers_to_migrate": {
+    "_note": "These files currently hard-code agent/type relationships and should be migrated to consume this file when redesign Tracks 1.D and 2.B begin.",
+    "src/core/payload_adapter.py": {
+      "lines": "326-333",
+      "pattern": "ADAPTER_MAP dict keyed by extraction_type strings including actor_mapping, framework_ref, exception, enforcement sub-types"
+    },
+    "src/scripts/rollup_matrix.py": {
+      "lines": "314",
+      "pattern": "WHERE extraction_type = 'preemption_signal' literal string"
+    },
+    "src/ingestion/extractor.py": {
+      "lines": "313-325",
+      "pattern": "AGENT_EXTRACTION_TYPES dict — this is the authoritative runtime source; this config file mirrors it for offline/non-Python consumers"
+    }
+  },
+
+  "run_observed_fan_out": {
+    "_source": "extraction_run 2026-05-10 → 2026-05-11, 138 laws",
+    "obligation": 975,
+    "definition": 879,
+    "actor_mapping": "included in definition_actor count",
+    "framework_ref": "included in definition_actor count",
+    "threshold": 501,
+    "exception": 474,
+    "rights_protection": 714,
+    "compliance_mechanism": 762,
+    "preemption_signal": 310,
+    "enforcement_clause_level": 15,
+    "timeline_clause_level": "included in obligation count"
+  }
+}
