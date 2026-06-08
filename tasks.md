@@ -28,8 +28,8 @@
 ### Phase 2 — Cheap trust wins (no taxonomy dependency; front-loaded)
 - ✅ **2a** — E-1 verbatim evidence-span prompts (4 prompts v1.1). ⏳ Run 10–20 law test batch (`_v2` suffix); capture baseline first.
 - ✅ **2b ★** — cross-validation wired into confidence. The 3 extraction-time call sites can't see the CV score (CV runs post-extraction), so the fix lives in `run_verification_pass`: `_recompute_confidence_with_cv()` re-runs `compute_confidence` with the accuracy score and writes the updated `confidence_score`/`confidence_tier` back. CV result now persisted for **all** extractions (was flagged-only). Failed CV returns an empty results list → no silent neutral pass. `cv_tier_changes` counter logged. 4 regression-guard tests in `test_confidence.py::TestCrossValidationWiring`. **Recompute runs during the Verify step (`/api/verify`), not initial extraction.** *(NLP, BE)*
-- ⏳ **2c** — enforcement normalizer (§6.7): aggregate enforcement from standalone rows + embedded `obligation.enforcement` + bill-level + Orrick/IAPP into one record per law. Fixes C-8 sparsity. *(NLP, BE)*
-- ⏳ **2d** — `legal_context` refactor of `preemption_signal` (§6.8): typed categories; hide low-value `other`. *(NLP)*
+- ✅ **2c** — enforcement normalizer (`src/core/enforcement_normalizer.py`): merges embedded `obligation.enforcement` + bill-level `enforcement_agent` + Orrick (IAPP wired) into one record per law; field-level precedence orrick>iapp>bill_level>obligation; per-field `_provenance`. Fixes C-8 sparsity, no agent re-run. 12 tests. *(NLP, BE)*
+- ✅ **2d** — `legal_context` classifier (`src/core/legal_context.py`): typed categories (`true_preemption`/`constitutional_limit`/`interstate_conflict`/`agency_jurisdiction`/`cross_law_reference`/`unclassified`); `display=False` hides low-value `unclassified`; layered on raw `conflict_type` (non-destructive), wired into `payload_adapter`. 17 tests. *(NLP)*
 
 ### Phase 3 — Full-breadth normalization substrate (gates Phase 4)
 - ✅ Harvest done — `data/lookups/candidates/actor_value_to_code_full.csv` (209 values, ~10-code model). C-7 map committed.
