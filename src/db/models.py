@@ -767,3 +767,113 @@ class BillLevelExtraction(Base):
             unique=True,
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 4a — Verification Results Persistence
+# ---------------------------------------------------------------------------
+
+
+class VerificationRunSummary(Base):
+    """One row per document-version per verification pass.
+
+    Captures the document-level aggregates from run_verification_pass():
+    cross-validation stats, gap detection summary, citation check summary,
+    and token usage.  The gap candidates and citation issues are stored as
+    JSONB so they remain queryable without a separate join.
+    """
+
+    __tablename__ = "verification_run_summaries"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_version_id = Column(
+        Integer, ForeignKey("document_versions.id"), nullable=False, index=True
+    )
+    run_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # Cross-validation aggregates
+    cv_passages_checked = Column(Integer, default=0, nullable=False)
+    cv_extractions_valid = Column(Integer, default=0, nullable=False)
+    cv_extractions_flagged = Column(Integer, default=0, nullable=False)
+    cv_avg_accuracy = Column(Float, nullable=True)
+
+    # Gap detection aggregates
+    gd_passages_checked = Column(Integer, default=0, nullable=False)
+    gd_gaps_found = Column(Integer, default=0, nullable=False)
+    gd_high_confidence = Column(Integer, default=0, nullable=False)
+    gap_candidates = Column(JSONB, default=list)
+
+    # Citation verification aggregates
+    citations_checked = Column(Integer, default=0, nullable=False)
+    citations_verified = Column(Integer, default=0, nullable=False)
+    citations_unverified = Column(Integer, default=0, nullable=False)
+    citation_issues = Column(JSONB, default=list)
+
+    # Token usage for this verification run
+    input_tokens = Column(Integer, default=0, nullable=False)
+    output_tokens = Column(Integer, default=0, nullable=False)
+
+    document_version = relationship("DocumentVersion")
+
+
+class ExtractionVerificationStatus(Base):
+    """Per-extraction verification state — persists what was ephemeral in metadata_.
+
+    Phase 4a: captures CV score, confidence before/after recompute, and Orrick
+    grounding status.  Rows are upserted on each verify run (one active row per
+    extraction).
+
+    Phase 4b will populate iapp_status and refine grounding_status once IAPP
+    ingestion is complete.
+    """
+
+    __tablename__ = "extraction_verification_status"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    extraction_id = Column(
+        Integer, ForeignKey("extractions.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    verification_run_id = Column(
+        Integer,
+        ForeignKey("verification_run_summaries.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    document_version_id = Column(Integer, nullable=False, index=True)
+
+    # Cross-validation result
+    cv_score = Column(Float, nullable=True)          # accuracy_score (0.0–1.0)
+    cv_is_valid = Column(Boolean, nullable=True)     # True → passed CV
+    cv_flagged = Column(Boolean, default=False, nullable=False)
+
+    # Confidence tracking across recompute
+    confidence_before = Column(Float, nullable=True)
+    confidence_after = Column(Float, nullable=True)
+    tier_before = Column(String(1), nullable=True)   # "A"/"B"/"C"/"D"
+    tier_after = Column(String(1), nullable=True)
+    tier_changed = Column(Boolean, default=False, nullable=False)
+
+    # Orrick grounding (three-state: aligned / silent / gated)
+    # "aligned"        — Orrick data present, combined_score > 0.0
+    # "tracker_silent" — no Orrick data for this law (IAPP-only or unmapped)
+    # "gated"          — Orrick gate fired; forced Tier D regardless of other signals
+    orrick_status = Column(String(30), nullable=True)
+    orrick_score = Column(Float, nullable=True)
+    orrick_gated = Column(Boolean, default=False, nullable=False)
+
+    # IAPP alignment — populated by Phase 4b
+    # "aligned" / "conflict" / "tracker_silent" / NULL (not yet checked)
+    iapp_status = Column(String(30), nullable=True)
+
+    # Combined grounding status
+    # "orrick_grounded"  — Orrick confirms this extraction
+    # "tracker_silent"   — no tracker data; can't confirm or deny
+    # "tracker_conflict" — extraction contradicts a tracker field (Phase 4b)
+    # "unverified"       — verification not yet run
+    grounding_status = Column(String(30), default="unverified", nullable=False)
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    extraction = relationship("Extraction", foreign_keys=[extraction_id])
+    verification_run = relationship("VerificationRunSummary")

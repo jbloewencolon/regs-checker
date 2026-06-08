@@ -1,10 +1,13 @@
 """Confidence scoring model — Orrick-gated, near-term earnable signals only.
 
-Hard gate: extractions without Orrick validation data are automatically Tier D.
+Hard gate (Phase 4b-refined): extractions without ANY tracker data are Tier D.
+  - If Orrick data is present → normal scoring.
+  - If no Orrick but IAPP data present → score from evidence+citation only,
+    cap at Tier C.  (Orrick gate fires only when BOTH trackers are silent.)
+  - If neither Orrick nor IAPP data → Tier D (orrick_gated=True).
 
 Active weighted signals (near-term, earnable today):
   - Orrick alignment  (0.50): Token similarity vs Orrick key_requirements/enforcement
-    REQUIRED: no Orrick data → auto-Tier D.
   - Evidence grounding (0.35): Proportion of verified evidence spans (verbatim-quote check)
   - Citation quality  (0.15): Specificity of section_reference (subsection > § > generic)
 
@@ -26,7 +29,7 @@ Tiers:
   A: >= 0.85 (auto-approve candidates)
   B: >= 0.70 (standard review)
   C: >= 0.50 (detailed review required)
-  D: < 0.50 OR no Orrick validation data (requires human review)
+  D: < 0.50 OR no tracker data at all (requires human review)
 """
 
 from __future__ import annotations
@@ -84,6 +87,7 @@ def compute_confidence(
     orrick_similarity: "OrrickSimilarityResult | None" = None,
     cross_validation_score: float | None = None,
     passage_text: str | None = None,
+    iapp_has_data: bool = False,
 ) -> ConfidenceBreakdown:
     """Compute the confidence score for an extraction.
 
@@ -96,6 +100,8 @@ def compute_confidence(
         orrick_similarity: Optional Orrick similarity result for alignment scoring.
         cross_validation_score: Optional accuracy score from cross-validation
             agent (0.0-1.0). None means not yet verified.
+        iapp_has_data: True if the law has an IAPP tracker entry (Phase 4b).
+            Prevents the Orrick gate from forcing Tier D for IAPP-only laws.
 
     Returns:
         ConfidenceBreakdown with component scores and final tier.
@@ -171,8 +177,10 @@ def compute_confidence(
     has_cv = cross_validation_score is not None
     cv_score = cross_validation_score if has_cv else 0.0
 
-    # If no Orrick data, force Tier D immediately.
-    # Compute a diagnostic score from earnable signals for observability only.
+    # Tracker gate (Phase 4b-refined):
+    #   - No Orrick + no IAPP → force Tier D (original behaviour)
+    #   - No Orrick + IAPP present → skip gate; score from evidence+citation only,
+    #     cap at top of Tier C so we never claim Tier A/B without Orrick grounding
     if not has_orrick:
         diag_components: list[tuple[float, float]] = [
             (WEIGHT_EVIDENCE_GROUNDING, evidence_score),
@@ -181,9 +189,32 @@ def compute_confidence(
         if has_cv:
             diag_components.append((WEIGHT_CV_TARGET, cv_score))
         diag_weight = sum(w for w, _ in diag_components)
-        diag_total = sum(w * s for w, s in diag_components) / diag_weight if diag_weight > 0 else 0.0
-        capped_score = min(diag_total, TIER_C_THRESHOLD - 0.01)
+        diag_total = (
+            sum(w * s for w, s in diag_components) / diag_weight
+            if diag_weight > 0 else 0.0
+        )
 
+        if iapp_has_data:
+            # IAPP-only path: score from non-Orrick signals, capped at Tier C.
+            capped_score = min(diag_total, TIER_B_THRESHOLD - 0.01)
+            tier = _score_to_tier(capped_score)
+            return ConfidenceBreakdown(
+                schema_validity=schema_score,
+                evidence_grounding=evidence_score,
+                completeness=completeness_score,
+                source_quality=source_score,
+                orrick_alignment=0.0,
+                cross_validation=cv_score,
+                total_score=round(capped_score, 4),
+                tier=tier,
+                orrick_matched_tokens=[],
+                orrick_gated=False,
+                broad_spans=broad_spans,
+                section_ref_quality=section_ref_quality,
+            )
+
+        # No tracker data at all → Tier D.
+        capped_score = min(diag_total, TIER_C_THRESHOLD - 0.01)
         return ConfidenceBreakdown(
             schema_validity=schema_score,
             evidence_grounding=evidence_score,

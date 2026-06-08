@@ -8,11 +8,11 @@
 > *trustworthy = "matches Orrick/IAPP."* Product layer deferred.
 > Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
 >
-> **Verification layer (build-vs-fix, resolved):** built but partly disconnected. Orrick
-> alignment works (0.30 weight). Cross-validation agent runs post-extraction but its score
-> **never reaches confidence** → the 0.25 weight is **dead** (Phase 2b = fix). IAPP **not**
-> ingested, CSV in `static/` only (Phase 4b = build). 0.45 of the confidence model
-> (cross-val 0.25 + evidence 0.20) is under-delivering. Plan §2.
+> **Verification layer (build-vs-fix, resolved):** built and wired. Orrick alignment works
+> (0.50 near-term weight). CV wired via `_recompute_confidence_with_cv()` at verify step
+> (Phase 2b ✅). Near-term weights: Orrick 0.50 / evidence 0.35 / citation 0.15; CV phases
+> in at 0.10. IAPP **not yet ingested** — Phase 4b. Phase 3 normalization substrate complete
+> (actor B0 + B1.5 + V2–V4 vocab + B4 loader/queue). Phase 4 = tracker alignment + recompute.
 >
 > **⚠️ Open contradiction:** v3 says applicability "not run"; my C-1 analysis saw 472
 > bill-level rows. Reconciles if 472 = enforcement+timeline only. **Settle with
@@ -33,17 +33,17 @@
 
 ### Phase 3 — Full-breadth normalization substrate (gates Phase 4)
 - ✅ Harvest done — `data/lookups/candidates/actor_value_to_code_full.csv` (209 values, ~10-code model). C-7 map committed.
-- ⏳ **3a** — align canonical codes to Orrick/IAPP's own categories **first**. *(RPR, LKA)*
-- ⏳ **3b** — clean actor field (~5% `INVALID_nonactor`); fix at parse layer, re-harvest. *(NLP, BE)*
-- 🔒 **3c** — two-tier dim model across **all** dimensions: actors (~10), `law_domain` (new), covered systems, obligation families (21), rights, enforcement, `legal_context`. Alias tables, all 3 DBs. *(after 3a)*
-- 🔒 **3d** — VC ratify; **defer 4 LKA actor forks**. Fast-lane `modality_to_strength` (needs a strength vocab home).
-- ⏳ **3e** — unified normalization passes in `rollup_matrix.py` read `data/lookups/*`; idempotent; mismatches → `vocab_review_queue`. Migrate hard-coded maps (`payload_adapter.py:326-333`, `rollup_matrix.py:314`). Add `VocabReviewQueueItem`.
+- ✅ **3a** — B0 actor vocabulary: 13 canonical codes locked; 215-row aliases.csv; 162-row mapping_examples.csv; fork_decisions.md (F1–F4 split decisions); 48-row unresolved_terms.csv; 13-row crosswalk (Orrick AI Scope + IAPP scope codes). `docs/NORMALIZATION_VOCABULARY_RATIFICATION_PLAN.md` committed. *(RPR, LKA)*
+- ✅ **3b** — B1.5 parse-layer clean: `src/core/actor_normalizer.py` (INVALID_NONACTOR_TERMS + garbled patterns); Pydantic `field_validator` on `subject_normalized`, `actor_type`, `right_holder_normalized`, `responsible_party_normalized`. 21 tests. *(NLP, BE)*
+- ✅ **3c** — V2–V4 vocabulary artifacts (36 files, 6 per dimension) for all 6 dimensions: actor (V1), law_domain (V2), covered_systems (V3), obligation_family (V4), rights (V4), enforcement (V4), legal_context (V4). Two-tier model (canonical codes + alias tables). *(after 3a)*
+- ⏳ **3d** — VC ratify; **`business` (122 mentions) PENDING_LKA ruling**. `modality_to_strength` deferred. *(human gate)*
+- ✅ **3e** — B4 normalization infrastructure: `src/core/vocab_loader.py` (normalize/flush/get_canonical_codes + module-level cache); `VocabReviewQueueItem` DB model; migration `n0k6l2m4i915` (vocab_review_queue table + 3 indexes); `rollup_matrix.py` reads `get_canonical_codes("legal_context")`. 16 tests. *(BE)*
 - 🔒 **3f** — inject ratified enums into prompts + parse-time validation. *(after 3d)*
 - 🔒 **3g** — re-harvest after 1a; lock codes when two prompt versions agree.
 
 ### Phase 4 — Tracker alignment & confidence recompute (the trust check)
-- ⏳ **4a** — persist `verification_results` table (currently ephemeral in `metadata_`). *(BE, SDPA)*
-- 🔒 **4b** — ingest `static/iapp_law_tracker.csv`; alignment pass vs **both** trackers → `tracker_grounded`/`orrick_aligned`/`iapp_aligned`/`tracker_conflict`/`extraction_only_claim`/`tracker_only_claim`; refine Orrick gate. *(after 3)*
+- 🔧 **4a** — persist `verification_results` table (currently ephemeral in `metadata_`). Migration `o1p7q3r5s016`; per-extraction alignment status rows; confidence breakdown written once. *(BE, SDPA)*
+- ⏳ **4b** — ingest `static/iapp_law_tracker.csv`; alignment pass vs **both** trackers → `tracker_grounded`/`orrick_aligned`/`iapp_aligned`/`tracker_conflict`/`extraction_only_claim`/`tracker_only_claim`; refine Orrick gate (IAPP-only laws currently auto-Tier-D). *(unblocked)*
 - 🔒 **4c** — recompute confidence with v3 weights (Orrick 30/IAPP 20/evidence 15/citation 10/cross-val 10/gap 5/analyst 10). **Validate against gold-standard fixtures before serving.** *(after 4a,4b)*
 - 🔒 **4d** — enforce source linkage: tracker ref or verified span, else `ungrounded`. *(after 2a batch)*
 
@@ -62,9 +62,9 @@
 - 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **1a confirm query** — settle the applicability-row contradiction.
-2. **2b wire cross-validation** — pure code, resurrects 25% of the confidence model.
-3. **2c enforcement normalizer** — aggregates 4 sources; fixes C-8 sparsity.
+1. **4a verification_results table** — in progress; unblocks 4b alignment pass.
+2. **4b IAPP ingestion + three-state comparison** — unblocks confidence recompute.
+3. **1a confirm query** — settle the applicability-row contradiction.
 4. **2a test batch** — measure the v1.1 verbatim-prompt lift.
 
 ### Deferred (confirmed)

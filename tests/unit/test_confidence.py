@@ -310,3 +310,99 @@ class TestCrossValidationWiring:
         # The two CV extremes must not collapse to the same tier when the
         # base score sits in a sensitive range.
         assert high.total_score > low.total_score
+
+
+# ---------------------------------------------------------------------------
+# Phase 4b — IAPP gate refinement
+# ---------------------------------------------------------------------------
+
+
+class TestIAPPGateRefinement:
+    """Tests for the Phase 4b Orrick-gate refinement.
+
+    The Orrick gate fires (Tier D, orrick_gated=True) only when BOTH Orrick
+    and IAPP data are absent.  When IAPP data is present (iapp_has_data=True)
+    but Orrick is absent, the result should be scored from evidence+citation
+    signals, capped at Tier C (never Tier A/B without Orrick grounding).
+    """
+
+    @staticmethod
+    def _no_orrick_sim():
+        sim = MagicMock()
+        sim.has_orrick_data = False
+        sim.combined_score = 0.0
+        sim.matched_tokens = []
+        return sim
+
+    def _base_no_orrick_kwargs(self):
+        return dict(
+            schema_valid=True,
+            evidence_spans=[
+                {"field_name": "subject", "text": "x", "verified": True},
+                {"field_name": "action", "text": "y", "verified": True},
+            ],
+            extraction_payload={
+                "subject": "Developer",
+                "modality": "shall",
+                "action": "comply",
+                "jurisdiction": "CO",
+            },
+            schema_class=ObligationPayload,
+            parse_quality_score=0.8,
+            orrick_similarity=self._no_orrick_sim(),
+        )
+
+    def test_no_orrick_no_iapp_forces_tier_d(self):
+        """No Orrick + no IAPP → orrick_gated=True, Tier D."""
+        result = compute_confidence(**self._base_no_orrick_kwargs())
+        assert result.tier == "D"
+        assert result.orrick_gated is True
+
+    def test_no_orrick_with_iapp_not_gated(self):
+        """No Orrick + IAPP present → orrick_gated=False, not forced Tier D."""
+        result = compute_confidence(
+            **self._base_no_orrick_kwargs(),
+            iapp_has_data=True,
+        )
+        assert result.orrick_gated is False
+        assert result.tier != "D"
+
+    def test_no_orrick_with_iapp_capped_below_tier_b(self):
+        """IAPP-only path caps the score below Tier B (< 0.70)."""
+        result = compute_confidence(
+            **self._base_no_orrick_kwargs(),
+            iapp_has_data=True,
+        )
+        assert result.total_score < TIER_B_THRESHOLD
+
+    def test_no_orrick_with_iapp_high_evidence_can_reach_tier_c(self):
+        """Strong evidence + IAPP data (no Orrick) → Tier C."""
+        result = compute_confidence(
+            **self._base_no_orrick_kwargs(),
+            iapp_has_data=True,
+        )
+        assert result.tier in ("C",), (
+            f"Expected Tier C with strong evidence + IAPP, got {result.tier}"
+        )
+
+    def test_orrick_present_ignores_iapp_flag(self):
+        """When Orrick is present, iapp_has_data does not change the score."""
+        sim = MagicMock()
+        sim.has_orrick_data = True
+        sim.combined_score = 0.30
+        sim.matched_tokens = ["ai"]
+        kwargs = dict(
+            schema_valid=True,
+            evidence_spans=[
+                {"field_name": "subject", "text": "x", "verified": True},
+            ],
+            extraction_payload={"subject": "Developer", "modality": "shall", "action": "comply"},
+            schema_class=ObligationPayload,
+            parse_quality_score=0.8,
+            orrick_similarity=sim,
+        )
+        without_iapp = compute_confidence(**kwargs)
+        with_iapp = compute_confidence(**kwargs, iapp_has_data=True)
+        assert without_iapp.total_score == with_iapp.total_score
+        assert without_iapp.orrick_gated is False
+        assert with_iapp.orrick_gated is False

@@ -72,6 +72,7 @@ from src.db.models import (
     Extraction,
     ExtractionJob,
     ExtractionType,
+    ExtractionVerificationStatus,
     FailedExtractionAttempt,
     IngestionJob,
     NormalizedSourceRecord,
@@ -82,6 +83,7 @@ from src.db.models import (
     SectionTriageResult,
     TriageDecision,
     TriageMethod,
+    VerificationRunSummary,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
@@ -673,6 +675,8 @@ def _build_context(
     ctx: dict[str, Any] = {
         "document_title": df.canonical_title if df else None,
         "jurisdiction": s.jurisdiction_code if s else None,
+        "jurisdiction_name": s.jurisdiction_name if s else None,
+        "short_cite": df.short_cite if df else None,
         "section_path": record.section_path,
     }
 
@@ -1232,6 +1236,7 @@ def extract_single_record(
                         parse_quality_score=parse_quality,
                         orrick_similarity=orrick_sim,
                         passage_text=passage.text,
+                        iapp_has_data=_iapp_has_data_for_ctx(ctx),
                     )
 
                     extraction_meta: dict = {}
@@ -2275,6 +2280,7 @@ def run_retry_failed(
                             schema_class=schema_class,
                             orrick_similarity=orrick_sim,
                             passage_text=record.text_content,
+                            iapp_has_data=_iapp_has_data_for_ctx(ctx),
                         )
 
                         ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
@@ -2688,6 +2694,7 @@ def run_recovery_extraction(
                                 parse_quality_score=parse_quality,
                                 orrick_similarity=orrick_sim,
                                 passage_text=passage.text,
+                                iapp_has_data=_iapp_has_data_for_ctx(ctx),
                             )
 
                             extraction = Extraction(
@@ -3044,6 +3051,7 @@ def _recompute_confidence_with_cv(
         orrick_similarity=orrick_sim,
         cross_validation_score=cv_score,
         passage_text=record.text_content,
+        iapp_has_data=_iapp_has_data_for_ctx(ctx),
     )
 
     old_tier = (
@@ -3107,6 +3115,127 @@ class VerificationResult:
     @property
     def total_tokens(self) -> int:
         return self.total_input_tokens + self.total_output_tokens
+
+
+def _run_iapp_alignment_for_dv(
+    db,
+    dv_id: int,
+    verification_run_id: int,
+    bill_ctx: dict,
+) -> None:
+    """Phase 4b: run IAPP alignment for all extractions in a document version.
+
+    For each extraction in the document:
+      1. Look up the law's IAPP entry via jurisdiction + bill citation.
+      2. Determine three-state iapp_status for the extraction's actor.
+      3. Update the ExtractionVerificationStatus row if one exists (from CV pass),
+         or create a new stub EVS row for extractions not covered by CV.
+      4. Refine grounding_status: "iapp_grounded" when IAPP entry present and
+         no Orrick data, "orrick_grounded" when Orrick present.
+    """
+    from src.core.iapp_alignment import (
+        IAPPEntry,
+        check_iapp_alignment,
+        get_iapp_entry_for_context,
+    )
+
+    # Build a minimal context to look up the IAPP entry (just jurisdiction + bill).
+    dv = db.get(DocumentVersion, dv_id)
+    if not dv:
+        return
+    df = dv.family
+    s = df.source if df else None
+    ctx_for_iapp = {
+        "jurisdiction": s.jurisdiction_code if s else None,
+        "jurisdiction_name": s.jurisdiction_name if s else None,
+        "short_cite": df.short_cite if df else None,
+        "bill_id": (df.metadata_ or {}).get("bill_id") if df else None,
+    }
+    iapp_entry: IAPPEntry | None = get_iapp_entry_for_context(ctx_for_iapp)
+    iapp_present = iapp_entry is not None and iapp_entry.has_data
+
+    if not iapp_present:
+        return  # Nothing to update — IAPP has no data for this law
+
+    # Load all extractions for this document version
+    extractions = db.scalars(
+        select(Extraction)
+        .where(
+            Extraction.source_record_id.in_(
+                select(NormalizedSourceRecord.id).where(
+                    NormalizedSourceRecord.document_version_id == dv_id
+                )
+            )
+        )
+    ).all()
+
+    for extraction in extractions:
+        payload = extraction.payload or {}
+        subject_normalized = payload.get("subject_normalized")
+
+        iapp_status = check_iapp_alignment(subject_normalized, iapp_entry)
+
+        # Find existing EVS row for this extraction (created by CV loop) or create one.
+        evs = db.scalars(
+            select(ExtractionVerificationStatus)
+            .where(ExtractionVerificationStatus.extraction_id == extraction.id)
+            .where(ExtractionVerificationStatus.verification_run_id == verification_run_id)
+        ).first()
+
+        breakdown = (extraction.metadata_ or {}).get("confidence_breakdown", {})
+
+        if evs is None:
+            # Extraction was not in the CV results — create a stub EVS row.
+            evs = ExtractionVerificationStatus(
+                extraction_id=extraction.id,
+                verification_run_id=verification_run_id,
+                document_version_id=dv_id,
+                orrick_score=breakdown.get("orrick_alignment"),
+                orrick_gated=bool(breakdown.get("orrick_gated", False)),
+                orrick_status=_orrick_status_from_breakdown(breakdown),
+            )
+            db.add(evs)
+
+        evs.iapp_status = iapp_status
+
+        # Refine grounding_status now that IAPP data is available.
+        orrick_grounded = (breakdown.get("orrick_alignment") or 0.0) > 0.0
+        if orrick_grounded:
+            evs.grounding_status = "orrick_grounded"
+        elif iapp_status == "aligned":
+            evs.grounding_status = "iapp_grounded"
+        elif iapp_status == "scope_mismatch":
+            evs.grounding_status = "iapp_scope_mismatch"
+        else:
+            evs.grounding_status = "tracker_silent"
+
+
+def _iapp_has_data_for_ctx(ctx: dict) -> bool:
+    """Return True if the IAPP tracker has an entry for this law."""
+    from src.core.iapp_alignment import get_iapp_entry_for_context
+    try:
+        entry = get_iapp_entry_for_context(ctx)
+        return entry is not None and entry.has_data
+    except Exception:
+        return False
+
+
+def _orrick_status_from_breakdown(breakdown: dict) -> str:
+    """Derive orrick_status code from a stored confidence breakdown dict."""
+    if breakdown.get("orrick_gated"):
+        return "gated"
+    if (breakdown.get("orrick_alignment") or 0.0) > 0.0:
+        return "aligned"
+    return "tracker_silent"
+
+
+def _grounding_status_from_breakdown(breakdown: dict) -> str:
+    """Derive combined grounding_status from a stored confidence breakdown dict."""
+    if breakdown.get("orrick_gated"):
+        return "tracker_silent"
+    if (breakdown.get("orrick_alignment") or 0.0) > 0.0:
+        return "orrick_grounded"
+    return "tracker_silent"
 
 
 def run_verification_pass(
@@ -3188,6 +3317,12 @@ def run_verification_pass(
             label = f"{jur} - {dv.family.short_cite or dv.family.canonical_title}"
 
         _log(f"\n[{label}] Starting verification pass...")
+
+        # Phase 4a: create a VerificationRunSummary stub for this document.
+        # Updated with final aggregates after all three layers complete.
+        vrs = VerificationRunSummary(document_version_id=dv_id)
+        db.add(vrs)
+        db.flush()  # obtain vrs.id before processing
 
         total_input_tokens = 0
         total_output_tokens = 0
@@ -3290,6 +3425,14 @@ def run_verification_pass(
 
                     accuracy_score = float(r.get("accuracy_score", 1.0))
 
+                    # Phase 4a: capture confidence state before recompute.
+                    conf_before = extraction.confidence_score
+                    tier_before = (
+                        extraction.confidence_tier.value
+                        if hasattr(extraction.confidence_tier, "value")
+                        else str(extraction.confidence_tier or "")
+                    )
+
                     # Persist the cross-validation finding on the extraction.
                     meta = dict(extraction.metadata_ or {})
                     meta["cross_validation"] = {
@@ -3300,6 +3443,7 @@ def run_verification_pass(
                     extraction.metadata_ = meta
 
                     # Recompute confidence with the now-available CV score.
+                    tier_changed = False
                     try:
                         tier_changed = _recompute_confidence_with_cv(
                             db, extraction, record, ctx, accuracy_score,
@@ -3312,6 +3456,34 @@ def run_verification_pass(
                             extraction_id=ext_id,
                             error=str(_e),
                         )
+
+                    # Phase 4a: write ExtractionVerificationStatus row.
+                    breakdown = (extraction.metadata_ or {}).get(
+                        "confidence_breakdown", {}
+                    )
+                    tier_after = (
+                        extraction.confidence_tier.value
+                        if hasattr(extraction.confidence_tier, "value")
+                        else str(extraction.confidence_tier or "")
+                    )
+                    evs = ExtractionVerificationStatus(
+                        extraction_id=ext_id,
+                        verification_run_id=vrs.id,
+                        document_version_id=dv_id,
+                        cv_score=accuracy_score,
+                        cv_is_valid=is_valid,
+                        cv_flagged=not is_valid,
+                        confidence_before=conf_before,
+                        confidence_after=extraction.confidence_score,
+                        tier_before=tier_before[:1] if tier_before else None,
+                        tier_after=tier_after[:1] if tier_after else None,
+                        tier_changed=tier_changed,
+                        orrick_score=breakdown.get("orrick_alignment"),
+                        orrick_gated=bool(breakdown.get("orrick_gated", False)),
+                        orrick_status=_orrick_status_from_breakdown(breakdown),
+                        grounding_status=_grounding_status_from_breakdown(breakdown),
+                    )
+                    db.add(evs)
 
             cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
             _log(
@@ -3394,6 +3566,27 @@ def run_verification_pass(
                 f"    {cit_checked} citations checked, "
                 f"{cit_verified} verified, {cit_unverified} unverified"
             )
+
+        # Phase 4b: IAPP alignment pass — check all extractions for this document
+        # against the IAPP tracker.  Updates iapp_status on EVS rows created above
+        # and adds EVS rows for extractions not yet covered by the CV loop.
+        _run_iapp_alignment_for_dv(db, dv_id, vrs.id, bill_ctx)
+
+        # Phase 4a: finalize the VerificationRunSummary with aggregated results.
+        vrs.cv_passages_checked = cv_passages
+        vrs.cv_extractions_valid = cv_valid
+        vrs.cv_extractions_flagged = cv_flagged
+        vrs.cv_avg_accuracy = round(cv_avg, 4) if cv_passages > 0 else None
+        vrs.gd_passages_checked = gd_passages
+        vrs.gd_gaps_found = gd_gaps
+        vrs.gd_high_confidence = gd_high
+        vrs.gap_candidates = gd_candidates
+        vrs.citations_checked = cit_checked
+        vrs.citations_verified = cit_verified
+        vrs.citations_unverified = cit_unverified
+        vrs.citation_issues = cit_issues
+        vrs.input_tokens = total_input_tokens
+        vrs.output_tokens = total_output_tokens
 
         db.commit()
 
