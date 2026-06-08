@@ -1,63 +1,74 @@
 # Regs Checker — Tasks
 
-## Run-1 Unified Plan v2 — Tracker-Grounded Data Quality
+## Run-1 Unified Plan v3 — Tracker-Grounded Data Quality
 
 > Full plan: [`docs/run1_unified_plan.md`](docs/run1_unified_plan.md). Reframed by
-> `engineering_strategy_v2.md` around a **trust model**: extract → link to source →
-> normalize → **compare to Orrick/IAPP** → grounded/flag/ungrounded → recompute
-> confidence after. Product layer deferred. Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+> `engineering_strategy_v3.md` (merges v2's trust spine + compliance-concept layer +
+> full-breadth normalization + metric schema + per-agent refactors). Trust bar:
+> *trustworthy = "matches Orrick/IAPP."* Product layer deferred.
+> Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
 >
-> **Key finding this session (verification layer, build-vs-fix):** the layer is **built
-> but partly disconnected.** Orrick alignment works (0.30 weight, active). Cross-validation
-> agent runs post-extraction but its score **never reaches confidence** → the 0.25
-> cross-validation weight is **dead**. IAPP is **not** ingested (CSV in `static/` only).
-> So WS-C1 = *fix* (re-wire), WS-C3 = *build* (IAPP). See plan §2.
+> **Verification layer (build-vs-fix, resolved):** built but partly disconnected. Orrick
+> alignment works (0.30 weight). Cross-validation agent runs post-extraction but its score
+> **never reaches confidence** → the 0.25 weight is **dead** (Phase 2b = fix). IAPP **not**
+> ingested, CSV in `static/` only (Phase 4b = build). 0.45 of the confidence model
+> (cross-val 0.25 + evidence 0.20) is under-delivering. Plan §2.
 >
-> **⚠️ Open contradiction:** Strategy v2 says applicability agent "did not run"; my C-1
-> analysis saw 472 bill-level rows. Reconciles if 472 = enforcement+timeline only,
-> applicability=0. **Settle with `GROUP BY agent_name` before sizing WS-A1.** See plan §3.
+> **⚠️ Open contradiction:** v3 says applicability "not run"; my C-1 analysis saw 472
+> bill-level rows. Reconciles if 472 = enforcement+timeline only. **Settle with
+> `GROUP BY agent_name` before Phase 1a.** Plan §3.
 
-### WS-A — Run integrity & versioning (run now)
-- ✅ **A3 (model pin)** — `CLAUDE.md` → `google/gemma-4-26b-a4b`; 6+3 agents.
-- ✅ **A3 (C-2)** — root cause documented (`run_summary`=successful tokens, `agent_stats`=all-attempt incl. retries). See `docs/r1_findings_supplement.md`.
-- ⏳ **A3a** — add `"scope"` label to `agent_stats.json` writer (`ExtractionMonitor`). One-liner. *(BE)*
-- ⏳ **A1** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run bill-level applicability across all 232 laws. My C-1 export fix is the prerequisite that lands the rows. *(NLP, DevOps)*
-- ⏳ **A2 (NEW)** — run versioning: `extraction_runs` table (`run_id, git_sha, prompt_versions, model_config, source_snapshot_hash, summary`) + `run_id` FK; replace destructive purge with run-create + serving-run promotion. *(SDPA, BE, DevOps)*
-- ⏳ **A4** — coverage 138→232: seed 135 `text_ready` laws; re-fetch 8 BAD_TEXT (**SB 205** first; **SB_2966** file missing). Checklist in `docs/r1_findings_supplement.md`.
+### Phase 1 — Foundation: trustworthy, measurable, non-destructive runs (now)
+- ✅ Model pin — `CLAUDE.md` → `google/gemma-4-26b-a4b`; 6+3 agents.
+- ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)*
+- ⏳ **1b** — run versioning: `extraction_runs` table + `run_id` FKs; replace destructive purge with run-create + serving-run promotion. *(SDPA, BE, DevOps)*
+- ⏳ **1c** — **metric schema** (proper C-2 fix): distinct counters (`llm_call_count`, `agent_invocation_count`, `successful_agent_invocations`, `extraction_item_count`, `abstention_count`, `error_count`, split token counters) + machine-readable per-run report. Supersedes the earlier "scope label" patch. *(BE)*
+- ⏳ **1d** — coverage 138→232: seed 135 text-ready laws; re-fetch **SB 205** (priority) + **SB_2966** (file missing). Checklist in `docs/r1_findings_supplement.md`.
 
-### WS-B — Taxonomy normalization (the substrate; gates WS-C)
-- ✅ **B1 (harvest)** — full 209-value actor map produced (`data/lookups/candidates/actor_value_to_code_full.csv`); ~10-code Tier-1 model (`actor_taxonomy_analysis.md`).
-- ✅ **C-7 map** — `data/lookups/agent_to_extraction_type.json` committed.
-- ⏳ **B0** — pull Orrick/IAPP's own covered-entity vocabulary **first**; choose Tier-1 codes for max tracker comparability. Redefines "correct" for B2–B4. *(RPR, LKA)*
-- ⏳ **B1.5 (NEW)** — clean the actor field: ~5% non-actor/garbled (`INVALID_nonactor` in CSV — `contract`, `document`, `operat`, `socia`, tab chars). Fix at parse layer, re-harvest. *(NLP, BE)*
-- ⏳ **B1 (script)** — build reusable `src/scripts/harvest_vocab.py` pinned to `_prompt_hash`.
-- 🔒 **B2** — two-tier dim model: Tier-1 (~10 actor codes) + Tier-2 descriptive `dim_*` + Tier2→Tier1 lookup; all 3 DBs. *(after B0)*
-- 🔒 **B3** — ratify via VC; **defer 4 LKA forks** (data_handler split, regulator-vs-gov, individual-as-protected, operator-vs-deployer). Fast-lane `modality_to_strength` (needs a strength vocab home — no dim table yet).
-- ⏳ **B4** — unified normalization stage in `rollup_matrix.py` reads `data/lookups/*`; idempotent; mismatches → `vocab_review_queue`. Migrate hard-coded maps (`payload_adapter.py:326-333`, `rollup_matrix.py:314`). Add `VocabReviewQueueItem` model.
-- 🔒 **B5** — inject ratified enums into prompts + parse-time validation. *(after B3)*
-- 🔒 **B6** — re-harvest after A1; lock codes only when two runs agree.
+### Phase 2 — Cheap trust wins (no taxonomy dependency; front-loaded)
+- ✅ **2a** — E-1 verbatim evidence-span prompts (4 prompts v1.1). ⏳ Run 10–20 law test batch (`_v2` suffix); capture baseline first.
+- ⏳ **2b ★** — wire cross-validation into confidence: pass `cross_validation_score` from `metadata_["cross_validation"]` at the 3 `compute_confidence` call sites (`extractor.py:1180,2123,2535`) → resurrect the dead 0.25 weight; make swallowed failures explicit. **Highest value/effort ratio.** *(NLP, BE)*
+- ⏳ **2c** — enforcement normalizer (§6.7): aggregate enforcement from standalone rows + embedded `obligation.enforcement` + bill-level + Orrick/IAPP into one record per law. Fixes C-8 sparsity. *(NLP, BE)*
+- ⏳ **2d** — `legal_context` refactor of `preemption_signal` (§6.8): typed categories; hide low-value `other`. *(NLP)*
 
-### WS-C — Tracker alignment & verification (★ #1 priority)
-- ✅ **C0 (E-1)** — verbatim evidence-span prompts (4 prompts v1.1). Prerequisite for C5; lifts the 0.20 evidence-grounding weight.
-- ⏳ **C0 test batch** — run v1.1 prompts on 10–20 laws (`_v2` suffix); measure verified-span lift + A/B. Capture baseline first.
-- ⏳ **C1 (FIX) ★** — wire cross-validation into confidence: pass `cross_validation_score` from `metadata_["cross_validation"]` at the 3 `compute_confidence` call sites (`extractor.py:1180,2123,2535`) → resurrects the dead 0.25 weight. Make swallowed failures explicit. **Highest value/effort ratio.** *(NLP, BE)*
-- ⏳ **C2** — persist `verification_results` table (currently ephemeral in `metadata_`). *(BE, SDPA)*
-- ⏳ **C3 (BUILD)** — IAPP alignment: ingest `static/iapp_law_tracker.csv` into DB; add IAPP scoring (mirror `orrick_validation.py`); emit `tracker_grounded`/`iapp_grounded`/`tracker_conflict`/`ungrounded`; refine Orrick gate so IAPP-only laws aren't auto-Tier-D. *(NLP, RPR)*
-- 🔒 **C4** — recompute confidence after alignment/verification. *(after C1, C3)*
-- 🔒 **C5** — enforce source linkage: every served fact carries a tracker ref or verified span, else `ungrounded`. *(after C0 batch)*
+### Phase 3 — Full-breadth normalization substrate (gates Phase 4)
+- ✅ Harvest done — `data/lookups/candidates/actor_value_to_code_full.csv` (209 values, ~10-code model). C-7 map committed.
+- ⏳ **3a** — align canonical codes to Orrick/IAPP's own categories **first**. *(RPR, LKA)*
+- ⏳ **3b** — clean actor field (~5% `INVALID_nonactor`); fix at parse layer, re-harvest. *(NLP, BE)*
+- 🔒 **3c** — two-tier dim model across **all** dimensions: actors (~10), `law_domain` (new), covered systems, obligation families (21), rights, enforcement, `legal_context`. Alias tables, all 3 DBs. *(after 3a)*
+- 🔒 **3d** — VC ratify; **defer 4 LKA actor forks**. Fast-lane `modality_to_strength` (needs a strength vocab home).
+- ⏳ **3e** — unified normalization passes in `rollup_matrix.py` read `data/lookups/*`; idempotent; mismatches → `vocab_review_queue`. Migrate hard-coded maps (`payload_adapter.py:326-333`, `rollup_matrix.py:314`). Add `VocabReviewQueueItem`.
+- 🔒 **3f** — inject ratified enums into prompts + parse-time validation. *(after 3d)*
+- 🔒 **3g** — re-harvest after 1a; lock codes when two prompt versions agree.
 
-### WS-D — Minimal human review (the "flag for a human" requirement)
-- ⏳ **D1** — analyst-review step + queue (C3 conflicts); reviewer identity from auth; immutable audit log. *(BE, RPR)*
-- ⏳ **D2** — review UI surfaces Orrick + IAPP fields, evidence spans, conflict warnings, confidence breakdown. *(FE)*
+### Phase 4 — Tracker alignment & confidence recompute (the trust check)
+- ⏳ **4a** — persist `verification_results` table (currently ephemeral in `metadata_`). *(BE, SDPA)*
+- 🔒 **4b** — ingest `static/iapp_law_tracker.csv`; alignment pass vs **both** trackers → `tracker_grounded`/`orrick_aligned`/`iapp_aligned`/`tracker_conflict`/`extraction_only_claim`/`tracker_only_claim`; refine Orrick gate. *(after 3)*
+- 🔒 **4c** — recompute confidence with v3 weights (Orrick 30/IAPP 20/evidence 15/citation 10/cross-val 10/gap 5/analyst 10). **Validate against gold-standard fixtures before serving.** *(after 4a,4b)*
+- 🔒 **4d** — enforce source linkage: tracker ref or verified span, else `ungrounded`. *(after 2a batch)*
+
+### Phase 5 — Compliance-concept layer (the product bridge)
+- 🔒 **5a** — `compliance_concepts` + `concept_extraction_links` + `concept_tracker_links` tables (§7). *(after 4)*
+- 🔒 **5b** — dedup + concept-grouping pass; concept-level confidence; link to tracker refs + evidence.
+- 🔒 **5c** — concept review queue; concepts (not rows) are the hand-off unit to the law-card builder.
+
+### Phase 6 — Human review
+- ⏳ **6a** — analyst-review step + queue (C3 conflicts); auth identity; immutable audit log. *(BE, RPR)*
+- ⏳ **6b** — review priority rules (tracker conflicts, extraction-only obligations, D-tier on a card, zero-extraction high-importance, high-risk domains, parse failures). *(RPR, PTPL)*
+- ⏳ **6c** — review UI surfaces Orrick + IAPP fields, evidence spans, conflict warnings, confidence breakdown. *(FE)*
+
+### Parallel track — Agent refactors (WS-F; throughout)
+- ⏳ **now** — obligation (reduce fragmentation; require subject/action/object/condition; separate penalties from duties); definition_actor (long defs; separate from actor maps; retry long passages). *(NLP)*
+- 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **A1 confirm query** — settle the applicability-row contradiction.
-2. **C1 wire cross-validation** — pure code, resurrects 25% of the confidence model.
-3. **C0 test batch** — measure the v1.1 verbatim-prompt lift.
-4. **B1.5 clean actor field** — small parse fix; unblocks clean re-harvest.
+1. **1a confirm query** — settle the applicability-row contradiction.
+2. **2b wire cross-validation** — pure code, resurrects 25% of the confidence model.
+3. **2c enforcement normalizer** — aggregates 4 sources; fixes C-8 sparsity.
+4. **2a test batch** — measure the v1.1 verbatim-prompt lift.
 
 ### Deferred (confirmed)
-Law-card data model, applicability product, API, productionization — resume on clean tracker-grounded data.
+Law-card data model, applicability product, API, productionization — resume on clean tracker-grounded data; the concept layer (Phase 5) is the hand-off boundary.
 
 ---
 

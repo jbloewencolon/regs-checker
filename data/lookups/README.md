@@ -12,16 +12,22 @@ tracker-alignment trust check. This directory is the unification point called fo
 **Rule:** no normalization stage may hard-code an agent/type/vocab relationship.
 Every map lives here and is read through one loader.
 
-## The two-tier taxonomy (Strategy v2 §4)
+## The two-tier taxonomy (Strategy v3 §6)
 
 The matching key wants **lean**; tracker-alignment + display want **rich**. Resolve
-with two tiers — every Tier-2 value maps to exactly one Tier-1 value:
+with two tiers — every Tier-2 value maps to exactly one Tier-1 value via an alias table:
 
 - **Tier 1 — Canonical (matching key).** Lean, snake_case, profile-aligned.
   Actors extend from the old 6 supply-chain codes to **~10**, sized to the data.
 - **Tier 2 — Descriptive (source-facing).** The rich vocabulary the trackers
   actually speak. The harvest's 209 raw actor values normalize into Tier 2, then
   roll up to Tier 1.
+
+**v3 extends normalization beyond actors** to the full set of dimensions, each of which
+will get its own Tier-1/Tier-2 alias tables here as the work lands: `actors` (~10),
+`law_domain` (new), covered `systems`, `obligation` families (21), `rights`,
+`enforcement`, and `legal_context` (refactor of `preemption_signal`). This directory is
+the home for **all** of these maps, read by the one normalization loader.
 
 ### Tier-1 actor codes (~10, from `actor_taxonomy_analysis.md`)
 
