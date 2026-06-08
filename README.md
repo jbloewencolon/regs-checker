@@ -324,6 +324,7 @@ See `SETUP.md` for the full `.env` template.
 | Doc | Purpose |
 |---|---|
 | [`architecture.md`](architecture.md) | Reality-based system map: components, data flow, known hacks, fragile areas |
+| [`docs/data_dictionary.md`](docs/data_dictionary.md) | Plain-English reference to every extracted field + the taxonomy (for business/product/review teams) |
 | [`tasks.md`](tasks.md) | Active + upcoming work queue — the current source of truth for what's next |
 | [`completed_tasks.md`](completed_tasks.md) | Log of recently completed work that still matters |
 | [`SETUP.md`](SETUP.md) / [`QUICKSTART.md`](QUICKSTART.md) | Full setup guide / 2-minute returning-developer path |
