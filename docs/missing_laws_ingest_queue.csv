@@ -1,0 +1,150 @@
+canonical_law_id,bill_number,jurisdiction,status,title,bucket
+TMP-AZ-ARIZONAPOLITIC,SB 1359,6,,Arizona Political Deepfake Law,text_ready
+TMP-AR-OFARKANSASCSAM,HB1877,7,,Amendment of Arkansas CSAM Laws,text_ready
+US-AR-AB1018,AB 1018,7,1,AB 1018,text_ready
+US-AR-SB258,SB 258,7,1,SB 258,text_ready
+US-AR-SB468,SB 468,7,1,SB 468,text_ready
+TMP-CA-AMENDMENTOFCAL,SB 926,1,,Amendment of California CSAM Laws,text_ready
+TMP-CA-AMENDMENTTOTHE,AB 2355,1,,Amendment to the Political Reform Act,text_ready
+TMP-CA-DECEPTIVEMEDIA,AB 2839,1,,Deceptive Media in Election Advertisements,text_ready
+TMP-CA-HEALTHCAREUTIL,SB 1120,1,,AI Healthcare Utilization Law,text_ready
+TMP-CA-MEDIADIGITALID,SB 981,1,,Digital Identity Theft Act,text_ready
+TMP-CA-PRICINGCARTWRI,AB 325,1,,Cartwright Act Common Pricing Algorithm Amendment,text_ready
+TMP-CA-TODECEASEDAB18,AB 1836,1,,Amendment to Deceased Personality Protections,text_ready
+US-CA-AB412,AB 412,1,1,AB 412 (Active Bill - Generative AI/Synthetic Content),text_ready
+US-CA-HB94,HB 94,1,1,HB 94,text_ready
+US-CA-SB420,SB 420,1,1,SB 420 (Active Bill - Automated Decision Systems),text_ready
+US-CA-SB942,SB 942,1,4,SB 942 (Enacted - Generative AI/Synthetic Content),text_ready
+TMP-CA-INTELLIGENCETR,AB 2013,1,,Artificial Intelligence Training Data Transparency Act,text_ready
+TMP-CA-MEDIADEFENDING,AB 2655,1,,Defending Democracy from Deepfake,text_ready
+TMP-CT-DATAPRIVACYACT,SB1295,8,,Connecticut Data Privacy Act,text_ready
+US-CT-SB2,SB 2,8,1,SB 2,text_ready
+TMP-DE-AMENDMENTTOTHE,HB 353,9,,Amendment to the Delaware Code Relating to Deepfakes,text_ready
+TMP-DE-DELAWAREARTIFI,HB 233,9,,Delaware Artificial Intelligence Commission Act,text_ready
+TMP-FL-DECISIONFLORID,SB 262,10,,Florida Digital Bill of Rights,text_ready
+TMP-FL-FLORIDAACTRELA,HB 919,10,,Florida Act Relating to AI Use in Political Advertising,text_ready
+TMP-FL-OFFLORIDACSAML,SB 1680,10,,Amendment of Florida CSAM Laws,text_ready
+US-FL-HB369,HB 369,10,1,HB 369,text_ready
+TMP-GA-OFGEORGIACSAML,SB 466,11,,Amendment of Georgia CSAM Law,text_ready
+TMP-GA-PROHIBITIONONN,,11,,Prohibition on Nude or Sexually Explicit Electronic Transmis,text_ready
+US-NV-AB3356,AB 3356,29,1,AB 3356,text_ready
+US-CO-SB149,SB 149,2,4,SB 149,text_ready
+US-CO-SB318,SB 318,2,1,SB 318,text_ready
+TMP-CT-CONNECTICUTACT,SB 1103,8,,"Connecticut Act Concerning AI, Automated Decision-Making and",text_ready
+US-ID-HB127,HB 127,13,1,HB 127,text_ready
+US-ID-SB1929,SB 1929,13,1,SB 1929,text_ready
+TMP-IL-AITHEWELLNESSA,HB1806,14,,The Wellness and Oversight for Psychological Resources Act,text_ready
+TMP-IL-VOICEANDLIKENE,HB 4762,14,,Digital Voice and Likeness Protection Act,text_ready
+US-IL-SB1792,SB 1792,14,1,SB 1792 (Active Bill - Generative AI/Synthetic Content),text_ready
+US-IL-SB2203,SB 2203,14,1,SB 2203 (Active Bill - Automated Decision Systems),text_ready
+TMP-IN-AMENDMENTOFIND,HB 1047,15,,Amendment of Indiana Law Governing Distribution of Intimate ,text_ready
+TMP-IA-HARASSMENTIOWA,,16,,Harassment,text_ready
+US-IA-HB406,HB 406,16,1,HB 406 (Active Bill - AI Systems (Personal Data)),text_ready
+TMP-KS-AIPLATFORMSOFC,SB 2313,17,,AI Platforms of Concern,text_ready
+TMP-MD-MARYLANDAIGOVE,SB 818,21,,Maryland AI Governance Act of 2024,text_ready
+TMP-MD-TOTHEMARYLANDC,,21,,Amendment to the Maryland CSAM Statute,text_ready
+US-MD-HB1331,HB 1331,21,1,HB 1331,text_ready
+US-MD-SB936,SB 936,21,1,SB 936,text_ready
+TMP-MA-AMENDMENTTOTHE,HB 4744,22,,Amendment to the Massachusetts Intimate Images Law,text_ready
+US-MA-HB97,HB 97,22,1,HB 97,text_ready
+TMP-MI-AIPOLITICALDEE,HB 5144,23,,AI Political Deepfake Law,text_ready
+TMP-MI-AIPOLITICALDIS,HB 5141,23,,AI Political Disclaimer Law,text_ready
+TMP-NV-AIGENERALAICHA,,29,,General AI Chatbots and Mental Health Services,text_ready
+TMP-KY-GOVERNMENTUSEO,,18,,Government Use of AI Law,text_ready
+TMP-MN-NONCONSENSUALD,HF 1370,24,,Non-Consensual Dissemination of a Deepfake,text_ready
+TMP-MN-TOTHEMINNESOTA,HF2432,24,,Amendment to the Minnesota CSAM Statute,text_ready
+US-MN-SF1886,SF 1886,24,1,SF 1886 (Active Bill - All AI Systems),text_ready
+TMP-MT-AIDEEPFAKESINE,SB25,27,,AI Deepfakes in Elections,text_ready
+TMP-MT-PRIVACYINCOMMU,,27,,Privacy in Communications Law,text_ready
+TMP-MT-RIGHTTOCOMPUTE,SB212,27,,Right to Compute Act,text_ready
+US-MT-SB452,SB 452,27,1,SB 452,text_ready
+TMP-NE-OFNEBRASKACSAM,LB 383,28,,Amendment of Nebraska CSAM Laws,text_ready
+TMP-NV-AIFORSCHOOLCOU,,29,,AI for School Counseling,text_ready
+TMP-MN-MEDIAPROHIBITI,SF 4097,24,,Prohibiting Social Media Manipulation Act,text_ready
+TMP-MS-AIPOLITICALDEE,SB 2577,25,,AI Political Deepfake Law,text_ready
+TMP-NM-NEWMEXICOCAMPA,,32,,New Mexico Campaign Reporting Act Amendment,text_ready
+US-NM-HB401,HB 401,32,1,HB 401,text_ready
+TMP-NY-AMENDMENTTOTHE,SB1042A,33,,Amendment to the New York Statute Prohibiting Unlawful Disse,text_ready
+TMP-NY-INTELLIGENCEDE,,33,,Artificial Intelligence Deceptive Practices Act,text_ready
+TMP-NC-NORTHCAROLINAI,HB 591,34,,North Carolina Intimate Images Laws,text_ready
+TMP-NC-OFNORTHCAROLIN,HB 591,34,,Amendment of North Carolina CSAM Laws,text_ready
+TMP-ND-DAKOTAHARASSME,,35,,North Dakota Harassment Law,text_ready
+TMP-OK-TOOKLAHOMACSAM,HB 3642,36,,Amendment to Oklahoma CSAM Laws,text_ready
+US-OK-HB1916,HB 1916,36,1,"HB 1916 (Active Bill - A,D)",text_ready
+US-RI-HB1709,HB 1709,39,1,HB 1709,text_ready
+US-RI-HB5496,HB 5496,39,1,HB 5496,text_ready
+US-RI-SB627,SB 627,39,1,SB 627,text_ready
+TMP-SD-ANACTTOPROHIBI,SB 1621,41,,An Act to Prohibit the Use of a Deepfake to Influence an Ele,quarantine
+TMP-SD-OFSOUTHDAKOTAS,SB 20,41,,Amendment of South Dakota CSAM Laws,quarantine
+TMP-TN-LIKENESSVOICEA,SB 1188,42,,"Ensuring Likeness, Voice, and Image Security (ELVIS) Act of ",quarantine
+TMP-TN-OFTENNESSEECSA,SB 815,42,,Amendment of Tennessee CSAM Laws,quarantine
+TMP-TX-AISEXUALMATERI,HB 1999,43,,AI Sexual Material Harmful to Minors,quarantine
+TMP-TX-DECISIONTEXASD,,43,,Texas Data Privacy and Security Act,quarantine
+TMP-PA-AMENDMENTOFPEN,SB 1213,38,,Amendment of Pennsylvania CSAM Laws,text_ready
+TMP-PA-OFPENNSYLVANIA,SB 1213,38,,Amendment of Pennsylvania CSAM Laws,text_ready
+TMP-TX-MATERIALAPPEAR,HB 581,43,,Visual Material Appearing to Depict a Child,text_ready
+TMP-TX-OFAUTOMATEDDEC,SB 1361,43,,Use of Automated Decision System for Adverse Determinations,text_ready
+TMP-TX-OFTEXASCSAMLAW,SB 198,43,,Amendment of Texas CSAM Laws,text_ready
+TMP-TX-UNLAWFULDISTRI,,43,,Unlawful Distribution of Sexually Explicit Videos,text_ready
+US-TX-HB340,HB 340,43,1,HB 340,text_ready
+TMP-UT-ARTIFICIALPORN,HB 148,4,,Artificial Pornographic Images Amendments,text_ready
+TMP-UT-EXPLICITMINORH,HB 238,4,,Sexually Explicit Minor Amendments,text_ready
+TMP-UT-INTELLIGENCECO,,4,,Artificial Intelligence Consumer Protection Amendments,text_ready
+TMP-NV-FORMENTALANDBE,,29,,AI for Mental and Behavioral Health Care,text_ready
+TMP-TX-TOTHECSAMSTATU,HB 441,43,,Amendment to the CSAM Statutes,quarantine
+US-TX-SB668,SB 668,43,1,SB 668,text_ready
+TMP-UT-UTAHINFORMATIO,SB 131,4,,Utah Information Technology Act,text_ready
+US-UT-SB226,SB 226,4,4,SB 226 (Enacted - Generative AI/Synthetic Content),text_ready
+TMP-VT-ANACTRELATINGT,,44,,An Act Relating to the Use and Oversight of AI in State Gove,text_ready
+US-VT-HB2121,HB 2121,44,1,HB 2121,text_ready
+US-VT-HB2250,HB 2250,44,1,HB 2250,text_ready
+US-VT-HB341,HB 341,44,1,"HB 341 (Active Bill - F,D,G)",text_ready
+TMP-VA-TOCSAMSTATUTES,SB 731,45,,Amendment to CSAM statute,text_ready
+US-VA-HB1168,HB 1168,45,1,HB 1168,text_ready
+US-VA-HB2094,HB 2094,45,1,HB 2094,text_ready
+TMP-WA-AMENDMENTOFWAS,,46,,Amendment of Washington CSAM Laws,quarantine
+TMP-WA-OFWASHINGTONCS,,46,,Amendment of Washington CSAM Laws,quarantine
+US-WA-HB1170,HB 1170,46,1,HB 1170 (Active Bill - Generative AI/Synthetic Content),text_ready
+TMP-WV-CRIMESAGAINSTC,,47,,"Crimes Against Chastity, Morality and Decency - CSAM",quarantine
+TMP-WI-TOTHECSAMSTATU,SB 314,48,,Amendment to the CSAM Statute,text_ready
+TMP-WY-EXPLOITATIONOF,,49,,Sexual Exploitation of Children,text_ready
+TMP-WY-TOINTIMATEIMAG,,49,,Amendment to Intimate Image Law,text_ready
+TMP-AL-CHILDPROTECTIO,HB 168,5,,Alabama Child Protection Act of 2024,text_ready
+TMP-UT-PORNOGRAPHICIM,HB 148,4,,Artificial Pornographic Images Amendments,text_ready
+TMP-CO-UNAUTHORIZEDSB,SB 288,2,,Preventing Unauthorized Disclosure of Intimate Digital Depic,text_ready
+TMP-HI-AMENDMENTTOINT,SB 309,12,,Amendment to Intimate Image Law,text_ready
+TMP-HI-DECEPTIVEMEDIA,SB 2687,12,,Deceptive Media in Election Advertisements,text_ready
+TMP-KY-AMENDMENTTOINT,HB 207,18,,Amendment to Intimate Images law,text_ready
+TMP-KY-DECISIONKENTUC,,18,,Kentucky Consumer Data Protection Act,text_ready
+TMP-AZ-GENERALDEEPFAK,HB 2394,6,,Arizona General Deepfake Law,text_ready
+TMP-OR-USEOFAIINCAMPA,SB 1571,37,,Use of AI in Campaign Communications Law,text_ready
+TMP-RI-DECISIONRHODEI,,39,,Rhode Island Data Transparency and Privacy Protection Act,text_ready
+TMP-UT-ORUSERINPUTOFA,,4,,Unauthorized Artificial Intelligence Impersonation Amendment,text_ready
+TMP-CA-CALLDISCLOSURE,AB 2905,1,,AI Call Disclosures Law,text_ready
+TMP-CA-CONSUMERPRIVAC,AB 1008,1,,California Consumer Privacy Act,text_ready
+TMP-KY-AIELECTIONEERI,,18,,AI Electioneering Communications,text_ready
+TMP-CA-DEFINITIONBILL,AB 2885,1,,AI Definition Bill,text_ready
+TMP-CA-GENERATIVEARTI,SB 896,1,,Generative Artificial Intelligence Accountability Act,text_ready
+TMP-CA-OFVOICEORLIKEN,AB 2602,1,,Replica of Voice or Likeness Law,text_ready
+TMP-CA-ORGENERALTRANS,SB 53,1,,Transparency in Frontier Artificial Intelligence Act,text_ready
+TMP-KY-TOCSAMLAWHB207,HB 207,18,,Amendment to CSAM Law,text_ready
+TMP-CO-AICOLORADOAIAC,SB 205,2,,Colorado AI Act,text_ready
+TMP-CO-PREVENTINGUNAU,SB 288,2,,Preventing Unauthorized Disclosure of Intimate Digital Depic,text_ready
+TMP-IL-AMENDMENTTOTHE,HB 3773,14,,Amendment to the Illinois Human Rights Act,text_ready
+TMP-IL-TORIGHTOFPUBLI,HB 4875,14,,Amendment to Right of Publicity Act,text_ready
+TMP-IL-WELLNESSANDOVE,HB1806,14,,The Wellness and Oversight for Psychological Resources Act,text_ready
+TMP-IN-DECISIONINDIAN,,15,,Indiana Consumer Data Protection Act,text_ready
+TMP-NV-NEVADAAIPOLITI,,29,,Nevada AI Political Advertising Law,text_ready
+TMP-MT-MONTANAGOVERNM,HB178,27,,Montana Government AI Use Law,text_ready
+TMP-MT-RIGHTINUSEOFNA,,27,,"Property Right in Use of Names, Voices, and Visual Likenesse",text_ready
+TMP-NE-DECISIONNEBRAS,LB 1074,28,,Nebraska Data Privacy Act,text_ready
+TMP-NH-DECISIONNEWHAM,,30,,New Hampshire Privacy Act,text_ready
+TMP-NH-HAMPSHIREDEEPF,HB 1432,30,,New Hampshire Deepfake Act,text_ready
+TMP-TN-DECISIONTENNES,SB 2373,42,,Tennessee Information Protection Act,quarantine
+TMP-NY-TODECEASEDS839,,33,,Amendment to Deceased Personality Protections,text_ready
+TMP-OR-DECISIONOREGON,SB 619,37,,Oregon Consumer Privacy Act,text_ready
+TMP-TX-ABUSEUSINGARTI,HB 149,43,,Financial Abuse Using Artificially Generated Media or Phishi,quarantine
+TMP-TX-ACTRELATINGTOT,HB 441,43,,Act Relating to the Regulation and Use of AI by Governmental,text_ready
+TMP-TX-AITEXASRESPONS,SB 198,43,,Texas Responsible Artificial Intelligence Governance Act (TR,quarantine
+TMP-TX-INTELLIGENCEIN,HB 2700,43,,Artificial Intelligence in Electronic Health Record,text_ready
+TMP-TX-UNLAWFULPRODUC,HB 1999,43,,Unlawful Production or Distribution of,quarantine
