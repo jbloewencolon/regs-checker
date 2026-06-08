@@ -1,0 +1,11 @@
+raw_term,tier1_code,tier2_label,notes
+fine / civil penalty,civil_penalty,fine__or__civil_penalty,
+criminal penalty / misdemeanor,criminal_penalty,criminal_penalty__or__misdemeanor,
+private right of action,private_right_of_action,private_right_of_action,
+attorney general enforcement,ag_enforcement,attorney_general_enforcement,
+agency / commission enforcement,regulatory_enforcement,agency__or__commission_enforcement,
+administrative action,administrative_action,administrative_action,
+injunction / court order,injunctive_relief,injunction__or__court_order,
+restitution / disgorgement,restitution,restitution__or__disgorgement,
+per-violation penalty,civil_penalty,per-violation_penalty,
+cure period (enforcement gate),civil_penalty,cure_period_(enforcement_gate),

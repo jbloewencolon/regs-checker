@@ -1,0 +1,10 @@
+canonical_code,right_type_schema_value,iapp_column,duty_bearer_note
+notice,notice,General notice,deployer/operator
+explanation,explanation,Explanation/incident reporting,deployer/developer
+opt_out,opt_out,Opt out/appeal,deployer
+appeal,appeal,Opt out/appeal,deployer/operator
+deletion,deletion,,controller/deployer
+human_review,human_review,Responsible individual,deployer/operator
+non_discrimination,non_discrimination,Nondiscrimination,deployer/developer
+portability,portability,,controller
+access,access,,controller

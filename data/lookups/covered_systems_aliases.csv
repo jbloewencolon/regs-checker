@@ -1,0 +1,15 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+ADMT / automated decision-making tool,orrick_ai_scope,18,ai_law_tracker.csv,admt,no
+Generative AI / LLM,orrick_ai_scope,8,ai_law_tracker.csv,generative_ai,no
+Deepfake system,orrick_ai_scope,4,ai_law_tracker.csv,synthetic_media_system,no
+CSAM generator,orrick_ai_scope,30,ai_law_tracker.csv,synthetic_media_system,no
+Intimate image generator,orrick_ai_scope,29,ai_law_tracker.csv,synthetic_media_system,no
+Likeness synthesis tool,orrick_ai_scope,11,ai_law_tracker.csv,synthetic_media_system,no
+Social media recommendation algorithm,orrick_ai_scope,5,ai_law_tracker.csv,recommender_system,no
+Algorithmic pricing tool,orrick_ai_scope,4,ai_law_tracker.csv,algorithmic_pricing,no
+Predictive model (credit/employment/housing),orrick_ai_scope,18,ai_law_tracker.csv,predictive_analytics,no
+General-purpose AI / foundation model,orrick_ai_scope,2,ai_law_tracker.csv,general_purpose_ai,no
+Comprehensive AI system,orrick_ai_scope,2,ai_law_tracker.csv,all_ai_systems,no
+AI in government (all systems),orrick_ai_scope,18,ai_law_tracker.csv,all_ai_systems,yes
+Healthcare AI tool,orrick_ai_scope,10,ai_law_tracker.csv,admt,yes
+Hiring/employment AI tool,orrick_ai_scope,5,ai_law_tracker.csv,admt,yes

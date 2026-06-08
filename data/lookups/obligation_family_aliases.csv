@@ -1,0 +1,28 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+impact_assessment,mechanism_type,50,extraction_db,impact_assessment,no
+bias_audit,mechanism_type,35,extraction_db,bias_testing,no
+registration,mechanism_type,30,extraction_db,registration,no
+certification,mechanism_type,25,extraction_db,certification,no
+record_keeping,mechanism_type,60,extraction_db,record_keeping,no
+reporting,mechanism_type,45,extraction_db,reporting_to_regulator,yes
+disclosure,mechanism_type,40,extraction_db,disclosure_to_user,yes
+notification,mechanism_type,35,extraction_db,labeling_watermarking,yes
+third_party_audit,audit_type,20,extraction_db,third_party_audit,no
+self_certification,audit_type,10,extraction_db,certification,no
+bias_audit (audit_type),audit_type,30,extraction_db,bias_testing,no
+risk_assessment,audit_type,25,extraction_db,impact_assessment,yes
+Program and documentation,iapp_col,60,iapp_law_tracker.csv,documentation,no
+Assessments,iapp_col,55,iapp_law_tracker.csv,impact_assessment,no
+Training,iapp_col,40,iapp_law_tracker.csv,training_mandate,no
+Responsible individual,iapp_col,4,iapp_law_tracker.csv,human_review,yes
+General notice,iapp_col,50,iapp_law_tracker.csv,disclosure_to_user,no
+Labeling/notification,iapp_col,45,iapp_law_tracker.csv,labeling_watermarking,no
+Explanation/incident reporting,iapp_col,35,iapp_law_tracker.csv,incident_reporting,yes
+Developer documentation,iapp_col,40,iapp_law_tracker.csv,documentation,no
+Registration,iapp_col,20,iapp_law_tracker.csv,registration,no
+Third-party review,iapp_col,25,iapp_law_tracker.csv,third_party_audit,no
+Opt out/appeal,iapp_col,30,iapp_law_tracker.csv,opt_out_right,no
+Nondiscrimination,iapp_col,20,iapp_law_tracker.csv,prohibition,yes
+must (modality),modality,871,extraction_db,REVIEW_depends_on_action,yes
+shall (modality),modality,488,extraction_db,REVIEW_depends_on_action,yes
+prohibited (modality),modality,375,extraction_db,prohibition,no

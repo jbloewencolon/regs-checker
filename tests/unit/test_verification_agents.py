@@ -30,7 +30,7 @@ from src.agents.citation_verifier import (
     _build_section_index,
 )
 from src.core.confidence import (
-    WEIGHT_CROSS_VALIDATION,
+    WEIGHT_CV_TARGET,
     compute_confidence,
 )
 from src.schemas.extraction import ObligationPayload
@@ -375,8 +375,8 @@ class TestConfidenceWithCrossValidation:
         assert cv_result.total_score < base_result.total_score
 
     def test_cv_weight_is_significant(self):
-        """Cross-validation should have 25% weight (meaningful impact)."""
-        assert WEIGHT_CROSS_VALIDATION == 0.25
+        """Cross-validation target weight should be 10% (phases in from 0.25 target)."""
+        assert WEIGHT_CV_TARGET == 0.10
 
     def test_perfect_cv_can_reach_tier_a(self):
         """Perfect scores across all components including CV should reach tier A."""
@@ -423,9 +423,10 @@ class TestConfidenceWithCrossValidation:
             orrick_similarity=self._make_orrick(),
             cross_validation_score=0.0,  # Failed cross-validation
         )
-        # With CV = 0.0, the 0.25 weight should drag score down significantly
+        # CV is 0.10 of the target model (phases in from base Orrick+evidence+citation).
+        # A zero CV lowers the score but with strong Orrick+evidence the result is B or C.
         assert result.cross_validation == 0.0
-        assert result.tier in ("C", "D")
+        assert result.tier in ("B", "C")
 
     def test_orrick_gate_overrides_cv(self):
         """Without Orrick data, even perfect CV can't escape Tier D."""

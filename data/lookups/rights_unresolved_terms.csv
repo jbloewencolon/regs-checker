@@ -1,0 +1,4 @@
+raw_term,routing,notes
+Explanation/incident reporting (IAPP),provisional_explanation_or_incident,Disambiguation requires extraction type: rights_protection→explanation; compliance_mechanism→incident_reporting
+Opt out/appeal (IAPP),provisional_opt_out,Disambiguation requires temporal position: before decision→opt_out; after decision→appeal
+Third-party review (IAPP),provisional_human_review,Could be obligation (audit) or right (human review) depending on who invokes it

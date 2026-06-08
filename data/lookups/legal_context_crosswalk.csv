@@ -1,0 +1,7 @@
+canonical_code,conflict_type_raw_values,display_default
+true_preemption,federal_preemption; dormant_commerce_clause,True
+constitutional_limit,first_amendment,True
+interstate_conflict,interstate_commerce; cross_state_conflict,True
+agency_jurisdiction,agency_jurisdiction,True
+cross_law_reference,other (with cross_law_refs only),True
+unclassified,other,False (hidden)

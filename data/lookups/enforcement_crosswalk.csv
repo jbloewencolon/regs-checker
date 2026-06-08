@@ -1,0 +1,9 @@
+canonical_code,schema_field,orrick_signal_terms
+civil_penalty,penalty_type,"fine, civil penalty, per violation"
+criminal_penalty,penalty_type,"criminal, misdemeanor, felony"
+private_right_of_action,private_right_of_action,"private right of action, civil action, may sue"
+ag_enforcement,enforcing_body,"attorney general, AG enforcement"
+regulatory_enforcement,enforcing_body,"commission, agency enforcement, regulatory action"
+administrative_action,penalty_type,"administrative, cease and desist, consent order"
+injunctive_relief,penalty_type,"injunction, restraining order, court order"
+restitution,penalty_type,"restitution, disgorgement"

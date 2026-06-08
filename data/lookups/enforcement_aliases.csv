@@ -1,0 +1,11 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+fine / civil penalty,extraction_or_orrick,80,extraction_db,civil_penalty,no
+criminal penalty / misdemeanor,extraction_or_orrick,20,extraction_db,criminal_penalty,no
+private right of action,extraction_or_orrick,45,extraction_db,private_right_of_action,no
+attorney general enforcement,extraction_or_orrick,60,extraction_db,ag_enforcement,no
+agency / commission enforcement,extraction_or_orrick,40,extraction_db,regulatory_enforcement,no
+administrative action,extraction_or_orrick,25,extraction_db,administrative_action,no
+injunction / court order,extraction_or_orrick,15,extraction_db,injunctive_relief,no
+restitution / disgorgement,extraction_or_orrick,10,extraction_db,restitution,no
+per-violation penalty,extraction_or_orrick,35,extraction_db,civil_penalty,no
+cure period (enforcement gate),extraction_or_orrick,30,extraction_db,civil_penalty,yes

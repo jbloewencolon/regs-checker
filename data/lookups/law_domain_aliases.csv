@@ -1,0 +1,26 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+AI CSAM,orrick_ai_scope,30,ai_law_tracker.csv,synthetic_media,no
+AI Intimate Images,orrick_ai_scope,29,ai_law_tracker.csv,synthetic_media,no
+AI in Political Advertising,orrick_ai_scope,22,ai_law_tracker.csv,synthetic_media,no
+AI in Government,orrick_ai_scope,18,ai_law_tracker.csv,government_ai_use,no
+Automated Decision-Making,orrick_ai_scope,18,ai_law_tracker.csv,automated_decision_making,no
+AI Likeness,orrick_ai_scope,11,ai_law_tracker.csv,synthetic_media,no
+AI Healthcare,orrick_ai_scope,10,ai_law_tracker.csv,healthcare_ai,no
+User-Facing AI,orrick_ai_scope,8,ai_law_tracker.csv,transparency_disclosure,yes
+AI in Social Media & Online Platforms,orrick_ai_scope,5,ai_law_tracker.csv,platform_content,no
+AI in Employment,orrick_ai_scope,5,ai_law_tracker.csv,employment_ai,no
+AI Transparency,orrick_ai_scope,5,ai_law_tracker.csv,transparency_disclosure,no
+AI Deepfakes,orrick_ai_scope,4,ai_law_tracker.csv,synthetic_media,no
+Algorithmic Pricing,orrick_ai_scope,4,ai_law_tracker.csv,automated_decision_making,yes
+AI Liability,orrick_ai_scope,3,ai_law_tracker.csv,liability_safety,no
+AI in Real Estate,orrick_ai_scope,3,ai_law_tracker.csv,sector_specific,no
+AI Definition,orrick_ai_scope,2,ai_law_tracker.csv,REVIEW_definitional,yes
+AI Privacy,orrick_ai_scope,2,ai_law_tracker.csv,privacy_data,no
+Frontier or General-Purpose AI,orrick_ai_scope,2,ai_law_tracker.csv,liability_safety,no
+Comprehensive AI,orrick_ai_scope,2,ai_law_tracker.csv,liability_safety,no
+AI Robots,orrick_ai_scope,2,ai_law_tracker.csv,liability_safety,yes
+AI Ownership,orrick_ai_scope,1,ai_law_tracker.csv,REVIEW_definitional,yes
+AI Calling,orrick_ai_scope,1,ai_law_tracker.csv,transparency_disclosure,no
+AI in Insurance,orrick_ai_scope,1,ai_law_tracker.csv,sector_specific,no
+AI in Critical Infrastructure,orrick_ai_scope,1,ai_law_tracker.csv,liability_safety,no
+AI in Education,orrick_ai_scope,1,ai_law_tracker.csv,sector_specific,no

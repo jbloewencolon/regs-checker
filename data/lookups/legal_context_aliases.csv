@@ -1,0 +1,8 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+federal_preemption,extraction_conflict_type,120,extraction_db,true_preemption,no
+dormant_commerce_clause,extraction_conflict_type,15,extraction_db,true_preemption,no
+first_amendment,extraction_conflict_type,25,extraction_db,constitutional_limit,no
+interstate_commerce,extraction_conflict_type,30,extraction_db,interstate_conflict,no
+cross_state_conflict,extraction_conflict_type,20,extraction_db,interstate_conflict,no
+agency_jurisdiction,extraction_conflict_type,35,extraction_db,agency_jurisdiction,no
+other,extraction_conflict_type,80,extraction_db,unclassified,no

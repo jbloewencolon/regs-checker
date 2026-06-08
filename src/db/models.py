@@ -670,6 +670,39 @@ class FailedExtractionAttempt(Base):
     )
 
 
+class VocabReviewQueueItem(Base):
+    """B4 — Tracks extraction field values that did not match any canonical code.
+
+    Populated by vocab_loader.normalize() (via flush_unrecognized()) when a
+    raw value has no entry in the ratified alias tables.  A provisonal_code is
+    recorded so product output can still serve a fallback; the item stays in
+    this queue until RPR/LKA assigns a canonical mapping.
+    """
+
+    __tablename__ = "vocab_review_queue"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dimension = Column(String(50), nullable=False)   # actor, law_domain, obligation_family, …
+    raw_term = Column(String(500), nullable=False)
+    source = Column(String(100), nullable=True)      # extraction / orrick / iapp
+    extraction_id = Column(
+        Integer, ForeignKey("extractions.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    law_id = Column(Integer, nullable=True)
+    provisional_code = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    resolved_at = Column(DateTime, nullable=True)
+    resolution = Column(String(50), nullable=True)
+
+    extraction = relationship("Extraction", foreign_keys=[extraction_id])
+
+    __table_args__ = (
+        Index("ix_vocab_review_dimension_term", "dimension", "raw_term"),
+        Index("ix_vocab_review_unresolved", "resolved_at"),
+    )
+
+
 class ExportJob(Base):
     __tablename__ = "export_jobs"
 

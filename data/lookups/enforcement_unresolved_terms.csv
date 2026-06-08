@@ -1,0 +1,2 @@
+raw_term,routing,notes
+cure period (enforcement gate),provisional_civil_penalty,"cure_period_days is a field on civil_penalty, not a separate enforcement type"
