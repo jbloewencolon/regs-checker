@@ -1,0 +1,14 @@
+canonical_code,orrick_terms,iapp_scope_codes,iapp_terms,raw_extraction_values_top6,total_raw_mentions
+developer,developer,F,Frontier/developer-scope laws,developer; developer/distributor; developer/user,214
+provider,"provider, vendor, manufacturer",,,vendor; model management company; provider; supplier; model_management_company; service_provider_or_contractor,114
+deployer,"deployer, employer, platform, company",D,Deployer-scope laws,deployer; employer; hospital; platform; insurer; advertiser,513
+operator,operator,,,operator,232
+distributor,distributor,,,distributor,8
+compute_provider,"compute provider, cloud provider",,,,0
+controller,controller,A,"ADMT/controller-scope laws (A, A*)","controller; controller/processor; controller_or_processor; controller, processor; controller_and_processors",386
+processor,"processor, data processor",,,processor; data_processor; supplier/business associate,135
+data_broker,data broker,,,data broker,6
+regulator,"agency, regulator, commission, attorney general, enforcement authority",,,regulator; agency; state agency; state_agency; law enforcement agency; local agency,245
+government_agency,"government, government agency, department",G,"General/government-use laws (G, G*)",department; committee; government_official; government_agency; government_body; government_unit,178
+individual,"person, individual, consumer, applicant",,,person; individual; applicant; user; caller; candidate,232
+regulated_entity,"covered entity, regulated entity, third party",,,licensee; regulated_entity; covered entity; regulated entity; entity; real estate professional,69

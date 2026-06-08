@@ -29,41 +29,45 @@ will get its own Tier-1/Tier-2 alias tables here as the work lands: `actors` (~1
 `enforcement`, and `legal_context` (refactor of `preemption_signal`). This directory is
 the home for **all** of these maps, read by the one normalization loader.
 
-### Tier-1 actor codes (~10, from `actor_taxonomy_analysis.md`)
+### Tier-1 actor codes — V1 LOCKED (13 codes, all forks split)
 
-| Tier-1 code | % of actor volume | Status |
-|---|---:|---|
-| `data_handler` *(new)* | 25.4% | controller + processor + business — biggest blind spot of the old model |
-| `deployer` | 19.9% | absorbs all sector-specific users; sector carried by sector dim |
-| `regulator` *(new; see fork 2)* | 15.9% | enforcement/oversight bodies + gov agencies |
-| `individual` *(new; see fork 3)* | 9.1% | usually the *protected* party, default `actor_scope=protected` |
-| `operator` | 9.1% | |
-| `developer` | 8.4% | |
-| `provider` | 4.5% | vendor, supplier, manufacturer, service_provider |
-| `regulated_entity` *(new)* | 2.5% | generic covered/regulated entity |
-| `data_broker` *(new)* | <1% | |
-| `distributor` | 0.3% | |
-| `compute_provider` | unused this run | retained |
+Forks resolved in `actor_fork_decisions.md`. See `actor_canonical_codes.csv` for full definitions.
 
-**Four LKA legal-semantic forks gate ratification** (rulings, not engineering calls):
-1. Split `data_handler` (controller vs processor — different legal duties)? — 25% of volume.
-2. Split `regulator` into enforcer vs government-deployer? (CSV pre-merges as `regulator_or_gov` pending this ruling.)
-3. Is `individual` a `protected`-scope flag rather than a compliance actor? — 9% of volume.
-4. `operator` vs `deployer` — keep distinct or fold?
+| Tier-1 code | Fork | Notes |
+|---|---|---|
+| `developer` | distinct from `provider` | design-time obligations |
+| `provider` | distinct from `developer` | supply-chain obligations |
+| `deployer` | distinct from `operator` (F4) | sector roles collapse here + sector dim |
+| `operator` | F4 kept distinct | operational obligations |
+| `distributor` | — | thin; kept |
+| `compute_provider` | — | training-run reporting |
+| `controller` | F1 split from data_handler | determines purposes/means |
+| `processor` | F1 split from data_handler | processes on behalf of controller |
+| `data_broker` | distinct | registration + opt-out obligations |
+| `regulator` | F2 split from gov umbrella | enforcer/oversight only |
+| `government_agency` | F2 split from gov umbrella | gov-as-deployer/user |
+| `individual` | F3 both code + actor_scope=protected | protected party |
+| `regulated_entity` | — | generic catch-all |
+
+**Pending LKA:** `business` (122 mentions) — controller vs regulated_entity ruling.
+Until ruled: provisional `regulated_entity`, excluded from product output.
 
 ## Files
 
-| File | Status | Source | Driver |
-|---|---|---|---|
-| `agent_to_extraction_type.json` | **committed** | mirrors `AGENT_EXTRACTION_TYPES` in `extractor.py` | C-7 |
-| `candidates/actor_value_to_code_full.csv` | **candidate — NOT ratified** | full 209-value harvest → ~10-code map | D-1/D-2/WS-B |
-| `candidates/modality_to_strength_candidates.csv` | **candidate — NOT ratified** | harvest of `obligation.modality` | D-1/D-2 |
-| `dim_actor_types` (Tier-1) + Tier-2 `dim_*` + Tier2→Tier1 lookup | _pending — WS-B2_ | from candidates + B0 tracker vocab | WS-B |
-| `modality_to_strength.json` | _pending — fast-lane_ | from candidate above | D-2 |
+| File | Status | Description |
+|---|---|---|
+| `agent_to_extraction_type.json` | ✅ committed | mirrors `AGENT_EXTRACTION_TYPES` in `extractor.py` |
+| `actor_canonical_codes.csv` | ✅ V1 built | 13 canonical codes, definitions, tracker alignment |
+| `actor_aliases.csv` | ✅ V1 built | 215 rows: extraction + Orrick + IAPP terms, B0 spec schema |
+| `actor_mapping_examples.csv` | ✅ V1 built | 162 rows: raw_term → tier1_code + tier2_label |
+| `actor_fork_decisions.md` | ✅ V1 built | 4 fork decisions + business pending |
+| `actor_unresolved_terms.csv` | ✅ V1 built | 48 rows: INVALID/REVIEW/PENDING terms with routing |
+| `actor_crosswalk.csv` | ✅ V1 built | canonical \| Orrick \| IAPP \| raw_values — trust-check input |
+| `candidates/actor_value_to_code_full.csv` | legacy candidate | 209 raw values with old data_handler/regulator_or_gov codes |
+| `candidates/modality_to_strength_candidates.csv` | candidate — NOT ratified | modality → strength harvest |
 
-> The earlier partial `subject_to_actor_code_candidates.csv` was **removed** —
-> superseded by `actor_value_to_code_full.csv`, which carries all 209 values with
-> the ~10-code model and tier breakdowns.
+> `candidates/actor_value_to_code_full.csv` is superseded by `actor_aliases.csv` (V1).
+> It is retained for provenance and re-harvest comparison.
 
 ## Ratification rules (binding)
 
