@@ -64,7 +64,7 @@ v3 §8 A1 asserts applicability "confirmed not run." My C-1 analysis saw **472 b
 | # | Task | Source | Status |
 |---|---|---|---|
 | 2a | ✅ E-1 verbatim evidence-span prompts (v1.1). **Run the 10–20 law test batch** (`_v2` suffix) to measure verified-span + A/B lift; capture baseline first. | E-1 | ✅ prompts; batch ⏳ |
-| 2b ★ | **Wire cross-validation into confidence** — pass `cross_validation_score` from `metadata_["cross_validation"]` at the 3 `compute_confidence` call sites → resurrect the dead 0.25 weight. Make swallowed failures explicit. | §2, C1 | ⏳ |
+| 2b ★ | ✅ **Cross-validation wired into confidence.** CV runs post-extraction, so the recompute lives in `run_verification_pass`: `_recompute_confidence_with_cv()` re-runs `compute_confidence` with the accuracy score and persists the new `confidence_score`/`confidence_tier`. CV result now stored for **all** extractions (was flagged-only); failed CV returns empty results → no silent neutral pass. Resurrects the 0.25 weight. | §2, C1 | ✅ |
 | 2c | **Enforcement normalizer** (§6.7): aggregate enforcement from standalone rows + embedded `obligation.enforcement` + bill-level agents + Orrick/IAPP into one record per law. Fixes C-8 enforcement sparsity without re-running an agent. | §6.7 | ⏳ |
 | 2d | **`legal_context` refactor** of `preemption_signal` (§6.8): typed categories (`true_preemption`, `agency_jurisdiction`, `cross_law_reference`…); hide low-value `other`. | §6.8 | ⏳ |
 

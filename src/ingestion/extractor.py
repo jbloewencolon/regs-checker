@@ -2997,6 +2997,83 @@ def compute_completeness_manifest(
 # ---------------------------------------------------------------------------
 
 
+def _recompute_confidence_with_cv(
+    db,
+    extraction,
+    record,
+    ctx: dict,
+    cv_score: float,
+) -> bool:
+    """Recompute an extraction's confidence with a cross-validation score.
+
+    Phase 2b: cross-validation runs post-extraction, so the original
+    confidence was computed without the cross_validation component (its
+    0.25 weight was redistributed). This re-runs compute_confidence with
+    the now-available accuracy score and writes the updated
+    confidence_score / confidence_tier back to the extraction.
+
+    Returns True if the tier changed (for logging/metrics).
+    """
+    ext_type_val = (
+        extraction.extraction_type.value
+        if hasattr(extraction.extraction_type, "value")
+        else str(extraction.extraction_type)
+    )
+    schema_class = EXTRACTION_TYPE_SCHEMAS.get(ext_type_val)
+    if schema_class is None:
+        return False
+
+    payload = extraction.payload or {}
+    evidence = extraction.evidence_spans or []
+
+    # Reuse the parse_quality recorded at extraction time (stored in the
+    # confidence breakdown as source_quality) so the recompute matches the
+    # original inputs apart from the newly-added cross-validation score.
+    meta = extraction.metadata_ or {}
+    breakdown = meta.get("confidence_breakdown", {})
+    parse_quality = breakdown.get("source_quality")
+
+    orrick_sim = validate_extraction_against_orrick(payload, ctx)
+
+    new_conf = compute_confidence(
+        schema_valid=True,
+        evidence_spans=evidence,
+        extraction_payload=payload,
+        schema_class=schema_class,
+        parse_quality_score=parse_quality,
+        orrick_similarity=orrick_sim,
+        cross_validation_score=cv_score,
+        passage_text=record.text_content,
+    )
+
+    old_tier = (
+        extraction.confidence_tier.value
+        if hasattr(extraction.confidence_tier, "value")
+        else str(extraction.confidence_tier)
+    )
+    tier_changed = old_tier != new_conf.tier
+
+    extraction.confidence_score = new_conf.total_score
+    extraction.confidence_tier = ConfidenceTier(new_conf.tier)
+
+    # Refresh the stored breakdown so downstream consumers see the
+    # cross-validation contribution.
+    updated_meta = dict(meta)
+    updated_meta["confidence_breakdown"] = {
+        "schema_validity": new_conf.schema_validity,
+        "evidence_grounding": new_conf.evidence_grounding,
+        "completeness": new_conf.completeness,
+        "source_quality": new_conf.source_quality,
+        "orrick_alignment": new_conf.orrick_alignment,
+        "cross_validation": new_conf.cross_validation,
+        "orrick_gated": new_conf.orrick_gated,
+        "recomputed_with_cross_validation": True,
+    }
+    extraction.metadata_ = updated_meta
+
+    return tier_changed
+
+
 @dataclass
 class VerificationResult:
     """Combined result from all verification agents for a document."""
@@ -3150,6 +3227,7 @@ def run_verification_pass(
         cv_valid = 0
         cv_flagged = 0
         cv_accuracy_sum = 0.0
+        cv_tier_changes = 0  # extractions whose tier moved after CV recompute
         cv_issues: list[dict[str, Any]] = []
 
         if not skip_cross_validation:
@@ -3186,32 +3264,60 @@ def run_verification_pass(
                 total_input_tokens += cv_result.input_tokens
                 total_output_tokens += cv_result.output_tokens
 
-                # Store flagged issues
+                # Phase 2b: wire the cross-validation score into confidence.
+                # Record the result for EVERY validated extraction (not just
+                # flagged ones) and recompute confidence so the 0.25
+                # cross-validation weight actually moves the tier. A failed
+                # cross-validation returns an empty results list (see
+                # cross_validation.py), so this loop is skipped — the score is
+                # never silently treated as neutral.
                 for r in cv_result.results:
-                    if not r.get("is_valid", True):
+                    is_valid = r.get("is_valid", True)
+
+                    if not is_valid:
                         cv_issues.append({
                             "record_id": record.id,
                             "section_path": record.section_path,
                             **r,
                         })
 
-                        # Update extraction metadata with cross-validation flag
-                        ext_id = r.get("extraction_id")
-                        if ext_id:
-                            extraction = db.get(Extraction, ext_id)
-                            if extraction:
-                                meta = dict(extraction.metadata_ or {})
-                                meta["cross_validation"] = {
-                                    "is_valid": r.get("is_valid", True),
-                                    "accuracy_score": r.get("accuracy_score", 1.0),
-                                    "issues": r.get("issues", []),
-                                }
-                                extraction.metadata_ = meta
+                    ext_id = r.get("extraction_id")
+                    if not ext_id:
+                        continue
+                    extraction = db.get(Extraction, ext_id)
+                    if not extraction:
+                        continue
+
+                    accuracy_score = float(r.get("accuracy_score", 1.0))
+
+                    # Persist the cross-validation finding on the extraction.
+                    meta = dict(extraction.metadata_ or {})
+                    meta["cross_validation"] = {
+                        "is_valid": is_valid,
+                        "accuracy_score": accuracy_score,
+                        "issues": r.get("issues", []),
+                    }
+                    extraction.metadata_ = meta
+
+                    # Recompute confidence with the now-available CV score.
+                    try:
+                        tier_changed = _recompute_confidence_with_cv(
+                            db, extraction, record, ctx, accuracy_score,
+                        )
+                        if tier_changed:
+                            cv_tier_changes += 1
+                    except Exception as _e:
+                        logger.warning(
+                            "cross_validation_confidence_recompute_failed",
+                            extraction_id=ext_id,
+                            error=str(_e),
+                        )
 
             cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
             _log(
                 f"    {cv_passages} passages checked, {cv_valid} valid, "
-                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}"
+                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}, "
+                f"{cv_tier_changes} tier change(s) after recompute"
             )
         else:
             cv_avg = 1.0

@@ -27,7 +27,7 @@
 
 ### Phase 2 — Cheap trust wins (no taxonomy dependency; front-loaded)
 - ✅ **2a** — E-1 verbatim evidence-span prompts (4 prompts v1.1). ⏳ Run 10–20 law test batch (`_v2` suffix); capture baseline first.
-- ⏳ **2b ★** — wire cross-validation into confidence: pass `cross_validation_score` from `metadata_["cross_validation"]` at the 3 `compute_confidence` call sites (`extractor.py:1180,2123,2535`) → resurrect the dead 0.25 weight; make swallowed failures explicit. **Highest value/effort ratio.** *(NLP, BE)*
+- ✅ **2b ★** — cross-validation wired into confidence. The 3 extraction-time call sites can't see the CV score (CV runs post-extraction), so the fix lives in `run_verification_pass`: `_recompute_confidence_with_cv()` re-runs `compute_confidence` with the accuracy score and writes the updated `confidence_score`/`confidence_tier` back. CV result now persisted for **all** extractions (was flagged-only). Failed CV returns an empty results list → no silent neutral pass. `cv_tier_changes` counter logged. 4 regression-guard tests in `test_confidence.py::TestCrossValidationWiring`. **Recompute runs during the Verify step (`/api/verify`), not initial extraction.** *(NLP, BE)*
 - ⏳ **2c** — enforcement normalizer (§6.7): aggregate enforcement from standalone rows + embedded `obligation.enforcement` + bill-level + Orrick/IAPP into one record per law. Fixes C-8 sparsity. *(NLP, BE)*
 - ⏳ **2d** — `legal_context` refactor of `preemption_signal` (§6.8): typed categories; hide low-value `other`. *(NLP)*
 
