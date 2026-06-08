@@ -1,0 +1,5895 @@
+{
+  "is_running": false,
+  "elapsed_seconds": 84419.9,
+  "passages_processed": 647,
+  "passages_total": 660,
+  "extractions_created": 6274,
+  "current_document": "ND - TMP-ND-AIPOLITICALADV",
+  "total_errors": 115,
+  "consecutive_errors": 0,
+  "failure_rate": 0.017,
+  "confidence_tiers": {
+    "A": 149,
+    "B": 598,
+    "C": 3164,
+    "D": 2363
+  },
+  "agent_stats": {
+    "rights_protection": {
+      "calls": 723,
+      "successes": 673,
+      "abstentions": 38,
+      "errors": 12,
+      "failure_rate": 0.017,
+      "tokens": 4190307,
+      "avg_duration_ms": 104976
+    },
+    "definition_actor": {
+      "calls": 1453,
+      "successes": 1387,
+      "abstentions": 38,
+      "errors": 28,
+      "failure_rate": 0.019,
+      "tokens": 7484036,
+      "avg_duration_ms": 98334
+    },
+    "obligation": {
+      "calls": 1918,
+      "successes": 1858,
+      "abstentions": 43,
+      "errors": 17,
+      "failure_rate": 0.009,
+      "tokens": 12729124,
+      "avg_duration_ms": 117348
+    },
+    "threshold_exception": {
+      "calls": 1013,
+      "successes": 975,
+      "abstentions": 20,
+      "errors": 18,
+      "failure_rate": 0.018,
+      "tokens": 6150492,
+      "avg_duration_ms": 117281
+    },
+    "compliance_mechanism": {
+      "calls": 952,
+      "successes": 731,
+      "abstentions": 190,
+      "errors": 31,
+      "failure_rate": 0.033,
+      "tokens": 4870213,
+      "avg_duration_ms": 91377
+    },
+    "preemption": {
+      "calls": 667,
+      "successes": 650,
+      "abstentions": 8,
+      "errors": 9,
+      "failure_rate": 0.013,
+      "tokens": 3129208,
+      "avg_duration_ms": 89029
+    }
+  },
+  "total_tokens": 38553380,
+  "tokens_per_minute": 27401.2,
+  "warnings": 2366,
+  "errors_count": 115,
+  "criticals": 0,
+  "recent_events": [
+    {
+      "timestamp": 1778465737.2361922,
+      "category": "run_complete",
+      "severity": "success",
+      "message": "Extraction complete: 6274 extractions from 647/660 passages (115 errors)",
+      "details": {},
+      "age_seconds": 1.4
+    },
+    {
+      "timestamp": 1778465737.2351384,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ND - TMP-ND-AIPOLITICALADV]: 5 extractions, 0 failures",
+      "details": {
+        "document": "ND - TMP-ND-AIPOLITICALADV",
+        "extractions": 5,
+        "failures": 0
+      },
+      "age_seconds": 1.4
+    },
+    {
+      "timestamp": 1778465670.7618647,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 445: 5 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 445,
+        "extraction_count": 5
+      },
+      "age_seconds": 67.9
+    },
+    {
+      "timestamp": 1778465592.4765785,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ND - TMP-ND-AIPOLITICALADV]: 1 passages",
+      "details": {
+        "document": "ND - TMP-ND-AIPOLITICALADV",
+        "passage_count": 1
+      },
+      "age_seconds": 146.2
+    },
+    {
+      "timestamp": 1778465592.4563231,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [VT - TMP-VT-AMENDMENTOFNON]: 16 extractions, 0 failures",
+      "details": {
+        "document": "VT - TMP-VT-AMENDMENTOFNON",
+        "extractions": 16,
+        "failures": 0
+      },
+      "age_seconds": 146.2
+    },
+    {
+      "timestamp": 1778465521.5960937,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1228: 16 extractions [\u00a7 2606.]",
+      "details": {
+        "record_id": 1228,
+        "extraction_count": 16
+      },
+      "age_seconds": 217.0
+    },
+    {
+      "timestamp": 1778465521.5960937,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[obligation] Failed on record 1228: Unterminated string starting at: line 114 column 9 (char 5534)",
+      "details": {
+        "agent": "obligation",
+        "record_id": 1228,
+        "error": "Unterminated string starting at: line 114 column 9 (char 5534)"
+      },
+      "age_seconds": 217.0
+    },
+    {
+      "timestamp": 1778465521.5900207,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 1228",
+      "details": {
+        "agent": "preemption",
+        "record_id": 1228,
+        "tier": "D"
+      },
+      "age_seconds": 217.0
+    },
+    {
+      "timestamp": 1778465521.5741212,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 1228",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 1228,
+        "tier": "D"
+      },
+      "age_seconds": 217.1
+    },
+    {
+      "timestamp": 1778465337.5690973,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [VT - TMP-VT-AMENDMENTOFNON]: 1 passages",
+      "details": {
+        "document": "VT - TMP-VT-AMENDMENTOFNON",
+        "passage_count": 1
+      },
+      "age_seconds": 401.1
+    },
+    {
+      "timestamp": 1778465337.5131147,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [TX - SB 1361]: 4 extractions, 0 failures",
+      "details": {
+        "document": "TX - SB 1361",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 401.1
+    },
+    {
+      "timestamp": 1778465310.7365415,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 584: 4 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 584,
+        "extraction_count": 4
+      },
+      "age_seconds": 427.9
+    },
+    {
+      "timestamp": 1778465271.9839983,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [TX - SB 1361]: 1 passages",
+      "details": {
+        "document": "TX - SB 1361",
+        "passage_count": 1
+      },
+      "age_seconds": 466.7
+    },
+    {
+      "timestamp": 1778465271.960303,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [VA - SB 731]: 6 extractions, 0 failures",
+      "details": {
+        "document": "VA - SB 731",
+        "extractions": 6,
+        "failures": 0
+      },
+      "age_seconds": 466.7
+    },
+    {
+      "timestamp": 1778465236.744419,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 659: 6 extractions [\u00a7 18.2-390]",
+      "details": {
+        "record_id": 659,
+        "extraction_count": 6
+      },
+      "age_seconds": 501.9
+    },
+    {
+      "timestamp": 1778465236.743877,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 659: Empty response from local LLM (finish_reason=length, model=google/gemma-4-26b-a4b)",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 659,
+        "error": "Empty response from local LLM (finish_reason=length, model=google/gemma-4-26b-a4b)"
+      },
+      "age_seconds": 501.9
+    },
+    {
+      "timestamp": 1778465236.7170453,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 659",
+      "details": {
+        "agent": "obligation",
+        "record_id": 659,
+        "tier": "D"
+      },
+      "age_seconds": 501.9
+    },
+    {
+      "timestamp": 1778464821.429947,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [VA - SB 731]: 1 passages",
+      "details": {
+        "document": "VA - SB 731",
+        "passage_count": 1
+      },
+      "age_seconds": 917.2
+    },
+    {
+      "timestamp": 1778464821.3942168,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [TX - HB 1999]: 0 extractions, 0 failures",
+      "details": {
+        "document": "TX - HB 1999",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 917.2
+    },
+    {
+      "timestamp": 1778464767.4459746,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [TX - HB 1999]: 1 passages",
+      "details": {
+        "document": "TX - HB 1999",
+        "passage_count": 1
+      },
+      "age_seconds": 971.2
+    },
+    {
+      "timestamp": 1778464767.4158843,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - SB 896]: 21 extractions, 0 failures",
+      "details": {
+        "document": "CA - SB 896",
+        "extractions": 21,
+        "failures": 0
+      },
+      "age_seconds": 971.2
+    },
+    {
+      "timestamp": 1778464719.1063032,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 909: 21 extractions [Chapter 5.9]",
+      "details": {
+        "record_id": 909,
+        "extraction_count": 21
+      },
+      "age_seconds": 1019.5
+    },
+    {
+      "timestamp": 1778464504.2942436,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - SB 896]: 1 passages",
+      "details": {
+        "document": "CA - SB 896",
+        "passage_count": 1
+      },
+      "age_seconds": 1234.3
+    },
+    {
+      "timestamp": 1778464504.2562335,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 412]: 0 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 412",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 1234.4
+    },
+    {
+      "timestamp": 1778464475.441132,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 60: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 60,
+        "extraction_count": 0
+      },
+      "age_seconds": 1263.2
+    },
+    {
+      "timestamp": 1778464466.7535985,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 412]: 1 passages",
+      "details": {
+        "document": "CA - AB 412",
+        "passage_count": 1
+      },
+      "age_seconds": 1271.9
+    },
+    {
+      "timestamp": 1778464466.6607726,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-OFCALIFORNIACS]: 23 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-OFCALIFORNIACS",
+        "extractions": 23,
+        "failures": 0
+      },
+      "age_seconds": 1272.0
+    },
+    {
+      "timestamp": 1778464389.5212648,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 912: 23 extractions [CHAPTER 7.5.]",
+      "details": {
+        "record_id": 912,
+        "extraction_count": 23
+      },
+      "age_seconds": 1349.1
+    },
+    {
+      "timestamp": 1778464389.5212648,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[threshold_exception] Failed on record 912: Expecting value: line 100 column 7 (char 4236)",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 912,
+        "error": "Expecting value: line 100 column 7 (char 4236)"
+      },
+      "age_seconds": 1349.1
+    },
+    {
+      "timestamp": 1778464389.4745083,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 912",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 912,
+        "tier": "D"
+      },
+      "age_seconds": 1349.2
+    },
+    {
+      "timestamp": 1778464389.4547899,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 912",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 912,
+        "tier": "D"
+      },
+      "age_seconds": 1349.2
+    },
+    {
+      "timestamp": 1778464389.4028618,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 912",
+      "details": {
+        "agent": "preemption",
+        "record_id": 912,
+        "tier": "D"
+      },
+      "age_seconds": 1349.2
+    },
+    {
+      "timestamp": 1778463953.8387198,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-OFCALIFORNIACS]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-OFCALIFORNIACS",
+        "passage_count": 1
+      },
+      "age_seconds": 1784.8
+    },
+    {
+      "timestamp": 1778463953.810223,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MT - TMP-MT-MONTANAEXPLICI]: 1 extractions, 0 failures",
+      "details": {
+        "document": "MT - TMP-MT-MONTANAEXPLICI",
+        "extractions": 1,
+        "failures": 0
+      },
+      "age_seconds": 1784.8
+    },
+    {
+      "timestamp": 1778463890.925274,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 364: 1 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 364,
+        "extraction_count": 1
+      },
+      "age_seconds": 1847.7
+    },
+    {
+      "timestamp": 1778463822.207233,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MT - TMP-MT-MONTANAEXPLICI]: 1 passages",
+      "details": {
+        "document": "MT - TMP-MT-MONTANAEXPLICI",
+        "passage_count": 1
+      },
+      "age_seconds": 1916.4
+    },
+    {
+      "timestamp": 1778463822.1703713,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [AZ - TMP-AZ-AMENDMENTOFARI]: 3 extractions, 0 failures",
+      "details": {
+        "document": "AZ - TMP-AZ-AMENDMENTOFARI",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 1916.5
+    },
+    {
+      "timestamp": 1778463764.682684,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1: 3 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 1,
+        "extraction_count": 3
+      },
+      "age_seconds": 1974.0
+    },
+    {
+      "timestamp": 1778463764.682684,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[threshold_exception] Failed on record 1: Unterminated string starting at: line 1 column 1666 (char 1665)",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 1,
+        "error": "Unterminated string starting at: line 1 column 1666 (char 1665)"
+      },
+      "age_seconds": 1974.0
+    },
+    {
+      "timestamp": 1778463764.678468,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 1",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 1,
+        "tier": "D"
+      },
+      "age_seconds": 1974.0
+    },
+    {
+      "timestamp": 1778463553.7709713,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [AZ - TMP-AZ-AMENDMENTOFARI]: 1 passages",
+      "details": {
+        "document": "AZ - TMP-AZ-AMENDMENTOFARI",
+        "passage_count": 1
+      },
+      "age_seconds": 2184.9
+    },
+    {
+      "timestamp": 1778463553.7488878,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 325]: 5 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 325",
+        "extractions": 5,
+        "failures": 0
+      },
+      "age_seconds": 2184.9
+    },
+    {
+      "timestamp": 1778463521.255323,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 58: 5 extractions [Section 16729]",
+      "details": {
+        "record_id": 58,
+        "extraction_count": 5
+      },
+      "age_seconds": 2217.4
+    },
+    {
+      "timestamp": 1778463521.255323,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[preemption] Failed on record 58: Expecting ':' delimiter: line 1 column 1133 (char 1132)",
+      "details": {
+        "agent": "preemption",
+        "record_id": 58,
+        "error": "Expecting ':' delimiter: line 1 column 1133 (char 1132)"
+      },
+      "age_seconds": 2217.4
+    },
+    {
+      "timestamp": 1778463310.1452727,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 325]: 1 passages",
+      "details": {
+        "document": "CA - AB 325",
+        "passage_count": 1
+      },
+      "age_seconds": 2428.5
+    },
+    {
+      "timestamp": 1778463310.1249075,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [IA - HB 406]: 0 extractions, 0 failures",
+      "details": {
+        "document": "IA - HB 406",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 2428.5
+    },
+    {
+      "timestamp": 1778463273.851115,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 275: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 275,
+        "extraction_count": 0
+      },
+      "age_seconds": 2464.8
+    },
+    {
+      "timestamp": 1778463258.7498837,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [IA - HB 406]: 1 passages",
+      "details": {
+        "document": "IA - HB 406",
+        "passage_count": 1
+      },
+      "age_seconds": 2479.9
+    },
+    {
+      "timestamp": 1778463258.7133956,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NE - LB 383]: 25 extractions, 0 failures",
+      "details": {
+        "document": "NE - LB 383",
+        "extractions": 25,
+        "failures": 0
+      },
+      "age_seconds": 2479.9
+    },
+    {
+      "timestamp": 1778463177.1257312,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 368: 25 extractions [Article VII]",
+      "details": {
+        "record_id": 368,
+        "extraction_count": 25
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.1257312,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 368: Expecting ',' delimiter: line 1 column 20912 (char 20911)",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 368,
+        "error": "Expecting ',' delimiter: line 1 column 20912 (char 20911)"
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.1165516,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.1107385,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.09769,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.09299,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.5
+    },
+    {
+      "timestamp": 1778463177.0617325,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.6
+    },
+    {
+      "timestamp": 1778463177.0363777,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.6
+    },
+    {
+      "timestamp": 1778463176.9666476,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 368",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 368,
+        "tier": "D"
+      },
+      "age_seconds": 2561.7
+    },
+    {
+      "timestamp": 1778462578.8056345,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NE - LB 383]: 1 passages",
+      "details": {
+        "document": "NE - LB 383",
+        "passage_count": 1
+      },
+      "age_seconds": 3159.8
+    },
+    {
+      "timestamp": 1778462578.7463322,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [VA - HB 2554]: 6 extractions, 0 failures",
+      "details": {
+        "document": "VA - HB 2554",
+        "extractions": 6,
+        "failures": 0
+      },
+      "age_seconds": 3159.9
+    },
+    {
+      "timestamp": 1778462518.807716,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 678: 0 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 678,
+        "extraction_count": 0
+      },
+      "age_seconds": 3219.8
+    },
+    {
+      "timestamp": 1778462484.9371674,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 677: 6 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 677,
+        "extraction_count": 6
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.9366457,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.9303396,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.92242,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.9151528,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "obligation",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.9082148,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "obligation",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462484.9002433,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 677",
+      "details": {
+        "agent": "obligation",
+        "record_id": 677,
+        "tier": "D"
+      },
+      "age_seconds": 3253.7
+    },
+    {
+      "timestamp": 1778462321.447301,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [VA - HB 2554]: 2 passages",
+      "details": {
+        "document": "VA - HB 2554",
+        "passage_count": 2
+      },
+      "age_seconds": 3417.2
+    },
+    {
+      "timestamp": 1778462321.4244938,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-AITRANSPARENCY]: 6 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-AITRANSPARENCY",
+        "extractions": 6,
+        "failures": 0
+      },
+      "age_seconds": 3417.2
+    },
+    {
+      "timestamp": 1778462279.9653575,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 854: 6 extractions [Section 22757.3.]",
+      "details": {
+        "record_id": 854,
+        "extraction_count": 6
+      },
+      "age_seconds": 3458.7
+    },
+    {
+      "timestamp": 1778462224.5042827,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-AITRANSPARENCY]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-AITRANSPARENCY",
+        "passage_count": 1
+      },
+      "age_seconds": 3514.1
+    },
+    {
+      "timestamp": 1778462224.4540725,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NH - HB 1688]: 13 extractions, 0 failures",
+      "details": {
+        "document": "NH - HB 1688",
+        "extractions": 13,
+        "failures": 0
+      },
+      "age_seconds": 3514.2
+    },
+    {
+      "timestamp": 1778462180.3150032,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1090: 13 extractions [CHAPTER 5-D]",
+      "details": {
+        "record_id": 1090,
+        "extraction_count": 13
+      },
+      "age_seconds": 3558.3
+    },
+    {
+      "timestamp": 1778462180.3144877,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 1090",
+      "details": {
+        "agent": "obligation",
+        "record_id": 1090,
+        "tier": "D"
+      },
+      "age_seconds": 3558.3
+    },
+    {
+      "timestamp": 1778461938.1795263,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NH - HB 1688]: 1 passages",
+      "details": {
+        "document": "NH - HB 1688",
+        "passage_count": 1
+      },
+      "age_seconds": 3800.5
+    },
+    {
+      "timestamp": 1778461938.14903,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [VA - TMP-VA-ARTIFICIALINTE]: 3 extractions, 0 failures",
+      "details": {
+        "document": "VA - TMP-VA-ARTIFICIALINTE",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 3800.5
+    },
+    {
+      "timestamp": 1778461885.3561573,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 648: 3 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 648,
+        "extraction_count": 3
+      },
+      "age_seconds": 3853.3
+    },
+    {
+      "timestamp": 1778461885.3381448,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 648",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 648,
+        "tier": "D"
+      },
+      "age_seconds": 3853.3
+    },
+    {
+      "timestamp": 1778461843.1604645,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [VA - TMP-VA-ARTIFICIALINTE]: 1 passages",
+      "details": {
+        "document": "VA - TMP-VA-ARTIFICIALINTE",
+        "passage_count": 1
+      },
+      "age_seconds": 3895.5
+    },
+    {
+      "timestamp": 1778461843.109873,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [WI - SB 314]: 4 extractions, 0 failures",
+      "details": {
+        "document": "WI - SB 314",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 3895.5
+    },
+    {
+      "timestamp": 1778461824.804632,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 698: 4 extractions [Paragraph 6]",
+      "details": {
+        "record_id": 698,
+        "extraction_count": 4
+      },
+      "age_seconds": 3913.8
+    },
+    {
+      "timestamp": 1778461824.804632,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 698",
+      "details": {
+        "agent": "obligation",
+        "record_id": 698,
+        "tier": "D"
+      },
+      "age_seconds": 3913.8
+    },
+    {
+      "timestamp": 1778461824.7977986,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 698",
+      "details": {
+        "agent": "obligation",
+        "record_id": 698,
+        "tier": "D"
+      },
+      "age_seconds": 3913.8
+    },
+    {
+      "timestamp": 1778461779.3624215,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [WI - SB 314]: 1 passages",
+      "details": {
+        "document": "WI - SB 314",
+        "passage_count": 1
+      },
+      "age_seconds": 3959.3
+    },
+    {
+      "timestamp": 1778461779.3046932,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 1836]: 16 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 1836",
+        "extractions": 16,
+        "failures": 0
+      },
+      "age_seconds": 3959.3
+    },
+    {
+      "timestamp": 1778461748.7003636,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 59: 16 extractions [Section 3344.1]",
+      "details": {
+        "record_id": 59,
+        "extraction_count": 16
+      },
+      "age_seconds": 3989.9
+    },
+    {
+      "timestamp": 1778461748.678183,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[threshold_exception] Failed on record 59: Expecting value: line 69 column 30 (char 4282)",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 59,
+        "error": "Expecting value: line 69 column 30 (char 4282)"
+      },
+      "age_seconds": 3990.0
+    },
+    {
+      "timestamp": 1778461748.57888,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 59",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 59,
+        "tier": "D"
+      },
+      "age_seconds": 3990.1
+    },
+    {
+      "timestamp": 1778461463.0432467,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 1836]: 1 passages",
+      "details": {
+        "document": "CA - AB 1836",
+        "passage_count": 1
+      },
+      "age_seconds": 4275.6
+    },
+    {
+      "timestamp": 1778461463.0197823,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [OK - HB 1916]: 0 extractions, 0 failures",
+      "details": {
+        "document": "OK - HB 1916",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 4275.6
+    },
+    {
+      "timestamp": 1778461436.23791,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 460: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 460,
+        "extraction_count": 0
+      },
+      "age_seconds": 4302.4
+    },
+    {
+      "timestamp": 1778461428.2169766,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [OK - HB 1916]: 1 passages",
+      "details": {
+        "document": "OK - HB 1916",
+        "passage_count": 1
+      },
+      "age_seconds": 4310.4
+    },
+    {
+      "timestamp": 1778461428.190235,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MI - HB 5141]: 15 extractions, 0 failures",
+      "details": {
+        "document": "MI - HB 5141",
+        "extractions": 15,
+        "failures": 0
+      },
+      "age_seconds": 4310.4
+    },
+    {
+      "timestamp": 1778461380.1450217,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 352: 15 extractions [Sec. 59.]",
+      "details": {
+        "record_id": 352,
+        "extraction_count": 15
+      },
+      "age_seconds": 4358.5
+    },
+    {
+      "timestamp": 1778461380.1296918,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 352",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 352,
+        "tier": "D"
+      },
+      "age_seconds": 4358.5
+    },
+    {
+      "timestamp": 1778461380.0789266,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 352",
+      "details": {
+        "agent": "preemption",
+        "record_id": 352,
+        "tier": "D"
+      },
+      "age_seconds": 4358.6
+    },
+    {
+      "timestamp": 1778461254.7212038,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MI - HB 5141]: 1 passages",
+      "details": {
+        "document": "MI - HB 5141",
+        "passage_count": 1
+      },
+      "age_seconds": 4483.9
+    },
+    {
+      "timestamp": 1778461254.6835186,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CO - SB 318]: 0 extractions, 0 failures",
+      "details": {
+        "document": "CO - SB 318",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 4484.0
+    },
+    {
+      "timestamp": 1778461222.0332844,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 249: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 249,
+        "extraction_count": 0
+      },
+      "age_seconds": 4516.6
+    },
+    {
+      "timestamp": 1778461214.4500275,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CO - SB 318]: 1 passages",
+      "details": {
+        "document": "CO - SB 318",
+        "passage_count": 1
+      },
+      "age_seconds": 4524.2
+    },
+    {
+      "timestamp": 1778461214.4151576,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [IL - HB1806]: 0 extractions, 0 failures",
+      "details": {
+        "document": "IL - HB1806",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 4524.2
+    },
+    {
+      "timestamp": 1778461161.0621023,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [IL - HB1806]: 1 passages",
+      "details": {
+        "document": "IL - HB1806",
+        "passage_count": 1
+      },
+      "age_seconds": 4577.6
+    },
+    {
+      "timestamp": 1778461161.0259242,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MT - SB25]: 1 extractions, 0 failures",
+      "details": {
+        "document": "MT - SB25",
+        "extractions": 1,
+        "failures": 0
+      },
+      "age_seconds": 4577.6
+    },
+    {
+      "timestamp": 1778461115.1705449,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 363: 1 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 363,
+        "extraction_count": 1
+      },
+      "age_seconds": 4623.5
+    },
+    {
+      "timestamp": 1778461085.2892683,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MT - SB25]: 1 passages",
+      "details": {
+        "document": "MT - SB25",
+        "passage_count": 1
+      },
+      "age_seconds": 4653.3
+    },
+    {
+      "timestamp": 1778461085.2416089,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MI - HB 5144]: 23 extractions, 0 failures",
+      "details": {
+        "document": "MI - HB 5144",
+        "extractions": 23,
+        "failures": 0
+      },
+      "age_seconds": 4653.4
+    },
+    {
+      "timestamp": 1778461022.8069403,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 350: 13 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 350,
+        "extraction_count": 13
+      },
+      "age_seconds": 4715.8
+    },
+    {
+      "timestamp": 1778461022.7646956,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 350",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 350,
+        "tier": "D"
+      },
+      "age_seconds": 4715.9
+    },
+    {
+      "timestamp": 1778460637.5403852,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 349: 10 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 349,
+        "extraction_count": 10
+      },
+      "age_seconds": 5101.1
+    },
+    {
+      "timestamp": 1778460551.8128786,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MI - HB 5144]: 2 passages",
+      "details": {
+        "document": "MI - HB 5144",
+        "passage_count": 2
+      },
+      "age_seconds": 5186.8
+    },
+    {
+      "timestamp": 1778460551.7846181,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-CALIFORNIAGOVE]: 16 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-CALIFORNIAGOVE",
+        "extractions": 16,
+        "failures": 0
+      },
+      "age_seconds": 5186.9
+    },
+    {
+      "timestamp": 1778460487.9648297,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 855: 16 extractions [CHAPTER 5.6.]",
+      "details": {
+        "record_id": 855,
+        "extraction_count": 16
+      },
+      "age_seconds": 5250.7
+    },
+    {
+      "timestamp": 1778460487.89319,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 855",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 855,
+        "tier": "D"
+      },
+      "age_seconds": 5250.7
+    },
+    {
+      "timestamp": 1778460316.4083505,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-CALIFORNIAGOVE]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-CALIFORNIAGOVE",
+        "passage_count": 1
+      },
+      "age_seconds": 5422.2
+    },
+    {
+      "timestamp": 1778460316.3954134,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [VT - HB 341]: 0 extractions, 0 failures",
+      "details": {
+        "document": "VT - HB 341",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 5422.2
+    },
+    {
+      "timestamp": 1778460284.833152,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 646: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 646,
+        "extraction_count": 0
+      },
+      "age_seconds": 5453.8
+    },
+    {
+      "timestamp": 1778460277.3959424,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [VT - HB 341]: 1 passages",
+      "details": {
+        "document": "VT - HB 341",
+        "passage_count": 1
+      },
+      "age_seconds": 5461.2
+    },
+    {
+      "timestamp": 1778460277.3831737,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NV - SB199]: 2 extractions, 0 failures",
+      "details": {
+        "document": "NV - SB199",
+        "extractions": 2,
+        "failures": 0
+      },
+      "age_seconds": 5461.3
+    },
+    {
+      "timestamp": 1778460227.9492605,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 353: 2 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 353,
+        "extraction_count": 2
+      },
+      "age_seconds": 5510.7
+    },
+    {
+      "timestamp": 1778460227.9492605,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 353",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 353,
+        "tier": "D"
+      },
+      "age_seconds": 5510.7
+    },
+    {
+      "timestamp": 1778460227.941284,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 353",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 353,
+        "tier": "D"
+      },
+      "age_seconds": 5510.7
+    },
+    {
+      "timestamp": 1778460195.1974332,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NV - SB199]: 1 passages",
+      "details": {
+        "document": "NV - SB199",
+        "passage_count": 1
+      },
+      "age_seconds": 5543.4
+    },
+    {
+      "timestamp": 1778460195.1749294,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ID - TMP-ID-IDAHOEXPLICITS]: 7 extractions, 0 failures",
+      "details": {
+        "document": "ID - TMP-ID-IDAHOEXPLICITS",
+        "extractions": 7,
+        "failures": 0
+      },
+      "age_seconds": 5543.5
+    },
+    {
+      "timestamp": 1778460112.0802016,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 254: 7 extractions [Chapter 66]",
+      "details": {
+        "record_id": 254,
+        "extraction_count": 7
+      },
+      "age_seconds": 5626.6
+    },
+    {
+      "timestamp": 1778460112.0802016,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 254: Unterminated string starting at: line 1 column 3212 (char 3211)",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 254,
+        "error": "Unterminated string starting at: line 1 column 3212 (char 3211)"
+      },
+      "age_seconds": 5626.6
+    },
+    {
+      "timestamp": 1778460112.0780969,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[preemption] Failed on record 254: Unterminated string starting at: line 1 column 1123 (char 1122)",
+      "details": {
+        "agent": "preemption",
+        "record_id": 254,
+        "error": "Unterminated string starting at: line 1 column 1123 (char 1122)"
+      },
+      "age_seconds": 5626.6
+    },
+    {
+      "timestamp": 1778460112.07444,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 254",
+      "details": {
+        "agent": "obligation",
+        "record_id": 254,
+        "tier": "D"
+      },
+      "age_seconds": 5626.6
+    },
+    {
+      "timestamp": 1778459680.1608164,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ID - TMP-ID-IDAHOEXPLICITS]: 1 passages",
+      "details": {
+        "document": "ID - TMP-ID-IDAHOEXPLICITS",
+        "passage_count": 1
+      },
+      "age_seconds": 6058.5
+    },
+    {
+      "timestamp": 1778459680.1481867,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MT - HB178]: 8 extractions, 0 failures",
+      "details": {
+        "document": "MT - HB178",
+        "extractions": 8,
+        "failures": 0
+      },
+      "age_seconds": 6058.5
+    },
+    {
+      "timestamp": 1778459653.8629608,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 994: 8 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 994,
+        "extraction_count": 8
+      },
+      "age_seconds": 6084.8
+    },
+    {
+      "timestamp": 1778459452.8709898,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MT - HB178]: 1 passages",
+      "details": {
+        "document": "MT - HB178",
+        "passage_count": 1
+      },
+      "age_seconds": 6285.8
+    },
+    {
+      "timestamp": 1778459452.8540576,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NH - TMP-NH-AIRESPONSIVEGE]: 6 extractions, 0 failures",
+      "details": {
+        "document": "NH - TMP-NH-AIRESPONSIVEGE",
+        "extractions": 6,
+        "failures": 0
+      },
+      "age_seconds": 6285.8
+    },
+    {
+      "timestamp": 1778459367.469486,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 433: 6 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 433,
+        "extraction_count": 6
+      },
+      "age_seconds": 6371.2
+    },
+    {
+      "timestamp": 1778459367.4348342,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 433",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 433,
+        "tier": "D"
+      },
+      "age_seconds": 6371.2
+    },
+    {
+      "timestamp": 1778459292.7950711,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NH - TMP-NH-AIRESPONSIVEGE]: 1 passages",
+      "details": {
+        "document": "NH - TMP-NH-AIRESPONSIVEGE",
+        "passage_count": 1
+      },
+      "age_seconds": 6445.8
+    },
+    {
+      "timestamp": 1778459292.7745576,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MD - TMP-MD-UTILIZATIONREV]: 53 extractions, 0 failures",
+      "details": {
+        "document": "MD - TMP-MD-UTILIZATIONREV",
+        "extractions": 53,
+        "failures": 0
+      },
+      "age_seconds": 6445.9
+    },
+    {
+      "timestamp": 1778459251.9188244,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 966: 13 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 966,
+        "extraction_count": 13
+      },
+      "age_seconds": 6486.7
+    },
+    {
+      "timestamp": 1778459251.908913,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 966",
+      "details": {
+        "agent": "obligation",
+        "record_id": 966,
+        "tier": "D"
+      },
+      "age_seconds": 6486.7
+    },
+    {
+      "timestamp": 1778459251.8999038,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 966",
+      "details": {
+        "agent": "obligation",
+        "record_id": 966,
+        "tier": "D"
+      },
+      "age_seconds": 6486.7
+    },
+    {
+      "timestamp": 1778459251.8737392,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 966",
+      "details": {
+        "agent": "preemption",
+        "record_id": 966,
+        "tier": "D"
+      },
+      "age_seconds": 6486.8
+    },
+    {
+      "timestamp": 1778459251.8679965,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 966",
+      "details": {
+        "agent": "preemption",
+        "record_id": 966,
+        "tier": "D"
+      },
+      "age_seconds": 6486.8
+    },
+    {
+      "timestamp": 1778459189.2130504,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 965: 20 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 965,
+        "extraction_count": 20
+      },
+      "age_seconds": 6549.4
+    },
+    {
+      "timestamp": 1778459189.1265306,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 965",
+      "details": {
+        "agent": "preemption",
+        "record_id": 965,
+        "tier": "D"
+      },
+      "age_seconds": 6549.5
+    },
+    {
+      "timestamp": 1778459019.465721,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 964: 20 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 964,
+        "extraction_count": 20
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.465721,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "obligation",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.455759,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "obligation",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.445555,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 964: 1 validation error for DefinitionActorPayload\ndefinition_text\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneTyp",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 964,
+        "error": "1 validation error for DefinitionActorPayload\ndefinition_text\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.4350016,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "preemption",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.42976,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "preemption",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.4214058,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "preemption",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.4157233,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.2
+    },
+    {
+      "timestamp": 1778459019.3701386,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.3
+    },
+    {
+      "timestamp": 1778459019.3574288,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 964",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 964,
+        "tier": "D"
+      },
+      "age_seconds": 6719.3
+    },
+    {
+      "timestamp": 1778458824.0879045,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MD - TMP-MD-UTILIZATIONREV]: 3 passages",
+      "details": {
+        "document": "MD - TMP-MD-UTILIZATIONREV",
+        "passage_count": 3
+      },
+      "age_seconds": 6914.5
+    },
+    {
+      "timestamp": 1778458824.074788,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [KS - SB 2313]: 11 extractions, 0 failures",
+      "details": {
+        "document": "KS - SB 2313",
+        "extractions": 11,
+        "failures": 0
+      },
+      "age_seconds": 6914.6
+    },
+    {
+      "timestamp": 1778458763.1116912,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 277: 11 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 277,
+        "extraction_count": 11
+      },
+      "age_seconds": 6975.5
+    },
+    {
+      "timestamp": 1778458763.1116912,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 277",
+      "details": {
+        "agent": "obligation",
+        "record_id": 277,
+        "tier": "D"
+      },
+      "age_seconds": 6975.5
+    },
+    {
+      "timestamp": 1778458644.331564,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [KS - SB 2313]: 1 passages",
+      "details": {
+        "document": "KS - SB 2313",
+        "passage_count": 1
+      },
+      "age_seconds": 7094.3
+    },
+    {
+      "timestamp": 1778458644.3161876,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - SB 420]: 0 extractions, 0 failures",
+      "details": {
+        "document": "CA - SB 420",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 7094.3
+    },
+    {
+      "timestamp": 1778458608.3883233,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 73: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 73,
+        "extraction_count": 0
+      },
+      "age_seconds": 7130.2
+    },
+    {
+      "timestamp": 1778458602.0460737,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - SB 420]: 1 passages",
+      "details": {
+        "document": "CA - SB 420",
+        "passage_count": 1
+      },
+      "age_seconds": 7136.6
+    },
+    {
+      "timestamp": 1778458602.0241106,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-AICALIFORNIABO]: 7 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-AICALIFORNIABO",
+        "extractions": 7,
+        "failures": 0
+      },
+      "age_seconds": 7136.6
+    },
+    {
+      "timestamp": 1778458546.1041431,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 851: 7 extractions [CHAPTER 6.]",
+      "details": {
+        "record_id": 851,
+        "extraction_count": 7
+      },
+      "age_seconds": 7192.5
+    },
+    {
+      "timestamp": 1778458546.1041431,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 851",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 851,
+        "tier": "D"
+      },
+      "age_seconds": 7192.5
+    },
+    {
+      "timestamp": 1778458513.4904716,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-AICALIFORNIABO]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-AICALIFORNIABO",
+        "passage_count": 1
+      },
+      "age_seconds": 7225.1
+    },
+    {
+      "timestamp": 1778458513.4545805,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CO - SB 205]: 13 extractions, 0 failures",
+      "details": {
+        "document": "CO - SB 205",
+        "extractions": 13,
+        "failures": 0
+      },
+      "age_seconds": 7225.2
+    },
+    {
+      "timestamp": 1778458410.5663984,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 919: 13 extractions [\u00a7 6-1-1701.]",
+      "details": {
+        "record_id": 919,
+        "extraction_count": 13
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5663984,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[preemption] Failed on record 919: Expecting ':' delimiter: line 98 column 29 (char 5318)",
+      "details": {
+        "agent": "preemption",
+        "record_id": 919,
+        "error": "Expecting ':' delimiter: line 98 column 29 (char 5318)"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5648205,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[obligation] Failed on record 919: timed out",
+      "details": {
+        "agent": "obligation",
+        "record_id": 919,
+        "error": "timed out"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5627291,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 919: timed out",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 919,
+        "error": "timed out"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5594718,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[compliance_mechanism] Failed on record 919: timed out",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 919,
+        "error": "timed out"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5270023,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5135064,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.5066426,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.493634,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.487657,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.1
+    },
+    {
+      "timestamp": 1778458410.48125,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 919",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 919,
+        "tier": "D"
+      },
+      "age_seconds": 7328.2
+    },
+    {
+      "timestamp": 1778457623.6717248,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CO - SB 205]: 1 passages",
+      "details": {
+        "document": "CO - SB 205",
+        "passage_count": 1
+      },
+      "age_seconds": 8115.0
+    },
+    {
+      "timestamp": 1778457623.653297,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NH - TMP-NH-NEWHAMPSHIREAI]: 14 extractions, 0 failures",
+      "details": {
+        "document": "NH - TMP-NH-NEWHAMPSHIREAI",
+        "extractions": 14,
+        "failures": 0
+      },
+      "age_seconds": 8115.0
+    },
+    {
+      "timestamp": 1778457566.382624,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 412: 5 extractions [Paragraph 4]",
+      "details": {
+        "record_id": 412,
+        "extraction_count": 5
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457566.382624,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 412",
+      "details": {
+        "agent": "obligation",
+        "record_id": 412,
+        "tier": "D"
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457566.3775933,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 412",
+      "details": {
+        "agent": "obligation",
+        "record_id": 412,
+        "tier": "D"
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457566.3728251,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 412",
+      "details": {
+        "agent": "obligation",
+        "record_id": 412,
+        "tier": "D"
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457566.3680105,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 412",
+      "details": {
+        "agent": "obligation",
+        "record_id": 412,
+        "tier": "D"
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457566.3610828,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 412",
+      "details": {
+        "agent": "obligation",
+        "record_id": 412,
+        "tier": "D"
+      },
+      "age_seconds": 8172.3
+    },
+    {
+      "timestamp": 1778457481.5924692,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 411: 1 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 411,
+        "extraction_count": 1
+      },
+      "age_seconds": 8257.0
+    },
+    {
+      "timestamp": 1778457481.5914643,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 411",
+      "details": {
+        "agent": "obligation",
+        "record_id": 411,
+        "tier": "D"
+      },
+      "age_seconds": 8257.0
+    },
+    {
+      "timestamp": 1778457461.6221886,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 410: 4 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 410,
+        "extraction_count": 4
+      },
+      "age_seconds": 8277.0
+    },
+    {
+      "timestamp": 1778457461.6221886,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 410",
+      "details": {
+        "agent": "obligation",
+        "record_id": 410,
+        "tier": "D"
+      },
+      "age_seconds": 8277.0
+    },
+    {
+      "timestamp": 1778457461.6159382,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 410",
+      "details": {
+        "agent": "obligation",
+        "record_id": 410,
+        "tier": "D"
+      },
+      "age_seconds": 8277.0
+    },
+    {
+      "timestamp": 1778457461.6102428,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 410",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 410,
+        "tier": "D"
+      },
+      "age_seconds": 8277.0
+    },
+    {
+      "timestamp": 1778457461.605002,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 410",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 410,
+        "tier": "D"
+      },
+      "age_seconds": 8277.0
+    },
+    {
+      "timestamp": 1778457422.1781127,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 409: 4 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 409,
+        "extraction_count": 4
+      },
+      "age_seconds": 8316.5
+    },
+    {
+      "timestamp": 1778457422.1781127,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 409",
+      "details": {
+        "agent": "obligation",
+        "record_id": 409,
+        "tier": "D"
+      },
+      "age_seconds": 8316.5
+    },
+    {
+      "timestamp": 1778457422.1713593,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 409",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 409,
+        "tier": "D"
+      },
+      "age_seconds": 8316.5
+    },
+    {
+      "timestamp": 1778457422.1645372,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 409",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 409,
+        "tier": "D"
+      },
+      "age_seconds": 8316.5
+    },
+    {
+      "timestamp": 1778457422.156905,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 409",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 409,
+        "tier": "D"
+      },
+      "age_seconds": 8316.5
+    },
+    {
+      "timestamp": 1778457370.5825746,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NH - TMP-NH-NEWHAMPSHIREAI]: 4 passages",
+      "details": {
+        "document": "NH - TMP-NH-NEWHAMPSHIREAI",
+        "passage_count": 4
+      },
+      "age_seconds": 8368.1
+    },
+    {
+      "timestamp": 1778457370.5468407,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NJ - TMP-NJ-CRIMINALPENALT]: 23 extractions, 0 failures",
+      "details": {
+        "document": "NJ - TMP-NJ-CRIMINALPENALT",
+        "extractions": 23,
+        "failures": 0
+      },
+      "age_seconds": 8368.1
+    },
+    {
+      "timestamp": 1778457295.8566859,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 395: 4 extractions [Paragraph 7]",
+      "details": {
+        "record_id": 395,
+        "extraction_count": 4
+      },
+      "age_seconds": 8442.8
+    },
+    {
+      "timestamp": 1778457295.8566859,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 395",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 395,
+        "tier": "D"
+      },
+      "age_seconds": 8442.8
+    },
+    {
+      "timestamp": 1778457295.8514075,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 395",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 395,
+        "tier": "D"
+      },
+      "age_seconds": 8442.8
+    },
+    {
+      "timestamp": 1778457295.8446054,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 395",
+      "details": {
+        "agent": "obligation",
+        "record_id": 395,
+        "tier": "D"
+      },
+      "age_seconds": 8442.8
+    },
+    {
+      "timestamp": 1778457295.8388073,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 395",
+      "details": {
+        "agent": "obligation",
+        "record_id": 395,
+        "tier": "D"
+      },
+      "age_seconds": 8442.8
+    },
+    {
+      "timestamp": 1778457175.7390852,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 394: 5 extractions [Paragraph 6]",
+      "details": {
+        "record_id": 394,
+        "extraction_count": 5
+      },
+      "age_seconds": 8562.9
+    },
+    {
+      "timestamp": 1778457175.7390852,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 394",
+      "details": {
+        "agent": "obligation",
+        "record_id": 394,
+        "tier": "D"
+      },
+      "age_seconds": 8562.9
+    },
+    {
+      "timestamp": 1778457175.7331336,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 394",
+      "details": {
+        "agent": "preemption",
+        "record_id": 394,
+        "tier": "D"
+      },
+      "age_seconds": 8562.9
+    },
+    {
+      "timestamp": 1778457175.7267904,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 394",
+      "details": {
+        "agent": "preemption",
+        "record_id": 394,
+        "tier": "D"
+      },
+      "age_seconds": 8562.9
+    },
+    {
+      "timestamp": 1778457089.7904654,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 393: 3 extractions [Paragraph 5]",
+      "details": {
+        "record_id": 393,
+        "extraction_count": 3
+      },
+      "age_seconds": 8648.8
+    },
+    {
+      "timestamp": 1778457044.275627,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 392: 3 extractions [Paragraph 4]",
+      "details": {
+        "record_id": 392,
+        "extraction_count": 3
+      },
+      "age_seconds": 8694.4
+    },
+    {
+      "timestamp": 1778457027.756214,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 391: 8 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 391,
+        "extraction_count": 8
+      },
+      "age_seconds": 8710.9
+    },
+    {
+      "timestamp": 1778457027.7339904,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 391",
+      "details": {
+        "agent": "obligation",
+        "record_id": 391,
+        "tier": "D"
+      },
+      "age_seconds": 8710.9
+    },
+    {
+      "timestamp": 1778457027.7149742,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 391",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 391,
+        "tier": "D"
+      },
+      "age_seconds": 8710.9
+    },
+    {
+      "timestamp": 1778456955.3966181,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 389: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 389,
+        "extraction_count": 0
+      },
+      "age_seconds": 8783.2
+    },
+    {
+      "timestamp": 1778456920.51239,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NJ - TMP-NJ-CRIMINALPENALT]: 6 passages",
+      "details": {
+        "document": "NJ - TMP-NJ-CRIMINALPENALT",
+        "passage_count": 6
+      },
+      "age_seconds": 8818.1
+    },
+    {
+      "timestamp": 1778456920.4918013,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MA - HB 97]: 0 extractions, 0 failures",
+      "details": {
+        "document": "MA - HB 97",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 8818.1
+    },
+    {
+      "timestamp": 1778456883.8659136,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 346: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 346,
+        "extraction_count": 0
+      },
+      "age_seconds": 8854.8
+    },
+    {
+      "timestamp": 1778456873.0679069,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MA - HB 97]: 1 passages",
+      "details": {
+        "document": "MA - HB 97",
+        "passage_count": 1
+      },
+      "age_seconds": 8865.6
+    },
+    {
+      "timestamp": 1778456873.0535283,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [AZ - SB 1359]: 9 extractions, 0 failures",
+      "details": {
+        "document": "AZ - SB 1359",
+        "extractions": 9,
+        "failures": 0
+      },
+      "age_seconds": 8865.6
+    },
+    {
+      "timestamp": 1778456790.2261894,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 2: 9 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 2,
+        "extraction_count": 9
+      },
+      "age_seconds": 8948.4
+    },
+    {
+      "timestamp": 1778456790.2261894,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 2",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 2,
+        "tier": "D"
+      },
+      "age_seconds": 8948.4
+    },
+    {
+      "timestamp": 1778456790.2204633,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 2",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 2,
+        "tier": "D"
+      },
+      "age_seconds": 8948.4
+    },
+    {
+      "timestamp": 1778456790.2088454,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 2",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 2,
+        "tier": "D"
+      },
+      "age_seconds": 8948.4
+    },
+    {
+      "timestamp": 1778456761.514179,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [AZ - SB 1359]: 1 passages",
+      "details": {
+        "document": "AZ - SB 1359",
+        "passage_count": 1
+      },
+      "age_seconds": 8977.1
+    },
+    {
+      "timestamp": 1778456761.5020974,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [TX - HB 581]: 12 extractions, 0 failures",
+      "details": {
+        "document": "TX - HB 581",
+        "extractions": 12,
+        "failures": 0
+      },
+      "age_seconds": 8977.1
+    },
+    {
+      "timestamp": 1778456702.572152,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 583: 3 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 583,
+        "extraction_count": 3
+      },
+      "age_seconds": 9036.1
+    },
+    {
+      "timestamp": 1778456702.566192,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 583",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 583,
+        "tier": "D"
+      },
+      "age_seconds": 9036.1
+    },
+    {
+      "timestamp": 1778456702.5560758,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 583",
+      "details": {
+        "agent": "obligation",
+        "record_id": 583,
+        "tier": "D"
+      },
+      "age_seconds": 9036.1
+    },
+    {
+      "timestamp": 1778456584.5907655,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 582: 3 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 582,
+        "extraction_count": 3
+      },
+      "age_seconds": 9154.0
+    },
+    {
+      "timestamp": 1778456584.5907655,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 582",
+      "details": {
+        "agent": "obligation",
+        "record_id": 582,
+        "tier": "D"
+      },
+      "age_seconds": 9154.0
+    },
+    {
+      "timestamp": 1778456584.5851383,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 582",
+      "details": {
+        "agent": "obligation",
+        "record_id": 582,
+        "tier": "D"
+      },
+      "age_seconds": 9154.1
+    },
+    {
+      "timestamp": 1778456584.5789065,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 582",
+      "details": {
+        "agent": "obligation",
+        "record_id": 582,
+        "tier": "D"
+      },
+      "age_seconds": 9154.1
+    },
+    {
+      "timestamp": 1778456554.0552285,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 581: 6 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 581,
+        "extraction_count": 6
+      },
+      "age_seconds": 9184.6
+    },
+    {
+      "timestamp": 1778456554.0552285,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 581",
+      "details": {
+        "agent": "obligation",
+        "record_id": 581,
+        "tier": "D"
+      },
+      "age_seconds": 9184.6
+    },
+    {
+      "timestamp": 1778456554.0478206,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 581",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 581,
+        "tier": "D"
+      },
+      "age_seconds": 9184.6
+    },
+    {
+      "timestamp": 1778456554.0419877,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 581",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 581,
+        "tier": "D"
+      },
+      "age_seconds": 9184.6
+    },
+    {
+      "timestamp": 1778456554.0248055,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 581",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 581,
+        "tier": "D"
+      },
+      "age_seconds": 9184.6
+    },
+    {
+      "timestamp": 1778456501.476216,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [TX - HB 581]: 3 passages",
+      "details": {
+        "document": "TX - HB 581",
+        "passage_count": 3
+      },
+      "age_seconds": 9237.2
+    },
+    {
+      "timestamp": 1778456501.4541821,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [KY - HB 207]: 0 extractions, 0 failures",
+      "details": {
+        "document": "KY - HB 207",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 9237.2
+    },
+    {
+      "timestamp": 1778456472.2008119,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 918: 0 extractions [Chapter 531]",
+      "details": {
+        "record_id": 918,
+        "extraction_count": 0
+      },
+      "age_seconds": 9266.4
+    },
+    {
+      "timestamp": 1778456460.4101024,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [KY - HB 207]: 1 passages",
+      "details": {
+        "document": "KY - HB 207",
+        "passage_count": 1
+      },
+      "age_seconds": 9278.2
+    },
+    {
+      "timestamp": 1778456460.3976583,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NY - TMP-NY-ARTIFICIALINTE]: 14 extractions, 0 failures",
+      "details": {
+        "document": "NY - TMP-NY-ARTIFICIALINTE",
+        "extractions": 14,
+        "failures": 0
+      },
+      "age_seconds": 9278.2
+    },
+    {
+      "timestamp": 1778456422.878541,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 424: 14 extractions [CHAPTER 17]",
+      "details": {
+        "record_id": 424,
+        "extraction_count": 14
+      },
+      "age_seconds": 9315.8
+    },
+    {
+      "timestamp": 1778456422.878541,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 424",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 424,
+        "tier": "D"
+      },
+      "age_seconds": 9315.8
+    },
+    {
+      "timestamp": 1778456422.8736877,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 424",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 424,
+        "tier": "D"
+      },
+      "age_seconds": 9315.8
+    },
+    {
+      "timestamp": 1778456422.8694005,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 424",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 424,
+        "tier": "D"
+      },
+      "age_seconds": 9315.8
+    },
+    {
+      "timestamp": 1778456146.6285655,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NY - TMP-NY-ARTIFICIALINTE]: 1 passages",
+      "details": {
+        "document": "NY - TMP-NY-ARTIFICIALINTE",
+        "passage_count": 1
+      },
+      "age_seconds": 9592.0
+    },
+    {
+      "timestamp": 1778456146.615486,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [RI - SB 627]: 0 extractions, 0 failures",
+      "details": {
+        "document": "RI - SB 627",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 9592.0
+    },
+    {
+      "timestamp": 1778456098.4644654,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 505: 0 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 505,
+        "extraction_count": 0
+      },
+      "age_seconds": 9640.2
+    },
+    {
+      "timestamp": 1778456059.5162723,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [RI - SB 627]: 1 passages",
+      "details": {
+        "document": "RI - SB 627",
+        "passage_count": 1
+      },
+      "age_seconds": 9679.1
+    },
+    {
+      "timestamp": 1778456059.5048423,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ME - TMP-ME-AICOMMUNICATIO]: 4 extractions, 0 failures",
+      "details": {
+        "document": "ME - TMP-ME-AICOMMUNICATIO",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 9679.1
+    },
+    {
+      "timestamp": 1778455983.0747128,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 288: 4 extractions [\u00a71500-Y.]",
+      "details": {
+        "record_id": 288,
+        "extraction_count": 4
+      },
+      "age_seconds": 9755.6
+    },
+    {
+      "timestamp": 1778455941.120308,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ME - TMP-ME-AICOMMUNICATIO]: 1 passages",
+      "details": {
+        "document": "ME - TMP-ME-AICOMMUNICATIO",
+        "passage_count": 1
+      },
+      "age_seconds": 9797.5
+    },
+    {
+      "timestamp": 1778455941.1045728,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - SB 981]: 29 extractions, 0 failures",
+      "details": {
+        "document": "CA - SB 981",
+        "extractions": 29,
+        "failures": 0
+      },
+      "age_seconds": 9797.5
+    },
+    {
+      "timestamp": 1778455854.511808,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 57: 29 extractions [Chapter 22.7]",
+      "details": {
+        "record_id": 57,
+        "extraction_count": 29
+      },
+      "age_seconds": 9884.1
+    },
+    {
+      "timestamp": 1778455854.4471076,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 57",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 57,
+        "tier": "D"
+      },
+      "age_seconds": 9884.2
+    },
+    {
+      "timestamp": 1778455412.0234144,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - SB 981]: 1 passages",
+      "details": {
+        "document": "CA - SB 981",
+        "passage_count": 1
+      },
+      "age_seconds": 10326.6
+    },
+    {
+      "timestamp": 1778455412.01204,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NY - HB 60]: 24 extractions, 0 failures",
+      "details": {
+        "document": "NY - HB 60",
+        "extractions": 24,
+        "failures": 0
+      },
+      "age_seconds": 10326.6
+    },
+    {
+      "timestamp": 1778455376.501023,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 465: 13 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 465,
+        "extraction_count": 13
+      },
+      "age_seconds": 10362.1
+    },
+    {
+      "timestamp": 1778455376.501023,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.1
+    },
+    {
+      "timestamp": 1778455376.496268,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.1
+    },
+    {
+      "timestamp": 1778455376.4915545,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.1
+    },
+    {
+      "timestamp": 1778455376.4872115,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.1
+    },
+    {
+      "timestamp": 1778455376.4824903,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.4766772,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "obligation",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.470357,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.4650474,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.460293,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.4550524,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.4491913,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.4432356,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455376.43636,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 465",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 465,
+        "tier": "D"
+      },
+      "age_seconds": 10362.2
+    },
+    {
+      "timestamp": 1778455338.0152395,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 463: 11 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 463,
+        "extraction_count": 11
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455338.0152395,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[obligation] Failed on record 463: Expecting property name enclosed in double quotes: line 147 column 32 (char 5492)",
+      "details": {
+        "agent": "obligation",
+        "record_id": 463,
+        "error": "Expecting property name enclosed in double quotes: line 147 column 32 (char 5492)"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455338.010881,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455338.0045023,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455337.999217,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455337.9939487,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455337.9870143,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.6
+    },
+    {
+      "timestamp": 1778455337.9822698,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455337.9770105,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455337.9700546,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455337.9615526,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455337.9539711,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455337.945987,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 463",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 463,
+        "tier": "D"
+      },
+      "age_seconds": 10400.7
+    },
+    {
+      "timestamp": 1778455206.2819307,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NY - HB 60]: 2 passages",
+      "details": {
+        "document": "NY - HB 60",
+        "passage_count": 2
+      },
+      "age_seconds": 10532.4
+    },
+    {
+      "timestamp": 1778455206.267561,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ID - TMP-ID-TOPERSONHOODIC]: 3 extractions, 0 failures",
+      "details": {
+        "document": "ID - TMP-ID-TOPERSONHOODIC",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 10532.4
+    },
+    {
+      "timestamp": 1778455145.304773,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 255: 3 extractions [Chapter 3]",
+      "details": {
+        "record_id": 255,
+        "extraction_count": 3
+      },
+      "age_seconds": 10593.3
+    },
+    {
+      "timestamp": 1778455100.0608895,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ID - TMP-ID-TOPERSONHOODIC]: 1 passages",
+      "details": {
+        "document": "ID - TMP-ID-TOPERSONHOODIC",
+        "passage_count": 1
+      },
+      "age_seconds": 10638.6
+    },
+    {
+      "timestamp": 1778455100.039538,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 2839]: 32 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 2839",
+        "extractions": 32,
+        "failures": 0
+      },
+      "age_seconds": 10638.6
+    },
+    {
+      "timestamp": 1778455060.4345136,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 40: 0 extractions [Section 1.5]",
+      "details": {
+        "record_id": 40,
+        "extraction_count": 0
+      },
+      "age_seconds": 10678.2
+    },
+    {
+      "timestamp": 1778455036.498362,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 39: 32 extractions [Section 20012]",
+      "details": {
+        "record_id": 39,
+        "extraction_count": 32
+      },
+      "age_seconds": 10702.1
+    },
+    {
+      "timestamp": 1778454798.2114463,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 2839]: 2 passages",
+      "details": {
+        "document": "CA - AB 2839",
+        "passage_count": 2
+      },
+      "age_seconds": 10940.4
+    },
+    {
+      "timestamp": 1778454798.1966815,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [DE - HB 353]: 4 extractions, 0 failures",
+      "details": {
+        "document": "DE - HB 353",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 10940.4
+    },
+    {
+      "timestamp": 1778454761.3834043,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 191: 4 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 191,
+        "extraction_count": 4
+      },
+      "age_seconds": 10977.3
+    },
+    {
+      "timestamp": 1778454660.4602122,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [DE - HB 353]: 1 passages",
+      "details": {
+        "document": "DE - HB 353",
+        "passage_count": 1
+      },
+      "age_seconds": 11078.2
+    },
+    {
+      "timestamp": 1778454660.4497547,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-LAWENFORCEMENT]: 17 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-LAWENFORCEMENT",
+        "extractions": 17,
+        "failures": 0
+      },
+      "age_seconds": 11078.2
+    },
+    {
+      "timestamp": 1778454564.3209002,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 910: 17 extractions [Section 13663]",
+      "details": {
+        "record_id": 910,
+        "extraction_count": 17
+      },
+      "age_seconds": 11174.3
+    },
+    {
+      "timestamp": 1778454307.9010217,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-LAWENFORCEMENT]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-LAWENFORCEMENT",
+        "passage_count": 1
+      },
+      "age_seconds": 11430.7
+    },
+    {
+      "timestamp": 1778454307.8898208,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-AICALIFORNIACO]: 10 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-AICALIFORNIACO",
+        "extractions": 10,
+        "failures": 0
+      },
+      "age_seconds": 11430.7
+    },
+    {
+      "timestamp": 1778454262.3856533,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 852: 10 extractions [Chapter 22.6]",
+      "details": {
+        "record_id": 852,
+        "extraction_count": 10
+      },
+      "age_seconds": 11476.3
+    },
+    {
+      "timestamp": 1778454262.3856533,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[obligation] Failed on record 852: Expecting property name enclosed in double quotes: line 118 column 143 (char 5619)",
+      "details": {
+        "agent": "obligation",
+        "record_id": 852,
+        "error": "Expecting property name enclosed in double quotes: line 118 column 143 (char 5619)"
+      },
+      "age_seconds": 11476.3
+    },
+    {
+      "timestamp": 1778454262.382293,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 852",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 852,
+        "tier": "D"
+      },
+      "age_seconds": 11476.3
+    },
+    {
+      "timestamp": 1778454104.5709605,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-AICALIFORNIACO]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-AICALIFORNIACO",
+        "passage_count": 1
+      },
+      "age_seconds": 11634.1
+    },
+    {
+      "timestamp": 1778454104.556792,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [MT - TMP-MT-DECISIONMONTAN]: 3 extractions, 0 failures",
+      "details": {
+        "document": "MT - TMP-MT-DECISIONMONTAN",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 11634.1
+    },
+    {
+      "timestamp": 1778454072.053881,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 807: 3 extractions [Part 28.]",
+      "details": {
+        "record_id": 807,
+        "extraction_count": 3
+      },
+      "age_seconds": 11666.6
+    },
+    {
+      "timestamp": 1778453980.6978507,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [MT - TMP-MT-DECISIONMONTAN]: 1 passages",
+      "details": {
+        "document": "MT - TMP-MT-DECISIONMONTAN",
+        "passage_count": 1
+      },
+      "age_seconds": 11757.9
+    },
+    {
+      "timestamp": 1778453980.6870775,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [LA - TMP-LA-LOUISIANAAIINT]: 3 extractions, 0 failures",
+      "details": {
+        "document": "LA - TMP-LA-LOUISIANAAIINT",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 11757.9
+    },
+    {
+      "timestamp": 1778453914.1398277,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 285: 2 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 285,
+        "extraction_count": 2
+      },
+      "age_seconds": 11824.5
+    },
+    {
+      "timestamp": 1778453914.1398277,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 285",
+      "details": {
+        "agent": "obligation",
+        "record_id": 285,
+        "tier": "D"
+      },
+      "age_seconds": 11824.5
+    },
+    {
+      "timestamp": 1778453872.733848,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 284: 1 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 284,
+        "extraction_count": 1
+      },
+      "age_seconds": 11865.9
+    },
+    {
+      "timestamp": 1778453872.733848,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[definition_actor] Failed on record 284: Empty response from local LLM (finish_reason=length, model=google/gemma-4-26b-a4b)",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 284,
+        "error": "Empty response from local LLM (finish_reason=length, model=google/gemma-4-26b-a4b)"
+      },
+      "age_seconds": 11865.9
+    },
+    {
+      "timestamp": 1778453594.7910862,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [LA - TMP-LA-LOUISIANAAIINT]: 2 passages",
+      "details": {
+        "document": "LA - TMP-LA-LOUISIANAAIINT",
+        "passage_count": 2
+      },
+      "age_seconds": 12143.8
+    },
+    {
+      "timestamp": 1778453594.7715702,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [UT - TMP-UT-INTELLIGENCECO]: 0 extractions, 0 failures",
+      "details": {
+        "document": "UT - TMP-UT-INTELLIGENCECO",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 12143.9
+    },
+    {
+      "timestamp": 1778453565.7450073,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 616: 0 extractions [Paragraph 4]",
+      "details": {
+        "record_id": 616,
+        "extraction_count": 0
+      },
+      "age_seconds": 12172.9
+    },
+    {
+      "timestamp": 1778453561.144257,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 615: 0 extractions [Paragraph 3]",
+      "details": {
+        "record_id": 615,
+        "extraction_count": 0
+      },
+      "age_seconds": 12177.5
+    },
+    {
+      "timestamp": 1778453561.1395392,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 614: 0 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 614,
+        "extraction_count": 0
+      },
+      "age_seconds": 12177.5
+    },
+    {
+      "timestamp": 1778453561.1342463,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 613: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 613,
+        "extraction_count": 0
+      },
+      "age_seconds": 12177.5
+    },
+    {
+      "timestamp": 1778453561.1251295,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [UT - TMP-UT-INTELLIGENCECO]: 4 passages",
+      "details": {
+        "document": "UT - TMP-UT-INTELLIGENCECO",
+        "passage_count": 4
+      },
+      "age_seconds": 12177.5
+    },
+    {
+      "timestamp": 1778453561.0934317,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [SD - SB 20]: 4 extractions, 0 failures",
+      "details": {
+        "document": "SD - SB 20",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 12177.5
+    },
+    {
+      "timestamp": 1778453525.1519146,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 548: 4 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 548,
+        "extraction_count": 4
+      },
+      "age_seconds": 12213.5
+    },
+    {
+      "timestamp": 1778453525.1519146,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 548",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 548,
+        "tier": "D"
+      },
+      "age_seconds": 12213.5
+    },
+    {
+      "timestamp": 1778453525.1461642,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 548",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 548,
+        "tier": "D"
+      },
+      "age_seconds": 12213.5
+    },
+    {
+      "timestamp": 1778453525.1413217,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 548",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 548,
+        "tier": "D"
+      },
+      "age_seconds": 12213.5
+    },
+    {
+      "timestamp": 1778453511.1479137,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [SD - SB 20]: 1 passages",
+      "details": {
+        "document": "SD - SB 20",
+        "passage_count": 1
+      },
+      "age_seconds": 12227.5
+    },
+    {
+      "timestamp": 1778453511.1216388,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [IA - TMP-IA-EXPLOITATIONOF]: 7 extractions, 0 failures",
+      "details": {
+        "document": "IA - TMP-IA-EXPLOITATIONOF",
+        "extractions": 7,
+        "failures": 0
+      },
+      "age_seconds": 12227.5
+    },
+    {
+      "timestamp": 1778453430.4570372,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 272: 7 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 272,
+        "extraction_count": 7
+      },
+      "age_seconds": 12308.2
+    },
+    {
+      "timestamp": 1778453378.478925,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [IA - TMP-IA-EXPLOITATIONOF]: 1 passages",
+      "details": {
+        "document": "IA - TMP-IA-EXPLOITATIONOF",
+        "passage_count": 1
+      },
+      "age_seconds": 12360.2
+    },
+    {
+      "timestamp": 1778453378.4515183,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-MEDIACALIFORNI]: 40 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-MEDIACALIFORNI",
+        "extractions": 40,
+        "failures": 0
+      },
+      "age_seconds": 12360.2
+    },
+    {
+      "timestamp": 1778453341.5999284,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 118: 40 extractions [CHAPTER 25.]",
+      "details": {
+        "record_id": 118,
+        "extraction_count": 40
+      },
+      "age_seconds": 12397.0
+    },
+    {
+      "timestamp": 1778453341.5616267,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 118",
+      "details": {
+        "agent": "obligation",
+        "record_id": 118,
+        "tier": "D"
+      },
+      "age_seconds": 12397.1
+    },
+    {
+      "timestamp": 1778453341.524034,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 118",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 118,
+        "tier": "D"
+      },
+      "age_seconds": 12397.1
+    },
+    {
+      "timestamp": 1778453341.518808,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[threshold_exception] Failed on record 118: HTTP 400 for model google/gemma-4-26b-a4b: {\"error\":\"Failed to parse input at pos 0: <|channel>thought\\n<channel|>{\\n  \\\"extractions\\\": [\\n    {\\n    ",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 118,
+        "error": "HTTP 400 for model google/gemma-4-26b-a4b: {\"error\":\"Failed to parse input at pos 0: <|channel>thought\\n<channel|>{\\n  \\\"extractions\\\": [\\n    {\\n      \\\"threshold_sub_type\\\": \\\"scope\\\",\\n      \\\"threshold_type\\\": \\\"consumer_data_threshold\\\",\\n      \\\"threshold_value\\\": \\\"1000000\\\",\\n      \\\"threshold_unit\\\": \\\"monthly visitors or users\\\",\\n      \\\"threshold_condition\\\": \\\"\u201cCovered provider\u201d means a person that creates, codes, or otherwise produces a generative artificial intelligence system that has over 1,000,000 monthly visitors or us"
+      },
+      "age_seconds": 12397.1
+    },
+    {
+      "timestamp": 1778453341.4014053,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 118",
+      "details": {
+        "agent": "preemption",
+        "record_id": 118,
+        "tier": "D"
+      },
+      "age_seconds": 12397.2
+    },
+    {
+      "timestamp": 1778452912.021178,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-MEDIACALIFORNI]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-MEDIACALIFORNI",
+        "passage_count": 1
+      },
+      "age_seconds": 12826.6
+    },
+    {
+      "timestamp": 1778452911.981927,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [IL - HB1806]: 28 extractions, 0 failures",
+      "details": {
+        "document": "IL - HB1806",
+        "extractions": 28,
+        "failures": 0
+      },
+      "age_seconds": 12826.7
+    },
+    {
+      "timestamp": 1778452857.5613992,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 260: 28 extractions [Section 1.]",
+      "details": {
+        "record_id": 260,
+        "extraction_count": 28
+      },
+      "age_seconds": 12881.1
+    },
+    {
+      "timestamp": 1778452857.5421169,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 260",
+      "details": {
+        "agent": "preemption",
+        "record_id": 260,
+        "tier": "D"
+      },
+      "age_seconds": 12881.1
+    },
+    {
+      "timestamp": 1778452857.4338887,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 260",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 260,
+        "tier": "D"
+      },
+      "age_seconds": 12881.2
+    },
+    {
+      "timestamp": 1778452526.9730413,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [IL - HB1806]: 1 passages",
+      "details": {
+        "document": "IL - HB1806",
+        "passage_count": 1
+      },
+      "age_seconds": 13211.7
+    },
+    {
+      "timestamp": 1778452526.9529357,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [UT - TMP-UT-LAWENFORCEMENT]: 7 extractions, 0 failures",
+      "details": {
+        "document": "UT - TMP-UT-LAWENFORCEMENT",
+        "extractions": 7,
+        "failures": 0
+      },
+      "age_seconds": 13211.7
+    },
+    {
+      "timestamp": 1778452492.705622,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1208: 6 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 1208,
+        "extraction_count": 6
+      },
+      "age_seconds": 13245.9
+    },
+    {
+      "timestamp": 1778452382.4878886,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1207: 1 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 1207,
+        "extraction_count": 1
+      },
+      "age_seconds": 13356.1
+    },
+    {
+      "timestamp": 1778452165.3123171,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [UT - TMP-UT-LAWENFORCEMENT]: 2 passages",
+      "details": {
+        "document": "UT - TMP-UT-LAWENFORCEMENT",
+        "passage_count": 2
+      },
+      "age_seconds": 13573.3
+    },
+    {
+      "timestamp": 1778452165.285496,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ND - TMP-ND-ANACTRELATINGT]: 3 extractions, 0 failures",
+      "details": {
+        "document": "ND - TMP-ND-ANACTRELATINGT",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 13573.4
+    },
+    {
+      "timestamp": 1778452108.5670567,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 448: 3 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 448,
+        "extraction_count": 3
+      },
+      "age_seconds": 13630.1
+    },
+    {
+      "timestamp": 1778452108.5670567,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[threshold_exception] Failed on record 448: Unterminated string starting at: line 1 column 2249 (char 2248)",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 448,
+        "error": "Unterminated string starting at: line 1 column 2249 (char 2248)"
+      },
+      "age_seconds": 13630.1
+    },
+    {
+      "timestamp": 1778451900.2561195,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 447: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 447,
+        "extraction_count": 0
+      },
+      "age_seconds": 13838.4
+    },
+    {
+      "timestamp": 1778451890.304023,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ND - TMP-ND-ANACTRELATINGT]: 2 passages",
+      "details": {
+        "document": "ND - TMP-ND-ANACTRELATINGT",
+        "passage_count": 2
+      },
+      "age_seconds": 13848.3
+    },
+    {
+      "timestamp": 1778451890.2693527,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 2655]: 35 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 2655",
+        "extractions": 35,
+        "failures": 0
+      },
+      "age_seconds": 13848.4
+    },
+    {
+      "timestamp": 1778451853.122204,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 121: 35 extractions [Chapter 7]",
+      "details": {
+        "record_id": 121,
+        "extraction_count": 35
+      },
+      "age_seconds": 13885.5
+    },
+    {
+      "timestamp": 1778451852.9984627,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 121",
+      "details": {
+        "agent": "obligation",
+        "record_id": 121,
+        "tier": "D"
+      },
+      "age_seconds": 13885.6
+    },
+    {
+      "timestamp": 1778451467.9816422,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 2655]: 1 passages",
+      "details": {
+        "document": "CA - AB 2655",
+        "passage_count": 1
+      },
+      "age_seconds": 14270.7
+    },
+    {
+      "timestamp": 1778451467.9458284,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [TX - SB 2966]: 1 extractions, 0 failures",
+      "details": {
+        "document": "TX - SB 2966",
+        "extractions": 1,
+        "failures": 0
+      },
+      "age_seconds": 14270.7
+    },
+    {
+      "timestamp": 1778451431.9840865,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 597: 1 extractions [SECTION 1.Subtitle]",
+      "details": {
+        "record_id": 597,
+        "extraction_count": 1
+      },
+      "age_seconds": 14306.7
+    },
+    {
+      "timestamp": 1778451431.9840865,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 597",
+      "details": {
+        "agent": "preemption",
+        "record_id": 597,
+        "tier": "D"
+      },
+      "age_seconds": 14306.7
+    },
+    {
+      "timestamp": 1778451398.2553217,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [TX - SB 2966]: 1 passages",
+      "details": {
+        "document": "TX - SB 2966",
+        "passage_count": 1
+      },
+      "age_seconds": 14340.4
+    },
+    {
+      "timestamp": 1778451398.2147336,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [TX - HB 1999]: 0 extractions, 0 failures",
+      "details": {
+        "document": "TX - HB 1999",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 14340.4
+    },
+    {
+      "timestamp": 1778451347.6768467,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [TX - HB 1999]: 1 passages",
+      "details": {
+        "document": "TX - HB 1999",
+        "passage_count": 1
+      },
+      "age_seconds": 14391.0
+    },
+    {
+      "timestamp": 1778451347.6518073,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NY - TMP-NY-AUTOMATEDEMPLO]: 30 extractions, 0 failures",
+      "details": {
+        "document": "NY - TMP-NY-AUTOMATEDEMPLO",
+        "extractions": 30,
+        "failures": 0
+      },
+      "age_seconds": 14391.0
+    },
+    {
+      "timestamp": 1778451316.256667,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 1097: 0 extractions [\u00a7 7.]",
+      "details": {
+        "record_id": 1097,
+        "extraction_count": 0
+      },
+      "age_seconds": 14422.4
+    },
+    {
+      "timestamp": 1778451312.3793411,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1096: 6 extractions [Section 80]",
+      "details": {
+        "record_id": 1096,
+        "extraction_count": 6
+      },
+      "age_seconds": 14426.3
+    },
+    {
+      "timestamp": 1778451312.3682675,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 1096",
+      "details": {
+        "agent": "obligation",
+        "record_id": 1096,
+        "tier": "D"
+      },
+      "age_seconds": 14426.3
+    },
+    {
+      "timestamp": 1778451098.2001107,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1095: 10 extractions [\u00a7 4.]",
+      "details": {
+        "record_id": 1095,
+        "extraction_count": 10
+      },
+      "age_seconds": 14640.4
+    },
+    {
+      "timestamp": 1778450999.6322765,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1094: 5 extractions [\u00a7 402.]",
+      "details": {
+        "record_id": 1094,
+        "extraction_count": 5
+      },
+      "age_seconds": 14739.0
+    },
+    {
+      "timestamp": 1778450999.6271007,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 1094",
+      "details": {
+        "agent": "obligation",
+        "record_id": 1094,
+        "tier": "D"
+      },
+      "age_seconds": 14739.0
+    },
+    {
+      "timestamp": 1778450999.6202562,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 1094",
+      "details": {
+        "agent": "obligation",
+        "record_id": 1094,
+        "tier": "D"
+      },
+      "age_seconds": 14739.0
+    },
+    {
+      "timestamp": 1778450941.2647765,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1093: 6 extractions [\u00a7 3.]",
+      "details": {
+        "record_id": 1093,
+        "extraction_count": 6
+      },
+      "age_seconds": 14797.4
+    },
+    {
+      "timestamp": 1778450848.343877,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 1092: 3 extractions [\u00a7 2.]",
+      "details": {
+        "record_id": 1092,
+        "extraction_count": 3
+      },
+      "age_seconds": 14890.3
+    },
+    {
+      "timestamp": 1778450848.3433459,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 1092",
+      "details": {
+        "agent": "preemption",
+        "record_id": 1092,
+        "tier": "D"
+      },
+      "age_seconds": 14890.3
+    },
+    {
+      "timestamp": 1778450776.0876591,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NY - TMP-NY-AUTOMATEDEMPLO]: 6 passages",
+      "details": {
+        "document": "NY - TMP-NY-AUTOMATEDEMPLO",
+        "passage_count": 6
+      },
+      "age_seconds": 14962.5
+    },
+    {
+      "timestamp": 1778450776.0314367,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-EMPLOYMENTREGU]: 4 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-EMPLOYMENTREGU",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 14962.6
+    },
+    {
+      "timestamp": 1778450681.3118913,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 908: 0 extractions [\u00a7701]",
+      "details": {
+        "record_id": 908,
+        "extraction_count": 0
+      },
+      "age_seconds": 15057.3
+    },
+    {
+      "timestamp": 1778450681.301121,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 906: 4 extractions [Chapter 5.]",
+      "details": {
+        "record_id": 906,
+        "extraction_count": 4
+      },
+      "age_seconds": 15057.3
+    },
+    {
+      "timestamp": 1778450681.2843437,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 906",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 906,
+        "tier": "D"
+      },
+      "age_seconds": 15057.4
+    },
+    {
+      "timestamp": 1778450615.6831257,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-EMPLOYMENTREGU]: 3 passages",
+      "details": {
+        "document": "CA - TMP-CA-EMPLOYMENTREGU",
+        "passage_count": 3
+      },
+      "age_seconds": 15123.0
+    },
+    {
+      "timestamp": 1778450615.6607134,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [FL - HB 919]: 4 extractions, 0 failures",
+      "details": {
+        "document": "FL - HB 919",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 15123.0
+    },
+    {
+      "timestamp": 1778450539.233553,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 237: 4 extractions [Section 106.145]",
+      "details": {
+        "record_id": 237,
+        "extraction_count": 4
+      },
+      "age_seconds": 15199.4
+    },
+    {
+      "timestamp": 1778450470.4498334,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [FL - HB 919]: 1 passages",
+      "details": {
+        "document": "FL - HB 919",
+        "passage_count": 1
+      },
+      "age_seconds": 15268.2
+    },
+    {
+      "timestamp": 1778450470.4326181,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-ESTATEREALESTA]: 3 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-ESTATEREALESTA",
+        "extractions": 3,
+        "failures": 0
+      },
+      "age_seconds": 15268.2
+    },
+    {
+      "timestamp": 1778450405.057945,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 44: 3 extractions [Section 10140.8]",
+      "details": {
+        "record_id": 44,
+        "extraction_count": 3
+      },
+      "age_seconds": 15333.6
+    },
+    {
+      "timestamp": 1778450405.057945,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 44",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 44,
+        "tier": "D"
+      },
+      "age_seconds": 15333.6
+    },
+    {
+      "timestamp": 1778450373.5382638,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-ESTATEREALESTA]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-ESTATEREALESTA",
+        "passage_count": 1
+      },
+      "age_seconds": 15365.1
+    },
+    {
+      "timestamp": 1778450373.5106611,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [ND - TMP-ND-DAKOTAHARASSME]: 0 extractions, 0 failures",
+      "details": {
+        "document": "ND - TMP-ND-DAKOTAHARASSME",
+        "extractions": 0,
+        "failures": 0
+      },
+      "age_seconds": 15365.1
+    },
+    {
+      "timestamp": 1778450305.8309834,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 452: 0 extractions [Paragraph 2]",
+      "details": {
+        "record_id": 452,
+        "extraction_count": 0
+      },
+      "age_seconds": 15432.8
+    },
+    {
+      "timestamp": 1778450305.8251963,
+      "category": "passage_complete",
+      "severity": "info",
+      "message": "Passage 451: 0 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 451,
+        "extraction_count": 0
+      },
+      "age_seconds": 15432.8
+    },
+    {
+      "timestamp": 1778450301.2118278,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [ND - TMP-ND-DAKOTAHARASSME]: 2 passages",
+      "details": {
+        "document": "ND - TMP-ND-DAKOTAHARASSME",
+        "passage_count": 2
+      },
+      "age_seconds": 15437.4
+    },
+    {
+      "timestamp": 1778450301.1833358,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-BROKERREGISTRA]: 11 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-BROKERREGISTRA",
+        "extractions": 11,
+        "failures": 0
+      },
+      "age_seconds": 15437.5
+    },
+    {
+      "timestamp": 1778450275.2271516,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 36: 11 extractions [Title 15.2]",
+      "details": {
+        "record_id": 36,
+        "extraction_count": 11
+      },
+      "age_seconds": 15463.4
+    },
+    {
+      "timestamp": 1778450275.1753893,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 36",
+      "details": {
+        "agent": "obligation",
+        "record_id": 36,
+        "tier": "D"
+      },
+      "age_seconds": 15463.5
+    },
+    {
+      "timestamp": 1778450196.0400305,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-BROKERREGISTRA]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-BROKERREGISTRA",
+        "passage_count": 1
+      },
+      "age_seconds": 15542.6
+    },
+    {
+      "timestamp": 1778450195.9956005,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [NY - TMP-NY-PRICINGNEWYORK]: 11 extractions, 0 failures",
+      "details": {
+        "document": "NY - TMP-NY-PRICINGNEWYORK",
+        "extractions": 11,
+        "failures": 0
+      },
+      "age_seconds": 15542.6
+    },
+    {
+      "timestamp": 1778450165.0406466,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 810: 11 extractions [Sec. 13b-121.]",
+      "details": {
+        "record_id": 810,
+        "extraction_count": 11
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450165.0406466,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 810",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 810,
+        "tier": "D"
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450165.035447,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 810",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 810,
+        "tier": "D"
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450165.0307686,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 810",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 810,
+        "tier": "D"
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450165.0260687,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 810",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 810,
+        "tier": "D"
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450165.0216742,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 810",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 810,
+        "tier": "D"
+      },
+      "age_seconds": 15573.6
+    },
+    {
+      "timestamp": 1778450079.579168,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [NY - TMP-NY-PRICINGNEWYORK]: 2 passages",
+      "details": {
+        "document": "NY - TMP-NY-PRICINGNEWYORK",
+        "passage_count": 2
+      },
+      "age_seconds": 15659.1
+    },
+    {
+      "timestamp": 1778450079.5499847,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [DE - HB 233]: 4 extractions, 0 failures",
+      "details": {
+        "document": "DE - HB 233",
+        "extractions": 4,
+        "failures": 0
+      },
+      "age_seconds": 15659.1
+    },
+    {
+      "timestamp": 1778450040.3753247,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 208: 4 extractions [Paragraph 1]",
+      "details": {
+        "record_id": 208,
+        "extraction_count": 4
+      },
+      "age_seconds": 15698.3
+    },
+    {
+      "timestamp": 1778449913.8634934,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [DE - HB 233]: 1 passages",
+      "details": {
+        "document": "DE - HB 233",
+        "passage_count": 1
+      },
+      "age_seconds": 15824.8
+    },
+    {
+      "timestamp": 1778449913.779115,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - AB 2885]: 98 extractions, 0 failures",
+      "details": {
+        "document": "CA - AB 2885",
+        "extractions": 98,
+        "failures": 0
+      },
+      "age_seconds": 15824.9
+    },
+    {
+      "timestamp": 1778449850.9128501,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 905: 32 extractions [Section 53083.1]",
+      "details": {
+        "record_id": 905,
+        "extraction_count": 32
+      },
+      "age_seconds": 15887.7
+    },
+    {
+      "timestamp": 1778449850.9128501,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.7
+    },
+    {
+      "timestamp": 1778449850.872224,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.8664107,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.8611414,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.8568292,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.8520792,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 905",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 905,
+        "tier": "D"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.8163214,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[compliance_mechanism] Failed on record 905: Unterminated string starting at: line 63 column 7 (char 3419)",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 905,
+        "error": "Unterminated string starting at: line 63 column 7 (char 3419)"
+      },
+      "age_seconds": 15887.8
+    },
+    {
+      "timestamp": 1778449850.7851827,
+      "category": "agent_error",
+      "severity": "error",
+      "message": "[rights_protection] Failed on record 905: HTTP 400 for model google/gemma-4-26b-a4b: {\"error\":\"Failed to parse input at pos 0: <|channel>thought\\n<channel|>{\\n  \\\"extractions\\\": [\\n    {\\n    ",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 905,
+        "error": "HTTP 400 for model google/gemma-4-26b-a4b: {\"error\":\"Failed to parse input at pos 0: <|channel>thought\\n<channel|>{\\n  \\\"extractions\\\": [\\n    {\\n      \\\"right_holder\\\": \\\"public\\\",\\n      \\\"right_holder_normalized\\\": \\\"public\\\",\\n      \\\"protected_categories\\\": [\\n        \\\"consumer\\\",\\n        \\\"employee\\\",\\n        \\\"candidate\\\",\\n        \\\"student\\\",\\n        \\\"patient\\\",\\n        \\\"minor\\\",\\n        \\\"tenant\\\",\\n        \\\"borrower\\\",\\n        \\\"job_applicant\\\"\\n      ],\\n      \\\"right_type\\\": \\\"access\\\",\\n      \\\"right_description\\\""
+      },
+      "age_seconds": 15887.9
+    },
+    {
+      "timestamp": 1778449412.0634751,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 904: 15 extractions [Section 11547.5]",
+      "details": {
+        "record_id": 904,
+        "extraction_count": 15
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.0634751,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "obligation",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.0436087,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.0387938,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.0236874,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.014272,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449412.0015404,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.6
+    },
+    {
+      "timestamp": 1778449411.9860516,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 904",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 904,
+        "tier": "D"
+      },
+      "age_seconds": 16326.7
+    },
+    {
+      "timestamp": 1778449321.8149307,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 903: 23 extractions [Section 11546.45.5]",
+      "details": {
+        "record_id": 903,
+        "extraction_count": 23
+      },
+      "age_seconds": 16416.8
+    },
+    {
+      "timestamp": 1778449321.8149307,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.8
+    },
+    {
+      "timestamp": 1778449321.8107393,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.8
+    },
+    {
+      "timestamp": 1778449321.7708917,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "obligation",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.9
+    },
+    {
+      "timestamp": 1778449321.7665117,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "obligation",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.9
+    },
+    {
+      "timestamp": 1778449321.7621822,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "obligation",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.9
+    },
+    {
+      "timestamp": 1778449321.714421,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.9
+    },
+    {
+      "timestamp": 1778449321.709162,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 903",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 903,
+        "tier": "D"
+      },
+      "age_seconds": 16416.9
+    },
+    {
+      "timestamp": 1778449238.40762,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 902: 12 extractions [Section 75002]",
+      "details": {
+        "record_id": 902,
+        "extraction_count": 12
+      },
+      "age_seconds": 16500.2
+    },
+    {
+      "timestamp": 1778449238.3656745,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 902",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 902,
+        "tier": "D"
+      },
+      "age_seconds": 16500.3
+    },
+    {
+      "timestamp": 1778449238.3598053,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 902",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 902,
+        "tier": "D"
+      },
+      "age_seconds": 16500.3
+    },
+    {
+      "timestamp": 1778449238.353325,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 902",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 902,
+        "tier": "D"
+      },
+      "age_seconds": 16500.3
+    },
+    {
+      "timestamp": 1778449238.3473241,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 902",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 902,
+        "tier": "D"
+      },
+      "age_seconds": 16500.3
+    },
+    {
+      "timestamp": 1778449180.8928738,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 901: 16 extractions [Section 22675]",
+      "details": {
+        "record_id": 901,
+        "extraction_count": 16
+      },
+      "age_seconds": 16557.7
+    },
+    {
+      "timestamp": 1778449180.8561044,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "obligation",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8507524,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "obligation",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.845396,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "obligation",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8395112,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "obligation",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8343844,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "obligation",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8274636,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.820979,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8113198,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449180.8039112,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 901",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 901,
+        "tier": "D"
+      },
+      "age_seconds": 16557.8
+    },
+    {
+      "timestamp": 1778449132.567741,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - AB 2885]: 5 passages",
+      "details": {
+        "document": "CA - AB 2885",
+        "passage_count": 5
+      },
+      "age_seconds": 16606.1
+    },
+    {
+      "timestamp": 1778449132.5279994,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-INTELLIGENCEIN]: 10 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-INTELLIGENCEIN",
+        "extractions": 10,
+        "failures": 0
+      },
+      "age_seconds": 16606.1
+    },
+    {
+      "timestamp": 1778449074.4020014,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 720: 10 extractions [Chapter 2.13]",
+      "details": {
+        "record_id": 720,
+        "extraction_count": 10
+      },
+      "age_seconds": 16664.2
+    },
+    {
+      "timestamp": 1778449023.604793,
+      "category": "document_start",
+      "severity": "info",
+      "message": "Starting [CA - TMP-CA-INTELLIGENCEIN]: 1 passages",
+      "details": {
+        "document": "CA - TMP-CA-INTELLIGENCEIN",
+        "passage_count": 1
+      },
+      "age_seconds": 16715.0
+    },
+    {
+      "timestamp": 1778449023.5488763,
+      "category": "document_complete",
+      "severity": "success",
+      "message": "Done [CA - TMP-CA-EMPLOYMENTANDS]: 93 extractions, 0 failures",
+      "details": {
+        "document": "CA - TMP-CA-EMPLOYMENTANDS",
+        "extractions": 93,
+        "failures": 0
+      },
+      "age_seconds": 16715.1
+    },
+    {
+      "timestamp": 1778448900.2478614,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 43: 20 extractions [\u00a7701]",
+      "details": {
+        "record_id": 43,
+        "extraction_count": 20
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2478614,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2431822,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2366252,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.231922,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2267346,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2214906,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2129347,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.2077026,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "obligation",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.201973,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.1977947,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.1931689,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.1879232,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.4
+    },
+    {
+      "timestamp": 1778448900.182174,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "preemption",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.1768954,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "preemption",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.170226,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "preemption",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.1655378,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "preemption",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.160165,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "preemption",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.1548882,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.1490831,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448900.1432827,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 43",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 43,
+        "tier": "D"
+      },
+      "age_seconds": 16838.5
+    },
+    {
+      "timestamp": 1778448772.784978,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 42: 27 extractions [Section 12952]",
+      "details": {
+        "record_id": 42,
+        "extraction_count": 27
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.784978,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7763958,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7672532,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7569313,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7473092,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7404568,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7339935,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[obligation] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "obligation",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7266002,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7188976,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7113872,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.7044518,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.6952963,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.687781,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[threshold_exception] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "threshold_exception",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16965.9
+    },
+    {
+      "timestamp": 1778448772.6797156,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[rights_protection] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "rights_protection",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6718235,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6649868,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6585743,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6500037,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6440809,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6387334,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.632284,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6242177,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "preemption",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6178083,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "preemption",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6111624,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "preemption",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.6036916,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[preemption] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "preemption",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.5950875,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.0
+    },
+    {
+      "timestamp": 1778448772.5769918,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[compliance_mechanism] Low confidence (tier D) on record 42",
+      "details": {
+        "agent": "compliance_mechanism",
+        "record_id": 42,
+        "tier": "D"
+      },
+      "age_seconds": 16966.1
+    },
+    {
+      "timestamp": 1778448455.8040018,
+      "category": "passage_complete",
+      "severity": "success",
+      "message": "Passage 41: 46 extractions [Chapter 5.]",
+      "details": {
+        "record_id": 41,
+        "extraction_count": 46
+      },
+      "age_seconds": 17282.8
+    },
+    {
+      "timestamp": 1778448455.8040018,
+      "category": "low_confidence",
+      "severity": "warning",
+      "message": "[definition_actor] Low confidence (tier D) on record 41",
+      "details": {
+        "agent": "definition_actor",
+        "record_id": 41,
+        "tier": "D"
+      },
+      "age_seconds": 17282.8
+    }
+  ]
+}
