@@ -8,3 +8,4 @@ human_review,Right to human review or override of an AI decision.,human_review,R
 non_discrimination,Right not to be subject to discriminatory AI decisions or outcomes.,non_discrimination,Nondiscrimination,deployer/developer
 portability,"Right to receive personal data in a portable, machine-readable format.",portability,,controller
 access,Right to access personal data processed by or used in AI systems.,access,,controller
+correction,"Right to correct, rectify, or update inaccurate or incomplete personal data processed by AI systems.",correction,,controller/deployer

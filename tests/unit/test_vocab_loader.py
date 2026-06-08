@@ -93,3 +93,31 @@ class TestGetCanonicalCodes:
         codes = get_canonical_codes("obligation_family")
         assert "documentation" in codes
         assert len(codes) == 21
+
+    def test_rights_codes_includes_10_codes(self):
+        codes = get_canonical_codes("rights")
+        expected = {
+            "notice", "explanation", "opt_out", "appeal", "deletion",
+            "human_review", "non_discrimination", "portability", "access",
+            "correction",
+        }
+        assert expected == set(codes)
+
+    def test_rights_correction_normalizes(self):
+        assert normalize("rights", "correction") == "correction"
+
+    def test_rights_correct_alias_normalizes(self):
+        assert normalize("rights", "correct") == "correction"
+
+    def test_legal_context_firstamendment_garbled(self):
+        # 'firstamendment' (no underscore) is a garbled extraction variant
+        assert normalize("legal_context", "firstamendment") == "constitutional_limit"
+
+    def test_enforcement_civil_penalty_normalizes(self):
+        assert normalize("enforcement", "civil penalty") == "civil_penalty"
+
+    def test_enforcement_misdemeanor_normalizes(self):
+        assert normalize("enforcement", "misdemeanor") == "criminal_penalty"
+
+    def test_enforcement_attorney_general_normalizes(self):
+        assert normalize("enforcement", "attorney general") == "ag_enforcement"

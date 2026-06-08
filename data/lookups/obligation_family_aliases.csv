@@ -1,12 +1,15 @@
 raw_term,source,count,example_source,proposed_code,ambiguity_flag
-impact_assessment,mechanism_type,50,extraction_db,impact_assessment,no
-bias_audit,mechanism_type,35,extraction_db,bias_testing,no
-registration,mechanism_type,30,extraction_db,registration,no
-certification,mechanism_type,25,extraction_db,certification,no
-record_keeping,mechanism_type,60,extraction_db,record_keeping,no
-reporting,mechanism_type,45,extraction_db,reporting_to_regulator,yes
-disclosure,mechanism_type,40,extraction_db,disclosure_to_user,yes
-notification,mechanism_type,35,extraction_db,labeling_watermarking,yes
+disclosure,mechanism_type,228,extraction_db,disclosure_to_user,yes
+impact_assessment,mechanism_type,127,extraction_db,impact_assessment,no
+notification,mechanism_type,104,extraction_db,labeling_watermarking,yes
+record_keeping,mechanism_type,104,extraction_db,record_keeping,no
+reporting,mechanism_type,102,extraction_db,reporting_to_regulator,yes
+registration,mechanism_type,31,extraction_db,registration,no
+bias_audit,mechanism_type,15,extraction_db,bias_testing,no
+audit,mechanism_type,9,extraction_db,REVIEW_ambiguous,yes
+certification,mechanism_type,9,extraction_db,certification,no
+assessment,mechanism_type,1,extraction_db,impact_assessment,no
+policy_implementation,mechanism_type,1,extraction_db,REVIEW_unclassified,yes
 third_party_audit,audit_type,20,extraction_db,third_party_audit,no
 self_certification,audit_type,10,extraction_db,certification,no
 bias_audit (audit_type),audit_type,30,extraction_db,bias_testing,no

@@ -2,3 +2,10 @@ raw_term,routing,notes
 Explanation/incident reporting (IAPP),provisional_explanation_or_incident,Disambiguation requires extraction type: rights_protection→explanation; compliance_mechanism→incident_reporting
 Opt out/appeal (IAPP),provisional_opt_out,Disambiguation requires temporal position: before decision→opt_out; after decision→appeal
 Third-party review (IAPP),provisional_human_review,Could be obligation (audit) or right (human review) depending on who invokes it
+consent,REVIEW_not_a_right,Consent is an obligation on the data controller (mechanism_type), not a data subject right; route to obligation_family
+compensation,REVIEW_unclassified,Monetary compensation as a right; no current canonical code; may warrant addition after v3 expansion
+injunction,REVIEW_legal_remedy,Injunction is an enforcement mechanism, not a data subject right; route to enforcement dimension
+remedy,REVIEW_legal_remedy,Generic 'remedy' from right_type field; likely enforcement/legal relief, not a subject right
+remedies,REVIEW_legal_remedy,Plural form of remedy; same routing as 'remedy'
+report,REVIEW_unclassified,Unclear right to report; possibly notice or human_review; requires passage review
+confidentiality,REVIEW_unclassified,Confidentiality as a right; ambiguous — could be privacy_protection or access; requires passage review

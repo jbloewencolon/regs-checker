@@ -3,3 +3,5 @@ reporting (generic mechanism_type),REVIEW_split_required,Needs reporter target a
 must/shall modality obligations,REVIEW_depends_on_action,Family assignment requires action field; modality alone insufficient
 Responsible individual (IAPP col),provisional_human_review,Named responsible individual vs. human review obligation — ambiguous
 Nondiscrimination (IAPP col),provisional_prohibition,Could be active obligation rather than prohibition
+audit (generic mechanism_type),REVIEW_ambiguous,9 occurrences; ambiguous between third_party_audit (independent auditor) and bias_testing (internal quality check); resolve by reviewing passage context
+policy_implementation (mechanism_type),REVIEW_unclassified,1 occurrence; too vague for direct mapping; review passage for specific obligation type
