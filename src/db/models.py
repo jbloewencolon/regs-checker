@@ -352,6 +352,7 @@ class Extraction(Base):
     output_tokens = deferred(Column(Integer, default=0))
     duration_ms = deferred(Column(Integer, nullable=True))
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
@@ -359,6 +360,7 @@ class Extraction(Base):
 
     source_record = relationship("NormalizedSourceRecord", back_populates="extractions")
     extraction_job = relationship("ExtractionJob", back_populates="extractions")
+    extraction_run = relationship("ExtractionRun", back_populates="extractions")
     review_queue_items = relationship("ReviewQueueItem", back_populates="extraction")
 
     __table_args__ = (
@@ -373,7 +375,56 @@ class Extraction(Base):
 
 
 # ---------------------------------------------------------------------------
-# 8. Extraction Jobs
+# 8a. Extraction Runs — version-controlled run records (Phase 1b)
+# ---------------------------------------------------------------------------
+
+
+class ExtractionRun(Base):
+    """One record per logical extraction run (one press of 'Extract All').
+
+    Captures the full versioning context (git SHA, prompt versions, model
+    config) so every extraction can be traced to the exact code and prompts
+    that produced it.  run_id FK on extractions / bill_level_extractions
+    links rows to the run that created them.
+
+    is_serving=True marks the run whose extractions power live queries.
+    Only one run should be serving at a time; a new full run demotes the
+    previous serving run before promoting itself.
+    """
+
+    __tablename__ = "extraction_runs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    run_type = Column(String(50), nullable=False, default="extract")
+    status = Column(String(20), nullable=False, default="running")
+    is_serving = Column(Boolean, nullable=False, default=False)
+
+    # Reproducibility pinning
+    git_sha = Column(String(40))
+    model_config = Column(JSONB, default=dict)    # model IDs and token limits per agent
+    prompt_versions = Column(JSONB, default=dict) # template_version per agent
+    source_snapshot_hash = Column(String(64))     # SHA of law corpus at run time
+
+    # Counts (filled in on finalize)
+    law_count = Column(Integer, default=0)
+    passage_count = Column(Integer, default=0)
+    extraction_count = Column(Integer, default=0)
+
+    # Full run summary JSON written by RunArchiver.finalize()
+    summary = Column(JSONB, default=dict)
+
+    started_at = Column(DateTime, nullable=False, server_default=func.now())
+    completed_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now())
+
+    extractions = relationship("Extraction", back_populates="extraction_run")
+    bill_level_extractions = relationship(
+        "BillLevelExtraction", back_populates="extraction_run"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 8b. Extraction Jobs
 # ---------------------------------------------------------------------------
 
 
@@ -664,6 +715,7 @@ class BillLevelExtraction(Base):
         Enum(ReviewStatus), nullable=False, default=ReviewStatus.pending
     )
     model_id = Column(String(100))
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     input_tokens = Column(Integer, default=0)
     output_tokens = Column(Integer, default=0)
     truncated = Column(Boolean, default=False)
@@ -672,6 +724,7 @@ class BillLevelExtraction(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     document_version = relationship("DocumentVersion")
+    extraction_run = relationship("ExtractionRun", back_populates="bill_level_extractions")
 
     __table_args__ = (
         # One row per law per agent — re-runs upsert rather than duplicate

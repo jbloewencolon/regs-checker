@@ -48,7 +48,7 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import func, inspect as sa_inspect, select
+from sqlalchemy import func, inspect as sa_inspect, select, update as sa_update
 
 from src.core.config import settings
 from src.agents.base import BaseExtractionAgent, ExtractionResult
@@ -116,6 +116,7 @@ MIN_PASSAGE_LENGTH = 150
 # Set at module-load or first extraction run — True once migration adds column
 _payload_hash_available: bool | None = None
 _token_columns_available: bool | None = None
+_run_id_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
@@ -537,11 +538,32 @@ _COMPLIANCE_MECHANISM_PATTERN = re.compile(
 
 @dataclass
 class TokenUsageSummary:
-    """Aggregate token usage across an extraction run."""
+    """Aggregate token usage and invocation counts for one extraction run.
 
+    Token buckets (non-error calls only; adaptive retries inside agent.extract()
+    are excluded — see agent_stats.json for all-attempt cost):
+      clause_level_*  — 6 clause-level agents (success + abstentions)
+      bill_level_*    — 3 bill-level agents
+      total_*         — aggregate (clause + bill combined, kept for backward compat)
+    """
+
+    # Named token buckets
+    clause_level_input_tokens: int = 0
+    clause_level_output_tokens: int = 0
+    bill_level_input_tokens: int = 0
+    bill_level_output_tokens: int = 0
+
+    # Aggregate totals (kept for backward compat; updated by all add_* methods)
     total_input_tokens: int = 0
     total_output_tokens: int = 0
-    total_calls: int = 0
+    total_calls: int = 0  # non-error LLM dispatches (success + abstentions)
+
+    # Invocation counters
+    abstention_count: int = 0
+    error_count: int = 0
+    extraction_item_count: int = 0
+
+    # Efficiency counters
     skipped_short: int = 0
     merged_passages: int = 0
     agents_skipped: int = 0
@@ -550,7 +572,27 @@ class TokenUsageSummary:
     def total_tokens(self) -> int:
         return self.total_input_tokens + self.total_output_tokens
 
+    @property
+    def llm_call_count(self) -> int:
+        """Non-error LLM dispatches including abstentions (excludes internal retries)."""
+        return self.total_calls
+
     def add(self, input_tokens: int, output_tokens: int) -> None:
+        """Legacy method — routes to add_clause() for backward compatibility."""
+        self.add_clause(input_tokens, output_tokens)
+
+    def add_clause(self, input_tokens: int, output_tokens: int) -> None:
+        """Record one clause-level agent result (non-error; success or abstention)."""
+        self.clause_level_input_tokens += input_tokens
+        self.clause_level_output_tokens += output_tokens
+        self.total_input_tokens += input_tokens
+        self.total_output_tokens += output_tokens
+        self.total_calls += 1
+
+    def add_bill_level(self, input_tokens: int, output_tokens: int) -> None:
+        """Record one bill-level agent result (non-error)."""
+        self.bill_level_input_tokens += input_tokens
+        self.bill_level_output_tokens += output_tokens
         self.total_input_tokens += input_tokens
         self.total_output_tokens += output_tokens
         self.total_calls += 1
@@ -978,6 +1020,7 @@ def extract_single_record(
     existing_hashes: set[str] | None = None,
     tracker: FailureTracker | None = None,
     bill_context: dict[str, Any] | None = None,
+    run_id: int | None = None,
 ) -> int:
     """Run selected agents against a passage.
 
@@ -1099,6 +1142,8 @@ def extract_single_record(
                 tracker.record_failure(
                     f"agent={name} record={record.id}: {result}"
                 )
+            if token_usage is not None:
+                token_usage.error_count += 1
             monitor.record_agent_result(
                 agent_name=name,
                 record_id=record.id,
@@ -1110,9 +1155,9 @@ def extract_single_record(
         if tracker is not None:
             tracker.record_success()
 
-        # Track token usage
+        # Track token usage (clause-level; bill-level tracked in _run_bill_level_agents)
         if token_usage is not None:
-            token_usage.add(result.input_tokens, result.output_tokens)
+            token_usage.add_clause(result.input_tokens, result.output_tokens)
 
         # Log structured result
         logger.info(
@@ -1128,6 +1173,8 @@ def extract_single_record(
         )
 
         if result.abstention is not None:
+            if token_usage is not None:
+                token_usage.abstention_count += 1
             monitor.record_agent_result(
                 agent_name=name,
                 record_id=record.id,
@@ -1233,6 +1280,8 @@ def extract_single_record(
                         extraction_kwargs["duration_ms"] = duration_ms
                     if _payload_hash_available:
                         extraction_kwargs["payload_hash"] = p_hash
+                    if _run_id_available and run_id is not None:
+                        extraction_kwargs["run_id"] = run_id
                     extraction = Extraction(**extraction_kwargs)
                     db.add(extraction)
                     db.flush()
@@ -1243,6 +1292,8 @@ def extract_single_record(
                         status=ReviewStatus.pending,
                     ))
                     extractions_created += 1
+                    if token_usage is not None:
+                        token_usage.extraction_item_count += 1
 
                     logger.info(
                         "extraction_created",
@@ -1531,6 +1582,7 @@ def _run_bill_level_agents(
     bill_context: dict,
     _log=None,
     token_usage: "TokenUsageSummary | None" = None,
+    run_id: int | None = None,
 ) -> int:
     """Run all bill-level agents for one document version.
 
@@ -1616,8 +1668,10 @@ def _run_bill_level_agents(
                 existing.output_tokens = result.output_tokens
                 existing.truncated = result.truncated
                 existing.review_status = ReviewStatus.pending
+                if _run_id_available and run_id is not None:
+                    existing.run_id = run_id
             else:
-                db.add(BillLevelExtraction(
+                _bill_kwargs: dict = dict(
                     document_version_id=document_version_id,
                     agent_name=agent.agent_name,
                     payload=result.payload,
@@ -1626,12 +1680,15 @@ def _run_bill_level_agents(
                     output_tokens=result.output_tokens,
                     truncated=result.truncated,
                     review_status=ReviewStatus.pending,
-                ))
+                )
+                if _run_id_available and run_id is not None:
+                    _bill_kwargs["run_id"] = run_id
+                db.add(BillLevelExtraction(**_bill_kwargs))
 
             # Track bill-level tokens in the shared usage summary so run_summary
             # reflects the full run cost (passage-level + bill-level).
             if token_usage is not None and result.model_id != "orrick_facts_parser":
-                token_usage.add(result.input_tokens, result.output_tokens)
+                token_usage.add_bill_level(result.input_tokens, result.output_tokens)
 
             if not has_error:
                 succeeded += 1
@@ -1714,17 +1771,61 @@ def run_extraction(
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
+    # Create an ExtractionRun version record (Phase 1b).
+    # Captures the git SHA, prompt versions, and model config for this run.
+    # Skipped gracefully if the migration hasn't been applied yet.
+    current_run_id: int | None = None
+    try:
+        from src.db.models import ExtractionRun
+        import subprocess
+        _git_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, timeout=5
+        ).strip()
+    except Exception:
+        _git_sha = None
+
+    _run_type = "extract" if limit is None else "partial_extract"
+    try:
+        from src.db.models import ExtractionRun
+        # Collect per-agent model and prompt version metadata
+        _model_cfg: dict = {}
+        _prompt_vers: dict = {}
+        for _name, _agent in agents.items():
+            _model_cfg[_name] = {
+                "model": _agent.model_override,
+                "max_tokens": _agent.max_tokens_override,
+            }
+            from src.agents.prompt_loader import get_template_version
+            _prompt_vers[_name] = get_template_version(_name)
+
+        _run = ExtractionRun(
+            run_type=_run_type,
+            status="running",
+            is_serving=False,
+            git_sha=_git_sha,
+            model_config=_model_cfg,
+            prompt_versions=_prompt_vers,
+        )
+        db.add(_run)
+        db.flush()
+        current_run_id = _run.id
+        logger.info("extraction_run_created", run_id=current_run_id, git_sha=_git_sha)
+    except Exception as _e:
+        logger.warning("extraction_run_create_skipped", reason=str(_e))
+
     # Check whether optional columns exist (migrations may not have run yet)
-    global _payload_hash_available, _token_columns_available
+    global _payload_hash_available, _token_columns_available, _run_id_available
     try:
         _existing_cols = {
             c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
         }
         _payload_hash_available = "payload_hash" in _existing_cols
         _token_columns_available = "duration_ms" in _existing_cols
+        _run_id_available = "run_id" in _existing_cols
     except Exception:
         _payload_hash_available = False
         _token_columns_available = False
+        _run_id_available = False
 
     # Build set of existing content hashes for deduplication.
     # Pre-populate from DB so re-runs don't re-call agents on passages that
@@ -1912,6 +2013,7 @@ def run_extraction(
                     db, passage, agents, extraction_job, parse_quality,
                     token_usage, existing_hashes, tracker,
                     bill_context=bill_ctx,
+                    run_id=current_run_id,
                 )
                 if count == -1:
                     # Jurisdiction cross-check failed — passage was skipped.
@@ -1961,7 +2063,8 @@ def run_extraction(
 
         # Run bill-level agents for this document version (once per law)
         bill_level_count = _run_bill_level_agents(
-            db, dv_id, dv_group, bill_ctx, _log=_log, token_usage=token_usage
+            db, dv_id, dv_group, bill_ctx, _log=_log, token_usage=token_usage,
+            run_id=current_run_id,
         )
         if bill_level_count:
             summary.setdefault("bill_level_extractions", 0)
@@ -1981,19 +2084,40 @@ def run_extraction(
 
     summary["agents_skipped_by_signal"] = token_usage.agents_skipped
 
-    # Finalize token usage in summary
+    # Finalize token usage — named buckets + scope annotation.
+    # Note: these are result tokens only; adaptive retries inside agent.extract()
+    # are not counted here. See agent_stats.json for all-attempt cost.
     summary["token_usage"] = {
-        "input_tokens": token_usage.total_input_tokens,
-        "output_tokens": token_usage.total_output_tokens,
+        "scope": "result_tokens_only__internal_retries_excluded",
+        "clause_level_input_tokens": token_usage.clause_level_input_tokens,
+        "clause_level_output_tokens": token_usage.clause_level_output_tokens,
+        "bill_level_input_tokens": token_usage.bill_level_input_tokens,
+        "bill_level_output_tokens": token_usage.bill_level_output_tokens,
+        "total_input_tokens": token_usage.total_input_tokens,
+        "total_output_tokens": token_usage.total_output_tokens,
         "total_tokens": token_usage.total_tokens,
-        "total_calls": token_usage.total_calls,
+        "llm_call_count": token_usage.llm_call_count,
+    }
+    summary["agent_invocations"] = {
+        "scope": "outer_dispatch_count__internal_retries_excluded",
+        "llm_call_count": token_usage.llm_call_count,
+        "abstention_count": token_usage.abstention_count,
+        "error_count": token_usage.error_count,
+        "extraction_item_count": token_usage.extraction_item_count,
+        "agents_skipped_by_signal": token_usage.agents_skipped,
     }
 
-    _log(f"\nExtraction complete: {summary['total_extractions']} total extractions")
+    _log(f"\nExtraction complete: {summary['total_extractions']} total extractions "
+         f"({token_usage.extraction_item_count} items, "
+         f"{token_usage.abstention_count} abstentions, {token_usage.error_count} errors)")
     _log(
-        f"Token usage: {token_usage.total_input_tokens:,} input + "
-        f"{token_usage.total_output_tokens:,} output = "
-        f"{token_usage.total_tokens:,} total across {token_usage.total_calls} API calls"
+        f"Token usage: {token_usage.total_input_tokens:,} in + "
+        f"{token_usage.total_output_tokens:,} out = "
+        f"{token_usage.total_tokens:,} total across {token_usage.llm_call_count} LLM calls"
+    )
+    _log(
+        f"  clause-level: {token_usage.clause_level_input_tokens:,}+{token_usage.clause_level_output_tokens:,} | "
+        f"bill-level: {token_usage.bill_level_input_tokens:,}+{token_usage.bill_level_output_tokens:,}"
     )
     _log(
         f"Savings: {token_usage.skipped_short} short passages skipped, "
@@ -2002,6 +2126,30 @@ def run_extraction(
     )
     _monitor.stop_run()
     archiver.finalize(db, summary)
+
+    # Finalize the ExtractionRun record: mark as serving, write summary (Phase 1b)
+    if current_run_id is not None:
+        try:
+            from src.db.models import ExtractionRun
+            _run_rec = db.get(ExtractionRun, current_run_id)
+            if _run_rec:
+                # Demote the previous serving run
+                db.execute(
+                    sa_update(ExtractionRun)
+                    .where(ExtractionRun.is_serving.is_(True), ExtractionRun.id != current_run_id)
+                    .values(is_serving=False)
+                )
+                _run_rec.status = "completed"
+                _run_rec.is_serving = True
+                _run_rec.completed_at = datetime.utcnow()
+                _run_rec.extraction_count = summary.get("total_extractions", 0)
+                _run_rec.passage_count = summary.get("records_processed", 0)
+                _run_rec.summary = summary
+                db.commit()
+                logger.info("extraction_run_finalized", run_id=current_run_id)
+        except Exception as _e:
+            logger.warning("extraction_run_finalize_failed", reason=str(_e))
+
     return summary
 
 

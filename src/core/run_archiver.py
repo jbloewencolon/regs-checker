@@ -438,6 +438,16 @@ class RunArchiver:
             snapshot = monitor.snapshot(recent_count=0)
             stats_dict = snapshot.to_dict()
 
+            # Document the scope so consumers understand the difference from
+            # run_summary.json token_usage (which tracks result tokens only).
+            stats_dict["scope"] = "all_call_attempts_including_adaptive_retries"
+            stats_dict["scope_note"] = (
+                "token totals here include every LLM call attempt — "
+                "successful, abstention, error, and internal adaptive retries; "
+                "compare to run_summary.json token_usage which records result "
+                "tokens only (excludes retries)"
+            )
+
             stats_path = self.run_dir / "agent_stats.json"
             with open(stats_path, "w") as f:
                 json.dump(stats_dict, f, indent=2, default=str)

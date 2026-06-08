@@ -20,9 +20,9 @@
 
 ### Phase 1 — Foundation: trustworthy, measurable, non-destructive runs (now)
 - ✅ Model pin — `CLAUDE.md` → `google/gemma-4-26b-a4b`; 6+3 agents.
-- ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)*
-- ⏳ **1b** — run versioning: `extraction_runs` table + `run_id` FKs; replace destructive purge with run-create + serving-run promotion. *(SDPA, BE, DevOps)*
-- ⏳ **1c** — **metric schema** (proper C-2 fix): distinct counters (`llm_call_count`, `agent_invocation_count`, `successful_agent_invocations`, `extraction_item_count`, `abstention_count`, `error_count`, split token counters) + machine-readable per-run report. Supersedes the earlier "scope label" patch. *(BE)*
+- ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)* **Operator query: `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name;`**
+- ✅ **1b** — run versioning: `ExtractionRun` model + Alembic migration `m9j5k1l3h814` + nullable `run_id` FK on `extractions`/`bill_level_extractions` + run creation/finalization in `run_extraction()`. Purge kept for now; query-filter refactor deferred to when serving-run queries land. *(SDPA, BE, DevOps)*
+- ✅ **1c** — **metric schema** (C-2 fix): `TokenUsageSummary` extended with `clause_level_*`/`bill_level_*` token buckets, `abstention_count`, `error_count`, `extraction_item_count`, `llm_call_count`; `run_summary.json` now emits named counters with `scope` annotation; `agent_stats.json` emits matching `scope`/`scope_note`. All call sites updated. Tests updated + passing. *(BE)*
 - ⏳ **1d** — coverage 138→232: seed 135 text-ready laws; re-fetch **SB 205** (priority) + **SB_2966** (file missing). Checklist in `docs/r1_findings_supplement.md`.
 
 ### Phase 2 — Cheap trust wins (no taxonomy dependency; front-loaded)

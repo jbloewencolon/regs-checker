@@ -132,8 +132,15 @@ class TestTokenUsageSummary:
         assert usage.total_output_tokens == 0
         assert usage.total_tokens == 0
         assert usage.total_calls == 0
+        assert usage.clause_level_input_tokens == 0
+        assert usage.bill_level_input_tokens == 0
+        assert usage.abstention_count == 0
+        assert usage.error_count == 0
+        assert usage.extraction_item_count == 0
+        assert usage.llm_call_count == 0
 
     def test_add_usage(self):
+        """Legacy add() routes to add_clause() for backward compat."""
         usage = TokenUsageSummary()
         usage.add(100, 50)
         usage.add(200, 100)
@@ -145,6 +152,48 @@ class TestTokenUsageSummary:
     def test_total_tokens_property(self):
         usage = TokenUsageSummary(total_input_tokens=1000, total_output_tokens=500, total_calls=4)
         assert usage.total_tokens == 1500
+
+    def test_add_clause_updates_named_bucket(self):
+        usage = TokenUsageSummary()
+        usage.add_clause(500, 200)
+        usage.add_clause(300, 100)
+        assert usage.clause_level_input_tokens == 800
+        assert usage.clause_level_output_tokens == 300
+        assert usage.total_input_tokens == 800
+        assert usage.total_output_tokens == 300
+        assert usage.llm_call_count == 2
+        assert usage.bill_level_input_tokens == 0
+
+    def test_add_bill_level_updates_named_bucket(self):
+        usage = TokenUsageSummary()
+        usage.add_bill_level(1000, 400)
+        assert usage.bill_level_input_tokens == 1000
+        assert usage.bill_level_output_tokens == 400
+        assert usage.total_input_tokens == 1000
+        assert usage.clause_level_input_tokens == 0
+        assert usage.llm_call_count == 1
+
+    def test_mixed_clause_and_bill_level(self):
+        usage = TokenUsageSummary()
+        usage.add_clause(500, 200)
+        usage.add_bill_level(1000, 400)
+        assert usage.clause_level_input_tokens == 500
+        assert usage.bill_level_input_tokens == 1000
+        assert usage.total_input_tokens == 1500
+        assert usage.total_tokens == 2100
+        assert usage.llm_call_count == 2
+
+    def test_invocation_counters(self):
+        usage = TokenUsageSummary()
+        usage.add_clause(100, 50)
+        usage.abstention_count += 1
+        usage.add_clause(200, 80)
+        usage.error_count += 1
+        usage.extraction_item_count += 3
+        assert usage.llm_call_count == 2  # only non-error calls
+        assert usage.abstention_count == 1
+        assert usage.error_count == 1
+        assert usage.extraction_item_count == 3
 
 
 class TestContentHash:
