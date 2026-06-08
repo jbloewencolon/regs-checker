@@ -1009,9 +1009,16 @@ def extract_single_record(
 
     ctx = _build_context(db, record, bill_context=bill_context)
 
-    # Jurisdiction cross-check: skip if document state doesn't match law state
+    # Jurisdiction cross-check: skip if document state doesn't match law state.
+    # Return -1 (not 0) so the caller can distinguish a jurisdiction skip from
+    # a legitimate zero-extraction passage and surface it in run_summary.
     if not _check_jurisdiction(db, record, passage.text):
-        return 0
+        monitor.record_passage_complete(
+            record_id=record.id,
+            section_path=record.section_path,
+            extraction_count=0,
+        )
+        return -1
 
     # Select agents based on passage content + triage signals
     triage = getattr(record, "triage_result", None)
@@ -1523,6 +1530,7 @@ def _run_bill_level_agents(
     passages: list,
     bill_context: dict,
     _log=None,
+    token_usage: "TokenUsageSummary | None" = None,
 ) -> int:
     """Run all bill-level agents for one document version.
 
@@ -1619,6 +1627,11 @@ def _run_bill_level_agents(
                     truncated=result.truncated,
                     review_status=ReviewStatus.pending,
                 ))
+
+            # Track bill-level tokens in the shared usage summary so run_summary
+            # reflects the full run cost (passage-level + bill-level).
+            if token_usage is not None and result.model_id != "orrick_facts_parser":
+                token_usage.add(result.input_tokens, result.output_tokens)
 
             if not has_error:
                 succeeded += 1
@@ -1769,12 +1782,14 @@ def run_extraction(
         "records_processed": 0,
         "records_failed": 0,
         "records_skipped_short": 0,
+        "records_skipped_jurisdiction": 0,
         "passages_merged": 0,
         "agents_skipped_by_signal": 0,
         "token_usage": {
             "input_tokens": 0,
             "output_tokens": 0,
             "total_calls": 0,
+            "scope": "passage-level + bill-level agents",
         },
     }
 
@@ -1898,6 +1913,13 @@ def run_extraction(
                     token_usage, existing_hashes, tracker,
                     bill_context=bill_ctx,
                 )
+                if count == -1:
+                    # Jurisdiction cross-check failed — passage was skipped.
+                    # Count as processed (not failed) but surface it separately.
+                    summary["records_skipped_jurisdiction"] += 1
+                    extraction_job.records_processed += len(passage.source_records)
+                    summary["records_processed"] += len(passage.source_records)
+                    continue
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
@@ -1939,7 +1961,7 @@ def run_extraction(
 
         # Run bill-level agents for this document version (once per law)
         bill_level_count = _run_bill_level_agents(
-            db, dv_id, dv_group, bill_ctx, _log=_log
+            db, dv_id, dv_group, bill_ctx, _log=_log, token_usage=token_usage
         )
         if bill_level_count:
             summary.setdefault("bill_level_extractions", 0)

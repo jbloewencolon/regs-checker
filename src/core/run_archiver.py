@@ -126,10 +126,13 @@ class RunArchiver:
         # 2. Export extractions created during this run
         extractions_path = self._export_extractions(db, extraction_job_ids)
 
-        # 3. Export low-confidence (Tier C/D) extractions for review
+        # 3. Export bill-level extractions (applicability, enforcement, timeline)
+        self._export_bill_level_extractions(db)
+
+        # 4. Export low-confidence (Tier C/D) extractions for review
         self._export_low_confidence(db)
 
-        # 4. Write agent stats if available from the monitor
+        # 5. Write agent stats if available from the monitor
         self._export_agent_stats()
 
         # Add folder path to the summary so callers can reference it
@@ -222,6 +225,87 @@ class RunArchiver:
 
         logger.info("run_archiver_exported_csv", path=str(csv_path), row_count=len(rows))
         return csv_path
+
+    def _export_bill_level_extractions(self, db: Session) -> Path | None:
+        """Export bill-level extractions (applicability, enforcement, timeline) to CSV.
+
+        These rows live in bill_level_extractions — a separate table from the
+        passage-level extractions table — and were previously absent from the run
+        export. Written to bill_level_extractions.csv alongside extractions.csv.
+        """
+        try:
+            from src.db.models import (
+                BillLevelExtraction,
+                DocumentFamily,
+                DocumentVersion,
+                Source,
+            )
+
+            query = (
+                select(
+                    BillLevelExtraction.id,
+                    BillLevelExtraction.agent_name,
+                    BillLevelExtraction.model_id,
+                    BillLevelExtraction.input_tokens,
+                    BillLevelExtraction.output_tokens,
+                    BillLevelExtraction.truncated,
+                    BillLevelExtraction.review_status,
+                    BillLevelExtraction.payload,
+                    BillLevelExtraction.created_at,
+                    Source.jurisdiction_code,
+                    DocumentFamily.short_cite,
+                    DocumentFamily.canonical_title,
+                )
+                .join(DocumentVersion, BillLevelExtraction.document_version_id == DocumentVersion.id)
+                .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+                .join(Source, DocumentFamily.source_id == Source.id)
+                .order_by(Source.jurisdiction_code, BillLevelExtraction.id)
+            )
+            rows = db.execute(query).all()
+
+            if not rows:
+                return None
+
+            csv_path = self.run_dir / "bill_level_extractions.csv"
+            fieldnames = [
+                "id", "agent_name", "model_id", "input_tokens", "output_tokens",
+                "truncated", "review_status", "jurisdiction", "law", "title",
+                "payload_json", "created_at",
+            ]
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in rows:
+                    (
+                        rid, agent_name, model_id, in_tok, out_tok, truncated,
+                        review_status, payload, created_at,
+                        jurisdiction, law, title,
+                    ) = row
+                    writer.writerow({
+                        "id": rid,
+                        "agent_name": agent_name,
+                        "model_id": model_id or "",
+                        "input_tokens": in_tok or 0,
+                        "output_tokens": out_tok or 0,
+                        "truncated": truncated,
+                        "review_status": review_status.value if hasattr(review_status, "value") else str(review_status),
+                        "jurisdiction": jurisdiction or "",
+                        "law": law or "",
+                        "title": title or "",
+                        "payload_json": json.dumps(payload, default=str) if payload else "",
+                        "created_at": created_at.isoformat() if created_at else "",
+                    })
+
+            logger.info(
+                "run_archiver_exported_bill_level",
+                path=str(csv_path),
+                row_count=len(rows),
+            )
+            return csv_path
+
+        except Exception as e:
+            logger.warning("run_archiver_bill_level_export_failed", error=str(e))
+            return None
 
     def _export_low_confidence(self, db: Session) -> tuple[Path, Path] | None:
         """Export Tier C and D extractions to CSV + JSONL for offline review.
