@@ -2,9 +2,10 @@
 
 ## Document status
 
-**Audience:** product, engineering, legal review, data science, policy, and implementation teams  
+**Audience:** product, engineering, data science, policy, analyst review, and implementation teams  
 **Purpose:** provide a comprehensive strategy and engineering roadmap for turning Regs Checker into a reliable business-facing AI law card and policy intelligence platform.  
-**Scope:** U.S. state and federal artificial intelligence law and policy, with emphasis on business applicability, structured obligations, human review, source provenance, and product-serving APIs.  
+**Scope:** U.S. state and federal artificial intelligence law and policy, with emphasis on Orrick and IAPP grounded extraction, business applicability, structured obligations, human analyst review, source provenance, and product-serving APIs.  
+**Current validation posture:** Orrick and IAPP are the working ground truth for now. The team does not currently have lawyers who can independently validate the underlying legal interpretations. Legal review is a future goal, not a current release dependency.  
 **Review basis:** static repository review of the current Regs Checker architecture, schemas, extraction agents, API routes, confidence scoring, verification logic, seed data, and setup documentation.  
 **Runtime status:** this document does not claim that the current pipeline has been executed or benchmarked. All recommendations should be validated in a development environment before production implementation.
 
@@ -14,34 +15,96 @@
 
 Regs Checker is already a substantial regulatory extraction platform. It includes local legal-text ingestion, passage-level extraction agents, bill-level extraction agents, Postgres persistence, human review queues, Supabase synchronization, confidence scoring, a dashboard, and a downstream Policy Navigator target database.
 
-The next phase is not a full rebuild. The next phase is controlled hardening and productization.
+The next phase is not a full rebuild. The next phase is controlled hardening and productization, with one important strategic constraint:
+
+**Orrick and IAPP should remain the current ground truth for law identification, status, scope, key requirements, and enforcement summaries until the project has access to lawyer review or another validated primary-source interpretation process.**
+
+This means Regs Checker should not try to replace Orrick and IAPP legal analysis in the near term. It should use them as the trusted reference layer, then add structured extraction, consistency checks, business-facing cards, applicability logic, evidence links, and workflow tools around that reference layer.
 
 The platform should evolve from an extraction pipeline into a two-layer regulatory intelligence system:
 
-1. **Legal extraction infrastructure:** ingest authoritative legal sources, extract structured legal claims, preserve provenance, validate evidence, support human and legal review, version every run, and maintain auditable legal data.
-2. **Policy card product layer:** convert reviewed legal data into business-facing law cards, applicability decisions, compliance actions, risk flags, source trails, and state-by-state comparisons.
+1. **Tracker-grounded legal extraction infrastructure:** ingest Orrick and IAPP tracker data, attach available official source text where possible, extract structured legal claims, preserve provenance, validate against tracker fields, support analyst review, version every run, and maintain auditable data.
+2. **Policy card product layer:** convert tracker-grounded and analyst-reviewed data into business-facing law cards, applicability decisions, compliance actions, risk flags, source trails, and state-by-state comparisons.
 
-The immediate goal is to make the system safe for internal policy research and team use. The medium-term goal is to make it reliable enough to power law cards. The long-term goal is a production-grade AI policy intelligence product for businesses, policymakers, and compliance teams.
+The immediate goal is to make the system safe for internal policy research and product development. The medium-term goal is to make it reliable enough to power law cards grounded in Orrick and IAPP. The long-term goal is a production-grade AI policy intelligence product that can later incorporate lawyer validation and fuller primary-source legal interpretation.
 
 ---
 
-## 2. North star product vision
+## 2. Ground truth strategy
+
+### 2.1 Current ground truth sources
+
+The project should use the following hierarchy during the current phase:
+
+1. **Orrick tracker data:** working ground truth for enacted or tracked AI law summaries, key requirements, enforcement summaries, effective dates where provided, law titles, and broad AI scope categories.
+2. **IAPP tracker data:** working ground truth for broader state AI governance tracking, especially pending bills, active bills, enacted bills, scope categories, and cross-sector AI governance developments.
+3. **Official law or bill text:** supporting evidence source and extraction substrate where available, but not the sole interpretive authority until lawyer review exists.
+4. **Model-generated extraction:** structured interpretation derived from source text and tracker context, never treated as ground truth on its own.
+5. **Analyst review:** product and data quality review, not legal review.
+6. **Future legal review:** future validation layer for counsel-reviewed interpretation, legal risk, and primary-source authority.
+
+### 2.2 Practical implication
+
+For now, the product should answer:
+
+> “Based on Orrick and IAPP as the current reference sources, what does this state AI law or policy appear to require, and what should a business know?”
+
+It should not claim:
+
+> “This is a lawyer-validated legal interpretation of the statute.”
+
+### 2.3 Product language
+
+Use careful language in the UI and API:
+
+- “Tracker-grounded summary”
+- “Based on Orrick and IAPP reference data”
+- “Analyst reviewed”
+- “Official source attached”
+- “Official source not yet attached”
+- “Legal review not yet completed”
+- “Not legal advice”
+
+Avoid language like:
+
+- “Legally verified”
+- “Counsel approved”
+- “Authoritative legal conclusion”
+- “Compliant”
+- “Safe to deploy”
+
+### 2.4 Near-term trust model
+
+The current trust model should be:
+
+| Trust source | Current role |
+|---|---|
+| Orrick | primary reference for law summaries, key requirements, enforcement, and enacted-law intelligence where present |
+| IAPP | primary reference for AI governance bill tracking, status, and broader legislative coverage |
+| Official law text | source evidence and extraction target, used to support and expand tracker data |
+| LLM agents | structured extraction and normalization tools |
+| Analyst review | quality assurance, consistency checking, and product readiness review |
+| Lawyer review | future validation layer, not current dependency |
+
+---
+
+## 3. North star product vision
 
 Regs Checker should answer five practical questions for a business or policymaker:
 
-1. **What does this state AI law or policy do?**
-2. **Does it apply to my organization, AI product, sector, or use case?**
-3. **What obligations, rights, deadlines, exceptions, and penalties matter?**
-4. **What evidence supports each claim, and what is still ambiguous?**
-5. **What should product, legal, data science, procurement, and compliance teams do next?**
+1. **What does this state AI law or policy do, according to Orrick and IAPP?**
+2. **Does it appear relevant to my organization, AI product, sector, or use case?**
+3. **What obligations, rights, deadlines, exceptions, and penalties are reported or extractable?**
+4. **What evidence supports each claim, and what is still ambiguous or not yet validated?**
+5. **What should product, policy, data science, procurement, and compliance teams consider next?**
 
-A good law card should not merely summarize a law. It should translate legal text into operational decisions, while preserving enough source evidence for counsel and policy teams to verify the claim.
+A good law card should not merely summarize a law. It should translate tracker-grounded legal intelligence into operational decisions, while preserving enough source evidence for future counsel or policy experts to verify the claim.
 
 ---
 
-## 3. Current system strengths
+## 4. Current system strengths
 
-### 3.1 Strong extraction architecture
+### 4.1 Strong extraction architecture
 
 The current pipeline has a clear staged architecture:
 
@@ -56,7 +119,7 @@ The current pipeline has a clear staged architecture:
 
 This is the right general structure. It separates ingestion, extraction, review, presentation, and serving.
 
-### 3.2 Good agent taxonomy
+### 4.2 Good agent taxonomy
 
 The agent architecture already reflects key categories needed for law cards:
 
@@ -72,29 +135,33 @@ The agent architecture already reflects key categories needed for law cards:
 
 This is well aligned with the eventual product taxonomy.
 
-### 3.3 Structured legal payloads
+### 4.3 Structured legal payloads
 
 The Pydantic schemas are a major asset. They create structured payloads for obligations, timelines, enforcement, safe harbors, consent requirements, rights, compliance mechanisms, thresholds, exceptions, interpretation risk, and preemption.
 
 The product should build on these schemas rather than replace them. The key update is to add a product-layer law card schema above them.
 
-### 3.4 Provenance and auditability foundation
+### 4.4 Provenance and auditability foundation
 
 The database already includes source records, raw artifacts, document versions, extractions, review queues, review actions, legal events, dependencies, applicability conditions, export jobs, triage results, failed extraction attempts, and bill-level extractions.
 
-This is a strong foundation, but it needs run versioning and non-destructive historical preservation before the platform can be trusted for legal intelligence.
+This is a strong foundation, but it needs run versioning and non-destructive historical preservation before the platform can be trusted for product-facing regulatory intelligence.
 
-### 3.5 Evidence span verification
+### 4.5 Evidence span verification
 
-The base agent verifies evidence spans against the source passage using normalized text matching. This is essential. Every business-facing claim should eventually trace back to a verified source span.
+The base agent verifies evidence spans against the source passage using normalized text matching. This is essential. Every business-facing claim should eventually trace back to a tracker field, an official source passage, or both.
+
+### 4.6 Orrick and IAPP grounding already exists
+
+The current system already uses Orrick and IAPP fields in seed data, ingestion context, confidence scoring, and metadata enrichment. The strategy should strengthen this instead of replacing it too early with a primary-source-only model that the current team cannot legally validate.
 
 ---
 
-## 4. Critical risks and remediation priorities
+## 5. Critical risks and remediation priorities
 
 This section defines the highest-priority implementation issues. These should be treated as release blockers for any external-facing or business-facing use.
 
-### 4.1 P0: verification agents appear to use outdated provider return handling
+### 5.1 P0: verification agents appear to use outdated provider return handling
 
 #### Issue
 
@@ -131,7 +198,7 @@ stop_reason = response.stop_reason
 
 ---
 
-### 4.2 P0: verification does not appear to update persisted confidence tiers
+### 5.2 P0: verification does not appear to update persisted confidence tiers
 
 #### Issue
 
@@ -154,7 +221,7 @@ Suggested fields:
 | `id` | integer | primary key |
 | `extraction_id` | integer | FK to `extractions` |
 | `run_id` | integer | FK to `extraction_runs`, after run table exists |
-| `verification_type` | text | `cross_validation`, `gap_detection`, `citation_verification`, `human_review`, `legal_review` |
+| `verification_type` | text | `tracker_alignment`, `cross_validation`, `gap_detection`, `citation_verification`, `analyst_review`, `future_legal_review` |
 | `status` | text | `passed`, `flagged`, `failed`, `skipped` |
 | `score` | float | 0.0 to 1.0 |
 | `issues` | jsonb | structured issue list |
@@ -169,12 +236,12 @@ Add `pre_verification_confidence_score`, `post_verification_confidence_score`, a
 
 - Running verification changes confidence scores when verification flags a material issue.
 - The API can return both extraction-time confidence and post-verification confidence.
-- Dashboard clearly shows `not verified`, `verified`, `flagged`, and `verification failed` states.
+- Dashboard clearly shows `not verified`, `tracker aligned`, `verified`, `flagged`, and `verification failed` states.
 - A failed verification step does not create a misleading confidence boost.
 
 ---
 
-### 4.3 P0: full extraction runs delete prior review and extraction history
+### 5.3 P0: full extraction runs delete prior review and extraction history
 
 #### Issue
 
@@ -182,7 +249,7 @@ The pipeline currently purges extractions, review actions, review queue items, e
 
 #### Risk
 
-This undermines legal defensibility, auditability, reproducibility, and reviewer accountability. A legal intelligence product must preserve the reasoning and review trail behind claims.
+This undermines auditability, reproducibility, product stability, and reviewer accountability. A policy intelligence product must preserve the reasoning and review trail behind claims.
 
 #### Engineering action
 
@@ -204,7 +271,7 @@ Suggested fields:
 | `git_sha` | text | repo state |
 | `prompt_versions` | jsonb | prompt template versions |
 | `model_config` | jsonb | model IDs and settings |
-| `source_snapshot_hash` | text | hash of source corpus snapshot |
+| `source_snapshot_hash` | text | hash of Orrick, IAPP, and attached source corpus snapshot |
 | `summary` | jsonb | counts and diagnostics |
 | `created_by` | text | user or system |
 
@@ -230,7 +297,7 @@ Add `run_id` to:
 
 ---
 
-### 4.4 P0: route protection and reviewer identity are insufficient for legal review workflows
+### 5.4 P0: route protection and reviewer identity are insufficient for analyst review workflows
 
 #### Issue
 
@@ -238,27 +305,32 @@ The internal review route accepts reviewer identity from the request body and di
 
 #### Risk
 
-Legal review decisions can be spoofed, overwritten, or applied without sufficient validation. This creates serious governance and product-trust risks.
+Analyst review decisions can be spoofed, overwritten, or applied without sufficient validation. This creates governance and product-trust risks.
 
 #### Engineering action
 
 Implement authentication and authorization.
 
-Recommended roles:
+Recommended current roles:
 
 | Role | Permissions |
 |---|---|
 | `viewer` | read cards and reviewed extractions |
 | `analyst` | inspect unreviewed extractions and verification reports |
 | `reviewer` | approve, reject, or revise technical extraction payloads |
-| `legal_reviewer` | mark card or obligation as legally reviewed |
 | `admin` | manage runs, users, source refreshes, and serving-run promotion |
+
+Recommended future role:
+
+| Role | Permissions |
+|---|---|
+| `legal_reviewer` | mark card or obligation as legally reviewed after counsel review process exists |
 
 Requirements:
 
 - Reviewer identity must come from auth context, not request body.
 - Corrections must be schema-validated before approval.
-- Legal review status must be separate from technical review status.
+- Analyst review status must be separate from future legal review status.
 - Write actions must produce immutable audit-log entries.
 - Expensive operations should use POST routes, not GET routes.
 
@@ -272,15 +344,21 @@ Requirements:
 
 ---
 
-## 5. Product architecture target state
+## 6. Product architecture target state
 
-### 5.1 Two-layer architecture
+### 6.1 Two-layer architecture
 
 ```text
-Official legal sources and secondary trackers
+Orrick and IAPP tracker data
         |
         v
-Source ingestion and normalization
+Tracker normalization and reference corpus
+        |
+        v
+Optional official law or bill text attachment
+        |
+        v
+Source ingestion, parsing, and passage normalization
         |
         v
 Passage triage and bill context builder
@@ -289,45 +367,50 @@ Passage triage and bill context builder
 Extraction agents and bill-level agents
         |
         v
-Evidence verification, citation verification, cross-validation, gap detection
+Tracker alignment, evidence verification, citation verification, cross-validation, gap detection
         |
         v
-Human review and legal review
+Analyst review
         |
         v
-Reviewed legal extraction store
+Tracker-grounded reviewed extraction store
         |
         v
 Law card builder
         |
         v
 Policy card API, applicability engine, dashboard, and exports
+        |
+        v
+Future lawyer validation layer
 ```
 
-### 5.2 Platform layers
+### 6.2 Platform layers
 
 | Layer | Main responsibility |
 |---|---|
-| Source layer | retrieve, hash, parse, version, and certify source text |
-| Extraction layer | produce structured legal payloads from source text |
-| Verification layer | test evidence, citations, completeness, and cross-model consistency |
-| Review layer | allow humans and legal reviewers to approve or correct extracted claims |
+| Tracker layer | ingest, normalize, and preserve Orrick and IAPP records as current ground truth |
+| Source layer | attach, hash, parse, and version official text when available |
+| Extraction layer | produce structured legal payloads from tracker context and source text |
+| Verification layer | test tracker alignment, evidence, citations, completeness, and cross-model consistency |
+| Review layer | allow analysts to approve, reject, or correct extracted claims for product use |
 | Product layer | generate law cards, business actions, risk summaries, and applicability decisions |
 | Serving layer | expose stable APIs, dashboard views, exports, and syncs |
+| Future legal layer | counsel review, primary-source legal interpretation, and legal approval when available |
 
 ---
 
-## 6. Law card product model
+## 7. Law card product model
 
-### 6.1 Why law cards need their own data model
+### 7.1 Why law cards need their own data model
 
-A law card should not be a loose aggregation of extraction rows at request time. It should be a curated product artifact with its own lifecycle, review state, source evidence, and version history.
+A law card should not be a loose aggregation of extraction rows at request time. It should be a curated product artifact with its own lifecycle, review state, tracker grounding, source evidence, and version history.
 
-The extraction layer answers: **what was found in the legal text?**
+The extraction layer answers: **what was found in the tracker-contextualized legal text?**
 
-The law card layer answers: **what should a business, policymaker, or compliance team understand and do?**
+The law card layer answers: **what should a business, policymaker, or compliance team understand and do based on the current tracker-grounded record?**
 
-### 6.2 Proposed tables
+### 7.2 Proposed tables
 
 #### `law_cards`
 
@@ -335,25 +418,43 @@ The law card layer answers: **what should a business, policymaker, or compliance
 |---|---|---|
 | `id` | integer | primary key |
 | `canonical_law_id` | text | stable law identifier |
-| `document_version_id` | integer | FK to source law version |
+| `document_version_id` | integer | FK to source law version, if source text exists |
 | `run_id` | integer | FK to build run |
 | `state_code` | text | `CA`, `CO`, etc. |
 | `jurisdiction_name` | text | full state or federal name |
 | `law_name` | text | public title |
 | `bill_number` | text | bill number where applicable |
-| `citation` | text | codified citation if available |
-| `status` | text | introduced, pending, enacted, effective, delayed, repealed, stayed, litigated |
+| `citation` | text | codified citation if available from tracker or source |
+| `status` | text | introduced, active bill, enacted, effective, delayed, repealed, stayed, litigated |
 | `effective_date` | date | nullable |
 | `enforcement_start_date` | date | nullable |
 | `plain_summary` | text | executive summary |
 | `business_relevance_summary` | text | why businesses should care |
-| `legal_review_status` | text | not reviewed, reviewed, approved, rejected |
-| `technical_review_status` | text | extraction review status |
+| `tracker_grounding_status` | text | `orrick`, `iapp`, `orrick_and_iapp`, `secondary_only`, `manual` |
+| `source_attachment_status` | text | `official_source_attached`, `tracker_only`, `source_missing`, `source_parse_failed` |
+| `analyst_review_status` | text | not reviewed, reviewed, approved, rejected |
+| `future_legal_review_status` | text | not available, not reviewed, reviewed, approved, rejected |
 | `confidence_score` | float | product-level confidence |
 | `ambiguity_level` | text | low, medium, high, critical |
 | `last_reviewed_at` | timestamp | nullable |
 | `created_at` | timestamp | required |
 | `updated_at` | timestamp | required |
+
+#### `law_card_tracker_refs`
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | integer | primary key |
+| `law_card_id` | integer | FK |
+| `tracker_name` | text | `orrick`, `iapp` |
+| `tracker_law_id` | text | upstream ID where available |
+| `tracker_title` | text | source title |
+| `tracker_status` | text | status from tracker |
+| `tracker_scope` | text | scope category from tracker |
+| `key_requirements_raw` | text | raw Orrick or IAPP requirement text where available |
+| `enforcement_raw` | text | raw enforcement text where available |
+| `last_updated_at` | timestamp | source record update time |
+| `payload` | jsonb | full normalized tracker record |
 
 #### `law_card_applicability`
 
@@ -367,6 +468,7 @@ The law card layer answers: **what should a business, policymaker, or compliance
 | `covered_decision_types` | jsonb | consequential, high-risk, consumer-facing, etc. |
 | `thresholds` | jsonb | revenue, employees, users, compute, time, geography |
 | `exemptions` | jsonb | carve-outs and exclusions |
+| `tracker_ref_ids` | jsonb | source tracker references |
 | `evidence_extraction_ids` | jsonb | source extraction references |
 
 #### `law_card_obligations`
@@ -380,9 +482,10 @@ The law card layer answers: **what should a business, policymaker, or compliance
 | `action_required` | text | what must be done |
 | `trigger_condition` | text | when it applies |
 | `deadline` | text | raw or normalized deadline |
+| `tracker_support` | text | `orrick`, `iapp`, `both`, `source_only`, `extraction_only` |
 | `evidence_extraction_id` | integer | FK to extraction |
 | `confidence_score` | float | obligation-level confidence |
-| `review_status` | text | technical and legal review state |
+| `review_status` | text | analyst review state |
 
 #### `law_card_enforcement`
 
@@ -397,6 +500,7 @@ The law card layer answers: **what should a business, policymaker, or compliance
 | `cure_period_days` | integer | nullable |
 | `private_right_of_action` | boolean | nullable |
 | `safe_harbor` | jsonb | framework or conditions |
+| `tracker_support` | text | `orrick`, `iapp`, `both`, `source_only`, `extraction_only` |
 | `evidence_extraction_ids` | jsonb | source extraction references |
 
 #### `law_card_business_actions`
@@ -405,12 +509,13 @@ The law card layer answers: **what should a business, policymaker, or compliance
 |---|---|---|
 | `id` | integer | primary key |
 | `law_card_id` | integer | FK |
-| `team` | text | legal, product, data science, security, procurement, HR, compliance |
+| `team` | text | product, data science, security, procurement, HR, compliance, policy |
 | `action_type` | text | assess, document, disclose, monitor, contract, test, review |
 | `action_text` | text | plain-English action |
 | `priority` | text | low, medium, high, urgent |
 | `deadline` | text | nullable |
 | `source_obligation_id` | integer | FK to law card obligation or extraction |
+| `grounding_note` | text | tracker-grounded, source-supported, analyst-added, or future legal review needed |
 
 #### `law_card_risk_scores`
 
@@ -424,18 +529,21 @@ The law card layer answers: **what should a business, policymaker, or compliance
 | `deadline_urgency` | text | low, medium, high |
 | `ambiguity_level` | text | low, medium, high, critical |
 | `documentation_burden` | text | low, medium, high |
+| `tracker_confidence` | text | low, medium, high |
 | `rationale` | jsonb | explainable scoring factors |
 
 ---
 
-## 7. Product taxonomy
+## 8. Product taxonomy
 
 The extraction schemas should be preserved. Add a normalized business taxonomy above them.
 
-### 7.1 Source taxonomy
+### 8.1 Source taxonomy
 
-- statute;
-- bill;
+- Orrick tracker;
+- IAPP tracker;
+- official statute;
+- official bill;
 - regulation;
 - agency guidance;
 - attorney general advisory;
@@ -445,9 +553,10 @@ The extraction schemas should be preserved. Add a normalized business taxonomy a
 - litigation order;
 - settlement;
 - model policy;
-- secondary tracker.
+- manual analyst note;
+- future lawyer note.
 
-### 7.2 AI system taxonomy
+### 8.2 AI system taxonomy
 
 - automated decision system;
 - high-risk AI system;
@@ -467,7 +576,7 @@ The extraction schemas should be preserved. Add a normalized business taxonomy a
 - algorithmic utilization review;
 - automated employment decision tool.
 
-### 7.3 Business role taxonomy
+### 8.3 Business role taxonomy
 
 - developer;
 - deployer;
@@ -489,7 +598,7 @@ The extraction schemas should be preserved. Add a normalized business taxonomy a
 - real estate broker;
 - school or educational provider.
 
-### 7.4 Use-case taxonomy
+### 8.4 Use-case taxonomy
 
 - employment;
 - housing;
@@ -511,7 +620,7 @@ The extraction schemas should be preserved. Add a normalized business taxonomy a
 - data broker disclosures;
 - online platform moderation.
 
-### 7.5 Obligation taxonomy
+### 8.5 Obligation taxonomy
 
 - notice;
 - disclosure;
@@ -542,9 +651,115 @@ The extraction schemas should be preserved. Add a normalized business taxonomy a
 
 ---
 
-## 8. Business applicability engine
+## 9. Tracker-grounded confidence, review, and trust model
 
-### 8.1 Purpose
+### 9.1 Do not remove the Orrick gate yet
+
+The previous recommendation to replace the Orrick gate should be deferred. Because the team does not currently have lawyers who can validate legal interpretation, Orrick and IAPP should remain the current grounding layer.
+
+However, the existing gate should be refined so it supports both Orrick and IAPP and does not accidentally penalize laws that are IAPP-only.
+
+### 9.2 Recommended near-term confidence model
+
+Use a tracker-grounded confidence model:
+
+| Signal | Suggested weight |
+|---|---:|
+| Orrick alignment | 30 percent |
+| IAPP alignment or status match | 20 percent |
+| Evidence spans verified against attached source text | 15 percent |
+| Citation verification passed | 10 percent |
+| Cross-validation passed | 10 percent |
+| Gap detection found no high-confidence gaps | 5 percent |
+| Analyst review approved | 10 percent |
+
+If only Orrick is available, redistribute IAPP weight across Orrick alignment, evidence, and analyst review.
+
+If only IAPP is available, do not force Tier D solely because Orrick is missing. Instead, use an `iapp_grounded` pathway.
+
+If neither Orrick nor IAPP is available, the item should remain `ungrounded` and should not be product-visible without explicit admin override.
+
+### 9.3 Confidence states
+
+Use both score and state.
+
+| State | Meaning |
+|---|---|
+| `unverified` | extraction exists but verification not run |
+| `orrick_grounded` | extraction aligns with Orrick data |
+| `iapp_grounded` | extraction aligns with IAPP data |
+| `tracker_grounded` | extraction aligns with Orrick, IAPP, or both |
+| `source_supported` | evidence spans verify against attached official source text |
+| `analyst_reviewed` | analyst approved for product use |
+| `flagged` | material issue found |
+| `tracker_conflict` | Orrick, IAPP, source text, or extraction disagree |
+| `stale` | tracker or attached source changed since review |
+| `superseded` | newer extraction or card version exists |
+| `future_legal_reviewed` | lawyer review completed in a future phase |
+
+### 9.4 Tracker conflict handling
+
+Create explicit conflict states:
+
+| Conflict type | Example |
+|---|---|
+| `orrick_iapp_status_conflict` | Orrick marks law enacted, IAPP marks active bill |
+| `tracker_source_date_conflict` | tracker effective date differs from attached official text |
+| `extraction_tracker_requirement_conflict` | LLM extracts obligation not found in tracker summary |
+| `enforcement_conflict` | penalty differs between tracker and extraction |
+| `scope_conflict` | covered sector differs between tracker and extraction |
+
+Conflict behavior:
+
+- Do not silently merge conflicts.
+- Surface conflict in review UI.
+- Assign analyst review priority.
+- Mark law card as `needs_tracker_resolution` or `needs_source_check`.
+- Do not promote conflicted card to product-visible unless the conflict is explained.
+
+### 9.5 Analyst review workflow
+
+Recommended review states:
+
+1. pending analyst review;
+2. analyst approved;
+3. analyst rejected;
+4. needs revision;
+5. tracker conflict;
+6. source attachment needed;
+7. stale after tracker update;
+8. superseded by new run;
+9. future legal review pending;
+10. future legal review complete.
+
+### 9.6 Review UI requirements
+
+Each review item should show:
+
+- Orrick fields;
+- IAPP fields;
+- source passage, if available;
+- extraction payload;
+- evidence spans;
+- verified and unverified evidence markers;
+- section path;
+- official source URL, if available;
+- model ID;
+- prompt version;
+- confidence breakdown;
+- verification results;
+- tracker alignment score;
+- tracker conflict warnings;
+- suggested law-card placement;
+- correction editor with schema validation;
+- reviewer comments;
+- future legal review placeholder.
+
+---
+
+## 10. Business applicability engine
+
+### 10.1 Purpose
 
 The applicability engine should determine whether a law card is likely relevant to a business based on facts about the organization, system, state, users, sector, and use case.
 
@@ -555,9 +770,10 @@ The engine should never pretend to provide legal advice. It should output struct
 - unlikely applicable;
 - not enough information;
 - excluded by exemption;
-- needs counsel review.
+- needs analyst review;
+- future counsel review recommended.
 
-### 8.2 Business intake schema
+### 10.2 Business intake schema
 
 ```json
 {
@@ -581,12 +797,13 @@ The engine should never pretend to provide legal advice. It should output struct
 }
 ```
 
-### 8.3 Output schema
+### 10.3 Output schema
 
 ```json
 {
   "result_id": "...",
   "jurisdictions_checked": ["CA", "CO", "UT"],
+  "grounding_note": "Results are based on Orrick and IAPP as current reference sources.",
   "likely_applicable": [
     {
       "law_card_id": 123,
@@ -595,16 +812,18 @@ The engine should never pretend to provide legal advice. It should output struct
       "why": ["business is a deployer", "system is used in employment", "decision impact is high"],
       "required_actions": ["complete impact assessment", "provide notice", "maintain records"],
       "missing_facts": [],
+      "tracker_grounding": "orrick_and_iapp",
       "confidence": "high"
     }
   ],
   "possibly_applicable": [],
   "unlikely_applicable": [],
-  "needs_counsel_review": []
+  "needs_analyst_review": [],
+  "future_counsel_review_recommended": []
 }
 ```
 
-### 8.4 Implementation approach
+### 10.4 Implementation approach
 
 Start with deterministic matching, not LLM-only reasoning.
 
@@ -619,7 +838,8 @@ Rules should compare business facts against normalized law card fields:
 - exemptions;
 - effective dates;
 - enforcement status;
-- pending or enacted status.
+- pending or enacted status;
+- tracker grounding status.
 
 Use LLMs only for:
 
@@ -627,122 +847,72 @@ Use LLMs only for:
 - asking follow-up questions when facts are missing;
 - mapping ambiguous business descriptions to taxonomy terms.
 
-### 8.5 Acceptance criteria
+### 10.5 Acceptance criteria
 
 - The engine can explain why each law was included or excluded.
-- Every applicability result links to law-card fields and source evidence.
+- Every applicability result links to law-card fields and tracker/source evidence.
 - Missing facts are explicitly listed.
 - The same input produces deterministic results.
 - LLM explanations cannot override deterministic applicability logic.
+- The output clearly says the result is tracker-grounded, not lawyer-validated.
 
 ---
 
-## 9. Confidence, review, and trust model
+## 11. Source and tracker corpus strategy
 
-### 9.1 Replace the hard secondary-source gate
+### 11.1 Current source hierarchy
 
-The current Orrick-gated confidence approach should be replaced with a broader source-confidence model. Orrick and IAPP are useful but should not function as hard legal ground truth.
+During the current phase, use this hierarchy:
 
-Recommended product confidence components:
+1. Orrick tracker;
+2. IAPP tracker;
+3. attached official law or bill text;
+4. attached official agency guidance, AG guidance, enforcement action, or court order;
+5. model-generated extraction;
+6. analyst review;
+7. future lawyer review.
 
-| Signal | Suggested weight |
-|---|---:|
-| Official source available and parsed | 20 percent |
-| Evidence spans verified | 20 percent |
-| Citation verification passed | 10 percent |
-| Cross-validation passed | 10 percent |
-| Gap detection found no high-confidence gaps | 10 percent |
-| Human technical review approved | 10 percent |
-| Legal review approved | 15 percent |
-| Secondary-source agreement | 5 percent |
+### 11.2 Tracker metadata requirements
 
-### 9.2 Confidence states
+For every Orrick or IAPP record, preserve:
 
-Use both score and state.
-
-| State | Meaning |
-|---|---|
-| `unverified` | extraction exists but verification not run |
-| `machine_verified` | evidence and automated checks passed |
-| `human_reviewed` | technical reviewer approved |
-| `legal_reviewed` | legal reviewer approved |
-| `flagged` | material issue found |
-| `stale` | source law or bill has changed since review |
-| `superseded` | newer extraction or card version exists |
-
-### 9.3 Human review workflow
-
-Recommended review states:
-
-1. pending technical review;
-2. technical approved;
-3. technical rejected;
-4. needs revision;
-5. pending legal review;
-6. legal approved;
-7. legal rejected;
-8. stale after source change;
-9. superseded by new run.
-
-### 9.4 Review UI requirements
-
-Each review item should show:
-
-- source passage;
-- extraction payload;
-- evidence spans;
-- verified and unverified evidence markers;
-- section path;
-- official source URL;
-- model ID;
-- prompt version;
-- confidence breakdown;
-- verification results;
-- similar or duplicate extractions;
-- suggested law-card placement;
-- correction editor with schema validation;
-- reviewer comments;
-- legal-review checklist.
-
----
-
-## 10. Source ingestion and legal corpus strategy
-
-### 10.1 Source hierarchy
-
-The product should use this hierarchy:
-
-1. official enacted law or codified statute;
-2. official enrolled bill text;
-3. official bill version;
-4. official agency regulation or guidance;
-5. official attorney general guidance;
-6. official enforcement action, settlement, or court order;
-7. secondary tracker, such as law firm or professional association tracker;
-8. manually added research notes.
-
-### 10.2 Source metadata requirements
-
-For every source artifact:
-
-- source type;
-- official or secondary status;
-- URL;
-- retrieval date;
-- content hash;
-- document version;
+- tracker name;
+- tracker record ID if available;
 - jurisdiction;
-- legal status;
-- parse quality;
-- OCR status;
-- reviewer validation status;
-- relationship to prior version;
-- relationship to downstream law card.
+- bill number;
+- canonical title;
+- status;
+- scope category;
+- effective date;
+- key requirements raw text;
+- enforcement raw text;
+- source URL or tracker URL;
+- last updated date;
+- imported date;
+- normalized law ID;
+- raw payload snapshot;
+- row hash.
 
-### 10.3 Source freshness
+### 11.3 Official source attachment
 
-Add scheduled source checks:
+Official law or bill text should still be attached where possible, but the current product should not require official-source interpretation before producing tracker-grounded cards.
 
+Source attachment statuses:
+
+| Status | Meaning |
+|---|---|
+| `tracker_only` | card is based only on Orrick or IAPP |
+| `official_source_attached` | official text is attached and parsed |
+| `official_source_unparsed` | official text exists but parse failed or is not processed |
+| `official_source_missing` | no official source attached yet |
+| `source_conflict` | attached source appears to conflict with tracker fields |
+
+### 11.4 Source freshness
+
+Add scheduled tracker checks:
+
+- Orrick row changed;
+- IAPP row changed;
 - bill status changed;
 - law enacted;
 - effective date changed;
@@ -753,22 +923,23 @@ Add scheduled source checks:
 - rulemaking finalized;
 - federal preemption risk added.
 
-### 10.4 Acceptance criteria
+### 11.5 Acceptance criteria
 
-- Every production law card has at least one official source or an explicit `official_source_missing` flag.
-- Secondary-source-only cards are not legal-approved without human confirmation.
-- Source freshness checks can mark law cards as stale.
+- Every production law card has Orrick or IAPP grounding, or an explicit ungrounded warning.
+- Cards can be product-visible without lawyer review if they are tracker-grounded and analyst-reviewed.
+- Cards without official source attachment are allowed but visibly marked `tracker_only`.
+- Tracker changes can mark cards stale.
 - A stale card is not served as final without a visible warning.
 
 ---
 
-## 11. API strategy
+## 12. API strategy
 
-### 11.1 Current API direction
+### 12.1 Current API direction
 
 The current `/v1` API serves obligations, individual obligations, dependencies, matrix data, changes, completeness, and verification. This should be preserved for internal and advanced users, but product endpoints should be added.
 
-### 11.2 New product endpoints
+### 12.2 New product endpoints
 
 #### Law card endpoints
 
@@ -791,6 +962,7 @@ POST /v1/applicability-check/explain
 ```http
 GET /v1/law-cards/{law_card_id}/evidence
 GET /v1/extractions/{extraction_id}/source
+GET /v1/law-cards/{law_card_id}/tracker-refs
 ```
 
 #### Change intelligence endpoints
@@ -805,31 +977,33 @@ GET /v1/law-cards/{law_card_id}/diff?from_run_id=...&to_run_id=...
 
 Internal review endpoints should remain under `/internal`, protected by auth and roles.
 
-### 11.3 API response principles
+### 12.3 API response principles
 
-- Every business-facing claim should include traceable evidence IDs.
-- Every law card should include review and confidence state.
+- Every business-facing claim should include traceable tracker references or evidence IDs.
+- Every law card should include tracker grounding and analyst review state.
 - Ambiguity should be explicit.
 - Pending or non-effective laws should be clearly marked.
 - API should distinguish legal status from product readiness.
+- API should distinguish analyst review from future legal review.
 
-### 11.4 Acceptance criteria
+### 12.4 Acceptance criteria
 
 - API endpoints have stable Pydantic response schemas.
 - OpenAPI documentation clearly separates product endpoints and internal endpoints.
 - API key scopes control access.
 - Product endpoints never serve unreviewed cards as if reviewed.
+- Product endpoints never serve tracker-grounded cards as lawyer-validated.
 - Pagination, filtering, and sorting are tested.
 
 ---
 
-## 12. Engineering implementation roadmap
+## 13. Engineering implementation roadmap
 
-## Phase 0: Stabilization and safety fixes
+## Phase 0: Stabilization and tracker-grounded safety fixes
 
 ### Goal
 
-Make the current system honest, internally reliable, non-destructive, and safe for team use.
+Make the current system honest, internally reliable, non-destructive, and safe for team use while keeping Orrick and IAPP as the current ground truth.
 
 ### Workstream A: verification repair
 
@@ -847,27 +1021,30 @@ Acceptance criteria:
 - Failed verification is visible and cannot raise confidence.
 - Verification results are persisted.
 
-### Workstream B: confidence recomputation
+### Workstream B: tracker-grounded confidence recomputation
 
 Tasks:
 
-- Add `verification_results` table.
-- Persist cross-validation scores, gap candidates, and citation verification results.
+- Add `verification_results` migration.
+- Persist tracker alignment, cross-validation, gap detection, and citation verification outputs.
 - Recompute confidence after verification.
+- Add support for both Orrick-grounded and IAPP-grounded pathways.
 - Store confidence history.
 
 Acceptance criteria:
 
 - Confidence changes after verification.
 - Dashboard and API expose verification state.
+- IAPP-only records are not automatically forced to Tier D solely because Orrick is absent.
+- Records with no Orrick or IAPP grounding are excluded from product-visible cards unless explicitly overridden.
 
 ### Workstream C: non-destructive runs
 
 Tasks:
 
 - Add `extraction_runs` table.
-- Add `run_id` to relevant tables.
-- Replace destructive purge with new run creation.
+- Add `run_id` to extractions and review tables.
+- Replace full-run purge with new run creation.
 - Add active serving run concept.
 
 Acceptance criteria:
@@ -885,71 +1062,76 @@ Tasks:
 - Add role-based review permissions.
 - Use authenticated identity for reviewer field.
 - Validate corrections before applying.
+- Add future legal review fields but do not require them for current release.
 
 Acceptance criteria:
 
 - Unauthorized write actions fail.
 - Review actions are attributable and immutable.
+- Analyst review is clearly distinct from future legal review.
 
 ### Phase 0 deliverable
 
-Internal alpha suitable for trusted team use, with clear warnings for unverified data.
+Internal alpha suitable for trusted team use, with clear warnings for unverified, tracker-only, and non-lawyer-reviewed data.
 
 ---
 
-## Phase 1: Authoritative source foundation
+## Phase 1: Tracker corpus foundation
 
 ### Goal
 
-Make official legal sources the product’s source of truth.
+Make Orrick and IAPP the explicit, preserved, normalized reference corpus.
 
-### Workstream A: source model
-
-Tasks:
-
-- Add source artifact status fields.
-- Distinguish official and secondary sources.
-- Add source retrieval history.
-- Add content hash snapshots.
-- Add legal status events.
-
-### Workstream B: official source resolution
+### Workstream A: tracker reference model
 
 Tasks:
 
-- Build connectors or manual workflows for official state legislative pages.
-- Map bill numbers to enacted laws and codified statutes where possible.
-- Preserve secondary trackers as reference metadata.
+- Add `tracker_sources` or `law_card_tracker_refs` table.
+- Preserve raw Orrick and IAPP payloads.
+- Add row hash and imported timestamp.
+- Add tracker update history.
+- Normalize status fields across Orrick and IAPP.
 
-### Workstream C: freshness monitor
+### Workstream B: tracker alignment
 
 Tasks:
 
-- Add source refresh jobs.
-- Add stale-card detection.
-- Add change feed for source changes.
+- Extend Orrick similarity into a broader tracker alignment module.
+- Add IAPP alignment logic.
+- Detect Orrick/IAPP conflicts.
+- Add conflict queue for analyst review.
+
+### Workstream C: source attachment as support
+
+Tasks:
+
+- Attach official source text where available.
+- Preserve source hash and parse quality.
+- Do not block product cards when official source is missing if tracker grounding is strong.
+- Mark card as `tracker_only` when official source is missing.
 
 ### Acceptance criteria
 
-- Every reviewed law card has official source status.
-- Secondary-only cards are flagged.
-- Source changes can mark cards stale.
+- Every product-visible law card has tracker grounding status.
+- Orrick and IAPP record changes can be detected.
+- Conflicting tracker records are flagged.
+- Official source attachment improves confidence but is not required for current release.
 
 ### Phase 1 deliverable
 
-Source-certified legal corpus.
+Tracker-grounded legal corpus.
 
 ---
 
-## Phase 2: Gold-standard evaluation and accuracy benchmarking
+## Phase 2: Evaluation and analyst benchmark
 
 ### Goal
 
-Measure extraction and law-card accuracy before scaling.
+Measure extraction quality against Orrick and IAPP reference data before scaling.
 
-### Workstream A: gold-standard set
+### Workstream A: tracker-grounded gold set
 
-Create a hand-labeled evaluation corpus of 25 to 50 laws across:
+Create a hand-reviewed evaluation corpus of 25 to 50 laws across:
 
 - California;
 - Colorado;
@@ -968,8 +1150,12 @@ Create a hand-labeled evaluation corpus of 25 to 50 laws across:
 
 ### Workstream B: labels
 
-For each law, label:
+For each law, labels should be based on Orrick and IAPP, plus source text when available:
 
+- tracker title;
+- tracker status;
+- tracker scope category;
+- key requirements;
 - covered entities;
 - covered AI systems;
 - covered sectors;
@@ -983,22 +1169,22 @@ For each law, label:
 - cure period;
 - exceptions;
 - safe harbors;
-- evidence spans;
+- evidence spans if official source is attached;
 - ambiguity notes.
 
 ### Workstream C: metrics
 
 Track:
 
-- precision;
-- recall;
-- field-level accuracy;
-- evidence-span verification rate;
-- citation verification rate;
-- false positive rate;
-- false negative rate;
+- tracker alignment precision;
+- tracker alignment recall;
+- field-level accuracy against Orrick and IAPP;
+- evidence-span verification rate where source text exists;
+- citation verification rate where source text exists;
+- false positive rate against tracker data;
+- false negative rate against tracker data;
 - confidence calibration;
-- reviewer correction rate;
+- analyst correction rate;
 - time per reviewed card;
 - model and prompt performance.
 
@@ -1008,10 +1194,11 @@ Track:
 - Results are written to an evaluation report.
 - Prompt or model changes can be compared against baseline.
 - No production prompt changes without benchmark regression check.
+- Evaluation clearly distinguishes tracker accuracy from lawyer-validated legal accuracy.
 
 ### Phase 2 deliverable
 
-Evaluation harness and benchmark dashboard.
+Tracker-grounded evaluation harness and benchmark dashboard.
 
 ---
 
@@ -1019,16 +1206,17 @@ Evaluation harness and benchmark dashboard.
 
 ### Goal
 
-Create first-class business-facing law cards from reviewed legal extractions.
+Create first-class business-facing law cards from tracker-grounded and analyst-reviewed extractions.
 
 ### Workstream A: law card schema and tables
 
 Tasks:
 
 - Add `law_cards` and related tables.
+- Add tracker reference tables.
 - Add mapping logic from extraction types to law card sections.
 - Add card build run tracking.
-- Preserve source extraction IDs behind each card section.
+- Preserve source extraction IDs and tracker refs behind each card section.
 
 ### Workstream B: deterministic summaries
 
@@ -1036,26 +1224,28 @@ Tasks:
 
 - Build deterministic summary templates.
 - Use LLMs only for optional drafting, not authoritative facts.
-- Require source evidence for all legal claims.
+- Require tracker support or source evidence for all legal claims.
+- Flag any extraction-only claim for analyst review.
 
 ### Workstream C: law card review
 
 Tasks:
 
-- Add technical review for card assembly.
-- Add legal review for final card approval.
+- Add analyst review for card assembly.
+- Add future legal review fields but do not require them.
 - Add stale and superseded states.
 
 ### Acceptance criteria
 
 - A card can be generated for a selected law.
-- Every card claim links to source evidence.
-- Legal-review status is visible.
+- Every card claim links to tracker refs or source evidence.
+- Analyst-review status is visible.
+- Future legal-review status is visible as not yet available or not reviewed.
 - Cards can be rebuilt without deleting old versions.
 
 ### Phase 3 deliverable
 
-Policy card MVP.
+Tracker-grounded policy card MVP.
 
 ---
 
@@ -1063,7 +1253,7 @@ Policy card MVP.
 
 ### Goal
 
-Help organizations understand which laws apply and what they should do.
+Help organizations understand which laws may apply and what they should consider doing, based on tracker-grounded law cards.
 
 ### Workstream A: applicability engine
 
@@ -1073,6 +1263,7 @@ Tasks:
 - Add deterministic matching rules.
 - Add missing-facts detection.
 - Add explainable inclusion and exclusion logic.
+- Add tracker grounding notes to every applicability result.
 
 ### Workstream B: control mapping
 
@@ -1099,6 +1290,7 @@ Tasks:
 - Add downloadable checklist.
 - Add team-specific actions.
 - Add risk summary.
+- Add not-legal-advice and not-lawyer-reviewed labels.
 
 ### Acceptance criteria
 
@@ -1106,6 +1298,7 @@ Tasks:
 - Every result explains why it was included or excluded.
 - Missing facts are listed.
 - LLM explanations cannot override deterministic logic.
+- Reports clearly state that results are based on Orrick and IAPP as current reference sources.
 
 ### Phase 4 deliverable
 
@@ -1113,7 +1306,54 @@ Business decision engine.
 
 ---
 
-## Phase 5: Productionization
+## Phase 5: Future official-source and legal-review hardening
+
+### Goal
+
+Prepare the platform for lawyer validation and primary-source legal review when resources allow.
+
+### Workstream A: official source certification
+
+Tasks:
+
+- Add official source retrieval workflows.
+- Map bills to enacted laws and codified statutes.
+- Improve PDF and HTML parsing quality.
+- Add source-text diffing.
+- Add source conflict resolution workflows.
+
+### Workstream B: legal review workflow
+
+Tasks:
+
+- Add legal reviewer role.
+- Add legal review checklist.
+- Add counsel notes and review signatures.
+- Add legal approval gates for high-risk product claims.
+- Add legal-review export package with tracker refs, source text, extraction payload, and analyst notes.
+
+### Workstream C: confidence model evolution
+
+Tasks:
+
+- Add lawyer-reviewed confidence component.
+- Reduce dependency on tracker alignment only after counsel-reviewed benchmarks exist.
+- Preserve tracker alignment as a continuing support signal.
+
+### Acceptance criteria
+
+- Legal reviewer can approve or reject law cards.
+- Legal review status is preserved and auditable.
+- Counsel-reviewed cards can be distinguished from tracker-grounded cards.
+- Confidence model can incorporate lawyer validation without breaking current tracker-grounded behavior.
+
+### Phase 5 deliverable
+
+Lawyer-review-ready regulatory intelligence platform.
+
+---
+
+## Phase 6: Productionization
 
 ### Goal
 
@@ -1146,7 +1386,7 @@ Tasks:
 
 - Add runbook.
 - Add incident response plan.
-- Add source refresh schedule.
+- Add tracker refresh schedule.
 - Add reviewer assignment workflows.
 - Add release checklist.
 
@@ -1155,17 +1395,17 @@ Tasks:
 - Failed jobs are visible and retryable.
 - Production data can be restored.
 - API has scoped access and rate limits.
-- Legal review and source freshness are operationally monitored.
+- Tracker freshness and analyst review are operationally monitored.
 
-### Phase 5 deliverable
+### Phase 6 deliverable
 
-Production-grade regulatory intelligence platform.
+Production-grade tracker-grounded regulatory intelligence platform.
 
 ---
 
-## 13. Testing strategy
+## 14. Testing strategy
 
-### 13.1 Unit tests
+### 14.1 Unit tests
 
 Add tests for:
 
@@ -1173,79 +1413,94 @@ Add tests for:
 - JSON repair;
 - evidence span verification;
 - confidence scoring;
+- tracker alignment;
+- Orrick-only confidence pathway;
+- IAPP-only confidence pathway;
 - citation verification;
 - taxonomy normalization;
 - applicability matching rules;
 - review correction validation;
 - API filters and pagination.
 
-### 13.2 Integration tests
+### 14.2 Integration tests
 
 Add tests for:
 
-- ingest one fixture law;
+- ingest one Orrick fixture row;
+- ingest one IAPP fixture row;
+- attach one official source fixture;
 - triage passages;
 - extract with mocked LLM;
 - verify with mocked LLM;
-- approve extraction;
+- compute tracker alignment;
+- approve extraction through analyst review;
 - build law card;
 - run applicability check.
 
-### 13.3 Golden-file tests
+### 14.3 Golden-file tests
 
-For each gold-standard law:
+For each tracker-grounded gold law:
 
+- expected tracker status;
+- expected scope category;
 - expected obligations;
 - expected covered entities;
 - expected deadlines;
 - expected enforcement fields;
-- expected evidence spans;
+- expected tracker references;
+- expected source evidence spans where source text exists;
 - expected law-card sections.
 
-### 13.4 Regression tests
+### 14.4 Regression tests
 
 Every prompt or model change should produce a benchmark report comparing:
 
-- precision;
-- recall;
-- field-level accuracy;
-- evidence verification;
+- tracker alignment precision;
+- tracker alignment recall;
+- field-level accuracy against Orrick and IAPP;
+- evidence verification where source exists;
 - confidence calibration;
 - token usage;
-- runtime.
+- runtime;
+- analyst correction rate.
 
 ---
 
-## 14. Data governance and legal review policy
+## 15. Data governance and review policy
 
-### 14.1 Legal status labels
+### 15.1 Legal and product status labels
 
 Every law card should display:
 
-- legal status;
-- product review status;
-- source status;
+- legal or legislative status from Orrick and IAPP;
+- tracker grounding status;
+- source attachment status;
+- analyst review status;
+- future legal review status;
 - confidence status;
 - last reviewed date;
 - stale or superseded warning where applicable.
 
-### 14.2 Human review separation
+### 15.2 Analyst review and future legal review separation
 
-Separate technical and legal review:
+Separate current analyst review from future legal review:
 
 | Review type | Question |
 |---|---|
-| Technical review | Did the extraction correctly capture the source text? |
-| Legal review | Is the interpretation appropriate for business-facing guidance? |
+| Analyst review | Does the structured card accurately reflect Orrick and IAPP tracker data and available source evidence? |
+| Technical review | Did the extraction correctly capture and normalize the source text and tracker fields? |
 | Product review | Is the card clear and usable? |
+| Future legal review | Is the interpretation legally appropriate after counsel review? |
 
-### 14.3 Disclaimers
+### 15.3 Disclaimers
 
-The product should clearly state that it provides legal information and regulatory intelligence, not legal advice. However, the disclaimer should not become an excuse for weak evidence, stale data, or vague claims.
+The product should clearly state that it provides tracker-grounded legal information and regulatory intelligence, not legal advice. It should also state that Orrick and IAPP are the current reference sources and that lawyer validation is a future goal.
+
+The disclaimer should not become an excuse for weak evidence, stale tracker data, or vague claims. The product must still be precise about what is known, what source supports it, and what remains uncertain.
 
 ---
 
-## 15. Immediate implementation backlog
+## 16. Immediate implementation backlog
 
 ### Week 1: critical repairs
 
@@ -1256,13 +1511,15 @@ The product should clearly state that it provides legal information and regulato
 - [ ] Remove persisted model reasoning.
 - [ ] Correct README and setup model drift.
 - [ ] Add auth guard scaffolding for `/internal`.
+- [ ] Rename current review language from legal review to analyst review where appropriate.
 
-### Week 2: confidence and verification persistence
+### Week 2: tracker alignment and verification persistence
 
 - [ ] Add `verification_results` migration.
-- [ ] Persist cross-validation, gap detection, and citation verification outputs.
+- [ ] Persist tracker alignment, cross-validation, gap detection, and citation verification outputs.
 - [ ] Recompute confidence after verification.
-- [ ] Add dashboard display for verification status.
+- [ ] Add IAPP-grounded confidence pathway.
+- [ ] Add dashboard display for tracker grounding and verification status.
 - [ ] Add tests for confidence recomputation.
 
 ### Week 3: run versioning
@@ -1273,21 +1530,23 @@ The product should clearly state that it provides legal information and regulato
 - [ ] Add active serving run promotion.
 - [ ] Add run comparison skeleton.
 
-### Week 4: law-card schema
+### Week 4: tracker reference model and law-card schema
 
+- [ ] Add tracker reference table.
+- [ ] Preserve raw Orrick and IAPP snapshots.
 - [ ] Add `law_cards` table.
 - [ ] Add law-card obligation, applicability, enforcement, business-action, and risk-score tables.
 - [ ] Build first deterministic law-card builder.
 - [ ] Add `GET /v1/law-cards/{id}`.
-- [ ] Generate 3 pilot law cards.
+- [ ] Generate 3 pilot tracker-grounded law cards.
 
-### Weeks 5 to 6: gold standard and source certification
+### Weeks 5 to 6: tracker-grounded evaluation
 
 - [ ] Select 25 law evaluation set.
-- [ ] Create manual labels.
+- [ ] Create manual labels based on Orrick and IAPP.
 - [ ] Build evaluation harness.
-- [ ] Add official-source status fields.
-- [ ] Add source freshness monitor prototype.
+- [ ] Add source attachment status fields.
+- [ ] Add tracker freshness monitor prototype.
 
 ### Weeks 7 to 8: applicability MVP
 
@@ -1296,57 +1555,63 @@ The product should clearly state that it provides legal information and regulato
 - [ ] Add `POST /v1/applicability-check`.
 - [ ] Add explainable outputs.
 - [ ] Add business action checklist.
+- [ ] Add tracker-grounded disclaimer language.
 
 ---
 
-## 16. Definition of done for policy-card readiness
+## 17. Definition of done for tracker-grounded policy-card readiness
 
-The platform is ready to support business-facing policy cards when:
+The platform is ready to support tracker-grounded business-facing policy cards when:
 
-1. every production card has official source provenance or an explicit warning;
-2. every legal claim links to evidence;
-3. extraction confidence reflects verification and review;
-4. prior runs and review history are preserved;
-5. technical review and legal review are separate;
-6. source freshness can mark cards stale;
-7. benchmark accuracy is measured and visible;
-8. applicability decisions are deterministic and explainable;
-9. API access is authenticated and scoped;
-10. product language clearly distinguishes legal information from legal advice.
+1. every production card has Orrick or IAPP grounding, or an explicit ungrounded warning;
+2. every legal or business-facing claim links to a tracker reference, source evidence, or both;
+3. extraction confidence reflects tracker alignment, verification, and analyst review;
+4. IAPP-only laws are supported without being unfairly downgraded solely because Orrick is missing;
+5. prior runs and review history are preserved;
+6. analyst review and future legal review are separate;
+7. tracker freshness can mark cards stale;
+8. benchmark accuracy is measured against Orrick and IAPP;
+9. applicability decisions are deterministic and explainable;
+10. API access is authenticated and scoped;
+11. product language clearly distinguishes tracker-grounded legal information from legal advice;
+12. product language clearly states that lawyer validation is a future goal.
 
 ---
 
-## 17. Recommended team roles
+## 18. Recommended team roles
 
 | Role | Responsibilities |
 |---|---|
 | Technical lead | architecture, migrations, API, run versioning, production readiness |
-| Data scientist | extraction evaluation, gold standard, confidence calibration, prompt and model testing |
-| Legal analyst | legal taxonomy, source validation, legal review protocol, card accuracy |
+| Data scientist | extraction evaluation, tracker alignment, confidence calibration, prompt and model testing |
+| Policy analyst | Orrick and IAPP interpretation, taxonomy refinement, tracker conflict resolution, law-card review |
 | Product lead | user workflows, card design, applicability report, prioritization |
 | Backend engineer | database models, endpoints, job orchestration, auth |
 | Frontend or dashboard engineer | review UI, law-card UI, run dashboard, verification dashboard |
-| DevOps engineer | environments, backups, observability, scheduled source refresh |
-| Policy advisor | state law prioritization, stakeholder review, policy interpretation context |
+| DevOps engineer | environments, backups, observability, scheduled tracker refresh |
+| Future legal reviewer | counsel review, legal approval, primary-source interpretation, once available |
 
 ---
 
-## 18. Open questions for the team
+## 19. Open questions for the team
 
 1. Which users are primary for MVP: business compliance teams, policymakers, startup founders, or internal analysts?
 2. Should law cards include pending bills, enacted laws only, or both with different labels?
-3. What level of legal review is required before a card is product-visible?
-4. What are the first 10 priority states?
-5. What are the first 5 priority use cases?
-6. Which official source APIs or scraping approaches are acceptable?
-7. What level of source freshness is required: daily, weekly, or manual release cycles?
-8. What is the acceptable false-negative rate for missed obligations?
-9. Should the system support customer-specific saved applicability profiles?
-10. Should law-card outputs be exportable as PDF, CSV, JSON, or all three?
+3. What analyst review is required before a tracker-grounded card is product-visible?
+4. What product language should be used to describe Orrick and IAPP grounding?
+5. What are the first 10 priority states?
+6. What are the first 5 priority use cases?
+7. What level of tracker freshness is required: daily, weekly, or manual release cycles?
+8. How should the system handle conflicts between Orrick and IAPP?
+9. How should the system handle extraction claims that are supported by official source text but absent from tracker summaries?
+10. What is the acceptable false-negative rate against Orrick and IAPP key requirements?
+11. Should the system support customer-specific saved applicability profiles?
+12. Should law-card outputs be exportable as PDF, CSV, JSON, or all three?
+13. What would trigger future legal review: high-risk cards, customer requests, revenue milestones, or all production cards?
 
 ---
 
-## 19. Suggested MVP scope
+## 20. Suggested MVP scope
 
 The first product MVP should focus on:
 
@@ -1372,27 +1637,30 @@ The first product MVP should focus on:
 
 ### Product outputs
 
-- law card;
-- evidence trail;
+- tracker-grounded law card;
+- tracker reference trail;
+- source evidence trail where available;
 - business applicability result;
 - compliance action checklist;
-- change and stale-card alerts.
+- tracker freshness and stale-card alerts.
 
 ---
 
-## 20. Final recommendation
+## 21. Final recommendation
 
-Do not treat Regs Checker as merely an extraction script. Treat it as the foundation of a regulatory intelligence product.
+Do not treat Regs Checker as merely an extraction script. Treat it as the foundation of a tracker-grounded regulatory intelligence product.
 
-The immediate engineering priority is trust: fix verification, preserve history, authenticate review, and source-certify the corpus. The next product priority is law-card generation. The strategic priority is business applicability: making the product answer whether a law applies and what an organization should do next.
+The immediate engineering priority is trust within the current constraint: fix verification, preserve history, authenticate review, and make Orrick and IAPP grounding explicit. The next product priority is law-card generation. The strategic priority is business applicability: making the product answer whether a law may apply and what an organization should consider doing next.
 
 The recommended sequence is:
 
 1. stabilize;
-2. source-certify;
-3. evaluate;
+2. formalize Orrick and IAPP as the current ground truth;
+3. evaluate against Orrick and IAPP;
 4. build law cards;
 5. add applicability logic;
-6. productionize.
+6. add official-source hardening;
+7. add future lawyer review;
+8. productionize.
 
-That sequence reduces legal risk, preserves the value of the existing architecture, and turns the repo into a credible policy intelligence platform rather than a black-box legal summarizer.
+That sequence fits the team’s current capabilities, preserves the value of the existing architecture, and turns the repo into a credible policy intelligence platform without pretending to provide lawyer-validated legal advice before the project has legal reviewers.
