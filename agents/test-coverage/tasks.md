@@ -6,11 +6,12 @@
 
 ## Next Tasks
 
-### Run-1 Unified Plan — assigned items (see `docs/run1_unified_plan.md`)
+### Run-1 Unified Plan v2 — assigned items (see `docs/run1_unified_plan.md`)
 
-- **Phase 6.5 — Normalization idempotency unit tests** — One `tests/unit/test_normalize_*.py` per normalization stage once `src/scripts/normalization/` exists (Phase 7.1): known value → expected code, articles stripped, unmapped value → `vocab_review_queue`, **idempotent re-run produces zero changes** (load-bearing test). Blocked until Phase 7.1 lands the loader.
-- **Phase 6.1/6.2 — Gold-standard fixtures** — Extend `tests/fixtures/gold_standard/` from the 149-row Tier-A + evidence-span pool. **Prioritize** human-corrected Tier-C/D + abstention fixtures (decision boundary) over easy Tier-A wins — start with `compliance_mechanism` abstentions and `subject_normalized` hedges. NOTE: SB 205 fixtures must wait on the Phase 1.2 text re-fetch (current corpus text is truncated/bad).
-- **Phase 6.4 — Eval-harness baseline** — Wire a pre/post run that records verified-span rate + A/B/C/D distribution so the Phase 2 (E-1) verbatim-quoting prompt change is measurable; >10% A→B drop triggers prompt review.
+- **WS-B4 — Normalization idempotency unit tests** — One `tests/unit/test_normalize_*.py` per normalization stage once the unified loader exists (WS-B4 in `rollup_matrix.py`): known value → expected canonical code, articles stripped, unmapped value → `vocab_review_queue`, **idempotent re-run produces zero changes** (load-bearing test). Blocked until WS-B4 lands the loader.
+- **WS-C0 / fixtures — Gold-standard fixtures** — Extend `tests/fixtures/gold_standard/` from the 149-row Tier-A + evidence-span pool. **Prioritize** human-corrected Tier-C/D + abstention fixtures (decision boundary) over easy Tier-A wins — start with `compliance_mechanism` abstentions and `subject_normalized` hedges. NOTE: SB 205 fixtures must wait on the WS-A4 text re-fetch (current corpus text is truncated/bad).
+- **WS-C0 — Eval-harness baseline** — Wire a pre/post run that records verified-span rate + A/B/C/D distribution so the C0 verbatim-prompt change (and the C1 cross-validation re-wire) are measurable; >10% A→B drop triggers prompt review.
+- **WS-C1 regression guard** — When cross-validation is wired into confidence (C1), add a test asserting a populated `cross_validation_score` actually moves the confidence result, and that a swallowed/failed cross-validation does NOT silently pass as a neutral score.
 
 ### Standing test debt
 

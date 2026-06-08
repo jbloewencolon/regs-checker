@@ -1,222 +1,149 @@
-# Run-1 Unified Plan — Run Integrity + Vocabulary Loop + Quality
+# Run-1 Unified Plan v2 — Tracker-Grounded Data Quality
 
-**Supersedes/extends:** [`extraction_run_remediation_plan.md`](./extraction_run_remediation_plan.md) (R0–R4, C-1…C-8)
-**Unifies:**
-- [`extraction_run_corrections_eng.md`](./extraction_run_corrections_eng.md) — run-integrity corrections (C-1…C-8)
-- [`code_update_strategy_eng.md`](./code_update_strategy_eng.md) — code-update strategy (Workstreams A + B)
-- [`vocab_harvest_spec_eng.md`](./vocab_harvest_spec_eng.md) — vocabulary self-improvement loop (D-1…D-4)
-- `data/lookups/candidates/*.csv` — harvest starter artifacts
-- **E-1** — evidence-span verbatim-quoting fix (this plan's addition; the missing confidence lever)
+**Reframed by:** [`engineering_strategy_v2.md`](./engineering_strategy_v2.md) (trust-model spine; supersedes `code_update_strategy_eng.md`)
+**Incorporates:** C-1…C-8 corrections · D-1…D-4 vocab harvest · the ~10-code actor model ([`actor_taxonomy_analysis.md`](./actor_taxonomy_analysis.md), [`data/lookups/candidates/actor_value_to_code_full.csv`](../data/lookups/candidates/actor_value_to_code_full.csv)) · E-1 evidence-span fix · this session's verification-layer code investigation
+**Status legend:** ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated
 
-**Run baseline:** Extraction 2026-05-10 → 2026-05-11
-**Status legend:** ✅ done · 🔧 in progress · ⏳ ready, not started · 🔒 gated (external/dependency)
-
----
-
-## 0. The thesis
-
-The Run-1 learnings split into two streams that **must be sequenced together**, not
-landed independently:
-
-- **Stream A — Run integrity (C-1…C-8):** make the run *complete and trustworthy*.
-  Mostly resolved already (R0–R4).
-- **Stream B — Vocabulary loop (D-1…D-4):** make each run *feed the next* by
-  harvesting agent-emitted vocabulary into lookups, prompts, and fixtures.
-
-Plus one lever neither stream addresses:
-
-- **E-1 — Evidence-span verbatim quoting:** the dominant cause of the 88% C/D
-  confidence skew is that the model **paraphrases** evidence spans instead of
-  verbatim-quoting them, so `_verify_evidence_spans()` (exact string match) fails on
-  41% of extractions. The vocab loop (D-3) fixes *vocabulary* compliance but does
-  **nothing** for evidence grounding (a separate 0.20 weight). This is the single
-  highest-leverage fix and it has no home in either source doc — so it is a
-  first-class phase here.
-
-Three couplings drive sequencing:
-1. **C-7 *is* the D-1/D-2 machinery.** One `data/lookups/` directory, one normalization loader — built once.
-2. **C-1 gates part of B.** `applicability_agent` fields can't be harvested until the bill-level layer is real (now resolved).
-3. **C-2 and reproducibility pinning** are the same discipline (`_prompt_hash`) on two surfaces.
-
-### Two blockers this plan surfaces that the source docs missed
-
-- **Actor target vocab is 4 codes, not 6.** `dim_actor_types.csv` = `Deployer,
-  Developer, Provider, Distributor`. The harvest spec assumes 6 (`operator`,
-  `compute_provider` absent). D-2 must **extend the dim table**, not just write a
-  lookup. The privacy-actor axis (`controller`/`processor`/`business`/`person` =
-  82% of obligation volume) is a VC+LKA *schema* decision.
-- **`modality_to_strength` has no target dim table.** A strength vocab home must be
-  created before even the "clean" fast-lane map can land.
+> **What changed from v1 of this plan.** v1 sequenced "fix the run" (Phases 0–2) and
+> "migrate taxonomy" (Phases 3–8) as parallel tracks ending in a Track-3.F re-extraction.
+> v2 collapses them into **one pipeline with a trust spine**: extract → link every fact to
+> a source → normalize to a shared taxonomy → **compare to Orrick/IAPP** → match=`tracker_grounded`,
+> disagree=flag-for-human, neither=`ungrounded` → **recompute confidence after the comparison.**
+> The product layer (law cards, applicability engine, API) is **deferred**. v1 Phases 0–2
+> are not wasted — they map into WS-A/B below.
 
 ---
 
-## 1. Dependency graph
+## 1. The trust model (the spine)
 
-```
- Phase 0 (residuals + relocate map) ─┐
- Phase 2 (E-1 evidence spans) ───────┼─ run NOW, independent ──┐
- Phase 3 (D-1 harvest job) ──────────┘                         │
- Phase 1 (C-3/C-8 coverage backfill) ─ independent ────────────┤
-                                                               ▼
- Phase 4 (D-2 ratify) 🔒 privacy-actor VC decision + dim extend │
-        │  └─ 4.1 modality fast-lane (no actor gate) ───────────┤
-        ▼                                                       │
- Phase 5 (D-3 prompt enums + validation) ──────────────────────┤
- Phase 6 (D-4 fixtures + eval baseline) ─ partly now ───────────┤
- Phase 7 (C-7 normalization loader + rollup) ──────────────────┤
-                                                               ▼
- Phase 8 — Track 3.F quality-improved re-extraction (HARD GATE)
-        requires: Phase 2 (E-1) + Phase 4 (D-2) + Phase 5 (D-3) + Phase 6 (D-4)
-```
+1. The AI extracts the law's contents.
+2. **Every fact links to a source** — a tracker entry or a verified evidence span.
+3. Normalize the extraction to a shared controlled vocabulary (WS-B).
+4. **Compare** the normalized extraction to Orrick **and** IAPP (WS-C).
+5. Match → `tracker_grounded`. Disagree → flag for human (WS-D). Neither tracker → `ungrounded`, shown only if labeled.
+6. **Confidence is recomputed *after* this comparison** — not fixed at extraction time.
+
+The 88% Tier-C/D skew is most likely a *symptom* of steps 4–6 not fully running. **This
+session's code investigation confirms that hypothesis in part** (see §2).
 
 ---
 
-## Phase 0 — Close run-integrity residuals & relocate the map
+## 2. Verification-layer reality check (resolves Strategy v2 §9.1 — build vs. fix)
 
-**Objective:** finish what R0–R4 left open and lay the `data/lookups/` foundation.
+Strategy v2 asked: *does the alignment/verification layer exist at all?* I traced the code.
+**Answer: built but partly disconnected.** WS-C1 is therefore mostly **"fix," not "build,"**
+with one genuine "build" (IAPP).
+
+| Component | State | Evidence |
+|---|---|---|
+| **Orrick alignment** | ✅ **works** — runs every extraction, feeds the 0.30 weight, hard-gates Tier D | `src/core/orrick_validation.py:80-177`; called `extractor.py:1179,2122,2534`; gate `confidence.py:166-195` |
+| **Cross-validation agent** | ⚠️ **exists but orphaned** — runs *post*-extraction, writes `Extraction.metadata_["cross_validation"]`, but the score is **never passed back** into `compute_confidence` | agent `src/agents/cross_validation.py`; called `extractor.py:3026`; persisted `extractor.py:3050-3061`; **never** passed at the 3 confidence call sites |
+| **`cross_validation_score` (0.25 weight)** | ❌ **dead** — always `None` → excluded from the denominator → **25% of the confidence model is currently absent** | `confidence.py:74,160-161`; no call site passes it |
+| **Gap detector** | ⚠️ exists, post-hoc, not integrated into confidence or re-extraction | `src/agents/gap_detector.py` |
+| **IAPP** | ❌ **not built** — CSV sits in `static/iapp_law_tracker.csv`, used only as status metadata; no ingestion, no alignment agent | `static/iapp_law_tracker.csv`; `src/ingestion/legacy/iapp_scraper.py` (unused) |
+| **`verification_results` table** | ❌ absent — results live ephemerally in `metadata_` | `src/db/models.py` (no such table) |
+
+**Why this matters for the confidence skew:** the dead 0.25 cross-validation weight isn't a
+*penalty* (it's excluded from the denominator when `None`), but wiring it in adds a
+**0.25-weight positive signal that is currently missing** — exactly the "fix the comparison
+and confidence cleans up for free" effect v2 predicts. Combined with E-1 (evidence grounding,
+0.20) this addresses **0.45 of the weight model** that is presently under-delivering.
+
+---
+
+## 3. ⚠️ Open contradiction to resolve before WS-A1
+
+Strategy v2 **A1 asserts the applicability agent "did not run — confirmed."** My earlier C-1
+analysis found **472 `bill_level_extractions` rows** in `run_summary`. These reconcile cleanly
+if the 472 are **enforcement_agent + compliance_timeline_agent only** (2 agents × ~236 laws ≈ 472),
+with **`applicability_agent` contributing 0**. That is consistent with both claims.
+
+**Action (Phase 0.1, unchanged):** run `SELECT agent_name, COUNT(*) FROM bill_level_extractions
+GROUP BY agent_name;`. If `applicability_agent = 0`, WS-A1 is a real extraction pass, not an
+export fix. **My C-1 export fix (`_export_bill_level_extractions`) remains a prerequisite** —
+it is what makes the applicability rows land in the run folder once A1 runs.
+
+---
+
+## 4. Workstreams
+
+### WS-A — Run integrity & versioning *(enables everything; run now)*
+
+| # | Task | Driver | v1 map | Status |
+|---|---|---|---|---|
+| A1 | Run bill-level **applicability** across all 232 laws (confirm 0 rows first, §3). Verify migration `k7h3i9j1f612_add_bill_level_extractions` applied. | C-1 | Ph0.1 | ⏳ (needs DB/LM Studio) |
+| A2 | **Run versioning (NEW):** add `extraction_runs` table (`run_id, git_sha, prompt_versions, model_config, source_snapshot_hash, summary`); add `run_id` FK to extractions/review/bill-level. Replace destructive full-run purge with run-create + serving-run promotion. | v2 §5.3 | — | ⏳ |
+| A3 | ✅ Model-of-record pinned (`gemma-4-26b-a4b`). C-2 root cause documented; add `"scope"` label to `agent_stats.json` writer. C-4 jurisdiction-skip counter done. | C-2,C-4 | Ph0.2/0.4 | 🔧 (label TODO) |
+| A4 | Reconcile 138→232 coverage; seed 135 `text_ready` laws; re-fetch 8 BAD_TEXT (SB 205 first; SB_2966 missing entirely). | C-3,C-8 | Ph1 | ⏳ |
+
+### WS-B — Taxonomy normalization *(the substrate; gates the trust check)*
+
+| # | Task | Driver | v1 map | Status |
+|---|---|---|---|---|
+| B0 | **Pull Orrick/IAPP's own covered-entity vocabulary first** (~1 day). Choose Tier-1 codes to maximize tracker comparability — this re-defines "correct" for B2–B4. | trust model | — | ⏳ owners RPR/LKA |
+| B1 | ✅ Harvest done (`actor_value_to_code_full.csv`, 209 values). Build reusable `src/scripts/harvest_vocab.py` pinned to `_prompt_hash`. | D-1 | Ph3 | 🔧 (CSV done; script TODO) |
+| B1.5 | **Clean the actor field before mapping (NEW):** ~5% are non-actors/garbled (`INVALID_nonactor` in CSV). Fix at parse layer, re-harvest, so committee maps signal not noise. | data-quality | — | ⏳ |
+| B2 | Stand up the **two-tier dim model** (§4 of v2): Tier-1 (~10 actor codes incl. `data_handler`, `regulator`, `individual`, `regulated_entity`, `data_broker`) + Tier-2 descriptive `dim_*` + Tier2→Tier1 lookup. All three DBs. | §4.2 | Ph4 | 🔒 after B0 |
+| B3 | Ratify maps via VC (full 209 actor; `modality_to_strength`; `agent_to_extraction_type` ✅). **Defer the 4 LKA forks** (data_handler split, regulator-vs-gov, individual-as-protected, operator-vs-deployer) with data in hand. | D-2,C-7,§4.2 | Ph4 | 🔒 LKA forks |
+| B4 | Unified normalization stage in `rollup_matrix.py` reading `data/lookups/*` → canonical IDs; idempotent; mismatches → `vocab_review_queue`. | D-2,C-7 | Ph7 | ⏳ |
+| B5 | Inject ratified enums into prompts + parse-time validation against `dim_*`. | D-3 | Ph5 | 🔒 after B3 |
+| B6 | **Re-confirm before locking:** re-harvest after A1; lock codes only when two runs agree, pinned to `_prompt_hash`. | reproducibility | — | 🔒 after A1 |
+
+### WS-C — Tracker alignment & verification *(the trust check; #1 priority)*
+
+| # | Task | Driver | v1 map | Status |
+|---|---|---|---|---|
+| **C0 (E-1)** | ✅ **Evidence-span verbatim quoting** — 4 prompts v1.1. Prerequisite for C5 source-linkage; lifts the 0.20 evidence-grounding weight (41% currently zero-grounded). | E-1 | Ph2.1 | ✅ done; test batch ⏳ |
+| C1 | **FIX (not build) — wire cross-validation into confidence.** The agent runs but its score never reaches `compute_confidence` (§2). Pass `cross_validation_score` from `metadata_["cross_validation"]` at the 3 confidence call sites → resurrects the dead 0.25 weight. Make swallowed failures explicit. | v2 §5.1 | — | ⏳ ★ high value |
+| C2 | Persist `verification_results` (per-extraction alignment/verification status + score) — new table, currently ephemeral in `metadata_`. | v2 §5.2 | — | ⏳ |
+| C3 | **BUILD — IAPP alignment.** Ingest `static/iapp_law_tracker.csv` into DB; add IAPP alignment scoring (mirror `orrick_validation.py`); emit `tracker_grounded`/`iapp_grounded`/`tracker_conflict`/`ungrounded`. Refine Orrick gate so IAPP-only laws aren't auto-Tier-D. | v2 §9 | — | ⏳ |
+| C4 | **Recompute confidence after** alignment/verification (tracker-grounded weighted model). | v2 §5.2 | — | 🔒 after C1,C3 |
+| C5 | Enforce **source linkage**: every served fact carries a tracker ref or verified evidence span, else `ungrounded`. (98% already have spans; E-1/C0 raises the *verified* rate.) | trust model | Ph2 | 🔒 after C0 batch |
+
+### WS-D — Minimal human review *(the "flag for a human" requirement)*
 
 | # | Task | Driver | Status |
 |---|---|---|---|
-| 0.1 | Verify the 472 `bill_level_extractions` rows exist in DB (incl. `applicability_agent`); spot-check sample (NLP+RPR) | C-1 residual | ⏳ (needs Docker/psql) |
-| 0.2 | Reconcile C-2 token telemetry residual — investigate monitor accumulation across sessions (`run_summary` vs `agent_stats` ~4×) | C-2 | ⏳ (log analysis) |
-| 0.3 | ✅ Relocate `config/agent_type_map.json` → `data/lookups/agent_to_extraction_type.json`; add `data/lookups/README.md` | C-7 + unification | ✅ done |
-| 0.4 | Reconcile model-of-record: `CLAUDE.md` says `gpt-oss-20b`, `config/agent_models.json` says `gemma-4-26b-a4b`. Pin one before any `_prompt_hash`-derived artifact is committed | adjacent | ⏳ |
-
-**Done in code already (R0–R4 recap):** C-1 export fix (`run_archiver._export_bill_level_extractions`), C-4 jurisdiction-skip counter, C-7 map. C-6 closed.
+| D1 | Analyst-review step + queue (C3 conflicts land here). Reviewer identity from auth context; corrections schema-validated; immutable audit log. Distinct from future legal review. | v2 §5.4 | ⏳ |
+| D2 | Review UI surfaces Orrick + IAPP fields, evidence spans, conflict warnings, confidence breakdown. | v2 §9.6 | ⏳ |
 
 ---
 
-## Phase 1 — Coverage backfill (C-3, C-8)
+## 5. Sequencing
 
-**Objective:** account for all 232 authoritative laws; fix bad/thin laws.
+```
+WS-A  A1 applicability(232) + A2 run-versioning ──┐ (stop destructive runs; populate scope)
+                                                  ▼
+WS-B  B0 align codes to trackers ─► B1.5 clean field ─► B2/B3 [4 LKA forks = gate] ─► B6 re-confirm
+                                                  ▼
+WS-C  C0✅ ─► C1 wire cross-val (FIX) ─► C3 IAPP (BUILD) ─► C4 recompute confidence ─► C5 source linkage
+                                                  ▼
+WS-D  human review for conflicts
+                                                  ▼
+        DEFERRED: law cards · applicability product · API · productionization
+```
 
-| # | Task | Driver | Status |
-|---|---|---|---|
-| 1.1 | Seed 135 `text_ready` laws → ingest → triage → extract (`docs/missing_laws_ingest_queue.csv`) | C-3 | ⏳ owners DO/BE |
-| 1.2 | Re-fetch statutory text for 8 BAD_TEXT laws — **SB 205 (Colorado AI Act) highest priority** | C-8 | ⏳ |
-| 1.3 | Re-run obligation agent on 2 GENUINE_MISS laws (`TMP-CA-AICALIFORNIACO`, `TMP-MO-ANDRELATEDOFFE`) | C-8 | ⏳ |
-| 1.4 | Inspect 6 DB-only laws in `normalized_source_records` (AB 2602, HB 4762, HB178, SB 1361, SB 20, SB25) | C-8 | ⏳ |
-| 1.5 | Confirm `enforcement_status` derived-field design with SDPA/LKA after bill-level export verified | C-8 | 🔒 |
+- **WS-A first** — applicability must run (A1) and runs must stop being destructive (A2).
+- **WS-B before WS-C** — no shared vocabulary, no comparison. Codes chosen against trackers (B0) on a cleaned field (B1.5).
+- **WS-C is the priority deliverable.** Within it, **C1 is the cheapest big lever** (re-connect an already-built agent → +0.25 weight). C3 (IAPP) is the one genuine build.
+- **No quality re-extraction** until WS-B + B5 prompt enums land (the old "Track 3.F").
 
----
+## 6. Highest-leverage next actions (unblocked now)
 
-## Phase 2 — Evidence-span verbatim quoting (E-1) ★ highest value
+1. **WS-A1 confirm query** — `GROUP BY agent_name` on `bill_level_extractions` to settle the §3 contradiction (decides whether A1 is a re-run).
+2. **WS-C1 — wire cross-validation into confidence** — pure code, no committee, resurrects 25% of the confidence model. Highest value/effort ratio in the plan.
+3. **WS-C0 test batch** — run the v1.1 verbatim prompts on 10–20 laws (`_v2` suffix); measure verified-span lift.
+4. **WS-B1.5 — clean the actor field** — small parse-layer fix; unblocks a clean re-harvest.
 
-**Objective:** raise the evidence-grounding component (0.20 weight) by making the
-model copy statutory text verbatim. Directly attacks the 41% zero-grounding rate.
+## 7. Deferred (confirmed)
 
-| # | Task | Status |
-|---|---|---|
-| 2.1 | Add explicit verbatim-quote instructions to `prompts/obligation.yml`, `rights_protection.yml`, `definition_actor.yml`, `compliance_mechanism.yml` — "copy-paste exact statutory text into evidence spans; do not summarize/paraphrase" | ⏳ |
-| 2.2 | Capture eval-harness baseline (verified-span rate + A/B/C/D distribution) **before** 2.1 lands (ties to Phase 6) | ⏳ |
-| 2.3 | Run a 10–20 law test batch with suffixed `agent_name` (`_v2`); measure verified-span rate and A+B lift | ⏳ |
-| 2.4 | Audit Orrick-alignment distribution on non-gated laws (secondary C-5 cause; scores live in DB, not CSV) | ⏳ |
+Law-card data model, business applicability product, product API, productionization. These sit
+on top of clean, tracker-grounded data and resume once §WS-A…D done-criteria hold.
 
-**Gate:** if 2.3 raises A+B to ≥30–40% on the test batch, Track 3.F (Phase 8) is
-justified at full scope; if not, evaluate Gemma 4 26B against an alternative model
-before committing GPU budget.
+## 8. Open divergences to confirm (Strategy v2 §9, updated)
 
----
-
-## Phase 3 — Vocabulary harvest job (D-1)
-
-**Objective:** the reusable, prompt-pinned harvester. Unblocked now.
-
-| # | Task | Status |
-|---|---|---|
-| 3.1 | Build `src/scripts/harvest_vocab.py` — per-field, tier-stratified value distributions; pinned to `_prompt_hash`/`_template_version` (machinery exists in `base.py`/`prompt_loader.py`) | ⏳ |
-| 3.2 | Validate: running it on the Run-1 export reproduces `candidates/subject_to_actor_code_candidates.csv` and `modality_to_strength_candidates.csv` | ⏳ |
-| 3.3 | Harvest fields: `subject_normalized`, `modality` (obligation); `action` verb heads; preemption phrasing. `applicability_agent` fields wait for Phase 1 re-run | ⏳ |
-
----
-
-## Phase 4 — Vocabulary ratification (D-2) 🔒
-
-**Objective:** turn candidate CSVs into committee-ratified `data/lookups/*.json`.
-
-| # | Task | Status |
-|---|---|---|
-| 4.1 | **FAST LANE — `modality_to_strength`:** create a strength vocab home (no dim table exists), commit 8 auto-mapped rows, queue 5 `REVIEW` (liability phrasings). No actor gate | ⏳ ready |
-| 4.2 | **GATE — privacy-actor decision (VC+LKA):** rule on `controller`/`processor`/`business`/`person` (82% of volume); **extend `dim_actor_types` beyond its current 4 codes** (add `operator`, `compute_provider`, privacy axis) | 🔒 external |
-| 4.3 | Ratify top-44 actor values (80% coverage) → `data/lookups/subject_to_actor_code.json`; long tail → `vocab_review_queue` | 🔒 after 4.2 |
-| 4.4 | Add `VocabReviewQueueItem` model + table (`field_name, original_value`); the committee inbox for unmapped vocab + validation mismatches | ⏳ |
-
----
-
-## Phase 5 — Prompt enums + parse-time validation (D-3)
-
-**Objective:** put ratified codes in the prompt; validate output, queue mismatches.
-Depends on Phase 4 (needs ratified codes).
-
-| # | Task | Status |
-|---|---|---|
-| 5.1 | Inject approved enum lists inline into agent prompts | 🔒 after 4.3 |
-| 5.2 | Parse-time validation against `dim_*` codes → route mismatches to `vocab_review_queue` (never silently accept) | 🔒 after 4.4 |
-| 5.3 | Disambiguation examples for conflated values (e.g. the `controller/processor` hedge → pick one or flag genuine dual-role) | 🔒 after 4.3 |
-
----
-
-## Phase 6 — Gold-standard fixtures + eval harness (D-4)
-
-**Objective:** a measurable pre/post baseline. `tests/fixtures/gold_standard/`
-already exists (CA SB1047, CO SB205) — extend it.
-
-| # | Task | Status |
-|---|---|---|
-| 6.1 | Extend fixtures from the 149-row Tier-A + evidence-span pool | ⏳ partly done |
-| 6.2 | **Prioritize** human-corrected Tier-C/D + abstention fixtures (decision-boundary > easy Tier-A wins) — start with `compliance_mechanism` abstentions and `subject_normalized` hedges | ⏳ |
-| 6.3 | SB 205 gold fixture is **blocked on Phase 1.2 re-fetch** (current corpus text is truncated/bad) | 🔒 after 1.2 |
-| 6.4 | Eval harness produces pre/post accuracy + tier distribution; >10% A→B drop triggers prompt review | ⏳ |
-| 6.5 | Idempotency + per-stage unit tests for normalization (known value→code, articles stripped, unmapped→queue, idempotent re-run) | ⏳ (test-coverage agent) |
-
----
-
-## Phase 7 — Normalization loader + rollup (C-7 unified machinery)
-
-**Objective:** one loader reads all `data/lookups/*` and writes controlled-vocab
-columns. Build once; migrate the existing hard-coded maps.
-
-| # | Task | Status |
-|---|---|---|
-| 7.1 | Create `src/scripts/normalization/` — idempotent stages (`WHERE … IS NULL`, `ON CONFLICT DO NOTHING`); one loader consumes every map | ⏳ |
-| 7.2 | Register stage(s) in `src/scripts/rollup_matrix.py`; run first; report matched/unmatched/ambiguous counts | ⏳ |
-| 7.3 | Migrate hard-coded maps to consume the lookup: `payload_adapter.py:326-333` (ADAPTER_MAP), `rollup_matrix.py:314` (`preemption_signal` literal) | ⏳ |
-
----
-
-## Phase 8 — Track 3.F quality-improved re-extraction (HARD GATE)
-
-**Objective:** the heaviest, least-reversible step. **Do not run** until all of:
-Phase 2 (E-1 verbatim fix) **and** Phase 4 (D-2 ratified codes) **and** Phase 5
-(D-3 prompts+validation) **and** Phase 6 (D-4 baseline) have cleared.
-
-| # | Task | Status |
-|---|---|---|
-| 8.1 | A/B re-extraction with suffixed `agent_name` (`_v2`) — no `agent_version` column; rollback = delete `LIKE '%_v2'` rows | 🔒 |
-| 8.2 | PTPL records the Track 3.F scope decision in the Decisions Log | 🔒 |
-
----
-
-## Sequencing at a glance
-
-| Phase | Items | Can start | Gated by |
-|---|---|---|---|
-| **0** | C-1/C-2 residuals, relocate map, model pin | now | — |
-| **1** | C-3, C-8 coverage | now | owners |
-| **2** ★ | E-1 evidence spans | **now** | — |
-| **3** | D-1 harvest | now | — |
-| **4** | D-2 ratify | 4.1 now; 4.2+ gated | privacy-actor VC + dim extend |
-| **5** | D-3 prompts+validation | after 4 | Phase 4 |
-| **6** | D-4 fixtures+eval | partly now; SB205 after 1.2 | Phase 1.2 |
-| **7** | C-7 loader+rollup | after lookups exist | Phase 4 |
-| **8** | Track 3.F re-extraction | last | Phases 2+4+5+6 |
-
-**Critical path:** Phase 2 + Phase 4 (privacy-actor decision) are the two long
-poles. Everything else parallelizes around them. Phase 2 is both highest-value and
-unblocked — start there.
-
-**Definition of done:** all C-1…C-8 gates met; `data/lookups/` holds ratified
-`agent_to_extraction_type` + `subject_to_actor_code` (top-44) + `modality_to_strength`,
-each prompt-pinned; prompts carry enums with parse-time validation; evidence-span
-verified rate materially improved; gold-standard + eval baseline exist; Track 3.F
-scope recorded.
+1. ~~Does the verification layer exist?~~ **Resolved (§2): built but disconnected; C1=fix, C3=build.**
+2. **Is IAPP ingested?** No — CSV in `static/`, not in DB. C3 must ingest it first.
+3. **Four actor-code forks** — LKA rulings gate WS-B3.
+4. **Tracker entity vocabulary** — B0 needs Orrick/IAPP covered-entity categories; confirm accessible.
+5. **C-1 contradiction (§3)** — confirm `applicability_agent` row count before sizing A1.
