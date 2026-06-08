@@ -1,5 +1,65 @@
 # Regs Checker — Tasks
 
+## Run-1 Unified Plan (Run Integrity + Vocabulary Loop + Quality)
+
+> Full plan: [`docs/run1_unified_plan.md`](docs/run1_unified_plan.md). Unifies the
+> run-integrity corrections (C-1…C-8), the code-update strategy, the vocabulary
+> harvest spec (D-1…D-4), and the evidence-span verbatim-quoting fix (E-1).
+> Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+
+### Phase 0 — Run-integrity residuals & lookup foundation
+- ✅ **0.3 Relocate agent→type map** — moved `config/agent_type_map.json` → `data/lookups/agent_to_extraction_type.json`; added `data/lookups/README.md` (C-7 + unification).
+- ⏳ **0.1 Verify bill-level rows** — confirm the 472 `bill_level_extractions` rows exist in DB incl. `applicability_agent`; NLP+RPR spot-check (needs Docker/psql). *(C-1 residual)*
+- ⏳ **0.2 C-2 token telemetry** — investigate monitor accumulation across sessions (`run_summary` vs `agent_stats` ~4×). *(log analysis)*
+- ⏳ **0.4 Reconcile model-of-record** — `CLAUDE.md` says `gpt-oss-20b`; `config/agent_models.json` says `gemma-4-26b-a4b`. Pin one before any `_prompt_hash`-derived artifact is committed.
+
+### Phase 1 — Coverage backfill (C-3, C-8)
+- ⏳ **1.1** Seed 135 `text_ready` laws → ingest → triage → extract (`docs/missing_laws_ingest_queue.csv`).
+- ⏳ **1.2** Re-fetch text for 8 BAD_TEXT laws — **SB 205 (Colorado AI Act) highest priority**.
+- ⏳ **1.3** Re-run obligation agent on 2 GENUINE_MISS laws (`TMP-CA-AICALIFORNIACO`, `TMP-MO-ANDRELATEDOFFE`).
+- ⏳ **1.4** Inspect 6 DB-only laws (AB 2602, HB 4762, HB178, SB 1361, SB 20, SB25) in `normalized_source_records`.
+- 🔒 **1.5** Confirm `enforcement_status` derived-field design with SDPA/LKA.
+
+### Phase 2 — Evidence-span verbatim quoting (E-1) ★ highest value
+- ⏳ **2.1** Add verbatim-quote instructions to `obligation`/`rights_protection`/`definition_actor`/`compliance_mechanism` prompts (copy exact statutory text, no paraphrase).
+- ⏳ **2.2** Capture eval baseline (verified-span rate + tier distribution) **before** 2.1.
+- ⏳ **2.3** 10–20 law test batch (`agent_name` `_v2` suffix); measure verified-span rate + A+B lift.
+- ⏳ **2.4** Audit Orrick-alignment distribution on non-gated laws (secondary C-5 cause).
+- **Gate:** A+B ≥30–40% on test batch → Track 3.F justified; else evaluate alternative model.
+
+### Phase 3 — Vocabulary harvest job (D-1)
+- ⏳ **3.1** Build `src/scripts/harvest_vocab.py` — tier-stratified per-field distributions, pinned to `_prompt_hash`.
+- ⏳ **3.2** Validate it reproduces `data/lookups/candidates/*.csv`.
+
+### Phase 4 — Vocabulary ratification (D-2) 🔒
+- ⏳ **4.1 FAST LANE — `modality_to_strength`:** create strength vocab home (no dim table exists), commit 8 auto-mapped rows, queue 5 REVIEW. No actor gate.
+- 🔒 **4.2 GATE — privacy-actor decision (VC+LKA):** rule on controller/processor/business/person (82% of volume); **extend `dim_actor_types` beyond its current 4 codes** (add `operator`, `compute_provider`, privacy axis).
+- 🔒 **4.3** Ratify top-44 actor values → `data/lookups/subject_to_actor_code.json`; long tail → `vocab_review_queue`.
+- ⏳ **4.4** Add `VocabReviewQueueItem` model + table (`field_name, original_value`).
+
+### Phase 5 — Prompt enums + parse-time validation (D-3) 🔒 after Phase 4
+- 🔒 **5.1** Inject approved enums inline into prompts.
+- 🔒 **5.2** Validate output against `dim_*`; route mismatches to `vocab_review_queue`.
+- 🔒 **5.3** Disambiguation examples for conflated values (controller/processor hedge).
+
+### Phase 6 — Gold-standard fixtures + eval harness (D-4)
+- ⏳ **6.1** Extend `tests/fixtures/gold_standard/` from 149-row Tier-A + evidence-span pool.
+- ⏳ **6.2** Prioritize human-corrected Tier-C/D + abstention fixtures over easy Tier-A wins.
+- 🔒 **6.3** SB 205 fixture blocked on Phase 1.2 re-fetch (current text is bad).
+- ⏳ **6.4** Eval harness pre/post baseline; >10% A→B drop triggers prompt review.
+- ⏳ **6.5** Idempotency + per-stage normalization unit tests *(test-coverage agent)*.
+
+### Phase 7 — Normalization loader + rollup (C-7 unified machinery)
+- ⏳ **7.1** Create `src/scripts/normalization/` — idempotent stages, one loader reads all `data/lookups/*`.
+- ⏳ **7.2** Register in `rollup_matrix.py`; report matched/unmatched/ambiguous.
+- ⏳ **7.3** Migrate hard-coded maps: `payload_adapter.py:326-333`, `rollup_matrix.py:314`.
+
+### Phase 8 — Track 3.F quality-improved re-extraction 🔒 HARD GATE
+- 🔒 **8.1** A/B re-extraction with `_v2` agent_name suffix. Requires Phases 2 + 4 + 5 + 6 cleared.
+- 🔒 **8.2** PTPL records Track 3.F scope in Decisions Log.
+
+---
+
 ## Active Tasks
 
 - **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (IN PROGRESS)**

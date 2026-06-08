@@ -1,0 +1,210 @@
+subject_normalized,count,A,B,C,D,proposed_actor_code
+controller,299,0,15,200,84,REVIEW
+person,153,14,14,75,50,REVIEW
+business,122,0,7,102,13,REVIEW
+processor,105,0,1,31,73,REVIEW
+operator,72,3,5,37,27,operator
+regulator,71,0,1,49,21,REVIEW
+developer,70,0,4,19,47,developer
+agency,48,2,11,22,13,deployer
+employer,29,0,0,6,23,deployer
+individual,29,1,1,22,5,REVIEW
+department,29,2,0,9,18,deployer
+model management company,23,0,0,2,21,REVIEW
+committee,22,1,1,18,2,REVIEW
+licensee,22,2,0,16,4,REVIEW
+hospital,22,0,1,17,4,REVIEW
+regulated_entity,20,1,0,15,4,REVIEW
+deployer,20,0,0,1,19,deployer
+controller/processor,19,0,0,10,9,REVIEW
+state agency,19,3,5,8,3,deployer
+government_official,18,0,0,10,8,REVIEW
+government_agency,18,1,1,7,9,REVIEW
+platform,17,6,4,5,2,REVIEW
+provider,17,0,0,6,11,provider
+agent,17,0,0,2,15,REVIEW
+state_agency,15,2,0,10,3,REVIEW
+insurer,13,0,2,10,1,deployer
+applicant,11,0,0,7,4,REVIEW
+government_body,11,0,1,5,5,REVIEW
+advertiser,10,0,0,7,3,REVIEW
+educational_institution,10,0,0,1,9,REVIEW
+government_unit,10,0,0,10,0,REVIEW
+carrier_and_review_agents,10,0,6,4,0,REVIEW
+supplier,10,0,2,3,5,provider
+court,9,0,0,4,5,REVIEW
+auditor,9,0,0,8,1,REVIEW
+carrier_or_agent,9,0,0,7,2,REVIEW
+law enforcement agency,9,2,0,7,0,REVIEW
+covered entity,9,0,0,0,9,REVIEW
+distributor,8,1,0,3,4,distributor
+publisher,8,0,1,4,3,REVIEW
+government,8,0,0,0,8,REVIEW
+brokerage_firm,8,0,0,2,6,REVIEW
+nursing_home,8,0,1,6,1,REVIEW
+plaintiff,7,0,0,4,3,REVIEW
+developer/deployer,7,1,0,0,6,REVIEW
+local agency,7,0,0,7,0,REVIEW
+official,7,0,0,5,2,REVIEW
+model_management_company,7,0,0,0,7,REVIEW
+council,7,0,0,0,7,REVIEW
+service_provider_or_contractor,6,0,0,4,2,REVIEW
+data broker,6,0,0,6,0,REVIEW
+secretary,6,0,0,1,5,REVIEW
+government_entity,6,0,0,1,5,REVIEW
+enforcement_authority,6,0,0,2,4,REVIEW
+healthcare_facility,6,1,2,3,0,REVIEW
+regulated entity,5,0,0,3,2,REVIEW
+user,5,0,1,1,3,REVIEW
+caller,5,2,2,1,0,REVIEW
+respondent,5,0,0,0,5,REVIEW
+online platform,5,0,1,2,2,REVIEW
+unit,5,0,1,3,1,REVIEW
+law_enforcement_agency,5,1,2,2,0,REVIEW
+seller,5,0,1,3,1,REVIEW
+broker_in_charge,5,0,0,1,4,REVIEW
+local_board_of_education,4,0,0,1,3,REVIEW
+media,4,0,0,1,3,REVIEW
+agency_group,4,0,0,1,3,REVIEW
+broadcaster,4,0,1,1,2,REVIEW
+controller_or_processor,4,0,0,1,3,REVIEW
+subcabinet,4,0,0,4,0,REVIEW
+higher_education_institution,4,0,1,2,1,REVIEW
+servicer,4,0,0,4,0,REVIEW
+regulatory_agency,4,0,0,0,4,REVIEW
+judicial_officer,3,2,0,1,0,REVIEW
+political_committee,3,0,1,2,0,REVIEW
+candidate,3,0,0,1,2,REVIEW
+manufacturer,3,0,2,1,0,REVIEW
+juvenile,3,0,0,2,1,REVIEW
+lottery_sales_agent,3,0,0,3,0,REVIEW
+enforcer,3,0,0,3,0,REVIEW
+driver,3,0,0,2,1,REVIEW
+"controller, processor",3,0,0,2,1,REVIEW
+commission,3,1,1,0,1,REVIEW
+regulatory_body,3,0,0,1,2,REVIEW
+state_government_unit,3,0,2,1,0,REVIEW
+carrier,3,0,1,1,1,REVIEW
+contract,3,0,0,1,2,REVIEW
+entity,3,1,0,0,2,REVIEW
+unspecified,3,0,0,1,2,REVIEW
+client,3,0,0,0,3,REVIEW
+office,3,1,1,1,0,REVIEW
+executive_management,2,0,0,1,1,REVIEW
+service provider,2,0,0,2,0,REVIEW
+website,2,0,0,0,2,REVIEW
+website_owner,2,0,0,1,1,REVIEW
+political party or candidate controlled committee,2,0,1,1,0,REVIEW
+ai_technology_provider,2,0,0,0,2,REVIEW
+individual_or_entity,2,0,1,0,1,REVIEW
+real estate professional,2,2,0,0,0,REVIEW
+municipality,2,0,0,2,0,REVIEW
+judicial_body,2,0,0,1,1,REVIEW
+defendant,2,0,0,1,1,REVIEW
+owner,2,0,0,1,1,REVIEW
+provider_and_agents,2,0,0,2,0,REVIEW
+social media platform,2,0,0,2,0,REVIEW
+transportation network company,2,0,0,2,0,REVIEW
+third_party,2,0,0,1,1,REVIEW
+professional,2,1,0,1,0,REVIEW
+attorney general,2,0,0,2,0,REVIEW
+program,2,0,0,2,0,REVIEW
+county official,2,0,0,1,1,REVIEW
+developer/deployer/other,2,0,0,0,2,REVIEW
+contractor,2,0,0,0,2,REVIEW
+housing_provider,2,0,0,0,2,REVIEW
+employer/employment agency,2,1,1,0,0,REVIEW
+government_authority,2,0,0,2,0,REVIEW
+producer,2,0,0,1,1,REVIEW
+dealer,2,0,0,1,1,REVIEW
+enforcement_agency,2,0,0,0,2,REVIEW
+document,2,0,0,2,0,REVIEW
+broker_and_licensees,2,0,0,2,0,REVIEW
+government agency,2,0,0,0,2,deployer
+developer/distributor,2,0,0,0,2,REVIEW
+attorney_general,2,0,0,0,2,REVIEW
+program_participant,2,0,0,0,2,REVIEW
+actor,2,0,0,1,1,REVIEW
+age_verification_provider,2,0,0,0,2,REVIEW
+communicator,2,0,0,2,0,REVIEW
+legislature,1,0,0,0,1,REVIEW
+trainer,1,0,0,1,0,REVIEW
+legislative provision,1,0,0,1,0,REVIEW
+judge,1,0,0,0,1,REVIEW
+legal_claim,1,0,0,0,1,REVIEW
+creator,1,0,1,0,0,REVIEW
+service_provider,1,0,0,1,0,REVIEW
+request,1,0,0,1,0,REVIEW
+"business, auditor",1,0,0,1,0,REVIEW
+employee,1,0,0,1,0,REVIEW
+authorized_individual,1,0,0,1,0,REVIEW
+admt provider,1,0,0,1,0,REVIEW
+officer,1,0,0,1,0,REVIEW
+developer/user,1,1,0,0,0,REVIEW
+independent_expenditure_advertisement,1,0,0,1,0,REVIEW
+sender,1,0,0,0,1,REVIEW
+local_agency,1,0,0,1,0,REVIEW
+healthcare provider/facility,1,0,1,0,0,REVIEW
+warehouse distribution center,1,0,0,1,0,REVIEW
+vendor,1,1,0,0,0,provider
+producer/distributor,1,0,1,0,0,REVIEW
+successor,1,0,0,1,0,REVIEW
+legal_counsel,1,0,0,1,0,REVIEW
+witness,1,0,0,1,0,REVIEW
+complainant,1,0,0,1,0,REVIEW
+clerk,1,0,0,1,0,REVIEW
+controller_and_processors,1,0,0,1,0,REVIEW
+retailer,1,0,0,1,0,REVIEW
+socia,1,0,0,0,1,REVIEW
+data_processor,1,0,0,0,1,REVIEW
+manufacturer_and_distributor,1,0,0,1,0,REVIEW
+accused,1,0,0,1,0,REVIEW
+state_authority,1,1,0,0,0,REVIEW
+state agency employee,1,1,0,0,0,REVIEW
+violator,1,0,0,1,0,REVIEW
+office of the child advocate,1,0,0,1,0,REVIEW
+board,1,0,0,1,0,REVIEW
+procurement_process,1,0,0,0,1,REVIEW
+carrier_and_review_abilities,1,0,1,0,0,REVIEW
+software_tool,1,0,0,1,0,REVIEW
+creator_publisher_distributor,1,0,0,1,0,REVIEW
+distribution_platform,1,0,1,0,0,REVIEW
+"controller, processor, or third party",1,0,0,0,1,REVIEW
+small_business,1,0,0,0,1,REVIEW
+supervisor,1,0,0,1,0,REVIEW
+political actor,1,1,0,0,0,REVIEW
+bank,1,0,0,1,0,REVIEW
+issuer,1,0,0,1,0,REVIEW
+delegate,1,0,0,1,0,REVIEW
+lessor,1,0,0,1,0,REVIEW
+deployer/contractor,1,0,0,0,1,REVIEW
+developer/deploy    ployer,1,0,0,0,1,REVIEW
+prosecutor,1,0,0,1,0,REVIEW
+sponsor,1,0,0,0,1,REVIEW
+content,1,0,0,0,1,REVIEW
+real estate entity,1,0,0,1,0,REVIEW
+housing provider,1,0,0,1,0,REVIEW
+financial services provider,1,0,0,1,0,REVIEW
+employer/employment_agency,1,1,0,0,0,REVIEW
+automated decision-making system,1,0,0,1,0,REVIEW
+operat,1,0,0,0,1,REVIEW
+producer/advertiser,1,0,0,1,0,REVIEW
+state_agency_or_representative,1,0,0,0,1,REVIEW
+filer,1,0,0,1,0,REVIEW
+victim,1,0,0,1,0,REVIEW
+seller_agent,1,0,0,0,1,REVIEW
+buyer_agent,1,0,0,0,1,REVIEW
+broker_manager,1,0,0,0,1,REVIEW
+covered	entity,1,0,0,0,1,REVIEW
+disclosing_entity,1,0,0,0,1,REVIEW
+developer_or_deployer,1,0,0,0,1,REVIEW
+report,1,0,0,0,1,REVIEW
+participant,1,0,0,0,1,REVIEW
+department_and_council,1,0,0,0,1,REVIEW
+authorized_person,1,0,0,0,1,REVIEW
+commercial entity,1,0,0,0,1,REVIEW
+supplier/business associate,1,0,0,1,0,REVIEW
+hospital_staff,1,0,0,0,1,REVIEW
+staff,1,0,0,1,0,REVIEW
+guardian,1,0,0,0,1,REVIEW
+minor,1,0,0,0,1,REVIEW

@@ -86,7 +86,7 @@
     },
     "src/ingestion/extractor.py": {
       "lines": "313-325",
-      "pattern": "AGENT_EXTRACTION_TYPES dict — this is the authoritative runtime source; this config file mirrors it for offline/non-Python consumers"
+      "pattern": "AGENT_EXTRACTION_TYPES dict — this is the authoritative runtime source; this lookup file mirrors it for the normalization loader and non-Python consumers"
     }
   },
 
