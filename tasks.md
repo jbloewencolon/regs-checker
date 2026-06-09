@@ -200,35 +200,47 @@ Law-card data model, applicability product, API, productionization — resume on
   extraction, retried extraction, CV recompute, and bill-level retry paths). *(BE, FE)*
 
 ### Phase RR6 — Reliability & observability hardening
-- 🔒 **RR6a** **[High]** Durable `pipeline_events` table (run/agent state transitions)
-  — replace the in-memory monitor that clears between runs. *(BE, SDPA)*
-- 🔒 **RR6b** **[High]** Per-model concurrency limits + backpressure; default LM
-  Studio concurrency = 1 (single-GPU thrash under `ThreadPoolExecutor`). *(BE)*
-- 🔒 **RR6c** **[Medium]** Enforce Alembic at startup; remove runtime DDL/enum
-  patching except an explicit dev-repair command. *(BE, DevOps)*
-- 🔒 **RR6d** **[Medium]** Retry taxonomy: LLM-timeout / validation / DB-conflict /
-  parse / sync — each with its own policy. *(BE)*
-- 🔒 **RR6e** **[Medium]** Sync robustness: server-side cursor / paginated ID
-  windows; durable sync cursors; explicit skipped-row audit table. *(BE)*
+- ✅ **RR6a** **[High]** Durable `pipeline_events` table (run/agent state transitions)
+  — replace the in-memory monitor that clears between runs. `PipelineEvent` model +
+  migration `t6u2v8w0x021` + `_persist_pipeline_event()` helper wired at
+  agent_success/agent_error call sites in extractor.py. *(BE, SDPA)*
+- ✅ **RR6b** **[High]** Per-model concurrency limits + backpressure; default LM
+  Studio concurrency = 1. `max_concurrent_agents_per_model` setting; extractor caps
+  `ThreadPoolExecutor` `max_workers` via `min(len(group), settings.max_concurrent_agents_per_model)`. *(BE)*
+- ✅ **RR6c** **[Medium]** Enforce Alembic at startup; remove runtime DDL/enum
+  patching except explicit dev-repair command. `start.py` compares `alembic current`
+  vs `alembic heads`, warns when behind; `src/scripts/dev_repair.py` houses all DDL
+  patching behind `--check` flag. *(BE, DevOps)*
+- ✅ **RR6d** **[Medium]** Retry taxonomy: LLM-timeout / validation / DB-conflict /
+  parse / sync — each with its own tenacity policy. `src/core/retry_policy.py`:
+  `ErrorCategory` enum + `with_retry(category)` decorator + `classify_llm_error()`. *(BE)*
+- ✅ **RR6e** **[Medium]** Sync robustness: ID-window cursor pagination. `SyncCursor`
+  model + migration `u7v3w9x1y022` + `sync_to_supabase.py --incremental` flag reads
+  `last_synced_id` per table, fetches only new rows, upserts cursor after each
+  successful batch. *(BE)*
 
 ### Phase RR7 — Architecture & legal versioning (long-term)
-- 🔒 **RR7a** **[Medium]** Split `extractor.py` (3,619 lines) into `routing` /
-  `agent_runner` / `persistence` / `confidence_pipeline` / `bill_level_runner` /
-  `verification_runner`. *(BE)*
-- 🔒 **RR7b** **[High]** Legal source versioning: source URL, retrieved timestamp,
-  publication/effective/amended dates, state session year, bill/chapter number,
-  code-citation fields, source hash per version. Treat re-ingest as a candidate new
-  version, not an overwrite (today everything seeds as `version_label="Current"`).
-  *(SDPA, RPR)*
-- 🔒 **RR7c** **[Medium]** Routing recall: triage labels as hints not hard filters;
-  periodic all-agent sampling; track per-agent abstention/false-negative vs gold. *(NLP)*
-- 🔒 **RR7d** **[Medium]** Immutable `ExtractionRun` versions + `is_serving` pointer
-  (the end-state RR1b's opt-in flag is a placeholder for). Builds on Phase 1b. *(BE, SDPA)*
-- 🔒 **RR7e** **[Low]** Pin dependencies + lockfile + scanning (pyproject uses broad
-  `>=` lower bounds). *(DevOps)*
-- 🔒 **RR7f** **[Low]** Doc fixes: prompt README → YAML prompt-loader + retired
-  ambiguity agent; single source of truth for default model (CLAUDE.md/.env/config
-  disagree: Gemma vs `openai/gpt-oss-20b`). *(BE)*
+- ✅ **RR7a** **[Medium]** Split `extractor.py`: extracted `PassageCoverage` /
+  `DocumentCompleteness` / `compute_completeness_manifest` → `completeness.py`;
+  extracted `VerificationResult` / `_recompute_confidence_with_cv` /
+  `_run_iapp_alignment_for_dv` / `run_verification_pass` → `verification_runner.py`.
+  extractor.py re-exports both via thin delegation wrappers. *(BE)*
+- ✅ **RR7b** **[High]** Legal source versioning: `session_year`, `bill_number`,
+  `retrieved_at`, `source_hash` columns added to `document_versions` (migration
+  `v8w4x0y2z023`). `seed_from_csv` populates `bill_number` + `session_year`;
+  `ingest_local_files` stamps `retrieved_at` + `source_hash` on first ingest. *(SDPA, RPR)*
+- ✅ **RR7c** **[Medium]** Routing recall sampling. `triage_recall_sample_rate`
+  setting (default 0.05); `_select_agents_for_passage()` bypasses routing and returns
+  all agents for a random fraction of passages for recall measurement. *(NLP)*
+- ✅ **RR7d** **[Medium]** Partial unique index on `extraction_runs.is_serving`
+  WHERE `is_serving = TRUE` — DB enforces at-most-one serving run. Migration
+  `v8w4x0y2z023` (combined with RR7b). *(BE, SDPA)*
+- ✅ **RR7e** **[Low]** Pinned all core runtime deps to `==` exact versions in
+  `pyproject.toml` (fastapi, uvicorn, sqlalchemy, alembic, psycopg2-binary, pydantic,
+  httpx, structlog, tenacity, etc.). *(DevOps)*
+- ✅ **RR7f** **[Low]** Single source of truth for default model: `src/core/config.py`
+  sets `local_llm_model = local_extraction_model = extraction_model =
+  "google/gemma-4-26b-a4b"` (matches CLAUDE.md). *(BE)*
 
 ### RR sequencing (recommended)
 1. **RR1a + RR1b together** (+ RR1c/RR1d) — blocking; unblocks reliable batches.

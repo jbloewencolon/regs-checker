@@ -221,6 +221,11 @@ class DocumentVersion(Base):
     )
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
+    # RR7b — source provenance fields (added by migration v8w4x0y2z023)
+    session_year = Column(Integer, nullable=True)       # state legislative session year
+    bill_number = Column(String(50), nullable=True)     # e.g. "SB 205", "HB 1234"
+    retrieved_at = Column(DateTime, nullable=True)      # when this version was fetched
+    source_hash = Column(String(64), nullable=True)     # SHA-256 of the source content
 
     family = relationship("DocumentFamily", back_populates="versions")
     predecessor = relationship("DocumentVersion", remote_side=[id])
@@ -1105,3 +1110,83 @@ class ConceptTrackerLink(Base):
             unique=True,
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# RR6a — Durable pipeline events (replaces in-memory ring buffer)
+# ---------------------------------------------------------------------------
+
+
+class PipelineEvent(Base):
+    """Durable record of pipeline state transitions (RR6a).
+
+    Persists the same events that the ExtractionMonitor holds in memory,
+    so run history survives server restarts.  One row per agent call result,
+    passage completion, circuit-breaker trip, etc.
+
+    event_type values mirror EventCategory in extraction_monitor.py:
+      agent_success / agent_error / agent_abstention /
+      passage_complete / run_start / run_complete /
+      circuit_breaker / deduplication / validation_error
+    """
+
+    __tablename__ = "pipeline_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    run_id = Column(
+        Integer, ForeignKey("extraction_runs.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    source_record_id = Column(Integer, nullable=True, index=True)
+    event_type = Column(String(50), nullable=False)
+    agent_name = Column(String(100), nullable=True)
+    extraction_count = Column(Integer, nullable=True)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    duration_ms = Column(Integer, nullable=True)
+    confidence_tier = Column(String(1), nullable=True)
+    error_message = Column(Text, nullable=True)
+    details = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_pipeline_events_run_type", "run_id", "event_type"),
+        Index("ix_pipeline_events_created_at", "created_at"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# RR6e — Sync cursors (durable per-table sync position)
+# ---------------------------------------------------------------------------
+
+
+class SyncCursor(Base):
+    """Tracks the last successfully synced row ID per table (RR6e).
+
+    Enables ID-window pagination so incremental syncs skip already-synced rows
+    instead of full-table re-POSTing.  One row per destination (table_name,
+    destination) pair.
+    """
+
+    __tablename__ = "sync_cursors"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    table_name = Column(String(100), nullable=False)
+    destination = Column(String(50), nullable=False, default="supabase")
+    last_synced_id = Column(Integer, nullable=True)
+    last_synced_at = Column(DateTime, nullable=True)
+    rows_synced = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("uq_sync_cursor_table_dest", "table_name", "destination", unique=True),
+    )
+
+
+# ---------------------------------------------------------------------------
+# RR7b — DocumentVersion versioning columns (added via migration)
+# ---------------------------------------------------------------------------
+# The columns below (session_year, retrieved_at, bill_number, source_hash)
+# were added by migration v8w4x0y2z023.  They live on the existing
+# DocumentVersion model; the model definition is extended by the migration.
