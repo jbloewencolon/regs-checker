@@ -260,6 +260,7 @@ def _begin_attempt(
     source_record_id: int,
     agent_name: str,
     run_id: int | None = None,
+    input_text_hash: str | None = None,
 ) -> int | None:
     """Insert an ExtractionAttempt row with status='running'. Returns row id."""
     try:
@@ -270,6 +271,7 @@ def _begin_attempt(
             run_id=run_id,
             status="running",
             started_at=datetime.utcnow(),
+            input_text_hash=input_text_hash,
         )
         db.add(row)
         db.flush()
@@ -308,6 +310,7 @@ def _skip_attempt(
     source_record_id: int,
     agent_name: str,
     run_id: int | None = None,
+    input_text_hash: str | None = None,
 ) -> None:
     """Insert an ExtractionAttempt row with status='skipped' (no agent call made)."""
     try:
@@ -320,6 +323,7 @@ def _skip_attempt(
             status="skipped",
             started_at=now,
             completed_at=now,
+            input_text_hash=input_text_hash,
         ))
         db.flush()
     except Exception as e:
@@ -901,6 +905,11 @@ def _content_hash(agent_name: str, text: str) -> str:
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
 
 
+def _text_hash(text: str) -> str:
+    """Compute sha256[:24] of passage text for attempt-state deduplication."""
+    return hashlib.sha256(text.encode()).hexdigest()[:24]
+
+
 def _payload_hash(payload: dict) -> str:
     """Compute a stable SHA-256 hash of an extraction payload for dedup.
 
@@ -916,104 +925,39 @@ def _payload_hash(payload: dict) -> str:
     ).hexdigest()
 
 
+# ---------------------------------------------------------------------------
+# Agent routing — delegated to routing.py (pure, testable functions)
+# ---------------------------------------------------------------------------
+
+from src.ingestion.routing import (  # noqa: E402
+    _BOILERPLATE_PATTERN,
+    _ENACTING_CLAUSE_PATTERN,
+    _SIGNAL_MAP,
+    is_boilerplate,
+    route_by_signal,
+    select_agent_names,
+)
+
+
 def _select_agents_for_passage(
     text: str,
     all_agents: dict[str, BaseExtractionAgent],
     triage_result=None,
 ) -> dict[str, BaseExtractionAgent]:
-    """Select which agents to run based on passage content and triage signals.
+    """Select which agents to run for a passage (thin wrapper around routing.py).
 
-    Uses a two-layer approach:
-      1. Text heuristics: skip boilerplate, enacting clauses, bare headers.
-      2. Triage signal routing: use matched_keywords, ai_signals, and
-         llm_reasoning from the triage step to pick only the agents likely
-         to find something.  Falls back to all agents when signals are
-         ambiguous or missing.
-
-    RR7c — Recall sampling: a configurable fraction of passages bypass
-    routing entirely and run all agents.  This catches obligations in
-    passages that triage or signal-routing would mis-label, while keeping
-    average cost near the baseline (5% overhead at the default rate).
+    Delegates all routing logic to select_agent_names() which is pure and
+    unit-testable independently of agent objects.
     """
-    import random
-
-    text_stripped = text.strip()
-    text_lower = text_stripped.lower()
-
-    # If the entire passage is boilerplate (TOC, page numbers, separators),
-    # skip ALL agents — no substantive content to extract.
-    if _BOILERPLATE_PATTERN.fullmatch(text_stripped):
+    selected_names = select_agent_names(
+        text,
+        set(all_agents.keys()),
+        triage_result=triage_result,
+        recall_sample_rate=settings.triage_recall_sample_rate,
+    )
+    if not selected_names:
         return {}
-
-    # If it's a pure enacting/signing clause, skip all agents.
-    if _ENACTING_CLAUSE_PATTERN.match(text_stripped) and len(text_stripped) < 300:
-        return {}
-
-    # RR7c — Recall sampling: randomly run all agents regardless of routing
-    # to surface false-negatives from signal-based exclusions.
-    if settings.triage_recall_sample_rate > 0.0 and random.random() < settings.triage_recall_sample_rate:
-        logger.debug("triage_recall_sample_triggered")
-        return dict(all_agents)
-
-    # Start with all agents selected (recall-safe default)
-    selected = dict(all_agents)
-
-    # Definitions section headers → definition_actor only
-    if _DEFINITIONS_SECTION_HEADER.fullmatch(text_stripped):
-        return {k: v for k, v in selected.items() if k == "definition_actor"}
-
-    # --- Signal-based routing (layer 2) ---
-    # Build a combined signal string from triage data + passage text
-    routed = _route_agents_by_signal(text_lower, selected, triage_result)
-    if routed is not None:
-        return routed
-
-    return selected
-
-
-# Patterns for signal-based agent routing.  Each maps a set of text
-# signals to the subset of agents that should run.
-_DEFINITION_SIGNALS = re.compile(
-    r'\b(?:defin(?:e[sd]?|ition|ing)|means\b|as used in|for (?:the )?purposes? of)\b',
-    re.IGNORECASE,
-)
-_OBLIGATION_SIGNALS = re.compile(
-    r'\b(?:shall|must|require[sd]?|obligat|mandate[sd]?|prohibit|may not|'
-    r'responsible for|duty to|ensure that|is the policy|it is the policy)\b',
-    re.IGNORECASE,
-)
-_RIGHTS_SIGNALS = re.compile(
-    r'\b(?:right to|entitled|opt[- ]?out|notice to|consent|'
-    r'appeal|recourse|due process|grievance|redress)\b',
-    re.IGNORECASE,
-)
-_THRESHOLD_SIGNALS = re.compile(
-    r'\b(?:threshold[s]?|exception[s]?|exempt(?:ion[s]?|ed)?|exclusion[s]?|waiver[s]?|'
-    r'does not apply|not subject to|carve[- ]?out[s]?|'
-    r'fewer than|more than|exceed[s]?|minimum|maximum)\b',
-    re.IGNORECASE,
-)
-_COMPLIANCE_SIGNALS = re.compile(
-    r'\b(?:enforc\w*|penalt\w*|fine[sd]?|violation[s]?|compliance|audit[s]?|'
-    r'inspection[s]?|reporting|register|certif\w*|oversight|'
-    r'attorney general|commission|agency)\b',
-    re.IGNORECASE,
-)
-_PREEMPTION_SIGNALS = re.compile(
-    r'\b(?:preempt|pre-empt|supersede|federal|supremacy|'
-    r'state law|local (?:law|ordinance)|uniform|'
-    r'notwithstanding any (?:other|state|local))\b',
-    re.IGNORECASE,
-)
-_SIGNAL_MAP: list[tuple[re.Pattern, list[str]]] = [
-    (_DEFINITION_SIGNALS,  ["definition_actor"]),
-    (_OBLIGATION_SIGNALS,  ["obligation"]),
-    (_RIGHTS_SIGNALS,      ["rights_protection"]),
-    (_THRESHOLD_SIGNALS,   ["threshold_exception"]),
-    (_COMPLIANCE_SIGNALS,  ["compliance_mechanism"]),
-    (_PREEMPTION_SIGNALS,  ["preemption"]),
-    # _AMBIGUITY_SIGNALS removed — ambiguity agent retired; findings embedded as interpretation_risks
-]
+    return {k: v for k, v in all_agents.items() if k in selected_names}
 
 
 def _route_agents_by_signal(
@@ -1021,36 +965,11 @@ def _route_agents_by_signal(
     all_agents: dict[str, BaseExtractionAgent],
     triage_result,
 ) -> dict[str, BaseExtractionAgent] | None:
-    """Use passage text + triage signals to select a subset of agents.
-
-    Returns None if routing is inconclusive (caller should run all agents).
-    """
-    # Combine passage text with triage signals for richer matching
-    signal_text = text_lower
-    if triage_result is not None:
-        if triage_result.ai_signals:
-            signal_text += " " + triage_result.ai_signals.lower()
-        if triage_result.llm_reasoning:
-            signal_text += " " + triage_result.llm_reasoning.lower()
-
-    # Collect which agents are signaled
-    signaled: set[str] = set()
-    for pattern, agent_names in _SIGNAL_MAP:
-        if pattern.search(signal_text):
-            signaled.update(agent_names)
-
-    # If no signals matched at all, don't filter — run everything.
-    # Preserves recall for passages that don't use standard legal keywords.
-    if not signaled:
+    """Thin wrapper for backward compatibility — delegates to routing.route_by_signal."""
+    result = route_by_signal(text_lower, set(all_agents.keys()), triage_result)
+    if result is None:
         return None
-
-    # If nearly all agents are signaled the passage is complex enough to
-    # warrant running everything (one more call is not worth the filtering
-    # overhead and the marginal recall risk).
-    if len(signaled) >= len(all_agents) - 1:
-        return None
-
-    return {k: v for k, v in all_agents.items() if k in signaled}
+    return {k: v for k, v in all_agents.items() if k in result}
 
 
 def _wrap_passages(
@@ -1146,7 +1065,7 @@ def extract_single_record(
     extraction_job: ExtractionJob | None = None,
     parse_quality: float | None = None,
     token_usage: TokenUsageSummary | None = None,
-    existing_hashes: set[str] | None = None,
+    succeeded_attempts: dict[tuple[int, str], set[str]] | None = None,
     tracker: FailureTracker | None = None,
     bill_context: dict[str, Any] | None = None,
     run_id: int | None = None,
@@ -1159,9 +1078,16 @@ def extract_single_record(
     grouped by their model_override and each group runs sequentially.  Agents
     within the same model group still run concurrently.
 
-    Deduplication is based on a content hash of (agent_name, passage_text).
+    Deduplication is driven by ExtractionAttempt state: an agent is skipped
+    when there is a prior 'succeeded' attempt for the same (source_record_id,
+    agent_name) with a matching passage text hash.  This correctly handles
+    agents that abstained (produced 0 extractions) — they were previously
+    inferred as un-run because no Extraction row existed.
 
     Args:
+        succeeded_attempts: Preloaded mapping of
+            {(source_record_id, agent_name): set[input_text_hash]} for all
+            prior succeeded attempts.  None disables deduplication.
         tracker: Shared FailureTracker that monitors consecutive and total
             failure rates across the full extraction run.  Raises
             CircuitBreakerTripped when thresholds are exceeded.
@@ -1171,10 +1097,14 @@ def extract_single_record(
     record = passage.primary_record
     extractions_created = 0
 
-    # Fast-path: if every agent's content hash is already in existing_hashes,
-    # this passage was fully processed in a previous run — skip entirely.
-    if existing_hashes is not None and all(
-        _content_hash(name, passage.text) in existing_hashes for name in agents
+    # Compute passage text hash once for all agent checks.
+    passage_text_hash = _text_hash(passage.text)
+
+    # Fast-path: if every agent has a prior succeeded attempt with the same
+    # text hash, this passage was fully processed — skip entirely.
+    if succeeded_attempts is not None and all(
+        passage_text_hash in succeeded_attempts.get((record.id, name), set())
+        for name in agents
     ):
         logger.debug("passage_fully_deduped", record_id=record.id)
         return 0
@@ -1209,7 +1139,8 @@ def extract_single_record(
     # Record skipped attempts for excluded agents (RR1c)
     excluded_agent_names = set(agents.keys()) - set(selected_agents.keys())
     for excluded_name in excluded_agent_names:
-        _skip_attempt(db, record.id, excluded_name, run_id=run_id)
+        _skip_attempt(db, record.id, excluded_name, run_id=run_id,
+                      input_text_hash=passage_text_hash)
 
     # Calculate per-passage token budget.  Short passages never produce
     # large outputs — scaling down avoids wasted GPU time waiting for tokens
@@ -1228,15 +1159,20 @@ def extract_single_record(
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
             futures = {}
             for agent_name, agent in group.items():
-                # Deduplication guard
-                content_hash = _content_hash(agent_name, passage.text)
-                if existing_hashes is not None and content_hash in existing_hashes:
+                # Attempt-state dedup: skip when a prior run succeeded on the
+                # same passage text.  This correctly handles abstentions (0
+                # extractions) which left no Extraction row and were therefore
+                # invisible to the old hash-set approach.
+                if succeeded_attempts is not None and (
+                    passage_text_hash in succeeded_attempts.get((record.id, agent_name), set())
+                ):
                     logger.debug(
                         "extraction_deduplicated",
                         agent=agent_name,
                         record_id=record.id,
                     )
-                    _skip_attempt(db, record.id, agent_name, run_id=run_id)
+                    _skip_attempt(db, record.id, agent_name, run_id=run_id,
+                                  input_text_hash=passage_text_hash)
                     continue
 
                 # Scale token budget to passage length so short passages don't
@@ -1244,7 +1180,8 @@ def extract_single_record(
                 base_tokens = agent.max_tokens_override or settings.extraction_max_tokens
                 scaled_tokens = _scale_tokens_for_passage(passage_len, base_tokens)
 
-                attempt_id = _begin_attempt(db, record.id, agent_name, run_id=run_id)
+                attempt_id = _begin_attempt(db, record.id, agent_name, run_id=run_id,
+                                            input_text_hash=passage_text_hash)
                 future = executor.submit(
                     _run_agent, agent_name, agent, passage.text, ctx,
                     call_max_tokens=scaled_tokens,
@@ -1998,34 +1935,37 @@ def run_extraction(
         _token_columns_available = False
         _run_id_available = False
 
-    # Build set of existing content hashes for per-agent deduplication.
-    # Key: _content_hash(agent_name, text_content) for each (passage, agent)
-    # pair where that specific agent already has an extraction. This lets
-    # partially-extracted passages continue from where they left off — only
-    # the agents that haven't run yet will be called.
-    _type_to_agent: dict[str, str] = {
-        ext_type.value: agent_name
-        for agent_name, types in AGENT_EXTRACTION_TYPES.items()
-        for ext_type in types
-    }
-    existing_hashes: set[str] = set()
-    _already_extracted = db.execute(
-        select(NormalizedSourceRecord.text_content, Extraction.extraction_type)
-        .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
+    # Build attempt-state dedup table from ExtractionAttempt.
+    #
+    # Key:   (source_record_id, agent_name)
+    # Value: set of input_text_hash values from prior succeeded attempts
+    #
+    # An agent is skipped on the current run when the passage text hash
+    # matches a prior succeeded attempt — regardless of whether that attempt
+    # produced extractions (abstentions are now correctly tracked).
+    #
+    # This replaces the old existing_hashes approach that inferred agent state
+    # from Extraction rows, which missed abstaining agents entirely.
+    succeeded_attempts: dict[tuple[int, str], set[str]] = {}
+    _attempt_rows = db.execute(
+        select(
+            ExtractionAttempt.source_record_id,
+            ExtractionAttempt.agent_name,
+            ExtractionAttempt.input_text_hash,
+        )
+        .where(ExtractionAttempt.status == "succeeded")
+        .where(ExtractionAttempt.input_text_hash.isnot(None))
         .distinct()
     ).all()
-    for (text_content, ext_type) in _already_extracted:
-        ext_type_val = ext_type.value if hasattr(ext_type, "value") else str(ext_type)
-        agent_name = _type_to_agent.get(ext_type_val)
-        if agent_name:
-            existing_hashes.add(_content_hash(agent_name, text_content))
-    if existing_hashes:
+    for src_id, agent_name, text_hash in _attempt_rows:
+        succeeded_attempts.setdefault((src_id, agent_name), set()).add(text_hash)
+    if succeeded_attempts:
         logger.info(
-            "dedup_hashes_loaded",
-            agent_passage_pairs=len(_already_extracted),
-            total_hashes=len(existing_hashes),
+            "attempt_state_loaded",
+            unique_agent_passage_pairs=len(succeeded_attempts),
+            total_attempt_rows=len(_attempt_rows),
         )
-    del _already_extracted
+    del _attempt_rows
 
     def _log(msg: str) -> None:
         if on_progress:
@@ -2191,7 +2131,7 @@ def run_extraction(
             try:
                 count = extract_single_record(
                     db, passage, agents, extraction_job, parse_quality,
-                    token_usage, existing_hashes, tracker,
+                    token_usage, succeeded_attempts, tracker,
                     bill_context=bill_ctx,
                     run_id=current_run_id,
                 )

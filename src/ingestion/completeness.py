@@ -78,10 +78,12 @@ def compute_completeness_manifest(
     from src.ingestion.extractor import (
         AGENT_EXTRACTION_TYPES,
         MIN_PASSAGE_LENGTH,
-        _BOILERPLATE_PATTERN,
-        _ENACTING_CLAUSE_PATTERN,
         _get_agents,
         _select_agents_for_passage,
+    )
+    from src.ingestion.routing import (
+        _BOILERPLATE_PATTERN,
+        _ENACTING_CLAUSE_PATTERN,
     )
 
     agents = _get_agents()

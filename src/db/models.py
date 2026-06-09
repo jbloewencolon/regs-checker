@@ -510,6 +510,7 @@ class ExtractionAttempt(Base):
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     status = Column(String(20), nullable=False)  # running|succeeded|failed|skipped
     extractions_produced = Column(Integer, default=0, nullable=False)
+    input_text_hash = Column(String(24), nullable=True)  # sha256[:24] of passage text
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
@@ -520,6 +521,8 @@ class ExtractionAttempt(Base):
     __table_args__ = (
         Index("ix_extraction_attempts_record_agent", "source_record_id", "agent_name"),
         Index("ix_extraction_attempts_run_status", "run_id", "status"),
+        Index("ix_extraction_attempts_succeeded", "source_record_id", "agent_name",
+              "input_text_hash", postgresql_where="status = 'succeeded'"),
     )
 
 
