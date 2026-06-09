@@ -221,6 +221,11 @@ class DocumentVersion(Base):
     )
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
+    # RR7b — source provenance fields (added by migration v8w4x0y2z023)
+    session_year = Column(Integer, nullable=True)       # state legislative session year
+    bill_number = Column(String(50), nullable=True)     # e.g. "SB 205", "HB 1234"
+    retrieved_at = Column(DateTime, nullable=True)      # when this version was fetched
+    source_hash = Column(String(64), nullable=True)     # SHA-256 of the source content
 
     family = relationship("DocumentFamily", back_populates="versions")
     predecessor = relationship("DocumentVersion", remote_side=[id])
@@ -270,7 +275,30 @@ class IngestionJob(Base):
 
 # ---------------------------------------------------------------------------
 # 5. Raw Artifacts (immutable, content-addressable)
+#
+# RR4e: split into two tables:
+#   ContentBlob — globally deduplicated by SHA-256 (the actual file store)
+#   RawArtifact — per-document-version link to a ContentBlob
+#
+# Before RR4e the sha256_hash UNIQUE constraint was on raw_artifacts itself,
+# which prevented two document versions from sharing the same PDF blob.
+# Now ContentBlob owns the unique constraint; RawArtifact links DV→Blob.
 # ---------------------------------------------------------------------------
+
+
+class ContentBlob(Base):
+    """Globally deduplicated content store keyed by SHA-256 hash (RR4e)."""
+
+    __tablename__ = "content_blobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sha256_hash = Column(String(64), nullable=False, unique=True)
+    s3_key = Column(Text, nullable=False)
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    raw_artifacts = relationship("RawArtifact", back_populates="content_blob")
 
 
 class RawArtifact(Base):
@@ -280,14 +308,20 @@ class RawArtifact(Base):
     document_version_id = Column(
         Integer, ForeignKey("document_versions.id"), nullable=False, index=True
     )
-    sha256_hash = Column(String(64), nullable=False, unique=True)
+    # sha256_hash kept for backwards compat; unique constraint moved to content_blobs.
+    sha256_hash = Column(String(64), nullable=False, index=True)
     s3_key = Column(Text, nullable=False)
     content_type = Column(String(100), nullable=False)
     size_bytes = Column(Integer, nullable=False)
     is_primary = Column(Boolean, default=True)
+    # RR4e: FK to the canonical blob row (nullable for rows pre-dating the migration)
+    content_blob_id = Column(
+        Integer, ForeignKey("content_blobs.id"), nullable=True, index=True
+    )
     created_at = Column(DateTime, server_default=func.now())
 
     document_version = relationship("DocumentVersion", back_populates="raw_artifacts")
+    content_blob = relationship("ContentBlob", back_populates="raw_artifacts")
 
 
 # ---------------------------------------------------------------------------
@@ -446,6 +480,50 @@ class ExtractionJob(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     extractions = relationship("Extraction", back_populates="extraction_job")
+
+
+# ---------------------------------------------------------------------------
+# 8c. Extraction Attempts — per-agent run-state tracking (RR1c)
+# ---------------------------------------------------------------------------
+
+
+class ExtractionAttempt(Base):
+    """One row per (source_record, agent_name) per extraction run.
+
+    Tracks the full lifecycle of each agent call so interrupted runs can be
+    detected and resumed.  On each re-run, new rows are inserted (not updated
+    in-place) so the history of retries is preserved.
+
+    Status lifecycle:
+      running   → succeeded   (agent returned extractions or abstained cleanly)
+      running   → failed      (LLM call or DB write raised an exception)
+      (none)    → skipped     (agent excluded by signal routing or dedup guard)
+    """
+
+    __tablename__ = "extraction_attempts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_record_id = Column(
+        Integer, ForeignKey("normalized_source_records.id"), nullable=False, index=True
+    )
+    agent_name = Column(String(100), nullable=False)
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
+    status = Column(String(20), nullable=False)  # running|succeeded|failed|skipped
+    extractions_produced = Column(Integer, default=0, nullable=False)
+    input_text_hash = Column(String(24), nullable=True)  # sha256[:24] of passage text
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    source_record = relationship("NormalizedSourceRecord")
+
+    __table_args__ = (
+        Index("ix_extraction_attempts_record_agent", "source_record_id", "agent_name"),
+        Index("ix_extraction_attempts_run_status", "run_id", "status"),
+        Index("ix_extraction_attempts_succeeded", "source_record_id", "agent_name",
+              "input_text_hash", postgresql_where="status = 'succeeded'"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -793,12 +871,16 @@ class VerificationRunSummary(Base):
 
     # Cross-validation aggregates
     cv_passages_checked = Column(Integer, default=0, nullable=False)
+    # Passages whose CV call failed (fail-closed — excluded from cv_avg_accuracy)
+    cv_passages_failed = Column(Integer, default=0, nullable=False)
     cv_extractions_valid = Column(Integer, default=0, nullable=False)
     cv_extractions_flagged = Column(Integer, default=0, nullable=False)
     cv_avg_accuracy = Column(Float, nullable=True)
 
     # Gap detection aggregates
     gd_passages_checked = Column(Integer, default=0, nullable=False)
+    # Passages whose gap detection failed (fail-closed — not counted as "no gaps")
+    gd_passages_failed = Column(Integer, default=0, nullable=False)
     gd_gaps_found = Column(Integer, default=0, nullable=False)
     gd_high_confidence = Column(Integer, default=0, nullable=False)
     gap_candidates = Column(JSONB, default=list)
@@ -1031,3 +1113,83 @@ class ConceptTrackerLink(Base):
             unique=True,
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# RR6a — Durable pipeline events (replaces in-memory ring buffer)
+# ---------------------------------------------------------------------------
+
+
+class PipelineEvent(Base):
+    """Durable record of pipeline state transitions (RR6a).
+
+    Persists the same events that the ExtractionMonitor holds in memory,
+    so run history survives server restarts.  One row per agent call result,
+    passage completion, circuit-breaker trip, etc.
+
+    event_type values mirror EventCategory in extraction_monitor.py:
+      agent_success / agent_error / agent_abstention /
+      passage_complete / run_start / run_complete /
+      circuit_breaker / deduplication / validation_error
+    """
+
+    __tablename__ = "pipeline_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    run_id = Column(
+        Integer, ForeignKey("extraction_runs.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    source_record_id = Column(Integer, nullable=True, index=True)
+    event_type = Column(String(50), nullable=False)
+    agent_name = Column(String(100), nullable=True)
+    extraction_count = Column(Integer, nullable=True)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    duration_ms = Column(Integer, nullable=True)
+    confidence_tier = Column(String(1), nullable=True)
+    error_message = Column(Text, nullable=True)
+    details = Column(JSONB, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_pipeline_events_run_type", "run_id", "event_type"),
+        Index("ix_pipeline_events_created_at", "created_at"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# RR6e — Sync cursors (durable per-table sync position)
+# ---------------------------------------------------------------------------
+
+
+class SyncCursor(Base):
+    """Tracks the last successfully synced row ID per table (RR6e).
+
+    Enables ID-window pagination so incremental syncs skip already-synced rows
+    instead of full-table re-POSTing.  One row per destination (table_name,
+    destination) pair.
+    """
+
+    __tablename__ = "sync_cursors"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    table_name = Column(String(100), nullable=False)
+    destination = Column(String(50), nullable=False, default="supabase")
+    last_synced_id = Column(Integer, nullable=True)
+    last_synced_at = Column(DateTime, nullable=True)
+    rows_synced = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("uq_sync_cursor_table_dest", "table_name", "destination", unique=True),
+    )
+
+
+# ---------------------------------------------------------------------------
+# RR7b — DocumentVersion versioning columns (added via migration)
+# ---------------------------------------------------------------------------
+# The columns below (session_year, retrieved_at, bill_number, source_hash)
+# were added by migration v8w4x0y2z023.  They live on the existing
+# DocumentVersion model; the model definition is extended by the migration.

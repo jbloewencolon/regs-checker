@@ -142,7 +142,7 @@ def _switch_to_local_db():
 
 
 def _run_migrations(db_url: str) -> bool:
-    """Run Alembic migrations if tables are missing."""
+    """Run Alembic migrations and verify schema is at head (RR6c)."""
     import psycopg2
 
     try:
@@ -155,20 +155,40 @@ def _run_migrations(db_url: str) -> bool:
         has_tables = cur.fetchone()[0] > 0
         conn.close()
 
-        if has_tables:
-            return True
+        if not has_tables:
+            print("  Database is empty — running migrations...")
+            result = subprocess.run(
+                [sys.executable, "-m", "alembic", "upgrade", "head"],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0:
+                print("  Migrations applied successfully!")
+            else:
+                print(f"  Migration failed: {result.stderr[:200]}")
+                return False
 
-        print("  Database is empty — running migrations...")
-        result = subprocess.run(
-            [sys.executable, "-m", "alembic", "upgrade", "head"],
-            capture_output=True, text=True, timeout=30,
+        # RR6c — verify schema is at Alembic head; warn if behind.
+        # The pipeline auto-patches some tables at runtime, which is a smell.
+        # This check makes schema drift visible so it can be fixed properly.
+        head_result = subprocess.run(
+            [sys.executable, "-m", "alembic", "heads"],
+            capture_output=True, text=True, timeout=10,
         )
-        if result.returncode == 0:
-            print("  Migrations applied successfully!")
-            return True
-        else:
-            print(f"  Migration failed: {result.stderr[:200]}")
-            return False
+        current_result = subprocess.run(
+            [sys.executable, "-m", "alembic", "current"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if head_result.returncode == 0 and current_result.returncode == 0:
+            head_rev = head_result.stdout.strip().split()[0] if head_result.stdout.strip() else ""
+            current_out = current_result.stdout.strip()
+            if head_rev and head_rev not in current_out:
+                print(f"  ⚠️  Schema is behind Alembic head (current: {current_out!r}, head: {head_rev!r})")
+                print("  Run: alembic upgrade head  — or start will apply runtime patches as fallback.")
+                print("  To repair dev DB: python -m src.scripts.dev_repair")
+            else:
+                print(f"  Schema at head ({head_rev}).")
+        return True
+
     except Exception as e:
         print(f"  Migration check error: {e}")
         return False

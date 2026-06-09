@@ -20,6 +20,49 @@ from src.db.models import IngestionJob, NormalizedSourceRecord, RawArtifact
 
 logger = structlog.get_logger()
 
+# Passages whose parse quality score is below this threshold get flagged for
+# manual review rather than feeding the extraction pipeline directly.
+_PARSE_QUALITY_REVIEW_THRESHOLD = 0.30
+
+# Legal text markers used to estimate content quality
+_LEGAL_MARKERS = re.compile(
+    r"\b(?:section|§|whereas|enacted|shall|provided|pursuant|herein|thereof|"
+    r"notwithstanding|jurisdiction|obligation|penalty|enforcement|compliance|"
+    r"regulation|statute|subsection|paragraph)\b",
+    re.I,
+)
+
+
+def _compute_parse_quality(text: str) -> float:
+    """Estimate parse quality for a passage on a 0.0–1.0 scale.
+
+    Two signals:
+      - replacement_char_ratio: U+FFFD density (high → likely binary junk).
+        Binary/garbled PDFs often produce strings like "ÿþÿþ" after a UTF-8
+        decode with errors="replace".
+      - legal_marker_density: how many recognised statutory keywords appear
+        per 1000 characters.  Plain statutory text typically scores >= 5.
+
+    Returns 1.0 for clean legal prose, near 0.0 for binary/OCR garbage.
+    """
+    if not text:
+        return 0.0
+
+    # Replacement character penalty (each � = one garbled byte)
+    replacement_count = text.count("�")
+    replacement_ratio = replacement_count / max(len(text), 1)
+    # Score: 1.0 at 0% → 0.0 at ≥5% replacement chars
+    replacement_score = max(0.0, 1.0 - replacement_ratio / 0.05)
+
+    # Legal marker density
+    marker_count = len(_LEGAL_MARKERS.findall(text))
+    density = marker_count / max(len(text), 1) * 1000  # per 1000 chars
+    # Score: 0.0 at 0 markers → 1.0 at ≥5 markers per 1000 chars
+    density_score = min(1.0, density / 5.0)
+
+    # Combine: replacement char quality outweighs density when egregiously bad
+    return round(replacement_score * 0.60 + density_score * 0.40, 4)
+
 
 def parse_and_normalize(
     db,
@@ -29,8 +72,13 @@ def parse_and_normalize(
 ) -> list[NormalizedSourceRecord]:
     """Parse a raw artifact into passage-level normalized records.
 
-    Handles HTML and plain text. PDF support to be added.
+    Handles HTML, plain text, and PDF.
     If content_bytes is provided, uses that instead of fetching from S3.
+
+    Each record's metadata_ includes:
+      - included_section_ids: list of all section markers merged into this passage
+      - parse_quality_score: 0.0–1.0 quality estimate for the raw text
+      - requires_manual_review: True when quality is below the accept threshold
     """
     content = content_bytes if content_bytes is not None else _fetch_content_from_s3(artifact.s3_key)
 
@@ -45,8 +93,23 @@ def parse_and_normalize(
         passages = _parse_plaintext(content)
 
     records = []
-    for ordinal, (section_path, text, start, end) in enumerate(passages):
+    for ordinal, passage_tuple in enumerate(passages):
+        # Support both 4-tuple (legacy) and 5-tuple (section IDs added by RR4a)
+        if len(passage_tuple) == 5:
+            section_path, text, start, end, included_section_ids = passage_tuple
+        else:
+            section_path, text, start, end = passage_tuple
+            included_section_ids = [section_path]
+
         text_hash = hashlib.sha256(text.encode()).hexdigest()
+        parse_quality = _compute_parse_quality(text)
+
+        meta: dict = {
+            "included_section_ids": included_section_ids,
+            "parse_quality_score": round(parse_quality, 4),
+        }
+        if parse_quality < _PARSE_QUALITY_REVIEW_THRESHOLD:
+            meta["requires_manual_review"] = True
 
         record = NormalizedSourceRecord(
             document_version_id=job.document_version_id,
@@ -56,6 +119,7 @@ def parse_and_normalize(
             text_hash=text_hash,
             char_offset_start=start,
             char_offset_end=end,
+            metadata_=meta,
         )
         db.add(record)
         records.append(record)
@@ -251,28 +315,37 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     # Merge adjacent small section passages into larger chunks.
     # PDF-extracted text often splits on every "Section X" marker,
     # producing hundreds of tiny fragments (< 200 chars each).
+    # RR4a: track included_section_ids (all markers merged into this chunk).
+    # RR4b: use the actual raw end offset of the last merged section instead of
+    #        start + len(merged_text), which was wrong for multi-section merges.
     TARGET_SECTION_CHARS = 3000
     merged = []
     chunk_parts: list[str] = []
+    chunk_markers: list[str] = []  # RR4a: all section IDs in this chunk
     chunk_marker = raw_passages[0][0]
     chunk_start = raw_passages[0][2]
+    chunk_end = raw_passages[0][3]   # RR4b: track actual raw end offset
     chunk_len = 0
 
     for marker, ptext, start, end in raw_passages:
         if chunk_parts and chunk_len + len(ptext) > TARGET_SECTION_CHARS:
             merged_text = "\n\n".join(chunk_parts)
-            merged.append((chunk_marker, merged_text, chunk_start, chunk_start + len(merged_text)))
+            merged.append((chunk_marker, merged_text, chunk_start, chunk_end, list(chunk_markers)))
             chunk_parts = []
+            chunk_markers = []
             chunk_marker = marker
             chunk_start = start
+            chunk_end = end
             chunk_len = 0
 
         chunk_parts.append(ptext)
+        chunk_markers.append(marker)
+        chunk_end = end   # extend to the end of the latest section
         chunk_len += len(ptext)
 
     if chunk_parts:
         merged_text = "\n\n".join(chunk_parts)
-        merged.append((chunk_marker, merged_text, chunk_start, chunk_start + len(merged_text)))
+        merged.append((chunk_marker, merged_text, chunk_start, chunk_end, list(chunk_markers)))
 
     return merged
 
@@ -301,43 +374,40 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
         return []
 
     # Second pass: merge small adjacent paragraphs into TARGET_CHUNK_CHARS chunks
+    # RR4a: 5-tuple format (label, text, start, end, included_section_ids)
     passages = []
     chunk_parts: list[str] = []
     chunk_start = raw_parts[0][1]
+    chunk_end = raw_parts[0][1]
     chunk_len = 0
 
+    def _flush_chunk(label_n: int) -> None:
+        label = f"Paragraph {label_n}"
+        merged = "\n\n".join(chunk_parts)
+        passages.append((label, merged, chunk_start, chunk_end, [label]))
+
     for para_text, para_offset in raw_parts:
+        para_end = para_offset + len(para_text)
         # Would adding this paragraph exceed the target?
         if chunk_parts and chunk_len + len(para_text) > TARGET_CHUNK_CHARS:
-            # Flush current chunk
-            merged = "\n\n".join(chunk_parts)
-            passages.append((
-                f"Paragraph {len(passages) + 1}",
-                merged,
-                chunk_start,
-                chunk_start + len(merged),
-            ))
+            _flush_chunk(len(passages) + 1)
             chunk_parts = []
             chunk_start = para_offset
+            chunk_end = para_offset
             chunk_len = 0
 
         # Sub-split oversized single paragraphs, then merge into TARGET chunks
         if len(para_text) > MAX_CHUNK_CHARS:
             # Flush any pending chunk first
             if chunk_parts:
-                merged = "\n\n".join(chunk_parts)
-                passages.append((
-                    f"Paragraph {len(passages) + 1}",
-                    merged,
-                    chunk_start,
-                    chunk_start + len(merged),
-                ))
+                _flush_chunk(len(passages) + 1)
                 chunk_parts = []
                 chunk_len = 0
 
             sub_parts = para_text.split("\n")
             sub_chunk: list[str] = []
             sub_chunk_start = para_offset
+            sub_chunk_end = para_offset
             sub_chunk_len = 0
             sub_offset = para_offset
             for sub in sub_parts:
@@ -345,42 +415,33 @@ def _split_on_paragraphs(text: str) -> list[tuple[str, str, int, int]]:
                 if len(sub) < 10:
                     sub_offset += len(sub) + 1
                     continue
+                sub_end = sub_offset + len(sub)
                 if sub_chunk and sub_chunk_len + len(sub) > TARGET_CHUNK_CHARS:
+                    label = f"Paragraph {len(passages) + 1}"
                     merged = "\n".join(sub_chunk)
-                    passages.append((
-                        f"Paragraph {len(passages) + 1}",
-                        merged,
-                        sub_chunk_start,
-                        sub_chunk_start + len(merged),
-                    ))
+                    passages.append((label, merged, sub_chunk_start, sub_chunk_end, [label]))
                     sub_chunk = []
                     sub_chunk_start = sub_offset
+                    sub_chunk_end = sub_offset
                     sub_chunk_len = 0
                 sub_chunk.append(sub)
+                sub_chunk_end = sub_end
                 sub_chunk_len += len(sub)
                 sub_offset += len(sub) + 1
             if sub_chunk:
+                label = f"Paragraph {len(passages) + 1}"
                 merged = "\n".join(sub_chunk)
-                passages.append((
-                    f"Paragraph {len(passages) + 1}",
-                    merged,
-                    sub_chunk_start,
-                    sub_chunk_start + len(merged),
-                ))
+                passages.append((label, merged, sub_chunk_start, sub_chunk_end, [label]))
             chunk_start = sub_offset
+            chunk_end = sub_offset
         else:
             chunk_parts.append(para_text)
+            chunk_end = para_end
             chunk_len += len(para_text)
 
     # Flush remaining
     if chunk_parts:
-        merged = "\n\n".join(chunk_parts)
-        passages.append((
-            f"Paragraph {len(passages) + 1}",
-            merged,
-            chunk_start,
-            chunk_start + len(merged),
-        ))
+        _flush_chunk(len(passages) + 1)
 
     return passages
 

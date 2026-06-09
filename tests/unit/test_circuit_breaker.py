@@ -285,4 +285,4 @@ class TestExtractorImport:
 
     def test_extractor_has_threshold_constant(self):
         from src.ingestion.extractor import CIRCUIT_BREAKER_THRESHOLD
-        assert CIRCUIT_BREAKER_THRESHOLD == 3
+        assert CIRCUIT_BREAKER_THRESHOLD == 10

@@ -173,14 +173,14 @@ class TestVerifyEvidenceSpansUnicode:
         span = "The developer shall submit an annual report."
         assert self._verify(span, passage) is False
 
-    # Empty span — should fail gracefully
+    # Empty span — should be skipped (not added to results)
     def test_empty_span_text(self):
         passage = "Some legislative text about AI systems."
         results = AGENT._verify_evidence_spans(
             [{"field_name": "subject", "text": ""}], passage
         )
-        # Empty string is always "in" any string — verified True (existing behaviour)
-        assert results[0]["verified"] is True
+        # Empty-text spans are filtered out — nothing to verify
+        assert results == []
 
     # Case-insensitive fallback still works after Unicode normalization
     def test_case_insensitive_fallback_with_unicode(self):

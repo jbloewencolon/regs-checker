@@ -70,7 +70,16 @@ class CrossValidationResult(BaseModel):
 
 @dataclass
 class CrossValidationSummary:
-    """Aggregate results from cross-validating extractions for a passage."""
+    """Aggregate results from cross-validating extractions for a passage.
+
+    ``status`` makes the outcome explicit so callers never confuse a genuine
+    pass with a failure (fail-closed):
+      - "completed" — the model ran and produced validations
+      - "skipped"   — there was nothing to validate (no extractions)
+      - "failed"    — the provider call or parse failed; results are empty and
+                      ``avg_accuracy_score`` MUST NOT be folded into any
+                      document-level average or used to raise confidence.
+    """
 
     passage_record_id: int
     extractions_checked: int
@@ -80,6 +89,7 @@ class CrossValidationSummary:
     results: list[dict[str, Any]]
     input_tokens: int = 0
     output_tokens: int = 0
+    status: str = "completed"
 
 
 CROSS_VALIDATION_SYSTEM_PROMPT = """You are a legal accuracy auditor. Your role is to verify the accuracy
@@ -156,6 +166,7 @@ def run_cross_validation(
             extractions_flagged=0,
             avg_accuracy_score=1.0,
             results=[],
+            status="skipped",
         )
 
     # Build the validation prompt
@@ -187,11 +198,14 @@ EXTRACTIONS TO VALIDATE:
     )
 
     try:
-        raw_output, usage, model_id, stop_reason = provider.call(
+        response = provider.call(
             system_prompt=system_prompt,
             user_prompt=prompt,
             model_override="openai/gpt-oss-20b",
         )
+        raw_output = response.text
+        usage = response.usage
+        model_id = response.model_id
 
         # Parse response
         cleaned = raw_output.strip()
@@ -257,6 +271,7 @@ EXTRACTIONS TO VALIDATE:
             results=results,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
+            status="completed",
         )
 
     except Exception as e:
@@ -265,12 +280,17 @@ EXTRACTIONS TO VALIDATE:
             record_id=passage_record_id,
             error=str(e),
         )
-        # On failure, return neutral result (don't penalize extractions)
+        # FAIL CLOSED: a verification failure must never look like a pass.
+        # Return an explicit "failed" status with empty results so the caller
+        # cannot fold a neutral accuracy into the document average or use it to
+        # raise confidence. avg_accuracy_score=0.0 is a defensive default only;
+        # callers gate on status, not this value.
         return CrossValidationSummary(
             passage_record_id=passage_record_id,
-            extractions_checked=len(extractions),
-            extractions_valid=len(extractions),
+            extractions_checked=0,
+            extractions_valid=0,
             extractions_flagged=0,
-            avg_accuracy_score=0.75,  # neutral-ish
+            avg_accuracy_score=0.0,
             results=[],
+            status="failed",
         )

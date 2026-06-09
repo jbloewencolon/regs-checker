@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 import pytest
 
+pytest.importorskip("bs4")  # pipeline → parser requires beautifulsoup4; skip if not installed
+
 from src.db.models import IngestionJob, IngestionStatus, NormalizedSourceRecord, RawArtifact
 from src.ingestion.pipeline import (
     compute_parse_quality,

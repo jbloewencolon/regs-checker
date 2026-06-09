@@ -17,7 +17,19 @@ from pydantic import BaseModel, Field
 
 
 class ConfidenceBreakdownResponse(BaseModel):
-    """Detailed confidence score component breakdown."""
+    """Detailed confidence score component breakdown.
+
+    Active signals (weighted into total_score):
+      orrick_alignment, evidence_grounding, citation quality (via section_ref_quality).
+
+    Diagnostic signals (computed, not weighted):
+      schema_validity, completeness, source_quality.
+
+    Orthogonal dimensions (RR5b — separate axes, not rolled into total_score):
+      source_grounding_score: evidence + citation quality (how well grounded in text)
+      tracker_alignment_score: Orrick/IAPP alignment (how well confirmed by trackers)
+      schema_completeness_score: structural validity + field completeness
+    """
 
     schema_validity: float = 0.0
     evidence_grounding: float = 0.0
@@ -25,6 +37,10 @@ class ConfidenceBreakdownResponse(BaseModel):
     source_quality: float = 0.0
     orrick_alignment: float = 0.0
     orrick_matched_tokens: list[str] = Field(default_factory=list)
+    # RR5b — orthogonal dimensions
+    source_grounding_score: float = 0.0
+    tracker_alignment_score: float = 0.0
+    schema_completeness_score: float = 0.0
 
 
 class ExtractionResponse(BaseModel):

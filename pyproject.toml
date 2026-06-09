@@ -7,23 +7,26 @@ name = "regs-checker"
 version = "0.1.0"
 description = "AI Legal Corpus: Regulatory obligation extraction, analysis, and serving platform"
 requires-python = ">=3.11"
+# RR7e — core runtime deps pinned to exact versions for reproducibility.
+# To update: change the version here, run tests, then commit the diff.
+# Dev/optional extras keep >= to avoid version conflicts across environments.
 dependencies = [
-    "fastapi>=0.109.0",
-    "uvicorn[standard]>=0.27.0",
-    "sqlalchemy>=2.0.25",
-    "alembic>=1.13.0",
-    "psycopg2-binary>=2.9.9",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.1.0",
-    "boto3>=1.34.0",
-    "httpx>=0.26.0",
-    "jinja2>=3.1.3",
-    "pyyaml>=6.0",
-    "python-multipart>=0.0.6",
-    "tenacity>=8.2.3",
-    "structlog>=24.1.0",
-    "beautifulsoup4>=4.12.0",
-    "lxml>=5.1.0",
+    "fastapi==0.115.12",
+    "uvicorn[standard]==0.34.0",
+    "sqlalchemy==2.0.41",
+    "alembic==1.15.2",
+    "psycopg2-binary==2.9.10",
+    "pydantic==2.11.5",
+    "pydantic-settings==2.9.1",
+    "boto3==1.38.23",
+    "httpx==0.28.1",
+    "jinja2==3.1.6",
+    "pyyaml==6.0.2",
+    "python-multipart==0.0.20",
+    "tenacity==9.1.2",
+    "structlog==25.3.0",
+    "beautifulsoup4==4.13.4",
+    "lxml==5.4.0",
 ]
 
 [project.optional-dependencies]

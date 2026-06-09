@@ -41,7 +41,26 @@ from pydantic import BaseModel
 
 @dataclass
 class ConfidenceBreakdown:
-    """Detailed breakdown of confidence score components."""
+    """Detailed breakdown of confidence score components.
+
+    Orthogonal dimensions (RR5a) — these do NOT affect total_score; they are
+    separate axes for review triage and product surfaces:
+
+      source_grounding_score:
+        How well the extraction is grounded in the statutory text.
+        = evidence_grounding * 0.70 + section_ref_quality * 0.30
+        High → spans are verbatim, section reference is subsection-specific.
+
+      tracker_alignment_score:
+        How well the extraction aligns with known regulatory trackers.
+        = orrick_alignment (Orrick gate drives this; IAPP wires in at Phase 4b).
+        High → Orrick confirms the subject/enforcement fields.
+
+      schema_completeness_score:
+        How complete and structurally valid the extraction is.
+        = schema_validity * 0.50 + completeness * 0.50
+        High → required fields present, most optional fields populated.
+    """
 
     schema_validity: float
     evidence_grounding: float
@@ -55,6 +74,10 @@ class ConfidenceBreakdown:
     orrick_gated: bool = False  # True when tier was forced to D due to missing Orrick data
     broad_spans: bool = False   # True when a verified span exceeds 50% of passage length
     section_ref_quality: float = 0.0  # 0.0–1.0 specificity of section_reference field
+    # RR5a — orthogonal dimensions (always computed, never affect total_score)
+    source_grounding_score: float = 0.0
+    tracker_alignment_score: float = 0.0
+    schema_completeness_score: float = 0.0
 
 
 # Near-term active weights (earnable signals only — sum to 1.0 over these three).
@@ -198,6 +221,9 @@ def compute_confidence(
             # IAPP-only path: score from non-Orrick signals, capped at Tier C.
             capped_score = min(diag_total, TIER_B_THRESHOLD - 0.01)
             tier = _score_to_tier(capped_score)
+            sg, ta, sc = _compute_orthogonal_dimensions(
+                evidence_score, section_ref_quality, 0.0, schema_score, completeness_score
+            )
             return ConfidenceBreakdown(
                 schema_validity=schema_score,
                 evidence_grounding=evidence_score,
@@ -211,10 +237,16 @@ def compute_confidence(
                 orrick_gated=False,
                 broad_spans=broad_spans,
                 section_ref_quality=section_ref_quality,
+                source_grounding_score=sg,
+                tracker_alignment_score=ta,
+                schema_completeness_score=sc,
             )
 
         # No tracker data at all → Tier D.
         capped_score = min(diag_total, TIER_C_THRESHOLD - 0.01)
+        sg, ta, sc = _compute_orthogonal_dimensions(
+            evidence_score, section_ref_quality, 0.0, schema_score, completeness_score
+        )
         return ConfidenceBreakdown(
             schema_validity=schema_score,
             evidence_grounding=evidence_score,
@@ -228,6 +260,9 @@ def compute_confidence(
             orrick_gated=True,
             broad_spans=broad_spans,
             section_ref_quality=section_ref_quality,
+            source_grounding_score=sg,
+            tracker_alignment_score=ta,
+            schema_completeness_score=sc,
         )
 
     # Normal path: Orrick data exists.
@@ -254,6 +289,9 @@ def compute_confidence(
 
     tier = _score_to_tier(total)
 
+    sg, ta, sc = _compute_orthogonal_dimensions(
+        evidence_score, section_ref_quality, orrick_score, schema_score, completeness_score
+    )
     return ConfidenceBreakdown(
         schema_validity=schema_score,
         evidence_grounding=evidence_score,
@@ -266,7 +304,27 @@ def compute_confidence(
         orrick_matched_tokens=matched_tokens,
         broad_spans=broad_spans,
         section_ref_quality=section_ref_quality,
+        source_grounding_score=sg,
+        tracker_alignment_score=ta,
+        schema_completeness_score=sc,
     )
+
+
+def _compute_orthogonal_dimensions(
+    evidence_grounding: float,
+    section_ref_quality: float,
+    orrick_alignment: float,
+    schema_validity: float,
+    completeness: float,
+) -> tuple[float, float, float]:
+    """Compute the three orthogonal confidence dimensions (RR5a).
+
+    Returns (source_grounding_score, tracker_alignment_score, schema_completeness_score).
+    """
+    source_grounding = round(evidence_grounding * 0.70 + section_ref_quality * 0.30, 4)
+    tracker_alignment = round(orrick_alignment, 4)
+    schema_completeness = round(schema_validity * 0.50 + completeness * 0.50, 4)
+    return source_grounding, tracker_alignment, schema_completeness
 
 
 def _compute_completeness(payload: dict, schema_class: type[BaseModel]) -> float:

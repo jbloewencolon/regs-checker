@@ -1,14 +1,22 @@
-"""One-time data sync from local Docker PostgreSQL to Supabase via REST API.
+"""Data sync from local Docker PostgreSQL to Supabase via REST API.
 
 Reads from the local database (SQLAlchemy) and writes to Supabase using the
 PostgREST API (httpx), avoiding any direct Postgres connection to Supabase.
+
+Supports two modes:
+  - Full sync (default): all rows in each table
+  - Incremental sync (--incremental): only rows with id > last_synced_id,
+    tracked in the local sync_cursors table (RR6e)
 
 Usage:
     # Dry run — show what would be synced:
     python -m src.scripts.sync_to_supabase --dry-run
 
-    # Sync (reads REGS_SUPABASE_PROJECT_URL and REGS_SUPABASE_ANON_KEY from env/.env):
+    # Full sync (reads REGS_SUPABASE_PROJECT_URL and REGS_SUPABASE_ANON_KEY from env/.env):
     python -m src.scripts.sync_to_supabase
+
+    # Incremental sync — only new rows since last run:
+    python -m src.scripts.sync_to_supabase --incremental
 
     # Clear Supabase tables first, then do a fresh full sync:
     python -m src.scripts.sync_to_supabase --clear
@@ -22,7 +30,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from datetime import date, datetime
@@ -61,6 +68,7 @@ SYNC_TABLES = [
 ]
 
 BATCH_SIZE = 500
+SYNC_DESTINATION = "supabase"
 
 # Per-table natural unique key columns for PostgREST ON CONFLICT target.
 # PostgREST's default resolution=ignore-duplicates targets the PRIMARY KEY only.
@@ -167,14 +175,55 @@ def clear_supabase_tables(
     print()
 
 
+def _get_cursor(conn, table_name: str) -> int | None:
+    """Read last_synced_id from sync_cursors for a table. Returns None if no cursor."""
+    try:
+        row = conn.execute(
+            text(
+                "SELECT last_synced_id FROM sync_cursors "
+                "WHERE table_name = :t AND destination = :d"
+            ),
+            {"t": table_name, "d": SYNC_DESTINATION},
+        ).first()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
+def _update_cursor(conn, table_name: str, last_id: int, rows_synced: int) -> None:
+    """Upsert sync_cursors with the new last_synced_id."""
+    try:
+        conn.execute(
+            text(
+                "INSERT INTO sync_cursors (table_name, destination, last_synced_id, "
+                "last_synced_at, rows_synced, updated_at) "
+                "VALUES (:t, :d, :lid, now(), :rs, now()) "
+                "ON CONFLICT (table_name, destination) DO UPDATE SET "
+                "last_synced_id = EXCLUDED.last_synced_id, "
+                "last_synced_at = EXCLUDED.last_synced_at, "
+                "rows_synced = sync_cursors.rows_synced + EXCLUDED.rows_synced, "
+                "updated_at = now()"
+            ),
+            {"t": table_name, "d": SYNC_DESTINATION, "lid": last_id, "rs": rows_synced},
+        )
+        conn.commit()
+    except Exception as exc:
+        print(f"    WARNING: could not update sync cursor for {table_name}: {exc}")
+
+
 def sync_tables(
     source_url: str,
     supabase_url: str,
     supabase_key: str,
     dry_run: bool = False,
     clear: bool = False,
+    incremental: bool = False,
 ) -> dict:
-    """Read from local DB, push to Supabase REST API."""
+    """Read from local DB, push to Supabase REST API.
+
+    When incremental=True, reads last_synced_id from the sync_cursors table
+    and only fetches rows with id > last_synced_id (RR6e).
+    """
     source_engine = create_engine(source_url)
 
     client = httpx.Client(
@@ -194,20 +243,26 @@ def sync_tables(
 
     with source_engine.connect() as conn:
         for table_name in SYNC_TABLES:
-            # Count source rows
+            # Determine ID window for incremental mode
+            cursor_id: int | None = None
+            if incremental and not clear:
+                cursor_id = _get_cursor(conn, table_name)
+
+            where_clause = ""
+            if cursor_id is not None:
+                where_clause = f" WHERE id > {cursor_id}"
+
+            # Count source rows (in window)
             source_count = conn.execute(
-                text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608
+                text(f"SELECT COUNT(*) FROM {table_name}{where_clause}")  # noqa: S608
             ).scalar()
 
             if dry_run:
-                # Check target count via REST
+                mode_note = f" (incremental, cursor={cursor_id})" if cursor_id is not None else ""
                 resp = client.get(
                     f"{supabase_url}/rest/v1/{table_name}",
                     params={"select": "count", "head": "true"},
-                    headers={
-                        **client.headers,
-                        "Prefer": "count=exact",
-                    },
+                    headers={**client.headers, "Prefer": "count=exact"},
                 )
                 target_count = 0
                 if resp.status_code == 200:
@@ -215,22 +270,25 @@ def sync_tables(
                     if "/" in content_range:
                         target_count = int(content_range.split("/")[1])
 
-                print(f"  {table_name}: {source_count} rows (target has {target_count})")
+                print(
+                    f"  {table_name}: {source_count} new rows{mode_note}"
+                    f" (target has {target_count})"
+                )
                 summary[table_name] = {"source": source_count, "target": target_count}
                 total_rows += source_count
                 continue
 
             if source_count == 0:
-                print(f"  {table_name}: empty, skipping")
+                print(f"  {table_name}: no new rows, skipping")
                 summary[table_name] = 0
                 continue
 
-            # Fetch all rows from source (sort self-referential tables for FK order)
-            order_clause = ""
+            # Fetch rows from source (sort self-referential tables for FK order)
+            order_clause = " ORDER BY id"
             if table_name == "applicability_conditions":
                 order_clause = " ORDER BY parent_id NULLS FIRST, id"
             rows = conn.execute(
-                text(f"SELECT * FROM {table_name}{order_clause}")  # noqa: S608
+                text(f"SELECT * FROM {table_name}{where_clause}{order_clause}")  # noqa: S608
             ).mappings().all()
 
             if not rows:
@@ -249,10 +307,19 @@ def sync_tables(
                     inserted += len(batch)
                 else:
                     errors += 1
-                    print(f"    ERROR batch {i // BATCH_SIZE}: {resp.status_code} {resp.text[:200]}")
+                    print(
+                        f"    ERROR batch {i // BATCH_SIZE}:"
+                        f" {resp.status_code} {resp.text[:200]}"
+                    )
 
-            # Reset sequences via REST RPC isn't available, but we can note it
-            print(f"  {table_name}: {inserted} rows pushed ({errors} batch errors)")
+            # Update cursor to the max id we just synced (only when incremental)
+            if incremental and inserted > 0:
+                last_row_id = serialized[-1].get("id")
+                if last_row_id is not None:
+                    _update_cursor(conn, table_name, int(last_row_id), inserted)
+
+            mode_note = f" (incremental, from id>{cursor_id})" if cursor_id is not None else ""
+            print(f"  {table_name}: {inserted} rows pushed ({errors} batch errors){mode_note}")
             summary[table_name] = inserted
             total_rows += inserted
 
@@ -290,6 +357,11 @@ def main():
         action="store_true",
         help="DELETE all rows from Supabase sync tables before syncing",
     )
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Only sync rows added since the last run (uses sync_cursors table)",
+    )
     args = parser.parse_args()
 
     supabase_url = (
@@ -316,12 +388,13 @@ def main():
     print(f"Source:   {args.source_url}")
     print(f"Target:   {supabase_url}")
     print(f"Mode:     {'DRY RUN' if args.dry_run else 'LIVE SYNC'}")
+    print(f"Sync:     {'incremental (cursor-based)' if args.incremental else 'full'}")
     print(f"Clear:    {'YES (delete all rows first)' if args.clear else 'no'}")
-    print(f"Method:   REST API (PostgREST)\n")
+    print("Method:   REST API (PostgREST)\n")
 
     summary = sync_tables(
         args.source_url, supabase_url, supabase_key,
-        dry_run=args.dry_run, clear=args.clear,
+        dry_run=args.dry_run, clear=args.clear, incremental=args.incremental,
     )
 
     print(f"\n{'=' * 60}")

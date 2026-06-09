@@ -34,16 +34,26 @@ class Settings(BaseSettings):
 
     # Local LLM (OpenAI-compatible API: LM Studio, llama.cpp, vLLM, Ollama)
     local_llm_url: str = "http://localhost:1234"  # LM Studio default
-    local_llm_model: str = "openai/gpt-oss-20b"  # Default model for discovery tasks
-    local_extraction_model: str = "openai/gpt-oss-20b"  # Default model for extraction
+    # RR7f: single source of truth — matches CLAUDE.md (google/gemma-4-26b-a4b on R9700)
+    local_llm_model: str = "google/gemma-4-26b-a4b"
+    local_extraction_model: str = "google/gemma-4-26b-a4b"
     local_triage_model: str = "qwen2.5-vl-3b-instruct"  # Small non-reasoning model for section triage
     local_context_length: int = 131072  # Context window size configured in LM Studio (128k)
     local_extraction_max_tokens: int = 65536  # Max output tokens for extraction
 
     # Extraction settings (used by agents)
-    extraction_model: str = "openai/gpt-oss-20b"  # Model ID for tracking
+    extraction_model: str = "google/gemma-4-26b-a4b"  # RR7f: matches CLAUDE.md default
     extraction_max_tokens: int = 65536  # Max output tokens per extraction call
     extraction_temperature: float = 0.0  # Temperature for extraction calls
+
+    # RR6b — Per-model concurrency limit for LM Studio (single-GPU: default 1).
+    # Prevents VRAM thrashing when multiple agents share the same model.
+    # Increase to > 1 only if LM Studio is configured for concurrent requests.
+    max_concurrent_agents_per_model: int = 1
+
+    # RR7c — Fraction of passages that bypass triage and run all agents.
+    # Provides recall coverage on passages triage might mis-label.
+    triage_recall_sample_rate: float = 0.05
 
     # FastAPI
     api_host: str = "0.0.0.0"

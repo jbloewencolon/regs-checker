@@ -57,8 +57,8 @@ def list_obligations(
         where_clauses.append("payload->>'modality' = :modality")
         params["modality"] = modality
     if confidence_tiers:
-        where_clauses.append(f"confidence_tier IN :tiers")
-        params["tiers"] = tuple(confidence_tiers)
+        where_clauses.append("confidence_tier = ANY(:tiers)")
+        params["tiers"] = list(confidence_tiers)
 
     where_sql = " AND ".join(where_clauses)
 
@@ -297,25 +297,65 @@ def get_verification_results(
     document_version_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    """Run verification pass and return results as JSON.
+    """Return persisted verification summaries — read-only, no LLM calls.
 
-    Three layers: cross-validation, gap detection, citation verification.
+    Queries the verification_run_summaries table for the latest run per
+    document version.  To trigger a new verification pass, use the
+    POST /internal/verification/run endpoint.
     """
-    from dataclasses import asdict
+    from sqlalchemy import select as sa_select
 
-    from src.ingestion.extractor import run_verification_pass
+    from src.db.models import VerificationRunSummary
 
-    results = run_verification_pass(db, document_version_id)
+    query = sa_select(VerificationRunSummary).order_by(
+        VerificationRunSummary.document_version_id,
+        VerificationRunSummary.run_at.desc(),
+    )
+    if document_version_id is not None:
+        query = query.where(
+            VerificationRunSummary.document_version_id == document_version_id
+        )
+
+    rows = db.scalars(query).all()
+
+    # Return latest row per document version
+    seen: set[int] = set()
+    summaries = []
+    for row in rows:
+        if row.document_version_id not in seen:
+            seen.add(row.document_version_id)
+            summaries.append(row)
+
+    def _row_to_dict(r: VerificationRunSummary) -> dict:
+        return {
+            "id": r.id,
+            "document_version_id": r.document_version_id,
+            "run_at": r.run_at.isoformat() if r.run_at else None,
+            "cv_passages_checked": r.cv_passages_checked,
+            "cv_passages_failed": r.cv_passages_failed,
+            "cv_extractions_valid": r.cv_extractions_valid,
+            "cv_extractions_flagged": r.cv_extractions_flagged,
+            "cv_avg_accuracy": r.cv_avg_accuracy,
+            "gd_passages_checked": r.gd_passages_checked,
+            "gd_passages_failed": r.gd_passages_failed,
+            "gd_gaps_found": r.gd_gaps_found,
+            "gd_high_confidence": r.gd_high_confidence,
+            "citations_checked": r.citations_checked,
+            "citations_verified": r.citations_verified,
+            "citations_unverified": r.citations_unverified,
+            "input_tokens": r.input_tokens,
+            "output_tokens": r.output_tokens,
+        }
+
     return {
-        "documents": [asdict(r) for r in results],
+        "documents": [_row_to_dict(r) for r in summaries],
         "summary": {
-            "total_documents": len(results),
-            "total_cv_flagged": sum(r.cross_validation_flagged for r in results),
-            "total_gaps": sum(r.gaps_found for r in results),
-            "total_high_confidence_gaps": sum(r.high_confidence_gaps for r in results),
-            "total_citations_checked": sum(r.citations_checked for r in results),
-            "total_citations_unverified": sum(r.citations_unverified for r in results),
-            "total_tokens": sum(r.total_tokens for r in results),
+            "total_documents": len(summaries),
+            "total_cv_flagged": sum(r.cv_extractions_flagged for r in summaries),
+            "total_gaps": sum(r.gd_gaps_found for r in summaries),
+            "total_high_confidence_gaps": sum(r.gd_high_confidence for r in summaries),
+            "total_citations_checked": sum(r.citations_checked for r in summaries),
+            "total_citations_unverified": sum(r.citations_unverified for r in summaries),
         },
     }
 

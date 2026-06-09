@@ -356,8 +356,20 @@
         <!-- Tab: Local LLM -->
         <div class="extract-tab-panel" id="tab-local">
           <div class="step-description" style="margin-bottom: 8px;">
-            Runs 7 extraction agents via <strong>LM Studio</strong> (GPT-OSS 20B + Qwen 3.5 9B).
+            Runs 7 extraction agents via <strong>LM Studio</strong>.
             Requires LM Studio running at <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
+            <a href="/dashboard/models" style="font-size:12px;margin-left:6px;">Configure models ›</a>
+          </div>
+
+          <!-- LM Studio connection status — polled every 10 s -->
+          <div id="lm-studio-status"
+               hx-get="/dashboard/api/models/status"
+               hx-trigger="load, every 10s"
+               hx-swap="innerHTML"
+               style="margin-bottom:8px;min-height:36px;">
+            <div style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);">
+              Checking LM Studio…
+            </div>
           </div>
           <div class="step-actions">
             <button class="btn btn-primary"
@@ -481,6 +493,13 @@
           </button>
           <button class="btn btn-sm"
                   style="margin-left: 8px;"
+                  hx-post="/dashboard/api/run/extract/pause"
+                  hx-target="#extract-pause-status"
+                  hx-swap="innerHTML">
+            Pause
+          </button>
+          <button class="btn btn-sm"
+                  style="margin-left: 8px;"
                   hx-post="/dashboard/api/run/extract/reset"
                   hx-target="#extract-result"
                   hx-swap="innerHTML"
@@ -497,6 +516,16 @@
         </div>
 
         <div id="extract-cancel-status"></div>
+        <div id="extract-pause-status"></div>
+
+        <!-- Run health: pause state, stuck detection, recent errors -->
+        <div id="extract-health"
+             hx-get="/dashboard/api/run/extract/health"
+             hx-trigger="load, every 8s"
+             hx-swap="innerHTML"
+             style="margin-top:6px; min-height:20px;">
+        </div>
+
         <div class="step-result" id="extract-result"></div>
 
         <!-- Live Extraction Monitor -->
@@ -511,6 +540,50 @@
                hx-swap="innerHTML">
             <div style="color:var(--text-muted);font-size:13px;">Loading monitor...</div>
           </div>
+        </div>
+
+        <!-- Diagnostic tools -->
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+
+          <!-- Agent Latency -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#9202;</span> Agent Latency (p50 / p95)
+            </summary>
+            <div style="padding:8px 12px;"
+                 hx-get="/dashboard/api/run/extract/latency"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
+          <!-- Failed Attempts Drill-down -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#9888;</span> Failed Attempts
+            </summary>
+            <div style="padding:8px 12px;"
+                 hx-get="/dashboard/api/run/failed-detail"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
+          <!-- Pipeline Event Log -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#128221;</span> Pipeline Event Log
+            </summary>
+            <div style="padding:8px 12px;" id="pipeline-event-log"
+                 hx-get="/dashboard/api/run/pipeline-events"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
         </div>
       </div>
     </div>

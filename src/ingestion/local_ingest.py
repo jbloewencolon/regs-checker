@@ -281,12 +281,15 @@ def seed_from_csv(
         effective_date = _parse_effective_date(row.get("effective_date", ""))
         status_id = row.get("status_id", "")
         temporal_status = _temporal_status_from_csv(status_id)
+        session_year = effective_date.year if effective_date else None
 
         version = DocumentVersion(
             family_id=family.id,
             version_label="Current",
             temporal_status=temporal_status,
             effective_date=effective_date,
+            bill_number=bill_number or None,
+            session_year=session_year,
             metadata_={"seeded_from": "fact_laws.csv"},
         )
         db.add(version)
@@ -451,6 +454,12 @@ def ingest_local_files(
 
             # Content-addressable storage
             sha256 = hashlib.sha256(content_bytes).hexdigest()
+
+            # RR7b: stamp source provenance on the DocumentVersion
+            if dv and not dv.retrieved_at:
+                dv.retrieved_at = datetime.utcnow()
+            if dv and not dv.source_hash:
+                dv.source_hash = sha256
 
             # Check for existing artifact (dedup)
             existing_artifact = db.query(RawArtifact).filter_by(sha256_hash=sha256).first()

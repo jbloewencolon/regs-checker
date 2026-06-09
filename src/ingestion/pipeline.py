@@ -64,6 +64,32 @@ def compute_parse_quality(records: list[NormalizedSourceRecord]) -> float:
     return sum(scores) / len(scores)
 
 
+def fetch_document(db, job: IngestionJob):
+    """Look up the pre-downloaded RawArtifact for a job.
+
+    The local ingestion path downloads files before creating the job,
+    so this step is a DB lookup rather than a live network fetch.
+
+    Returns:
+        RawArtifact — the most-recent artifact for the job's document version.
+
+    Raises:
+        RuntimeError if no artifact exists (pipeline is mis-ordered).
+    """
+    from src.db.models import RawArtifact as RawArtifactModel
+    artifact = db.scalars(
+        select(RawArtifactModel)
+        .where(RawArtifactModel.document_version_id == job.document_version_id)
+        .order_by(RawArtifactModel.created_at.desc())
+    ).first()
+    if artifact is None:
+        raise RuntimeError(
+            "No raw artifact found. Use --mode seed-local to ingest "
+            "local files, or upload via the dashboard."
+        )
+    return artifact
+
+
 def process_single_job(
     db,
     job: IngestionJob,
@@ -87,24 +113,15 @@ def process_single_job(
         logger.info(msg, job_id=job.id)
 
     try:
-        # --- Phase 1: Find existing raw artifact ---
-        from src.db.models import RawArtifact as RawArtifactModel
-        raw_artifact = db.scalars(
-            select(RawArtifactModel)
-            .where(RawArtifactModel.document_version_id == job.document_version_id)
-            .order_by(RawArtifactModel.created_at.desc())
-        ).first()
+        # --- Phase 1: Fetch (lookup pre-downloaded artifact) ---
+        job.status = IngestionStatus.fetching
+        db.commit()
+        _log(f"Fetching artifact for job {job.id}…")
 
-        if raw_artifact is None:
-            job.status = IngestionStatus.failed
-            job.error_message = (
-                "No raw artifact found. Use --mode seed-local to ingest "
-                "local files, or upload via the dashboard."
-            )
-            db.commit()
-            _log(f"  No artifact — skipping. Use seed-local to ingest.")
-            return 0
+        raw_artifact = fetch_document(db, job)
 
+        job.status = IngestionStatus.fetched
+        db.commit()
         _log(
             f"Found artifact: {raw_artifact.content_type}, "
             f"{raw_artifact.size_bytes:,} bytes"
