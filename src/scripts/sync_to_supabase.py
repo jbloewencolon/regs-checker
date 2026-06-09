@@ -30,7 +30,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from datetime import date, datetime
@@ -41,7 +40,6 @@ from uuid import UUID
 import httpx
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from datetime import timezone
 
 # Load .env from project root
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
@@ -251,7 +249,6 @@ def sync_tables(
                 cursor_id = _get_cursor(conn, table_name)
 
             where_clause = ""
-            count_params: dict = {}
             if cursor_id is not None:
                 where_clause = f" WHERE id > {cursor_id}"
 
@@ -273,7 +270,10 @@ def sync_tables(
                     if "/" in content_range:
                         target_count = int(content_range.split("/")[1])
 
-                print(f"  {table_name}: {source_count} new rows{mode_note} (target has {target_count})")
+                print(
+                    f"  {table_name}: {source_count} new rows{mode_note}"
+                    f" (target has {target_count})"
+                )
                 summary[table_name] = {"source": source_count, "target": target_count}
                 total_rows += source_count
                 continue
@@ -307,7 +307,10 @@ def sync_tables(
                     inserted += len(batch)
                 else:
                     errors += 1
-                    print(f"    ERROR batch {i // BATCH_SIZE}: {resp.status_code} {resp.text[:200]}")
+                    print(
+                        f"    ERROR batch {i // BATCH_SIZE}:"
+                        f" {resp.status_code} {resp.text[:200]}"
+                    )
 
             # Update cursor to the max id we just synced (only when incremental)
             if incremental and inserted > 0:
@@ -387,7 +390,7 @@ def main():
     print(f"Mode:     {'DRY RUN' if args.dry_run else 'LIVE SYNC'}")
     print(f"Sync:     {'incremental (cursor-based)' if args.incremental else 'full'}")
     print(f"Clear:    {'YES (delete all rows first)' if args.clear else 'no'}")
-    print(f"Method:   REST API (PostgREST)\n")
+    print("Method:   REST API (PostgREST)\n")
 
     summary = sync_tables(
         args.source_url, supabase_url, supabase_key,
