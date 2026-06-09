@@ -1,0 +1,216 @@
+raw_term,source,count,example_law,surrounding_phrase,prompt_version,proposed_tier1_code,ambiguity_flag
+controller,extraction,359,see_db,see_db,v1.0_unversioned,controller,no
+deployer,extraction,278,see_db,see_db,v1.0_unversioned,deployer,no
+operator,extraction,232,see_db,see_db,v1.0_unversioned,operator,no
+developer,extraction,211,see_db,see_db,v1.0_unversioned,developer,no
+person,extraction,153,see_db,see_db,v1.0_unversioned,individual,no
+processor,extraction,133,see_db,see_db,v1.0_unversioned,processor,no
+business,extraction,122,see_db,see_db,v1.0_unversioned,PENDING_LKA,yes
+regulator,extraction,116,see_db,see_db,v1.0_unversioned,regulator,no
+agency,extraction,48,see_db,see_db,v1.0_unversioned,regulator,no
+vendor,extraction,32,see_db,see_db,v1.0_unversioned,provider,no
+employer,extraction,31,see_db,see_db,v1.0_unversioned,deployer,no
+individual,extraction,29,see_db,see_db,v1.0_unversioned,individual,no
+department,extraction,29,see_db,see_db,v1.0_unversioned,government_agency,no
+model management company,extraction,23,see_db,see_db,v1.0_unversioned,provider,no
+committee,extraction,22,see_db,see_db,v1.0_unversioned,government_agency,no
+licensee,extraction,22,see_db,see_db,v1.0_unversioned,regulated_entity,no
+hospital,extraction,22,see_db,see_db,v1.0_unversioned,deployer,no
+regulated_entity,extraction,20,see_db,see_db,v1.0_unversioned,regulated_entity,no
+controller/processor,extraction,19,see_db,see_db,v1.0_unversioned,controller,no
+state agency,extraction,19,see_db,see_db,v1.0_unversioned,regulator,no
+government_official,extraction,18,see_db,see_db,v1.0_unversioned,government_agency,no
+government_agency,extraction,18,see_db,see_db,v1.0_unversioned,government_agency,no
+platform,extraction,17,see_db,see_db,v1.0_unversioned,deployer,no
+provider,extraction,17,see_db,see_db,v1.0_unversioned,provider,no
+agent,extraction,17,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+state_agency,extraction,15,see_db,see_db,v1.0_unversioned,regulator,no
+insurer,extraction,13,see_db,see_db,v1.0_unversioned,deployer,no
+applicant,extraction,11,see_db,see_db,v1.0_unversioned,individual,no
+government_body,extraction,11,see_db,see_db,v1.0_unversioned,government_agency,no
+advertiser,extraction,10,see_db,see_db,v1.0_unversioned,deployer,no
+educational_institution,extraction,10,see_db,see_db,v1.0_unversioned,deployer,no
+government_unit,extraction,10,see_db,see_db,v1.0_unversioned,government_agency,no
+carrier_and_review_agents,extraction,10,see_db,see_db,v1.0_unversioned,deployer,no
+supplier,extraction,10,see_db,see_db,v1.0_unversioned,provider,no
+court,extraction,9,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+auditor,extraction,9,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+carrier_or_agent,extraction,9,see_db,see_db,v1.0_unversioned,deployer,no
+law enforcement agency,extraction,9,see_db,see_db,v1.0_unversioned,regulator,no
+covered entity,extraction,9,see_db,see_db,v1.0_unversioned,regulated_entity,no
+distributor,extraction,8,see_db,see_db,v1.0_unversioned,distributor,no
+publisher,extraction,8,see_db,see_db,v1.0_unversioned,deployer,no
+government,extraction,8,see_db,see_db,v1.0_unversioned,government_agency,no
+brokerage_firm,extraction,8,see_db,see_db,v1.0_unversioned,deployer,no
+nursing_home,extraction,8,see_db,see_db,v1.0_unversioned,deployer,no
+plaintiff,extraction,7,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+developer/deployer,extraction,7,see_db,see_db,v1.0_unversioned,deployer,no
+local agency,extraction,7,see_db,see_db,v1.0_unversioned,regulator,no
+official,extraction,7,see_db,see_db,v1.0_unversioned,government_agency,no
+model_management_company,extraction,7,see_db,see_db,v1.0_unversioned,provider,no
+council,extraction,7,see_db,see_db,v1.0_unversioned,government_agency,no
+service_provider_or_contractor,extraction,6,see_db,see_db,v1.0_unversioned,provider,no
+data broker,extraction,6,see_db,see_db,v1.0_unversioned,data_broker,no
+secretary,extraction,6,see_db,see_db,v1.0_unversioned,government_agency,no
+government_entity,extraction,6,see_db,see_db,v1.0_unversioned,government_agency,no
+enforcement_authority,extraction,6,see_db,see_db,v1.0_unversioned,regulator,no
+healthcare_facility,extraction,6,see_db,see_db,v1.0_unversioned,deployer,no
+regulated entity,extraction,5,see_db,see_db,v1.0_unversioned,regulated_entity,no
+user,extraction,5,see_db,see_db,v1.0_unversioned,individual,no
+caller,extraction,5,see_db,see_db,v1.0_unversioned,individual,no
+respondent,extraction,5,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+online platform,extraction,5,see_db,see_db,v1.0_unversioned,deployer,no
+unit,extraction,5,see_db,see_db,v1.0_unversioned,government_agency,no
+law_enforcement_agency,extraction,5,see_db,see_db,v1.0_unversioned,regulator,no
+seller,extraction,5,see_db,see_db,v1.0_unversioned,deployer,no
+broker_in_charge,extraction,5,see_db,see_db,v1.0_unversioned,deployer,no
+local_board_of_education,extraction,4,see_db,see_db,v1.0_unversioned,government_agency,no
+media,extraction,4,see_db,see_db,v1.0_unversioned,deployer,no
+agency_group,extraction,4,see_db,see_db,v1.0_unversioned,government_agency,no
+broadcaster,extraction,4,see_db,see_db,v1.0_unversioned,deployer,no
+controller_or_processor,extraction,4,see_db,see_db,v1.0_unversioned,controller,no
+subcabinet,extraction,4,see_db,see_db,v1.0_unversioned,government_agency,no
+higher_education_institution,extraction,4,see_db,see_db,v1.0_unversioned,deployer,no
+servicer,extraction,4,see_db,see_db,v1.0_unversioned,deployer,no
+regulatory_agency,extraction,4,see_db,see_db,v1.0_unversioned,regulator,no
+judicial_officer,extraction,3,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+political_committee,extraction,3,see_db,see_db,v1.0_unversioned,deployer,no
+candidate,extraction,3,see_db,see_db,v1.0_unversioned,individual,no
+manufacturer,extraction,3,see_db,see_db,v1.0_unversioned,provider,no
+juvenile,extraction,3,see_db,see_db,v1.0_unversioned,individual,no
+lottery_sales_agent,extraction,3,see_db,see_db,v1.0_unversioned,deployer,no
+enforcer,extraction,3,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+driver,extraction,3,see_db,see_db,v1.0_unversioned,individual,no
+"controller, processor",extraction,3,see_db,see_db,v1.0_unversioned,controller,no
+commission,extraction,3,see_db,see_db,v1.0_unversioned,regulator,no
+regulatory_body,extraction,3,see_db,see_db,v1.0_unversioned,regulator,no
+state_government_unit,extraction,3,see_db,see_db,v1.0_unversioned,government_agency,no
+carrier,extraction,3,see_db,see_db,v1.0_unversioned,deployer,no
+contract,extraction,3,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+entity,extraction,3,see_db,see_db,v1.0_unversioned,regulated_entity,no
+unspecified,extraction,3,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+client,extraction,3,see_db,see_db,v1.0_unversioned,individual,no
+office,extraction,3,see_db,see_db,v1.0_unversioned,government_agency,no
+executive_management,extraction,2,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+service provider,extraction,2,see_db,see_db,v1.0_unversioned,provider,no
+website,extraction,2,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+website_owner,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+political party or candidate controlled committee,extraction,2,see_db,see_db,v1.0_unversioned,individual,no
+ai_technology_provider,extraction,2,see_db,see_db,v1.0_unversioned,provider,no
+individual_or_entity,extraction,2,see_db,see_db,v1.0_unversioned,individual,no
+real estate professional,extraction,2,see_db,see_db,v1.0_unversioned,regulated_entity,no
+municipality,extraction,2,see_db,see_db,v1.0_unversioned,government_agency,no
+judicial_body,extraction,2,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+defendant,extraction,2,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+owner,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+provider_and_agents,extraction,2,see_db,see_db,v1.0_unversioned,provider,no
+social media platform,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+transportation network company,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+third_party,extraction,2,see_db,see_db,v1.0_unversioned,regulated_entity,no
+professional,extraction,2,see_db,see_db,v1.0_unversioned,individual,no
+attorney general,extraction,2,see_db,see_db,v1.0_unversioned,regulator,no
+program,extraction,2,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+county official,extraction,2,see_db,see_db,v1.0_unversioned,government_agency,no
+developer/deployer/other,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+contractor,extraction,2,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+housing_provider,extraction,2,see_db,see_db,v1.0_unversioned,provider,no
+employer/employment agency,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+government_authority,extraction,2,see_db,see_db,v1.0_unversioned,government_agency,no
+producer,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+dealer,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+enforcement_agency,extraction,2,see_db,see_db,v1.0_unversioned,regulator,no
+document,extraction,2,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+broker_and_licensees,extraction,2,see_db,see_db,v1.0_unversioned,regulated_entity,no
+government agency,extraction,2,see_db,see_db,v1.0_unversioned,government_agency,no
+developer/distributor,extraction,2,see_db,see_db,v1.0_unversioned,developer,no
+attorney_general,extraction,2,see_db,see_db,v1.0_unversioned,regulator,no
+program_participant,extraction,2,see_db,see_db,v1.0_unversioned,individual,no
+actor,extraction,2,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+age_verification_provider,extraction,2,see_db,see_db,v1.0_unversioned,provider,no
+communicator,extraction,2,see_db,see_db,v1.0_unversioned,deployer,no
+legislature,extraction,1,see_db,see_db,v1.0_unversioned,government_agency,no
+trainer,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+legislative provision,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+judge,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+legal_claim,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+creator,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+service_provider,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+request,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+"business, auditor",extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+employee,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+authorized_individual,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+admt provider,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+officer,extraction,1,see_db,see_db,v1.0_unversioned,government_agency,no
+developer/user,extraction,1,see_db,see_db,v1.0_unversioned,developer,no
+independent_expenditure_advertisement,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+sender,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+local_agency,extraction,1,see_db,see_db,v1.0_unversioned,regulator,no
+healthcare provider/facility,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+warehouse distribution center,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+producer/distributor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+successor,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+legal_counsel,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+witness,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+complainant,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+clerk,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+controller_and_processors,extraction,1,see_db,see_db,v1.0_unversioned,controller,no
+retailer,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+socia,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+data_processor,extraction,1,see_db,see_db,v1.0_unversioned,processor,no
+manufacturer_and_distributor,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+accused,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+state_authority,extraction,1,see_db,see_db,v1.0_unversioned,regulator,no
+state agency employee,extraction,1,see_db,see_db,v1.0_unversioned,government_agency,no
+violator,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+office of the child advocate,extraction,1,see_db,see_db,v1.0_unversioned,regulator,no
+board,extraction,1,see_db,see_db,v1.0_unversioned,government_agency,no
+procurement_process,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+carrier_and_review_abilities,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+software_tool,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+creator_publisher_distributor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+distribution_platform,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+"controller, processor, or third party",extraction,1,see_db,see_db,v1.0_unversioned,regulated_entity,no
+small_business,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+supervisor,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+political actor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+bank,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+issuer,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+delegate,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+lessor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+deployer/contractor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+developer/deploy    ployer,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+prosecutor,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+sponsor,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+content,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+real estate entity,extraction,1,see_db,see_db,v1.0_unversioned,regulated_entity,no
+housing provider,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+financial services provider,extraction,1,see_db,see_db,v1.0_unversioned,provider,no
+employer/employment_agency,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+automated decision-making system,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+operat,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+producer/advertiser,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+state_agency_or_representative,extraction,1,see_db,see_db,v1.0_unversioned,regulator,no
+filer,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+victim,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_legalprocess,yes
+seller_agent,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+buyer_agent,extraction,1,see_db,see_db,v1.0_unversioned,REVIEW_unclassified,yes
+broker_manager,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+covered	entity,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+disclosing_entity,extraction,1,see_db,see_db,v1.0_unversioned,regulated_entity,no
+developer_or_deployer,extraction,1,see_db,see_db,v1.0_unversioned,deployer,no
+report,extraction,1,see_db,see_db,v1.0_unversioned,INVALID_nonactor,yes
+participant,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+department_and_council,extraction,1,see_db,see_db,v1.0_unversioned,government_agency,no
+authorized_person,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+commercial entity,extraction,1,see_db,see_db,v1.0_unversioned,regulated_entity,no
+supplier/business associate,extraction,1,see_db,see_db,v1.0_unversioned,processor,no
+hospital_staff,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+staff,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+guardian,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+minor,extraction,1,see_db,see_db,v1.0_unversioned,individual,no
+company,orrick_key_requirements,7,see_ai_law_tracker.csv,see_ai_law_tracker.csv,N/A,regulated_entity,no
+broker,orrick_key_requirements,4,see_ai_law_tracker.csv,see_ai_law_tracker.csv,N/A,regulated_entity,no
+scope:G (general/government),iapp_scope,22,see_iapp_law_tracker.csv,Scope=G (general government/public sector use),N/A,government_agency,no
+scope:F (frontier models),iapp_scope,14,see_iapp_law_tracker.csv,Scope=F (frontier model developer obligations),N/A,developer,no
+scope:D (deployers),iapp_scope,19,see_iapp_law_tracker.csv,Scope=D (deployer obligations),N/A,deployer,no
+scope:A / A* (ADMT),iapp_scope,12,see_iapp_law_tracker.csv,Scope=A/A* (automated decision-making tool laws),N/A,controller,no

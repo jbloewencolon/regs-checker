@@ -1,0 +1,49 @@
+raw_term,original_proposed_code,resolution_code,mentions,routing,notes
+business,data_handler,PENDING_LKA,122,PENDING_LKA,Awaiting LKA ruling on controller-vs-regulated_entity for CCPA 'business'
+agent,REVIEW_unclassified,REVIEW_unclassified,17,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+court,REVIEW_legalprocess,REVIEW_legalprocess,9,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+auditor,REVIEW_unclassified,REVIEW_unclassified,9,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+plaintiff,REVIEW_legalprocess,REVIEW_legalprocess,7,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+respondent,REVIEW_legalprocess,REVIEW_legalprocess,5,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+judicial_officer,REVIEW_legalprocess,REVIEW_legalprocess,3,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+enforcer,REVIEW_unclassified,REVIEW_unclassified,3,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+contract,INVALID_nonactor,INVALID_nonactor,3,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+unspecified,REVIEW_unclassified,REVIEW_unclassified,3,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+executive_management,REVIEW_unclassified,REVIEW_unclassified,2,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+website,INVALID_nonactor,INVALID_nonactor,2,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+judicial_body,REVIEW_legalprocess,REVIEW_legalprocess,2,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+defendant,REVIEW_legalprocess,REVIEW_legalprocess,2,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+program,INVALID_nonactor,INVALID_nonactor,2,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+contractor,REVIEW_unclassified,REVIEW_unclassified,2,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+document,INVALID_nonactor,INVALID_nonactor,2,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+actor,REVIEW_unclassified,REVIEW_unclassified,2,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+trainer,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+legislative provision,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+judge,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+legal_claim,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+request,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+"business, auditor",REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+independent_expenditure_advertisement,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+successor,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+legal_counsel,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+witness,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+complainant,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+clerk,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+socia,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+accused,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+violator,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+procurement_process,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+software_tool,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+distribution_platform,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+small_business,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+supervisor,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+delegate,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+developer/deploy    ployer,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+prosecutor,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+content,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+automated decision-making system,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+operat,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+victim,REVIEW_legalprocess,REVIEW_legalprocess,1,provisional_regulated_entity,Legal-process term; not a duty-bearing actor in AI law
+buyer_agent,REVIEW_unclassified,REVIEW_unclassified,1,provisional_regulated_entity,Ambiguous; map to regulated_entity until ratified
+covered	entity,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)
+report,INVALID_nonactor,INVALID_nonactor,1,excluded_non_actor,Non-actor value; fix at parse layer (B1.5)

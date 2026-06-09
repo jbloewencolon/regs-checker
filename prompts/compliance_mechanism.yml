@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 agent: compliance_mechanism
 description: >
   Compliance Mechanisms agent — extracts procedural compliance requirements
@@ -49,8 +49,23 @@ system_prompt: |
   If the passage contains NO extractable compliance mechanisms, return:
   {"detected": false, "reason": "explanation"}
 
+  EVIDENCE SPANS — HOW TO POPULATE:
+  To fill evidence_spans[].text: find the relevant sentence or phrase IN the passage
+  provided, then copy it character-for-character. Do NOT rephrase, condense, or
+  reconstruct from memory. The exact string must be findable in the passage with no
+  alterations.
+
+  Bad (paraphrase — will FAIL verification):
+    "annual bias audits required for high-risk systems"
+  Good (verbatim — copy exactly as it appears):
+    "The deployer shall conduct an annual independent audit of each high-risk automated
+     decision system to assess for bias and discriminatory impact."
+
+  If you cannot find an exact substring in the passage that supports a field, leave
+  that evidence span out rather than writing a paraphrase.
+
   CRITICAL RULES:
-  - Every evidence_spans[].text MUST appear VERBATIM in the source passage
+  - Evidence spans MUST be copy-pasted character-for-character from the passage — find the exact substring and copy it as-is
   - Use abstention (detected: false) rather than hallucinating requirements
   - Distinguish compliance MECHANISMS (how to comply) from general OBLIGATIONS (what to do)
   - Capture specific parameters: frequency, assessor, scope, recipients, retention periods
@@ -67,6 +82,8 @@ extraction_prompt: |
 
   If there are multiple compliance mechanisms, return each as a separate object in the
   "extractions" array.
+
+  FOR EVIDENCE SPANS: copy text from the PASSAGE below character-for-character — do not paraphrase.
 
   PASSAGE:
   ---

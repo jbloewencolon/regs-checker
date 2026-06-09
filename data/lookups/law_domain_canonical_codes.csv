@@ -1,0 +1,11 @@
+code,definition,orrick_ai_scope,iapp_notes
+synthetic_media,"Laws regulating AI-generated media that could deceive, harm, or manipulate (deepfakes, CSAM, intimate images, political advertising, likeness).",AI CSAM; AI Intimate Images; AI in Political Advertising; AI Likeness; AI Deepfakes,
+automated_decision_making,"Laws governing automated or algorithmic decision-making that affects individuals (ADMT, credit, employment, housing scoring).",Automated Decision-Making; Algorithmic Pricing,Scope A/A*
+government_ai_use,"Laws governing government procurement, deployment, or use of AI systems by public sector entities.",AI in Government,Scope G
+transparency_disclosure,"Laws requiring disclosure, labeling, or notice of AI use to end-users (watermarking, AI interaction notice).",AI Transparency; User-Facing AI,"General notice, Labeling/notification columns"
+healthcare_ai,"Laws governing AI use in healthcare settings (clinical decision support, medical imaging, patient-facing AI).",AI Healthcare,
+employment_ai,"Laws governing AI use in hiring, performance management, and workforce decisions.",AI in Employment,
+platform_content,"Laws governing AI in social media platforms, content moderation, and recommendation algorithms.",AI in Social Media & Online Platforms,
+liability_safety,"Laws establishing AI liability, safety standards, or comprehensive AI governance frameworks (frontier AI, general purpose AI).",AI Liability; Comprehensive AI; Frontier or General-Purpose AI; AI in Critical Infrastructure,Scope F
+privacy_data,"Laws governing AI-related privacy obligations, data handling, and data subject rights in AI contexts.",AI Privacy,
+sector_specific,"Laws governing AI in a specific sector not captured above (real estate, insurance, education, financial services, retail).",AI in Real Estate; AI in Insurance; AI in Education; Algorithmic Pricing,

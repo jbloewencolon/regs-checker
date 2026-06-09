@@ -1,0 +1,7 @@
+code,definition,conflict_type_map,display
+true_preemption,Federal or state law expressly displaces or supersedes state or local law.,federal_preemption; dormant_commerce_clause,True
+constitutional_limit,"Constitutional challenge to a law's validity (First Amendment, Commerce Clause, Due Process).",first_amendment,True
+interstate_conflict,Tension or conflict between two or more state regimes or Commerce Clause friction.,interstate_commerce; cross_state_conflict,True
+agency_jurisdiction,Allocation of regulatory authority between agencies (not a conflict per se).,agency_jurisdiction,True
+cross_law_reference,"Citation to or incorporation of another law, without a substantive conflict.",other (with cross_law_refs only),True
+unclassified,"Unknown, vague, or 'other' conflict type with no usable signal.",other,False (hidden)

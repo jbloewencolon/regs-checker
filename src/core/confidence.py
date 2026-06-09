@@ -1,26 +1,35 @@
-"""Confidence scoring model with 6 components — Orrick-gated.
+"""Confidence scoring model — Orrick-gated, near-term earnable signals only.
 
-6-component weighted score with a hard gate: extractions without Orrick
-validation data are automatically Tier D regardless of other metrics.
-This ensures only law-firm-validated extractions can reach production
-tiers (A/B/C).
+Hard gate (Phase 4b-refined): extractions without ANY tracker data are Tier D.
+  - If Orrick data is present → normal scoring.
+  - If no Orrick but IAPP data present → score from evidence+citation only,
+    cap at Tier C.  (Orrick gate fires only when BOTH trackers are silent.)
+  - If neither Orrick nor IAPP data → Tier D (orrick_gated=True).
 
-Components:
-  - Schema validity (0.10): Pydantic validation pass/fail (binary)
-  - Evidence grounding (0.20): Proportion of fields with verified evidence spans
-  - Completeness (0.10): Proportion of non-null optional fields
-  - Source quality (0.05): Phase 1 parse quality score
-  - Orrick alignment (0.30): Token similarity vs Orrick key_requirements/enforcement
-    REQUIRED: extractions without Orrick data are auto-Tier D.
-  - Cross-validation (0.25): Accuracy score from post-extraction verification
-    When not yet verified, this component is excluded and its weight is
-    redistributed to the remaining active components.
+Active weighted signals (near-term, earnable today):
+  - Orrick alignment  (0.50): Token similarity vs Orrick key_requirements/enforcement
+  - Evidence grounding (0.35): Proportion of verified evidence spans (verbatim-quote check)
+  - Citation quality  (0.15): Specificity of section_reference (subsection > § > generic)
+
+Phase-in signals (weight redistributes to active when absent):
+  - Cross-validation  (target 0.10): Post-extraction CV agent accuracy score
+  - IAPP alignment    (target 0.20): Wires in after Orrick-only trust check is stable
+  - Gap detection     (target 0.05): When gap detector is confirmed wired
+  - Analyst review    (target 0.10): When review staffing is live
+
+Near-term weights renormalize to 1.0 over active signals.  As each phase-in
+signal lands, scale the base weights proportionally so the sum stays 1.0.
+See engineering guide §3.2 for the full target model.
+
+Diagnostic fields (schema_validity, completeness, source_quality) are still
+computed and returned in ConfidenceBreakdown but are NOT included in the
+weighted total — they are retained for observability only.
 
 Tiers:
   A: >= 0.85 (auto-approve candidates)
   B: >= 0.70 (standard review)
   C: >= 0.50 (detailed review required)
-  D: < 0.50 OR no Orrick validation data (requires human review)
+  D: < 0.50 OR no tracker data at all (requires human review)
 """
 
 from __future__ import annotations
@@ -48,15 +57,20 @@ class ConfidenceBreakdown:
     section_ref_quality: float = 0.0  # 0.0–1.0 specificity of section_reference field
 
 
-# Component weights (sum to 1.0 when all components are active)
-# Orrick alignment is now the heaviest single signal — law-firm validation
-# is the most reliable indicator of extraction accuracy.
-WEIGHT_SCHEMA_VALIDITY = 0.10
-WEIGHT_EVIDENCE_GROUNDING = 0.20
-WEIGHT_COMPLETENESS = 0.10
-WEIGHT_SOURCE_QUALITY = 0.05
-WEIGHT_ORRICK_ALIGNMENT = 0.30
-WEIGHT_CROSS_VALIDATION = 0.25
+# Near-term active weights (earnable signals only — sum to 1.0 over these three).
+WEIGHT_ORRICK_ALIGNMENT = 0.50
+WEIGHT_EVIDENCE_GROUNDING = 0.35
+WEIGHT_CITATION = 0.15
+
+# Phase-in weights: added when each signal becomes computable; base weights
+# scale proportionally to keep the total at 1.0.
+WEIGHT_CV_TARGET = 0.10          # cross-validation (phases in when confirmed)
+WEIGHT_IAPP_TARGET = 0.20        # IAPP alignment (fast-follow after Orrick-only)
+
+# Diagnostic-only constants (not part of the weighted formula).
+_DIAG_WEIGHT_SCHEMA_VALIDITY = 0.10
+_DIAG_WEIGHT_COMPLETENESS = 0.10
+_DIAG_WEIGHT_SOURCE_QUALITY = 0.05
 
 # Tier thresholds
 TIER_A_THRESHOLD = 0.85
@@ -73,6 +87,7 @@ def compute_confidence(
     orrick_similarity: "OrrickSimilarityResult | None" = None,
     cross_validation_score: float | None = None,
     passage_text: str | None = None,
+    iapp_has_data: bool = False,
 ) -> ConfidenceBreakdown:
     """Compute the confidence score for an extraction.
 
@@ -85,6 +100,8 @@ def compute_confidence(
         orrick_similarity: Optional Orrick similarity result for alignment scoring.
         cross_validation_score: Optional accuracy score from cross-validation
             agent (0.0-1.0). None means not yet verified.
+        iapp_has_data: True if the law has an IAPP tracker entry (Phase 4b).
+            Prevents the Orrick gate from forcing Tier D for IAPP-only laws.
 
     Returns:
         ConfidenceBreakdown with component scores and final tier.
@@ -136,7 +153,7 @@ def compute_confidence(
     )
     completeness_score = completeness_score * 0.80 + section_ref_quality * 0.20
 
-    # 4. Source quality — from ingestion pipeline
+    # 4. Source quality — diagnostic only (not in weighted formula)
     source_score = parse_quality_score if parse_quality_score is not None else 0.5
 
     # 5. Orrick alignment — token similarity with Orrick metadata
@@ -156,29 +173,48 @@ def compute_confidence(
             orrick_score = 0.3
         matched_tokens = orrick_similarity.matched_tokens
 
-    # 6. Cross-validation — accuracy score from verification agent
+    # Cross-validation — accuracy score from verification agent
     has_cv = cross_validation_score is not None
     cv_score = cross_validation_score if has_cv else 0.0
 
-    # If no Orrick data, force Tier D immediately.
-    # Still compute component scores for the breakdown (diagnostic value),
-    # but the tier and total_score reflect the gate.
+    # Tracker gate (Phase 4b-refined):
+    #   - No Orrick + no IAPP → force Tier D (original behaviour)
+    #   - No Orrick + IAPP present → skip gate; score from evidence+citation only,
+    #     cap at top of Tier C so we never claim Tier A/B without Orrick grounding
     if not has_orrick:
-        # Compute a nominal score from non-Orrick components for diagnostics
         diag_components: list[tuple[float, float]] = [
-            (WEIGHT_SCHEMA_VALIDITY, schema_score),
             (WEIGHT_EVIDENCE_GROUNDING, evidence_score),
-            (WEIGHT_COMPLETENESS, completeness_score),
-            (WEIGHT_SOURCE_QUALITY, source_score),
+            (WEIGHT_CITATION, section_ref_quality),
         ]
         if has_cv:
-            diag_components.append((WEIGHT_CROSS_VALIDATION, cv_score))
+            diag_components.append((WEIGHT_CV_TARGET, cv_score))
         diag_weight = sum(w for w, _ in diag_components)
-        diag_total = sum(w * s for w, s in diag_components) / diag_weight if diag_weight > 0 else 0.0
+        diag_total = (
+            sum(w * s for w, s in diag_components) / diag_weight
+            if diag_weight > 0 else 0.0
+        )
 
-        # Cap the total score below Tier C threshold so tier is always D
+        if iapp_has_data:
+            # IAPP-only path: score from non-Orrick signals, capped at Tier C.
+            capped_score = min(diag_total, TIER_B_THRESHOLD - 0.01)
+            tier = _score_to_tier(capped_score)
+            return ConfidenceBreakdown(
+                schema_validity=schema_score,
+                evidence_grounding=evidence_score,
+                completeness=completeness_score,
+                source_quality=source_score,
+                orrick_alignment=0.0,
+                cross_validation=cv_score,
+                total_score=round(capped_score, 4),
+                tier=tier,
+                orrick_matched_tokens=[],
+                orrick_gated=False,
+                broad_spans=broad_spans,
+                section_ref_quality=section_ref_quality,
+            )
+
+        # No tracker data at all → Tier D.
         capped_score = min(diag_total, TIER_C_THRESHOLD - 0.01)
-
         return ConfidenceBreakdown(
             schema_validity=schema_score,
             evidence_grounding=evidence_score,
@@ -194,16 +230,24 @@ def compute_confidence(
             section_ref_quality=section_ref_quality,
         )
 
-    # Normal path: Orrick data exists — compute weighted average
-    components: list[tuple[float, float]] = [
-        (WEIGHT_SCHEMA_VALIDITY, schema_score),
-        (WEIGHT_EVIDENCE_GROUNDING, evidence_score),
-        (WEIGHT_COMPLETENESS, completeness_score),
-        (WEIGHT_SOURCE_QUALITY, source_score),
-        (WEIGHT_ORRICK_ALIGNMENT, orrick_score),
-    ]
+    # Normal path: Orrick data exists.
+    # Active formula: Orrick (0.50) + evidence (0.35) + citation (0.15).
+    # When CV is present, scale the base by (1 - WEIGHT_CV_TARGET) and add CV
+    # at its target weight so the sum stays at 1.0.
     if has_cv:
-        components.append((WEIGHT_CROSS_VALIDATION, cv_score))
+        base_scale = 1.0 - WEIGHT_CV_TARGET
+        components: list[tuple[float, float]] = [
+            (WEIGHT_ORRICK_ALIGNMENT * base_scale, orrick_score),
+            (WEIGHT_EVIDENCE_GROUNDING * base_scale, evidence_score),
+            (WEIGHT_CITATION * base_scale, section_ref_quality),
+            (WEIGHT_CV_TARGET, cv_score),
+        ]
+    else:
+        components = [
+            (WEIGHT_ORRICK_ALIGNMENT, orrick_score),
+            (WEIGHT_EVIDENCE_GROUNDING, evidence_score),
+            (WEIGHT_CITATION, section_ref_quality),
+        ]
 
     active_weight = sum(w for w, _ in components)
     total = sum(w * s for w, s in components) / active_weight if active_weight > 0 else 0.0

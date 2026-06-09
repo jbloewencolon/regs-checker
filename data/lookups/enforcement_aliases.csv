@@ -1,0 +1,129 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+civil penalty,penalty_type,107,extraction_db,civil_penalty,no
+misdemeanor,penalty_type,46,extraction_db,criminal_penalty,no
+criminal,penalty_type,39,extraction_db,criminal_penalty,no
+unfair trade practice,penalty_type,26,extraction_db,administrative_action,no
+felony,penalty_type,13,extraction_db,criminal_penalty,no
+sanctions,penalty_type,11,extraction_db,administrative_action,no
+monetary penalty; suspension probation or revocation,penalty_type,8,extraction_db,civil_penalty,yes
+crime or infraction,penalty_type,7,extraction_db,criminal_penalty,no
+civil_penalty,penalty_type,7,extraction_db,civil_penalty,no
+unlawful practice,penalty_type,6,extraction_db,administrative_action,no
+misdemeanor/felony,penalty_type,5,extraction_db,criminal_penalty,no
+imprisonment and fine,penalty_type,5,extraction_db,criminal_penalty,no
+administrative penalties,penalty_type,5,extraction_db,administrative_action,no
+petty misdemeanor; misdemeanor; class c felony,penalty_type,5,extraction_db,criminal_penalty,no
+injunctive relief,penalty_type,4,extraction_db,injunctive_relief,no
+civil liability,penalty_type,4,extraction_db,civil_penalty,yes
+injunctive or other equitable relief,penalty_type,4,extraction_db,injunctive_relief,no
+fine,penalty_type,4,extraction_db,civil_penalty,no
+penalties and interest,penalty_type,4,extraction_db,civil_penalty,no
+misdemeanor or felony,penalty_type,4,extraction_db,criminal_penalty,no
+civil action,penalty_type,4,extraction_db,private_right_of_action,yes
+violation of the residential mortgage licensing act,penalty_type,4,extraction_db,administrative_action,no
+prohibition/liability,penalty_type,4,extraction_db,civil_penalty,yes
+civil,penalty_type,4,extraction_db,civil_penalty,yes
+penalties associated with a violation,penalty_type,4,extraction_db,civil_penalty,no
+injunction/restraining order compliance,penalty_type,3,extraction_db,injunctive_relief,no
+penalty,penalty_type,3,extraction_db,civil_penalty,yes
+class c felony,penalty_type,3,extraction_db,criminal_penalty,no
+contempt,penalty_type,3,extraction_db,administrative_action,no
+disciplinary action,penalty_type,3,extraction_db,administrative_action,no
+criminal offense,penalty_type,3,extraction_db,criminal_penalty,no
+court order and liability,penalty_type,3,extraction_db,injunctive_relief,yes
+administrative fine,penalty_type,3,extraction_db,administrative_action,no
+criminal penalties,penalty_type,2,extraction_db,criminal_penalty,no
+declaratory relief,penalty_type,2,extraction_db,private_right_of_action,yes
+civil protective custody,penalty_type,2,extraction_db,criminal_penalty,no
+misdemeanor/jail,penalty_type,2,extraction_db,criminal_penalty,no
+administrative or civil remedies; injunctive relief,penalty_type,2,extraction_db,injunctive_relief,yes
+administrative fines and costs,penalty_type,2,extraction_db,administrative_action,no
+injunctive relief equitable relief and damages,penalty_type,2,extraction_db,injunctive_relief,no
+civil damages,penalty_type,2,extraction_db,private_right_of_action,yes
+unfair abusive or deceptive trade practice,penalty_type,2,extraction_db,administrative_action,no
+civil_damages,penalty_type,2,extraction_db,private_right_of_action,yes
+license cancellation/penalties,penalty_type,2,extraction_db,administrative_action,no
+sanctions and monetary penalty,penalty_type,2,extraction_db,administrative_action,no
+statutory penalties,penalty_type,2,extraction_db,civil_penalty,no
+restitution,penalty_type,2,extraction_db,restitution,no
+deceptive trade practice / injunctive relief,penalty_type,2,extraction_db,injunctive_relief,yes
+injunctive relief and deceptive trade practice action,penalty_type,2,extraction_db,injunctive_relief,yes
+imprisonment,penalty_type,2,extraction_db,criminal_penalty,no
+class a misdemeanor or felony,penalty_type,1,extraction_db,criminal_penalty,no
+class b felony; fine,penalty_type,1,extraction_db,criminal_penalty,no
+class c felony; fine,penalty_type,1,extraction_db,criminal_penalty,no
+criminal penalty; injunctive or equitable relief; damages,penalty_type,1,extraction_db,criminal_penalty,yes
+criminal prosecution,penalty_type,1,extraction_db,criminal_penalty,no
+damages,penalty_type,1,extraction_db,restitution,yes
+damages and injunctive relief,penalty_type,1,extraction_db,injunctive_relief,yes
+injunction,penalty_type,1,extraction_db,injunctive_relief,no
+injunction or restraining order,penalty_type,1,extraction_db,injunctive_relief,no
+injunctive relief and attorney's fees,penalty_type,1,extraction_db,injunctive_relief,no
+injunctive relief and equitable remedies,penalty_type,1,extraction_db,injunctive_relief,no
+injunctive relief and monetary recovery,penalty_type,1,extraction_db,injunctive_relief,no
+injunctive_relief_and_damages,penalty_type,1,extraction_db,injunctive_relief,no
+license_revocation,penalty_type,1,extraction_db,administrative_action,no
+license suspension,penalty_type,1,extraction_db,administrative_action,no
+disciplinary_action,penalty_type,1,extraction_db,administrative_action,no
+administrative disciplinary action,penalty_type,1,extraction_db,administrative_action,no
+administrative penalties citations and cease and desist orders,penalty_type,1,extraction_db,administrative_action,no
+audit and inspection,penalty_type,1,extraction_db,administrative_action,no
+audit/compliance review,penalty_type,1,extraction_db,administrative_action,no
+removal from program,penalty_type,1,extraction_db,administrative_action,no
+civil and criminal,penalty_type,1,extraction_db,criminal_penalty,yes
+civil fine,penalty_type,1,extraction_db,civil_penalty,no
+civil_action,penalty_type,1,extraction_db,private_right_of_action,no
+civil_liability,penalty_type,1,extraction_db,civil_penalty,yes
+civil liability/damages,penalty_type,1,extraction_db,private_right_of_action,yes
+civil penalty and damages,penalty_type,1,extraction_db,civil_penalty,yes
+civil penalty and injunction,penalty_type,1,extraction_db,civil_penalty,yes
+civil penalty and injunctive relief,penalty_type,1,extraction_db,civil_penalty,yes
+civil penalty / injunction,penalty_type,1,extraction_db,civil_penalty,yes
+civil penalty fees and costs,penalty_type,1,extraction_db,civil_penalty,no
+civil recourse,penalty_type,1,extraction_db,private_right_of_action,no
+forfeiture,penalty_type,1,extraction_db,civil_penalty,no
+jail and fine,penalty_type,1,extraction_db,criminal_penalty,no
+misdemeanor/fine/imprisonment,penalty_type,1,extraction_db,criminal_penalty,no
+misdemeanor; felony,penalty_type,1,extraction_db,criminal_penalty,no
+monetary and equitable relief,penalty_type,1,extraction_db,restitution,yes
+petty offense,penalty_type,1,extraction_db,criminal_penalty,no
+prohibited practice under the virginia consumer protection act,penalty_type,1,extraction_db,administrative_action,no
+regulatory enforcement,penalty_type,1,extraction_db,administrative_action,no
+restitution,penalty_type,2,extraction_db,restitution,no
+unfair abusive or deceptive trade practice,penalty_type,2,extraction_db,administrative_action,no
+attorney general,enforcing_body,155,extraction_db,ag_enforcement,no
+the attorney general,enforcing_body,11,extraction_db,ag_enforcement,no
+attorney general a city attorney or a county counsel,enforcing_body,12,extraction_db,ag_enforcement,no
+attorney general district attorney or city attorney,enforcing_body,4,extraction_db,ag_enforcement,no
+office of the attorney general,enforcing_body,6,extraction_db,ag_enforcement,no
+the commissioner,enforcing_body,26,extraction_db,regulatory_enforcement,no
+state agency,enforcing_body,16,extraction_db,regulatory_enforcement,no
+division on civil rights,enforcing_body,15,extraction_db,regulatory_enforcement,no
+court,enforcing_body,11,extraction_db,injunctive_relief,yes
+the commission,enforcing_body,10,extraction_db,regulatory_enforcement,no
+the court,enforcing_body,10,extraction_db,injunctive_relief,yes
+the division,enforcing_body,9,extraction_db,regulatory_enforcement,no
+department,enforcing_body,7,extraction_db,regulatory_enforcement,no
+peace officer,enforcing_body,5,extraction_db,regulatory_enforcement,no
+the director,enforcing_body,5,extraction_db,regulatory_enforcement,no
+the department,enforcing_body,5,extraction_db,regulatory_enforcement,no
+commissioner,enforcing_body,4,extraction_db,regulatory_enforcement,no
+commissioner of revenue services,enforcing_body,4,extraction_db,regulatory_enforcement,no
+department of justice,enforcing_body,4,extraction_db,ag_enforcement,no
+commission,enforcing_body,4,extraction_db,regulatory_enforcement,no
+state agency; attorney general,enforcing_body,4,extraction_db,ag_enforcement,yes
+state prosecutors,enforcing_body,3,extraction_db,criminal_penalty,yes
+secretary of state,enforcing_body,3,extraction_db,regulatory_enforcement,no
+the office,enforcing_body,3,extraction_db,regulatory_enforcement,no
+colorado division of insurance,enforcing_body,3,extraction_db,regulatory_enforcement,no
+department of legal affairs,enforcing_body,3,extraction_db,ag_enforcement,no
+department of financial and professional regulation,enforcing_body,3,extraction_db,regulatory_enforcement,no
+judicial bureau,enforcing_body,3,extraction_db,injunctive_relief,yes
+superior court,enforcing_body,2,extraction_db,injunctive_relief,yes
+public prosecutor,enforcing_body,2,extraction_db,criminal_penalty,yes
+california privacy protection agency,enforcing_body,2,extraction_db,regulatory_enforcement,no
+district court,enforcing_body,2,extraction_db,injunctive_relief,yes
+civil court,enforcing_body,2,extraction_db,injunctive_relief,yes
+director of banking and finance,enforcing_body,2,extraction_db,regulatory_enforcement,no
+per-violation penalty,extraction_or_orrick,35,extraction_db,civil_penalty,no
+cure period (enforcement gate),extraction_or_orrick,30,extraction_db,civil_penalty,yes

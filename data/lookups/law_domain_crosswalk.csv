@@ -1,0 +1,11 @@
+canonical_code,orrick_ai_scope_values,iapp_notes,definition_summary
+synthetic_media,AI CSAM; AI Intimate Images; AI in Political Advertising; AI Likeness; AI Deepfakes,,"Laws regulating AI-generated media that could deceive, harm, or manipulate (deep..."
+automated_decision_making,Automated Decision-Making; Algorithmic Pricing,Scope A/A*,Laws governing automated or algorithmic decision-making that affects individuals...
+government_ai_use,AI in Government,Scope G,"Laws governing government procurement, deployment, or use of AI systems by publi..."
+transparency_disclosure,AI Transparency; User-Facing AI,"General notice, Labeling/notification columns","Laws requiring disclosure, labeling, or notice of AI use to end-users (watermark..."
+healthcare_ai,AI Healthcare,,"Laws governing AI use in healthcare settings (clinical decision support, medical..."
+employment_ai,AI in Employment,,"Laws governing AI use in hiring, performance management, and workforce decisions..."
+platform_content,AI in Social Media & Online Platforms,,"Laws governing AI in social media platforms, content moderation, and recommendat..."
+liability_safety,AI Liability; Comprehensive AI; Frontier or General-Purpose AI; AI in Critical Infrastructure,Scope F,"Laws establishing AI liability, safety standards, or comprehensive AI governance..."
+privacy_data,AI Privacy,,"Laws governing AI-related privacy obligations, data handling, and data subject r..."
+sector_specific,AI in Real Estate; AI in Insurance; AI in Education; Algorithmic Pricing,,"Laws governing AI in a specific sector not captured above (real estate, insuranc..."

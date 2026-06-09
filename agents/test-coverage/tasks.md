@@ -6,6 +6,16 @@
 
 ## Next Tasks
 
+### Run-1 Unified Plan v3 — assigned items (see `docs/run1_unified_plan.md`)
+
+- **Phase 3e — Normalization idempotency unit tests** — One `tests/unit/test_normalize_*.py` per normalization stage once the unified loader exists in `rollup_matrix.py`: known value → expected canonical code, articles stripped, unmapped value → `vocab_review_queue`, **idempotent re-run produces zero changes** (load-bearing test). Blocked until Phase 3e lands the loader. Now covers all dimensions (actors, law_domain, systems, obligation families, rights, enforcement, legal_context), not just actors.
+- **Phase 2a / fixtures — Gold-standard fixtures** — Extend `tests/fixtures/gold_standard/` from the 149-row Tier-A + evidence-span pool. **Prioritize** human-corrected Tier-C/D + abstention fixtures (decision boundary) over easy Tier-A wins — start with `compliance_mechanism` abstentions and `subject_normalized` hedges. NOTE: SB 205 fixtures must wait on the Phase 1d text re-fetch (current corpus text is truncated/bad).
+- **Phase 2a — Eval-harness baseline** — Wire a pre/post run that records verified-span rate + A/B/C/D distribution so the 2a verbatim-prompt change and the 2b cross-validation re-wire are measurable; >10% A→B drop triggers prompt review.
+- **Phase 2b — Cross-validation regression guard** — When cross-validation is wired into confidence, assert a populated `cross_validation_score` actually moves the confidence result, and a swallowed/failed cross-validation does NOT silently pass as a neutral score.
+- **Phase 4c — Confidence re-weight validation** — When the v3 weight model (Orrick 30/IAPP 20/evidence 15/…) lands, assert tier assignments are validated against the gold-standard fixtures before it becomes the serving model (no uncalibrated weight swap).
+
+### Standing test debt
+
 - **Fix stale tests** — Update or delete `test_connector.py`, `test_discovery_agent.py`, `test_llm_provider.py`, `test_pdf_tracker.py` (stale imports).
 - **Fix ingestion pipeline tests** — Rewrite `test_ingestion_pipeline.py` for `local_ingest.py` (removed `fetch_document`).
 - **Fix `test_orrick_scraper::test_pdf_tracker_is_replacement`** — References removed `src.ingestion.pdf_tracker`.

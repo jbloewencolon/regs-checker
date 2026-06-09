@@ -129,9 +129,14 @@ database. Three files:
 
 ### Run of record (`run_summary.json`)
 - **Type:** `extract` · ran **2026-05-10 → 2026-05-11** (~23.4 hours)
-- **660 records processed, 0 failed**; 1,646 agent calls skipped by negative screening
-- **6,274 clause-level extractions** + **472 bill-level extractions**
-- **~9.9M tokens** across the run
+- **660 passages processed, 0 marked failed** — but this covers only **138 unique laws**
+  (of the ~232 authoritative), and `agent_stats.json` shows only **647/660** passages
+  actually processed (a 13-passage silent gap). See open questions below.
+- **6,274 clause-level extractions.** `run_summary` also reports **472 bill-level
+  extractions**, but ⚠️ **none are present in this export and no bill-level agent appears
+  in the telemetry** — that figure is unverified and is the subject of a known engineering
+  blocker (see the caution box at the end of this section).
+- **~9.9M tokens** across the run (per `run_summary`; `agent_stats` disagrees — see caveat)
 
 ### The extraction taxonomy this run produced (`extractions.csv`, 6,274 rows)
 This is the agent-built vocabulary — and unlike the catalog's `ai_topic`, these are clean,
@@ -168,11 +173,19 @@ most facts need human review before they're trusted — the A/B tier (12%) is th
 
 ### Per-agent behavior (`agent_stats.json`)
 `obligation` is the busiest and most reliable agent (~0.9% failure); `compliance_mechanism`
-abstains most often (~190 abstentions / 19% of its calls) — it declines when a passage
+abstains most often (~190 abstentions / 20% of its calls) — it declines when a passage
 isn't truly a procedural duty. *Caveat:* the totals in `agent_stats.json` (call counts,
 tokens) are larger than `run_summary.json` and look like a cumulative live-dashboard
 counter rather than this single run, so treat its per-agent numbers as **relative
 behavior**, not exact run figures.
+
+> ⚠️ **This run is NOT production-cleared.** A separate engineering review
+> (`extraction_run_corrections_eng.md`) is the authority on the run's known issues. The
+> headline blocker (C-1): the **bill-level `applicability_agent` produced no rows in this
+> output**, which gates downstream scope/sector/category work. Other open items: telemetry
+> token/call mismatch (~4×), coverage of only 138/232 laws, 13 silently-dropped passages,
+> the C/D confidence skew (88% vs a 70% A+B baseline), and agent→`extraction_type` naming
+> drift. Read the numbers above as *what this run captured*, not as a validated dataset.
 
 ---
 
@@ -180,7 +193,9 @@ behavior**, not exact run figures.
 
 > `output/laws.json` is a **keyword-built catalog** of 244 AI laws you can filter and
 > search; the **nine LLM agents** build a far richer, quote-grounded extraction (6,274
-> clause-level facts in the latest run) now exported to `output/extraction_runs/`.
+> clause-level facts across 138 laws in the latest run) now exported to
+> `output/extraction_runs/` — though that run has known gaps and is not yet
+> production-cleared (see §3.5).
 
 ---
 
@@ -189,11 +204,11 @@ behavior**, not exact run figures.
 1. **Do agent outputs ever feed back into the catalog tags?** Today the catalog appears
    fully rule/keyword-derived. If the plan is to replace the noisy `ai_topic` keywords
    with agent-derived concepts, that hand-off isn't visible in `output/` yet.
-2. **The catalog run (244 laws) and the extraction run (660 records) don't line up.**
-   The extraction run processed 660 records — more than the 244 laws in the catalog,
-   because one law splits into multiple passages/sections. There's no shared key shown in
-   `output/` to join an `extractions.csv` row back to a `laws.json` record beyond the law
-   name/jurisdiction — worth confirming the canonical join key.
+2. **Coverage gap: the extraction run touched only 138 unique laws.** Although it
+   processed 660 passages (one law spans many passages), those map to just **138 laws of
+   the ~232 authoritative** — ~94 laws are unaccounted for. There's also no shared key in
+   `output/` to join an `extractions.csv` row back to a `laws.json` record beyond law
+   name/jurisdiction. (Tracked as C-3 in the engineering review.)
 3. **`agent_stats.json` totals exceed `run_summary.json`.** They appear to be a cumulative
    live-monitor snapshot, not this run's figures. Confirm before quoting its call/token
    counts as run-specific.

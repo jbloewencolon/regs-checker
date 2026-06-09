@@ -1,0 +1,22 @@
+code,definition,mechanism_type_map,iapp_col
+documentation,"Technical documentation, model cards, system design records.",record_keeping,Program and documentation
+registration,Mandatory registration with a state or federal registry.,registration,Registration
+impact_assessment,"Algorithmic impact assessment, DPIA, or AI risk assessment before deployment.",impact_assessment,Assessments
+bias_testing,Bias audit or discrimination testing of AI system outputs.,bias_audit,
+red_teaming,Adversarial/red-team testing or safety evaluation before deployment.,,
+third_party_audit,Independent third-party audit or certification of an AI system.,,Third-party review
+incident_reporting,"Reporting AI incidents, breaches, or safety failures to a regulator.",reporting,Explanation/incident reporting
+record_keeping,"Retention of logs, training data documentation, or decision records.",record_keeping,
+disclosure_to_user,Disclosure or notice to individuals that AI is being used.,disclosure,General notice
+labeling_watermarking,Labeling or watermarking of AI-generated content.,notification,Labeling/notification
+human_review,Requirement for human oversight or appeal of AI-driven decisions.,,
+opt_out_right,Individual right to opt out of AI processing or profiling.,,Opt out/appeal
+explanation_right,Individual right to explanation or meaningful information about an AI decision.,,Explanation/incident reporting
+training_mandate,"Required staff or operator training on AI use, bias, or safety.",,Training
+certification,"Self-certification, conformity declaration, or CE-marking equivalent.",certification,
+reporting_to_regulator,Periodic compliance reporting submitted to an agency or regulator.,reporting,
+prohibition,Absolute prohibition on a specific AI use or practice.,,Nondiscrimination
+consent_mechanism,Opt-in or explicit consent required before AI use or data processing.,,
+data_governance,"Data quality, lineage, or data management requirements for AI training/operation.",,
+security_measures,"Cybersecurity, access controls, or data security requirements for AI systems.",,
+risk_management,"Ongoing risk monitoring, mitigation plan, or continuous risk management program.",impact_assessment,Assessments

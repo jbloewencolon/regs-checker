@@ -1,0 +1,9 @@
+code,definition,schema_field,orrick_signal
+civil_penalty,Monetary fine or civil penalty imposed on a violating entity.,penalty_type,"fine, civil penalty, per violation"
+criminal_penalty,Criminal sanction including fines and imprisonment for willful violations.,penalty_type,"criminal, misdemeanor, felony"
+private_right_of_action,Individual or class action lawsuit right to sue in civil court.,private_right_of_action,"private right of action, civil action, may sue"
+ag_enforcement,Enforcement action brought by the state attorney general.,enforcing_body,"attorney general, AG enforcement"
+regulatory_enforcement,Enforcement by a specialized regulatory agency (not AG).,enforcing_body,"commission, agency enforcement, regulatory action"
+administrative_action,"Administrative penalties including license revocation, cease-and-desist, consent decrees.",penalty_type,"administrative, cease and desist, consent order"
+injunctive_relief,Court-ordered injunction to stop or compel a specific action.,penalty_type,"injunction, restraining order, court order"
+restitution,Restitution or disgorgement of profits to harmed parties.,penalty_type,"restitution, disgorgement"

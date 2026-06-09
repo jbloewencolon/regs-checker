@@ -1,0 +1,210 @@
+raw_value,mentions,A,B,C,D,proposed_code
+controller,359,0,16,244,99,data_handler
+deployer,278,11,15,144,108,deployer
+operator,232,9,14,97,112,operator
+developer,211,2,15,71,123,developer
+person,153,14,14,75,50,individual
+processor,133,0,1,44,88,data_handler
+business,122,0,7,102,13,data_handler
+regulator,116,1,2,61,52,regulator_or_gov
+agency,48,2,11,22,13,regulator_or_gov
+vendor,32,1,2,10,19,provider
+employer,31,0,0,6,25,deployer
+individual,29,1,1,22,5,individual
+department,29,2,0,9,18,regulator_or_gov
+model management company,23,0,0,2,21,provider
+committee,22,1,1,18,2,REVIEW_unclassified
+licensee,22,2,0,16,4,regulated_entity
+hospital,22,0,1,17,4,deployer
+regulated_entity,20,1,0,15,4,regulated_entity
+controller/processor,19,0,0,10,9,data_handler
+state agency,19,3,5,8,3,regulator_or_gov
+government_official,18,0,0,10,8,regulator_or_gov
+government_agency,18,1,1,7,9,regulator_or_gov
+platform,17,6,4,5,2,deployer
+provider,17,0,0,6,11,provider
+agent,17,0,0,2,15,REVIEW_unclassified
+state_agency,15,2,0,10,3,regulator_or_gov
+insurer,13,0,2,10,1,deployer
+applicant,11,0,0,7,4,individual
+government_body,11,0,1,5,5,regulator_or_gov
+advertiser,10,0,0,7,3,deployer
+educational_institution,10,0,0,1,9,deployer
+government_unit,10,0,0,10,0,regulator_or_gov
+carrier_and_review_agents,10,0,6,4,0,deployer
+supplier,10,0,2,3,5,provider
+court,9,0,0,4,5,REVIEW_legalprocess
+auditor,9,0,0,8,1,REVIEW_unclassified
+carrier_or_agent,9,0,0,7,2,deployer
+law enforcement agency,9,2,0,7,0,regulator_or_gov
+covered entity,9,0,0,0,9,regulated_entity
+distributor,8,1,0,3,4,distributor
+publisher,8,0,1,4,3,deployer
+government,8,0,0,0,8,regulator_or_gov
+brokerage_firm,8,0,0,2,6,deployer
+nursing_home,8,0,1,6,1,deployer
+plaintiff,7,0,0,4,3,REVIEW_legalprocess
+developer/deployer,7,1,0,0,6,deployer
+local agency,7,0,0,7,0,regulator_or_gov
+official,7,0,0,5,2,regulator_or_gov
+model_management_company,7,0,0,0,7,provider
+council,7,0,0,0,7,regulator_or_gov
+service_provider_or_contractor,6,0,0,4,2,provider
+data broker,6,0,0,6,0,data_handler
+secretary,6,0,0,1,5,regulator_or_gov
+government_entity,6,0,0,1,5,regulator_or_gov
+enforcement_authority,6,0,0,2,4,regulator_or_gov
+healthcare_facility,6,1,2,3,0,deployer
+regulated entity,5,0,0,3,2,regulated_entity
+user,5,0,1,1,3,individual
+caller,5,2,2,1,0,individual
+respondent,5,0,0,0,5,REVIEW_legalprocess
+online platform,5,0,1,2,2,deployer
+unit,5,0,1,3,1,regulator_or_gov
+law_enforcement_agency,5,1,2,2,0,regulator_or_gov
+seller,5,0,1,3,1,deployer
+broker_in_charge,5,0,0,1,4,deployer
+local_board_of_education,4,0,0,1,3,regulator_or_gov
+media,4,0,0,1,3,deployer
+agency_group,4,0,0,1,3,regulator_or_gov
+broadcaster,4,0,1,1,2,deployer
+controller_or_processor,4,0,0,1,3,data_handler
+subcabinet,4,0,0,4,0,regulator_or_gov
+higher_education_institution,4,0,1,2,1,deployer
+servicer,4,0,0,4,0,deployer
+regulatory_agency,4,0,0,0,4,regulator_or_gov
+judicial_officer,3,2,0,1,0,REVIEW_legalprocess
+political_committee,3,0,1,2,0,deployer
+candidate,3,0,0,1,2,individual
+manufacturer,3,0,2,1,0,provider
+juvenile,3,0,0,2,1,individual
+lottery_sales_agent,3,0,0,3,0,deployer
+enforcer,3,0,0,3,0,REVIEW_unclassified
+driver,3,0,0,2,1,individual
+"controller, processor",3,0,0,2,1,data_handler
+commission,3,1,1,0,1,regulator_or_gov
+regulatory_body,3,0,0,1,2,regulator_or_gov
+state_government_unit,3,0,2,1,0,regulator_or_gov
+carrier,3,0,1,1,1,deployer
+contract,3,0,0,1,2,INVALID_nonactor
+entity,3,1,0,0,2,regulated_entity
+unspecified,3,0,0,1,2,REVIEW_unclassified
+client,3,0,0,0,3,individual
+office,3,1,1,1,0,regulator_or_gov
+executive_management,2,0,0,1,1,REVIEW_unclassified
+service provider,2,0,0,2,0,provider
+website,2,0,0,0,2,INVALID_nonactor
+website_owner,2,0,0,1,1,deployer
+political party or candidate controlled committee,2,0,1,1,0,individual
+ai_technology_provider,2,0,0,0,2,provider
+individual_or_entity,2,0,1,0,1,individual
+real estate professional,2,2,0,0,0,regulator_or_gov
+municipality,2,0,0,2,0,regulator_or_gov
+judicial_body,2,0,0,1,1,REVIEW_legalprocess
+defendant,2,0,0,1,1,REVIEW_legalprocess
+owner,2,0,0,1,1,deployer
+provider_and_agents,2,0,0,2,0,provider
+social media platform,2,0,0,2,0,deployer
+transportation network company,2,0,0,2,0,deployer
+third_party,2,0,0,1,1,regulated_entity
+professional,2,1,0,1,0,individual
+attorney general,2,0,0,2,0,regulator_or_gov
+program,2,0,0,2,0,INVALID_nonactor
+county official,2,0,0,1,1,regulator_or_gov
+developer/deployer/other,2,0,0,0,2,deployer
+contractor,2,0,0,0,2,REVIEW_unclassified
+housing_provider,2,0,0,0,2,provider
+employer/employment agency,2,1,1,0,0,regulator_or_gov
+government_authority,2,0,0,2,0,regulator_or_gov
+producer,2,0,0,1,1,deployer
+dealer,2,0,0,1,1,deployer
+enforcement_agency,2,0,0,0,2,regulator_or_gov
+document,2,0,0,2,0,INVALID_nonactor
+broker_and_licensees,2,0,0,2,0,regulated_entity
+government agency,2,0,0,0,2,regulator_or_gov
+developer/distributor,2,0,0,0,2,developer
+attorney_general,2,0,0,0,2,regulator_or_gov
+program_participant,2,0,0,0,2,individual
+actor,2,0,0,1,1,REVIEW_unclassified
+age_verification_provider,2,0,0,0,2,provider
+communicator,2,0,0,2,0,deployer
+legislature,1,0,0,0,1,regulator_or_gov
+trainer,1,0,0,1,0,REVIEW_unclassified
+legislative provision,1,0,0,1,0,INVALID_nonactor
+judge,1,0,0,0,1,REVIEW_legalprocess
+legal_claim,1,0,0,0,1,INVALID_nonactor
+creator,1,0,1,0,0,deployer
+service_provider,1,0,0,1,0,provider
+request,1,0,0,1,0,INVALID_nonactor
+"business, auditor",1,0,0,1,0,REVIEW_unclassified
+employee,1,0,0,1,0,individual
+authorized_individual,1,0,0,1,0,individual
+admt provider,1,0,0,1,0,provider
+officer,1,0,0,1,0,regulator_or_gov
+developer/user,1,1,0,0,0,developer
+independent_expenditure_advertisement,1,0,0,1,0,REVIEW_unclassified
+sender,1,0,0,0,1,individual
+local_agency,1,0,0,1,0,regulator_or_gov
+healthcare provider/facility,1,0,1,0,0,provider
+warehouse distribution center,1,0,0,1,0,deployer
+producer/distributor,1,0,1,0,0,deployer
+successor,1,0,0,1,0,REVIEW_unclassified
+legal_counsel,1,0,0,1,0,REVIEW_legalprocess
+witness,1,0,0,1,0,REVIEW_legalprocess
+complainant,1,0,0,1,0,REVIEW_legalprocess
+clerk,1,0,0,1,0,REVIEW_legalprocess
+controller_and_processors,1,0,0,1,0,data_handler
+retailer,1,0,0,1,0,deployer
+socia,1,0,0,0,1,INVALID_nonactor
+data_processor,1,0,0,0,1,data_handler
+manufacturer_and_distributor,1,0,0,1,0,provider
+accused,1,0,0,1,0,REVIEW_legalprocess
+state_authority,1,1,0,0,0,regulator_or_gov
+state agency employee,1,1,0,0,0,regulator_or_gov
+violator,1,0,0,1,0,REVIEW_unclassified
+office of the child advocate,1,0,0,1,0,regulator_or_gov
+board,1,0,0,1,0,regulator_or_gov
+procurement_process,1,0,0,0,1,INVALID_nonactor
+carrier_and_review_abilities,1,0,1,0,0,deployer
+software_tool,1,0,0,1,0,INVALID_nonactor
+creator_publisher_distributor,1,0,0,1,0,deployer
+distribution_platform,1,0,1,0,0,INVALID_nonactor
+"controller, processor, or third party",1,0,0,0,1,data_handler
+small_business,1,0,0,0,1,REVIEW_unclassified
+supervisor,1,0,0,1,0,REVIEW_unclassified
+political actor,1,1,0,0,0,deployer
+bank,1,0,0,1,0,deployer
+issuer,1,0,0,1,0,deployer
+delegate,1,0,0,1,0,REVIEW_unclassified
+lessor,1,0,0,1,0,deployer
+deployer/contractor,1,0,0,0,1,deployer
+developer/deploy    ployer,1,0,0,0,1,INVALID_nonactor
+prosecutor,1,0,0,1,0,REVIEW_legalprocess
+sponsor,1,0,0,0,1,deployer
+content,1,0,0,0,1,INVALID_nonactor
+real estate entity,1,0,0,1,0,regulator_or_gov
+housing provider,1,0,0,1,0,provider
+financial services provider,1,0,0,1,0,provider
+employer/employment_agency,1,1,0,0,0,regulator_or_gov
+automated decision-making system,1,0,0,1,0,INVALID_nonactor
+operat,1,0,0,0,1,INVALID_nonactor
+producer/advertiser,1,0,0,1,0,deployer
+state_agency_or_representative,1,0,0,0,1,regulator_or_gov
+filer,1,0,0,1,0,deployer
+victim,1,0,0,1,0,REVIEW_legalprocess
+seller_agent,1,0,0,0,1,deployer
+buyer_agent,1,0,0,0,1,REVIEW_unclassified
+broker_manager,1,0,0,0,1,deployer
+covered	entity,1,0,0,0,1,INVALID_nonactor
+disclosing_entity,1,0,0,0,1,regulated_entity
+developer_or_deployer,1,0,0,0,1,deployer
+report,1,0,0,0,1,INVALID_nonactor
+participant,1,0,0,0,1,individual
+department_and_council,1,0,0,0,1,regulator_or_gov
+authorized_person,1,0,0,0,1,individual
+commercial entity,1,0,0,0,1,regulated_entity
+supplier/business associate,1,0,0,1,0,data_handler
+hospital_staff,1,0,0,0,1,individual
+staff,1,0,0,1,0,individual
+guardian,1,0,0,0,1,individual
+minor,1,0,0,0,1,individual

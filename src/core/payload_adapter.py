@@ -230,9 +230,20 @@ def _adapt_ambiguity(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _adapt_preemption_signal(payload: dict[str, Any]) -> dict[str, Any]:
-    """Adapt preemption signal payload for Policy Navigator."""
+    """Adapt preemption signal payload for Policy Navigator.
+
+    Phase 2d: layer a typed ``legal_context_type`` (true_preemption,
+    constitutional_limit, interstate_conflict, agency_jurisdiction,
+    cross_law_reference, unclassified) on top of the raw ``conflict_type``,
+    and carry a ``display`` flag so low-value rows can be hidden.
+    """
+    from src.core.legal_context import classify_legal_context
+
+    ctx = classify_legal_context(payload)
     return {
         "conflict_type": payload.get("conflict_type"),
+        "legal_context_type": ctx["legal_context_type"],
+        "display": ctx["display"],
         "description": payload.get("description"),
         "related_authority": payload.get("related_authority"),
         "severity": payload.get("severity"),

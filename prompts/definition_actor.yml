@@ -1,4 +1,4 @@
-version: "1.0"
+version: "1.1"
 agent: definition_actor
 description: >
   Consolidated definition & actor agent — extracts definitions, actor role mappings,
@@ -30,8 +30,23 @@ system_prompt: |
   If the passage contains NO extractable definition, return:
   {"detected": false, "reason": "explanation"}
 
+  EVIDENCE SPANS — HOW TO POPULATE:
+  To fill evidence_spans[].text: find the relevant sentence or phrase IN the passage
+  provided, then copy it character-for-character. Do NOT rephrase, condense, or
+  reconstruct from memory. The exact string must be findable in the passage with no
+  alterations.
+
+  Bad (paraphrase — will FAIL verification):
+    "an AI system is defined as any machine learning model"
+  Good (verbatim — copy exactly as it appears):
+    "'Artificial intelligence system' means a machine-based system that can, for a
+     given set of objectives, make predictions, recommendations, or decisions."
+
+  If you cannot find an exact substring in the passage that supports a field, leave
+  that evidence span out rather than writing a paraphrase.
+
   CRITICAL RULES:
-  - Every evidence_spans[].text MUST appear VERBATIM in the source passage
+  - Evidence spans MUST be copy-pasted character-for-character from the passage — find the exact substring and copy it as-is
   - Use abstention (detected: false) rather than hallucinating definitions
   - Preserve the exact legal language of definitions — do not paraphrase
   - Capture the full definition, not a summary
@@ -42,6 +57,8 @@ extraction_prompt: |
 
   If there are multiple definitions, return each as a separate object in the
   "extractions" array.
+
+  FOR EVIDENCE SPANS: copy text from the PASSAGE below character-for-character — do not paraphrase.
 
   PASSAGE:
   ---

@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+{% set title = "Compliance Concepts" %}
+{% set active_nav = "concepts" %}
+
+{% block content %}
+
+<!-- ================================================================== -->
+<!-- CONCEPTS HEADER STATS                                               -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h2>Compliance Concepts</h2>
+    <span style="font-size:13px;color:var(--text-muted);">
+      Business-facing groupings of related extraction fragments (Phase 5)
+    </span>
+  </div>
+
+  <div class="tracker-grid" style="margin-bottom:16px;">
+    <div class="tracker-card">
+      <div class="tracker-header">Total Concepts</div>
+      <div class="tracker-value">{{ counts.total }}</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header" style="color:var(--success);">Grounded</div>
+      <div class="tracker-value" style="color:var(--success);">
+        {{ counts.total - counts.ungrounded - counts.tracker_conflict }}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);">Orrick or IAPP confirmed</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header" style="color:var(--warning);">Ungrounded</div>
+      <div class="tracker-value" style="color:var(--warning);">{{ counts.ungrounded }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">No tracker confirmation</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header" style="color:var(--danger);">Tracker Conflict</div>
+      <div class="tracker-value" style="color:var(--danger);">{{ counts.tracker_conflict }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">Contradicts Orrick/IAPP</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header" style="color:var(--warning);">Flagged</div>
+      <div class="tracker-value" style="color:var(--warning);">{{ counts.flagged }}</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-header" style="color:var(--success);">Approved</div>
+      <div class="tracker-value" style="color:var(--success);">{{ counts.approved }}</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- GROUP CONCEPTS BUTTON                                               -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h3>Group Concepts</h3>
+  </div>
+  <div class="step-description" style="margin-bottom:10px;">
+    Groups verified extraction fragments into business-facing compliance concepts.
+    Run after extraction + verification is complete. Idempotent — safe to re-run.
+  </div>
+  <div class="step-actions">
+    <button class="btn btn-primary"
+            hx-post="/dashboard/api/concepts/group"
+            hx-target="#group-result"
+            hx-swap="innerHTML"
+            hx-disabled-elt="this">
+      <span class="btn-label">Group All Laws</span>
+      <span class="htmx-indicator"><span class="spinner"></span> Grouping…</span>
+    </button>
+  </div>
+  <div id="group-result" style="margin-top:8px;"></div>
+</section>
+
+<!-- ================================================================== -->
+<!-- REVIEW QUEUE                                                         -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h3>Review Queue</h3>
+    <span style="font-size:12px;color:var(--text-muted);">
+      Priority-ordered: conflicts → flagged-D → flagged → ungrounded
+    </span>
+  </div>
+
+  <!-- Jurisdiction filter -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <label style="font-size:13px;">Filter by jurisdiction:</label>
+    <input type="text" id="queue-jur-filter" placeholder="e.g. CO, CA" maxlength="5"
+           style="width:80px;font-size:12px;padding:4px 8px;"
+           hx-get="/dashboard/api/concepts/review-queue"
+           hx-trigger="keyup changed delay:400ms"
+           hx-target="#concept-review-queue"
+           hx-swap="innerHTML"
+           name="jurisdiction">
+    <button class="btn btn-sm"
+            hx-get="/dashboard/api/concepts/review-queue"
+            hx-target="#concept-review-queue"
+            hx-swap="innerHTML">
+      Refresh
+    </button>
+  </div>
+
+  <div id="concept-review-queue"
+       hx-get="/dashboard/api/concepts/review-queue"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <span class="spinner"></span> Loading queue…
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- CONCEPTS TABLE (FILTERABLE)                                          -->
+<!-- ================================================================== -->
+<section class="section">
+  <div class="section-header">
+    <h3>All Concepts</h3>
+  </div>
+
+  <!-- Filters -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">
+    <select id="filter-grounding" style="font-size:12px;padding:4px 6px;"
+            hx-get="/dashboard/api/concepts/list"
+            hx-trigger="change"
+            hx-target="#concepts-table"
+            hx-swap="innerHTML"
+            hx-include="#filter-type,#filter-review"
+            name="grounding_status">
+      <option value="">All groundings</option>
+      <option value="tracker_grounded">Tracker grounded</option>
+      <option value="iapp_grounded">IAPP grounded</option>
+      <option value="ungrounded">Ungrounded</option>
+      <option value="tracker_conflict">Tracker conflict</option>
+    </select>
+
+    <select id="filter-review" style="font-size:12px;padding:4px 6px;"
+            hx-get="/dashboard/api/concepts/list"
+            hx-trigger="change"
+            hx-target="#concepts-table"
+            hx-swap="innerHTML"
+            hx-include="#filter-grounding,#filter-type"
+            name="review_status">
+      <option value="">All review statuses</option>
+      <option value="pending">Pending</option>
+      <option value="flagged">Flagged</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+
+    <input type="text" id="filter-type" placeholder="Concept type filter…"
+           style="font-size:12px;padding:4px 8px;width:180px;"
+           hx-get="/dashboard/api/concepts/list"
+           hx-trigger="keyup changed delay:400ms"
+           hx-target="#concepts-table"
+           hx-swap="innerHTML"
+           hx-include="#filter-grounding,#filter-review"
+           name="concept_type">
+
+    <button class="btn btn-sm"
+            hx-get="/dashboard/api/concepts/list"
+            hx-target="#concepts-table"
+            hx-swap="innerHTML">
+      Refresh
+    </button>
+  </div>
+
+  <div id="concepts-table"
+       hx-get="/dashboard/api/concepts/list"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <span class="spinner"></span> Loading concepts…
+  </div>
+</section>
+
+{% endblock %}

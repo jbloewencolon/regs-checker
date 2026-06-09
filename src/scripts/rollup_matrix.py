@@ -28,6 +28,8 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from src.core.vocab_loader import get_canonical_codes, normalize, flush_unrecognized
+
 
 def _parse_payload(raw) -> dict:
     """Parse a JSONB payload that may be a string or dict."""
@@ -328,13 +330,17 @@ def rollup_conflicts(session) -> dict:
 
         payload = _parse_payload(row["payload"])
         conflict_type = payload.get("conflict_type", "other")
-        # Validate enum value
-        valid_types = {
+        # Validate against ratified legal_context raw conflict_type values.
+        # Unknown values fall back to "other" via normalize(); unrecognized
+        # terms are queued for vocab_review_queue via flush_unrecognized().
+        valid_types = set(get_canonical_codes("legal_context")) or {
             "federal_preemption", "interstate_commerce", "cross_state_conflict",
             "first_amendment", "dormant_commerce_clause", "agency_jurisdiction", "other",
         }
         if conflict_type not in valid_types:
-            conflict_type = "other"
+            # Attempt normalization through alias table; unrecognized → "other"
+            normalized = normalize("legal_context", conflict_type)
+            conflict_type = "other" if normalized == "unclassified" else conflict_type
 
         session.execute(
             text("""

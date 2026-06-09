@@ -48,7 +48,7 @@ from typing import Any
 
 import structlog
 from pydantic import ValidationError
-from sqlalchemy import func, inspect as sa_inspect, select
+from sqlalchemy import func, inspect as sa_inspect, select, update as sa_update
 
 from src.core.config import settings
 from src.agents.base import BaseExtractionAgent, ExtractionResult
@@ -72,6 +72,7 @@ from src.db.models import (
     Extraction,
     ExtractionJob,
     ExtractionType,
+    ExtractionVerificationStatus,
     FailedExtractionAttempt,
     IngestionJob,
     NormalizedSourceRecord,
@@ -82,6 +83,7 @@ from src.db.models import (
     SectionTriageResult,
     TriageDecision,
     TriageMethod,
+    VerificationRunSummary,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
@@ -116,6 +118,7 @@ MIN_PASSAGE_LENGTH = 150
 # Set at module-load or first extraction run — True once migration adds column
 _payload_hash_available: bool | None = None
 _token_columns_available: bool | None = None
+_run_id_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
@@ -537,11 +540,32 @@ _COMPLIANCE_MECHANISM_PATTERN = re.compile(
 
 @dataclass
 class TokenUsageSummary:
-    """Aggregate token usage across an extraction run."""
+    """Aggregate token usage and invocation counts for one extraction run.
 
+    Token buckets (non-error calls only; adaptive retries inside agent.extract()
+    are excluded — see agent_stats.json for all-attempt cost):
+      clause_level_*  — 6 clause-level agents (success + abstentions)
+      bill_level_*    — 3 bill-level agents
+      total_*         — aggregate (clause + bill combined, kept for backward compat)
+    """
+
+    # Named token buckets
+    clause_level_input_tokens: int = 0
+    clause_level_output_tokens: int = 0
+    bill_level_input_tokens: int = 0
+    bill_level_output_tokens: int = 0
+
+    # Aggregate totals (kept for backward compat; updated by all add_* methods)
     total_input_tokens: int = 0
     total_output_tokens: int = 0
-    total_calls: int = 0
+    total_calls: int = 0  # non-error LLM dispatches (success + abstentions)
+
+    # Invocation counters
+    abstention_count: int = 0
+    error_count: int = 0
+    extraction_item_count: int = 0
+
+    # Efficiency counters
     skipped_short: int = 0
     merged_passages: int = 0
     agents_skipped: int = 0
@@ -550,7 +574,27 @@ class TokenUsageSummary:
     def total_tokens(self) -> int:
         return self.total_input_tokens + self.total_output_tokens
 
+    @property
+    def llm_call_count(self) -> int:
+        """Non-error LLM dispatches including abstentions (excludes internal retries)."""
+        return self.total_calls
+
     def add(self, input_tokens: int, output_tokens: int) -> None:
+        """Legacy method — routes to add_clause() for backward compatibility."""
+        self.add_clause(input_tokens, output_tokens)
+
+    def add_clause(self, input_tokens: int, output_tokens: int) -> None:
+        """Record one clause-level agent result (non-error; success or abstention)."""
+        self.clause_level_input_tokens += input_tokens
+        self.clause_level_output_tokens += output_tokens
+        self.total_input_tokens += input_tokens
+        self.total_output_tokens += output_tokens
+        self.total_calls += 1
+
+    def add_bill_level(self, input_tokens: int, output_tokens: int) -> None:
+        """Record one bill-level agent result (non-error)."""
+        self.bill_level_input_tokens += input_tokens
+        self.bill_level_output_tokens += output_tokens
         self.total_input_tokens += input_tokens
         self.total_output_tokens += output_tokens
         self.total_calls += 1
@@ -631,6 +675,8 @@ def _build_context(
     ctx: dict[str, Any] = {
         "document_title": df.canonical_title if df else None,
         "jurisdiction": s.jurisdiction_code if s else None,
+        "jurisdiction_name": s.jurisdiction_name if s else None,
+        "short_cite": df.short_cite if df else None,
         "section_path": record.section_path,
     }
 
@@ -978,6 +1024,7 @@ def extract_single_record(
     existing_hashes: set[str] | None = None,
     tracker: FailureTracker | None = None,
     bill_context: dict[str, Any] | None = None,
+    run_id: int | None = None,
 ) -> int:
     """Run selected agents against a passage.
 
@@ -1009,9 +1056,16 @@ def extract_single_record(
 
     ctx = _build_context(db, record, bill_context=bill_context)
 
-    # Jurisdiction cross-check: skip if document state doesn't match law state
+    # Jurisdiction cross-check: skip if document state doesn't match law state.
+    # Return -1 (not 0) so the caller can distinguish a jurisdiction skip from
+    # a legitimate zero-extraction passage and surface it in run_summary.
     if not _check_jurisdiction(db, record, passage.text):
-        return 0
+        monitor.record_passage_complete(
+            record_id=record.id,
+            section_path=record.section_path,
+            extraction_count=0,
+        )
+        return -1
 
     # Select agents based on passage content + triage signals
     triage = getattr(record, "triage_result", None)
@@ -1092,6 +1146,8 @@ def extract_single_record(
                 tracker.record_failure(
                     f"agent={name} record={record.id}: {result}"
                 )
+            if token_usage is not None:
+                token_usage.error_count += 1
             monitor.record_agent_result(
                 agent_name=name,
                 record_id=record.id,
@@ -1103,9 +1159,9 @@ def extract_single_record(
         if tracker is not None:
             tracker.record_success()
 
-        # Track token usage
+        # Track token usage (clause-level; bill-level tracked in _run_bill_level_agents)
         if token_usage is not None:
-            token_usage.add(result.input_tokens, result.output_tokens)
+            token_usage.add_clause(result.input_tokens, result.output_tokens)
 
         # Log structured result
         logger.info(
@@ -1121,6 +1177,8 @@ def extract_single_record(
         )
 
         if result.abstention is not None:
+            if token_usage is not None:
+                token_usage.abstention_count += 1
             monitor.record_agent_result(
                 agent_name=name,
                 record_id=record.id,
@@ -1178,6 +1236,7 @@ def extract_single_record(
                         parse_quality_score=parse_quality,
                         orrick_similarity=orrick_sim,
                         passage_text=passage.text,
+                        iapp_has_data=_iapp_has_data_for_ctx(ctx),
                     )
 
                     extraction_meta: dict = {}
@@ -1226,6 +1285,8 @@ def extract_single_record(
                         extraction_kwargs["duration_ms"] = duration_ms
                     if _payload_hash_available:
                         extraction_kwargs["payload_hash"] = p_hash
+                    if _run_id_available and run_id is not None:
+                        extraction_kwargs["run_id"] = run_id
                     extraction = Extraction(**extraction_kwargs)
                     db.add(extraction)
                     db.flush()
@@ -1236,6 +1297,8 @@ def extract_single_record(
                         status=ReviewStatus.pending,
                     ))
                     extractions_created += 1
+                    if token_usage is not None:
+                        token_usage.extraction_item_count += 1
 
                     logger.info(
                         "extraction_created",
@@ -1523,6 +1586,8 @@ def _run_bill_level_agents(
     passages: list,
     bill_context: dict,
     _log=None,
+    token_usage: "TokenUsageSummary | None" = None,
+    run_id: int | None = None,
 ) -> int:
     """Run all bill-level agents for one document version.
 
@@ -1608,8 +1673,10 @@ def _run_bill_level_agents(
                 existing.output_tokens = result.output_tokens
                 existing.truncated = result.truncated
                 existing.review_status = ReviewStatus.pending
+                if _run_id_available and run_id is not None:
+                    existing.run_id = run_id
             else:
-                db.add(BillLevelExtraction(
+                _bill_kwargs: dict = dict(
                     document_version_id=document_version_id,
                     agent_name=agent.agent_name,
                     payload=result.payload,
@@ -1618,7 +1685,15 @@ def _run_bill_level_agents(
                     output_tokens=result.output_tokens,
                     truncated=result.truncated,
                     review_status=ReviewStatus.pending,
-                ))
+                )
+                if _run_id_available and run_id is not None:
+                    _bill_kwargs["run_id"] = run_id
+                db.add(BillLevelExtraction(**_bill_kwargs))
+
+            # Track bill-level tokens in the shared usage summary so run_summary
+            # reflects the full run cost (passage-level + bill-level).
+            if token_usage is not None and result.model_id != "orrick_facts_parser":
+                token_usage.add_bill_level(result.input_tokens, result.output_tokens)
 
             if not has_error:
                 succeeded += 1
@@ -1701,17 +1776,61 @@ def run_extraction(
     agents = _get_agents()
     token_usage = TokenUsageSummary()
 
+    # Create an ExtractionRun version record (Phase 1b).
+    # Captures the git SHA, prompt versions, and model config for this run.
+    # Skipped gracefully if the migration hasn't been applied yet.
+    current_run_id: int | None = None
+    try:
+        from src.db.models import ExtractionRun
+        import subprocess
+        _git_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, timeout=5
+        ).strip()
+    except Exception:
+        _git_sha = None
+
+    _run_type = "extract" if limit is None else "partial_extract"
+    try:
+        from src.db.models import ExtractionRun
+        # Collect per-agent model and prompt version metadata
+        _model_cfg: dict = {}
+        _prompt_vers: dict = {}
+        for _name, _agent in agents.items():
+            _model_cfg[_name] = {
+                "model": _agent.model_override,
+                "max_tokens": _agent.max_tokens_override,
+            }
+            from src.agents.prompt_loader import get_template_version
+            _prompt_vers[_name] = get_template_version(_name)
+
+        _run = ExtractionRun(
+            run_type=_run_type,
+            status="running",
+            is_serving=False,
+            git_sha=_git_sha,
+            model_config=_model_cfg,
+            prompt_versions=_prompt_vers,
+        )
+        db.add(_run)
+        db.flush()
+        current_run_id = _run.id
+        logger.info("extraction_run_created", run_id=current_run_id, git_sha=_git_sha)
+    except Exception as _e:
+        logger.warning("extraction_run_create_skipped", reason=str(_e))
+
     # Check whether optional columns exist (migrations may not have run yet)
-    global _payload_hash_available, _token_columns_available
+    global _payload_hash_available, _token_columns_available, _run_id_available
     try:
         _existing_cols = {
             c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
         }
         _payload_hash_available = "payload_hash" in _existing_cols
         _token_columns_available = "duration_ms" in _existing_cols
+        _run_id_available = "run_id" in _existing_cols
     except Exception:
         _payload_hash_available = False
         _token_columns_available = False
+        _run_id_available = False
 
     # Build set of existing content hashes for deduplication.
     # Pre-populate from DB so re-runs don't re-call agents on passages that
@@ -1769,12 +1888,14 @@ def run_extraction(
         "records_processed": 0,
         "records_failed": 0,
         "records_skipped_short": 0,
+        "records_skipped_jurisdiction": 0,
         "passages_merged": 0,
         "agents_skipped_by_signal": 0,
         "token_usage": {
             "input_tokens": 0,
             "output_tokens": 0,
             "total_calls": 0,
+            "scope": "passage-level + bill-level agents",
         },
     }
 
@@ -1897,7 +2018,15 @@ def run_extraction(
                     db, passage, agents, extraction_job, parse_quality,
                     token_usage, existing_hashes, tracker,
                     bill_context=bill_ctx,
+                    run_id=current_run_id,
                 )
+                if count == -1:
+                    # Jurisdiction cross-check failed — passage was skipped.
+                    # Count as processed (not failed) but surface it separately.
+                    summary["records_skipped_jurisdiction"] += 1
+                    extraction_job.records_processed += len(passage.source_records)
+                    summary["records_processed"] += len(passage.source_records)
+                    continue
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
@@ -1939,7 +2068,8 @@ def run_extraction(
 
         # Run bill-level agents for this document version (once per law)
         bill_level_count = _run_bill_level_agents(
-            db, dv_id, dv_group, bill_ctx, _log=_log
+            db, dv_id, dv_group, bill_ctx, _log=_log, token_usage=token_usage,
+            run_id=current_run_id,
         )
         if bill_level_count:
             summary.setdefault("bill_level_extractions", 0)
@@ -1959,19 +2089,40 @@ def run_extraction(
 
     summary["agents_skipped_by_signal"] = token_usage.agents_skipped
 
-    # Finalize token usage in summary
+    # Finalize token usage — named buckets + scope annotation.
+    # Note: these are result tokens only; adaptive retries inside agent.extract()
+    # are not counted here. See agent_stats.json for all-attempt cost.
     summary["token_usage"] = {
-        "input_tokens": token_usage.total_input_tokens,
-        "output_tokens": token_usage.total_output_tokens,
+        "scope": "result_tokens_only__internal_retries_excluded",
+        "clause_level_input_tokens": token_usage.clause_level_input_tokens,
+        "clause_level_output_tokens": token_usage.clause_level_output_tokens,
+        "bill_level_input_tokens": token_usage.bill_level_input_tokens,
+        "bill_level_output_tokens": token_usage.bill_level_output_tokens,
+        "total_input_tokens": token_usage.total_input_tokens,
+        "total_output_tokens": token_usage.total_output_tokens,
         "total_tokens": token_usage.total_tokens,
-        "total_calls": token_usage.total_calls,
+        "llm_call_count": token_usage.llm_call_count,
+    }
+    summary["agent_invocations"] = {
+        "scope": "outer_dispatch_count__internal_retries_excluded",
+        "llm_call_count": token_usage.llm_call_count,
+        "abstention_count": token_usage.abstention_count,
+        "error_count": token_usage.error_count,
+        "extraction_item_count": token_usage.extraction_item_count,
+        "agents_skipped_by_signal": token_usage.agents_skipped,
     }
 
-    _log(f"\nExtraction complete: {summary['total_extractions']} total extractions")
+    _log(f"\nExtraction complete: {summary['total_extractions']} total extractions "
+         f"({token_usage.extraction_item_count} items, "
+         f"{token_usage.abstention_count} abstentions, {token_usage.error_count} errors)")
     _log(
-        f"Token usage: {token_usage.total_input_tokens:,} input + "
-        f"{token_usage.total_output_tokens:,} output = "
-        f"{token_usage.total_tokens:,} total across {token_usage.total_calls} API calls"
+        f"Token usage: {token_usage.total_input_tokens:,} in + "
+        f"{token_usage.total_output_tokens:,} out = "
+        f"{token_usage.total_tokens:,} total across {token_usage.llm_call_count} LLM calls"
+    )
+    _log(
+        f"  clause-level: {token_usage.clause_level_input_tokens:,}+{token_usage.clause_level_output_tokens:,} | "
+        f"bill-level: {token_usage.bill_level_input_tokens:,}+{token_usage.bill_level_output_tokens:,}"
     )
     _log(
         f"Savings: {token_usage.skipped_short} short passages skipped, "
@@ -1980,6 +2131,30 @@ def run_extraction(
     )
     _monitor.stop_run()
     archiver.finalize(db, summary)
+
+    # Finalize the ExtractionRun record: mark as serving, write summary (Phase 1b)
+    if current_run_id is not None:
+        try:
+            from src.db.models import ExtractionRun
+            _run_rec = db.get(ExtractionRun, current_run_id)
+            if _run_rec:
+                # Demote the previous serving run
+                db.execute(
+                    sa_update(ExtractionRun)
+                    .where(ExtractionRun.is_serving.is_(True), ExtractionRun.id != current_run_id)
+                    .values(is_serving=False)
+                )
+                _run_rec.status = "completed"
+                _run_rec.is_serving = True
+                _run_rec.completed_at = datetime.utcnow()
+                _run_rec.extraction_count = summary.get("total_extractions", 0)
+                _run_rec.passage_count = summary.get("records_processed", 0)
+                _run_rec.summary = summary
+                db.commit()
+                logger.info("extraction_run_finalized", run_id=current_run_id)
+        except Exception as _e:
+            logger.warning("extraction_run_finalize_failed", reason=str(_e))
+
     return summary
 
 
@@ -2105,6 +2280,7 @@ def run_retry_failed(
                             schema_class=schema_class,
                             orrick_similarity=orrick_sim,
                             passage_text=record.text_content,
+                            iapp_has_data=_iapp_has_data_for_ctx(ctx),
                         )
 
                         ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
@@ -2518,6 +2694,7 @@ def run_recovery_extraction(
                                 parse_quality_score=parse_quality,
                                 orrick_similarity=orrick_sim,
                                 passage_text=passage.text,
+                                iapp_has_data=_iapp_has_data_for_ctx(ctx),
                             )
 
                             extraction = Extraction(
@@ -2827,6 +3004,84 @@ def compute_completeness_manifest(
 # ---------------------------------------------------------------------------
 
 
+def _recompute_confidence_with_cv(
+    db,
+    extraction,
+    record,
+    ctx: dict,
+    cv_score: float,
+) -> bool:
+    """Recompute an extraction's confidence with a cross-validation score.
+
+    Phase 2b: cross-validation runs post-extraction, so the original
+    confidence was computed without the cross_validation component (its
+    0.25 weight was redistributed). This re-runs compute_confidence with
+    the now-available accuracy score and writes the updated
+    confidence_score / confidence_tier back to the extraction.
+
+    Returns True if the tier changed (for logging/metrics).
+    """
+    ext_type_val = (
+        extraction.extraction_type.value
+        if hasattr(extraction.extraction_type, "value")
+        else str(extraction.extraction_type)
+    )
+    schema_class = EXTRACTION_TYPE_SCHEMAS.get(ext_type_val)
+    if schema_class is None:
+        return False
+
+    payload = extraction.payload or {}
+    evidence = extraction.evidence_spans or []
+
+    # Reuse the parse_quality recorded at extraction time (stored in the
+    # confidence breakdown as source_quality) so the recompute matches the
+    # original inputs apart from the newly-added cross-validation score.
+    meta = extraction.metadata_ or {}
+    breakdown = meta.get("confidence_breakdown", {})
+    parse_quality = breakdown.get("source_quality")
+
+    orrick_sim = validate_extraction_against_orrick(payload, ctx)
+
+    new_conf = compute_confidence(
+        schema_valid=True,
+        evidence_spans=evidence,
+        extraction_payload=payload,
+        schema_class=schema_class,
+        parse_quality_score=parse_quality,
+        orrick_similarity=orrick_sim,
+        cross_validation_score=cv_score,
+        passage_text=record.text_content,
+        iapp_has_data=_iapp_has_data_for_ctx(ctx),
+    )
+
+    old_tier = (
+        extraction.confidence_tier.value
+        if hasattr(extraction.confidence_tier, "value")
+        else str(extraction.confidence_tier)
+    )
+    tier_changed = old_tier != new_conf.tier
+
+    extraction.confidence_score = new_conf.total_score
+    extraction.confidence_tier = ConfidenceTier(new_conf.tier)
+
+    # Refresh the stored breakdown so downstream consumers see the
+    # cross-validation contribution.
+    updated_meta = dict(meta)
+    updated_meta["confidence_breakdown"] = {
+        "schema_validity": new_conf.schema_validity,
+        "evidence_grounding": new_conf.evidence_grounding,
+        "completeness": new_conf.completeness,
+        "source_quality": new_conf.source_quality,
+        "orrick_alignment": new_conf.orrick_alignment,
+        "cross_validation": new_conf.cross_validation,
+        "orrick_gated": new_conf.orrick_gated,
+        "recomputed_with_cross_validation": True,
+    }
+    extraction.metadata_ = updated_meta
+
+    return tier_changed
+
+
 @dataclass
 class VerificationResult:
     """Combined result from all verification agents for a document."""
@@ -2860,6 +3115,127 @@ class VerificationResult:
     @property
     def total_tokens(self) -> int:
         return self.total_input_tokens + self.total_output_tokens
+
+
+def _run_iapp_alignment_for_dv(
+    db,
+    dv_id: int,
+    verification_run_id: int,
+    bill_ctx: dict,
+) -> None:
+    """Phase 4b: run IAPP alignment for all extractions in a document version.
+
+    For each extraction in the document:
+      1. Look up the law's IAPP entry via jurisdiction + bill citation.
+      2. Determine three-state iapp_status for the extraction's actor.
+      3. Update the ExtractionVerificationStatus row if one exists (from CV pass),
+         or create a new stub EVS row for extractions not covered by CV.
+      4. Refine grounding_status: "iapp_grounded" when IAPP entry present and
+         no Orrick data, "orrick_grounded" when Orrick present.
+    """
+    from src.core.iapp_alignment import (
+        IAPPEntry,
+        check_iapp_alignment,
+        get_iapp_entry_for_context,
+    )
+
+    # Build a minimal context to look up the IAPP entry (just jurisdiction + bill).
+    dv = db.get(DocumentVersion, dv_id)
+    if not dv:
+        return
+    df = dv.family
+    s = df.source if df else None
+    ctx_for_iapp = {
+        "jurisdiction": s.jurisdiction_code if s else None,
+        "jurisdiction_name": s.jurisdiction_name if s else None,
+        "short_cite": df.short_cite if df else None,
+        "bill_id": (df.metadata_ or {}).get("bill_id") if df else None,
+    }
+    iapp_entry: IAPPEntry | None = get_iapp_entry_for_context(ctx_for_iapp)
+    iapp_present = iapp_entry is not None and iapp_entry.has_data
+
+    if not iapp_present:
+        return  # Nothing to update — IAPP has no data for this law
+
+    # Load all extractions for this document version
+    extractions = db.scalars(
+        select(Extraction)
+        .where(
+            Extraction.source_record_id.in_(
+                select(NormalizedSourceRecord.id).where(
+                    NormalizedSourceRecord.document_version_id == dv_id
+                )
+            )
+        )
+    ).all()
+
+    for extraction in extractions:
+        payload = extraction.payload or {}
+        subject_normalized = payload.get("subject_normalized")
+
+        iapp_status = check_iapp_alignment(subject_normalized, iapp_entry)
+
+        # Find existing EVS row for this extraction (created by CV loop) or create one.
+        evs = db.scalars(
+            select(ExtractionVerificationStatus)
+            .where(ExtractionVerificationStatus.extraction_id == extraction.id)
+            .where(ExtractionVerificationStatus.verification_run_id == verification_run_id)
+        ).first()
+
+        breakdown = (extraction.metadata_ or {}).get("confidence_breakdown", {})
+
+        if evs is None:
+            # Extraction was not in the CV results — create a stub EVS row.
+            evs = ExtractionVerificationStatus(
+                extraction_id=extraction.id,
+                verification_run_id=verification_run_id,
+                document_version_id=dv_id,
+                orrick_score=breakdown.get("orrick_alignment"),
+                orrick_gated=bool(breakdown.get("orrick_gated", False)),
+                orrick_status=_orrick_status_from_breakdown(breakdown),
+            )
+            db.add(evs)
+
+        evs.iapp_status = iapp_status
+
+        # Refine grounding_status now that IAPP data is available.
+        orrick_grounded = (breakdown.get("orrick_alignment") or 0.0) > 0.0
+        if orrick_grounded:
+            evs.grounding_status = "orrick_grounded"
+        elif iapp_status == "aligned":
+            evs.grounding_status = "iapp_grounded"
+        elif iapp_status == "scope_mismatch":
+            evs.grounding_status = "iapp_scope_mismatch"
+        else:
+            evs.grounding_status = "tracker_silent"
+
+
+def _iapp_has_data_for_ctx(ctx: dict) -> bool:
+    """Return True if the IAPP tracker has an entry for this law."""
+    from src.core.iapp_alignment import get_iapp_entry_for_context
+    try:
+        entry = get_iapp_entry_for_context(ctx)
+        return entry is not None and entry.has_data
+    except Exception:
+        return False
+
+
+def _orrick_status_from_breakdown(breakdown: dict) -> str:
+    """Derive orrick_status code from a stored confidence breakdown dict."""
+    if breakdown.get("orrick_gated"):
+        return "gated"
+    if (breakdown.get("orrick_alignment") or 0.0) > 0.0:
+        return "aligned"
+    return "tracker_silent"
+
+
+def _grounding_status_from_breakdown(breakdown: dict) -> str:
+    """Derive combined grounding_status from a stored confidence breakdown dict."""
+    if breakdown.get("orrick_gated"):
+        return "tracker_silent"
+    if (breakdown.get("orrick_alignment") or 0.0) > 0.0:
+        return "orrick_grounded"
+    return "tracker_silent"
 
 
 def run_verification_pass(
@@ -2942,6 +3318,12 @@ def run_verification_pass(
 
         _log(f"\n[{label}] Starting verification pass...")
 
+        # Phase 4a: create a VerificationRunSummary stub for this document.
+        # Updated with final aggregates after all three layers complete.
+        vrs = VerificationRunSummary(document_version_id=dv_id)
+        db.add(vrs)
+        db.flush()  # obtain vrs.id before processing
+
         total_input_tokens = 0
         total_output_tokens = 0
 
@@ -2980,6 +3362,7 @@ def run_verification_pass(
         cv_valid = 0
         cv_flagged = 0
         cv_accuracy_sum = 0.0
+        cv_tier_changes = 0  # extractions whose tier moved after CV recompute
         cv_issues: list[dict[str, Any]] = []
 
         if not skip_cross_validation:
@@ -3016,32 +3399,97 @@ def run_verification_pass(
                 total_input_tokens += cv_result.input_tokens
                 total_output_tokens += cv_result.output_tokens
 
-                # Store flagged issues
+                # Phase 2b: wire the cross-validation score into confidence.
+                # Record the result for EVERY validated extraction (not just
+                # flagged ones) and recompute confidence so the 0.25
+                # cross-validation weight actually moves the tier. A failed
+                # cross-validation returns an empty results list (see
+                # cross_validation.py), so this loop is skipped — the score is
+                # never silently treated as neutral.
                 for r in cv_result.results:
-                    if not r.get("is_valid", True):
+                    is_valid = r.get("is_valid", True)
+
+                    if not is_valid:
                         cv_issues.append({
                             "record_id": record.id,
                             "section_path": record.section_path,
                             **r,
                         })
 
-                        # Update extraction metadata with cross-validation flag
-                        ext_id = r.get("extraction_id")
-                        if ext_id:
-                            extraction = db.get(Extraction, ext_id)
-                            if extraction:
-                                meta = dict(extraction.metadata_ or {})
-                                meta["cross_validation"] = {
-                                    "is_valid": r.get("is_valid", True),
-                                    "accuracy_score": r.get("accuracy_score", 1.0),
-                                    "issues": r.get("issues", []),
-                                }
-                                extraction.metadata_ = meta
+                    ext_id = r.get("extraction_id")
+                    if not ext_id:
+                        continue
+                    extraction = db.get(Extraction, ext_id)
+                    if not extraction:
+                        continue
+
+                    accuracy_score = float(r.get("accuracy_score", 1.0))
+
+                    # Phase 4a: capture confidence state before recompute.
+                    conf_before = extraction.confidence_score
+                    tier_before = (
+                        extraction.confidence_tier.value
+                        if hasattr(extraction.confidence_tier, "value")
+                        else str(extraction.confidence_tier or "")
+                    )
+
+                    # Persist the cross-validation finding on the extraction.
+                    meta = dict(extraction.metadata_ or {})
+                    meta["cross_validation"] = {
+                        "is_valid": is_valid,
+                        "accuracy_score": accuracy_score,
+                        "issues": r.get("issues", []),
+                    }
+                    extraction.metadata_ = meta
+
+                    # Recompute confidence with the now-available CV score.
+                    tier_changed = False
+                    try:
+                        tier_changed = _recompute_confidence_with_cv(
+                            db, extraction, record, ctx, accuracy_score,
+                        )
+                        if tier_changed:
+                            cv_tier_changes += 1
+                    except Exception as _e:
+                        logger.warning(
+                            "cross_validation_confidence_recompute_failed",
+                            extraction_id=ext_id,
+                            error=str(_e),
+                        )
+
+                    # Phase 4a: write ExtractionVerificationStatus row.
+                    breakdown = (extraction.metadata_ or {}).get(
+                        "confidence_breakdown", {}
+                    )
+                    tier_after = (
+                        extraction.confidence_tier.value
+                        if hasattr(extraction.confidence_tier, "value")
+                        else str(extraction.confidence_tier or "")
+                    )
+                    evs = ExtractionVerificationStatus(
+                        extraction_id=ext_id,
+                        verification_run_id=vrs.id,
+                        document_version_id=dv_id,
+                        cv_score=accuracy_score,
+                        cv_is_valid=is_valid,
+                        cv_flagged=not is_valid,
+                        confidence_before=conf_before,
+                        confidence_after=extraction.confidence_score,
+                        tier_before=tier_before[:1] if tier_before else None,
+                        tier_after=tier_after[:1] if tier_after else None,
+                        tier_changed=tier_changed,
+                        orrick_score=breakdown.get("orrick_alignment"),
+                        orrick_gated=bool(breakdown.get("orrick_gated", False)),
+                        orrick_status=_orrick_status_from_breakdown(breakdown),
+                        grounding_status=_grounding_status_from_breakdown(breakdown),
+                    )
+                    db.add(evs)
 
             cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
             _log(
                 f"    {cv_passages} passages checked, {cv_valid} valid, "
-                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}"
+                f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}, "
+                f"{cv_tier_changes} tier change(s) after recompute"
             )
         else:
             cv_avg = 1.0
@@ -3118,6 +3566,27 @@ def run_verification_pass(
                 f"    {cit_checked} citations checked, "
                 f"{cit_verified} verified, {cit_unverified} unverified"
             )
+
+        # Phase 4b: IAPP alignment pass — check all extractions for this document
+        # against the IAPP tracker.  Updates iapp_status on EVS rows created above
+        # and adds EVS rows for extractions not yet covered by the CV loop.
+        _run_iapp_alignment_for_dv(db, dv_id, vrs.id, bill_ctx)
+
+        # Phase 4a: finalize the VerificationRunSummary with aggregated results.
+        vrs.cv_passages_checked = cv_passages
+        vrs.cv_extractions_valid = cv_valid
+        vrs.cv_extractions_flagged = cv_flagged
+        vrs.cv_avg_accuracy = round(cv_avg, 4) if cv_passages > 0 else None
+        vrs.gd_passages_checked = gd_passages
+        vrs.gd_gaps_found = gd_gaps
+        vrs.gd_high_confidence = gd_high
+        vrs.gap_candidates = gd_candidates
+        vrs.citations_checked = cit_checked
+        vrs.citations_verified = cit_verified
+        vrs.citations_unverified = cit_unverified
+        vrs.citation_issues = cit_issues
+        vrs.input_tokens = total_input_tokens
+        vrs.output_tokens = total_output_tokens
 
         db.commit()
 

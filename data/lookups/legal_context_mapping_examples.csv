@@ -1,0 +1,8 @@
+raw_term,tier1_code,tier2_label,notes
+federal_preemption,true_preemption,federal_preemption,
+dormant_commerce_clause,true_preemption,dormant_commerce_clause,
+first_amendment,constitutional_limit,first_amendment,
+interstate_commerce,interstate_conflict,interstate_commerce,
+cross_state_conflict,interstate_conflict,cross_state_conflict,
+agency_jurisdiction,agency_jurisdiction,agency_jurisdiction,
+other,unclassified,other,

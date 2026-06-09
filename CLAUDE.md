@@ -18,13 +18,13 @@
 
 ## LLM
 - All extraction uses **local models** via LM Studio (http://localhost:1234)
-- Default model: `openai/gpt-oss-20b` on AMD Radeon AI PRO R9700
+- Default model: `google/gemma-4-26b-a4b` on AMD Radeon AI PRO R9700
 - No Anthropic API — the AnthropicProvider has been archived
 
 ## Code Changes
 - After editing large files (especially `extractor.py`), verify imports are intact
 - Do not add unrequested features — only implement what was asked
-- The extraction pipeline has 7 agents: obligation, definition_actor, threshold_exception, ambiguity, rights_protection, compliance_mechanism, preemption
+- The extraction pipeline has **6 clause-level agents** (obligation, definition_actor, threshold_exception, rights_protection, compliance_mechanism, preemption) + **3 bill-level agents** (applicability_agent, enforcement_agent, compliance_timeline_agent). The ambiguity agent is retired — findings are embedded as `interpretation_risks` on obligation/rights payloads.
 - Archived code lives in `_archived/` and `src/ingestion/_archived/`
 
 ## Project Structure

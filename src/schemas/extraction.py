@@ -158,6 +158,13 @@ class ObligationPayload(BaseModel):
     subject_normalized: str | None = Field(
         default=None, description="Normalized subject category"
     )
+
+    @field_validator("subject_normalized", mode="before")
+    @classmethod
+    def _sanitize_subject_normalized(cls, v: Any) -> Any:
+        from src.core.actor_normalizer import sanitize_normalized_actor
+        return sanitize_normalized_actor(v) if isinstance(v, str) else v
+
     modality: str = Field(default="", description="Must / shall / may / should / prohibited")
     action: str = Field(default="", description="What the subject must do or refrain from doing")
     object_: str | None = Field(
@@ -218,6 +225,12 @@ class ActorMapping(BaseModel):
     actor_name: str
     actor_type: str | None = None  # e.g. "regulator", "developer", "deployer"
     responsibilities: list[str] = Field(default_factory=list)
+
+    @field_validator("actor_type", mode="before")
+    @classmethod
+    def _sanitize_actor_type(cls, v: Any) -> Any:
+        from src.core.actor_normalizer import sanitize_normalized_actor
+        return sanitize_normalized_actor(v) if isinstance(v, str) else v
 
     @field_validator("responsibilities", mode="before")
     @classmethod
@@ -409,6 +422,12 @@ class RightsProtectionPayload(BaseModel):
     right_holder_normalized: str | None = Field(
         default=None, description="Normalized category (consumer, employee, public)"
     )
+
+    @field_validator("right_holder_normalized", mode="before")
+    @classmethod
+    def _sanitize_right_holder_normalized(cls, v: Any) -> Any:
+        from src.core.actor_normalizer import sanitize_normalized_actor
+        return sanitize_normalized_actor(v) if isinstance(v, str) else v
     protected_categories: list[str] = Field(
         default_factory=list,
         description="Subject categories explicitly protected: consumer, employee, candidate, "
@@ -491,6 +510,12 @@ class ComplianceMechanismPayload(BaseModel):
     responsible_party_normalized: str | None = Field(
         default=None, description="Normalized: developer, deployer, operator, vendor"
     )
+
+    @field_validator("responsible_party_normalized", mode="before")
+    @classmethod
+    def _sanitize_responsible_party_normalized(cls, v: Any) -> Any:
+        from src.core.actor_normalizer import sanitize_normalized_actor
+        return sanitize_normalized_actor(v) if isinstance(v, str) else v
     audits: list[AuditRequirement] = Field(
         default_factory=list, description="Specific audit/assessment requirements"
     )

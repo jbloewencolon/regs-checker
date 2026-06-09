@@ -1,0 +1,14 @@
+modality,count,proposed_obligation_strength
+must,871,mandatory
+shall,488,mandatory
+prohibited,375,mandatory
+may,51,conditional
+must not,14,mandatory
+shall not,10,mandatory
+should,8,recommended
+may not,7,mandatory
+shall be liable,1,REVIEW
+must not be exempt from criminal liability,1,REVIEW
+is guilty of,1,REVIEW
+is [responsible],1,REVIEW
+liable,1,REVIEW

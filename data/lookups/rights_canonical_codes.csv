@@ -1,0 +1,11 @@
+code,definition,right_type_map,iapp_col,duty_bearer_note
+notice,Right to know that AI is being used in a decision or interaction.,notice,General notice,deployer/operator
+explanation,Right to a meaningful explanation of an AI-driven decision.,explanation,Explanation/incident reporting,deployer/developer
+opt_out,"Right to opt out of AI processing, profiling, or automated decision-making.",opt_out,Opt out/appeal,deployer
+appeal,Right to appeal or challenge an AI-driven decision.,appeal,Opt out/appeal,deployer/operator
+deletion,Right to deletion of personal data used in or produced by AI systems.,deletion,,controller/deployer
+human_review,Right to human review or override of an AI decision.,human_review,Responsible individual,deployer/operator
+non_discrimination,Right not to be subject to discriminatory AI decisions or outcomes.,non_discrimination,Nondiscrimination,deployer/developer
+portability,"Right to receive personal data in a portable, machine-readable format.",portability,,controller
+access,Right to access personal data processed by or used in AI systems.,access,,controller
+correction,"Right to correct, rectify, or update inaccurate or incomplete personal data processed by AI systems.",correction,,controller/deployer

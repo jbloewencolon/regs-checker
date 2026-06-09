@@ -1,0 +1,10 @@
+code,definition,orrick_signal,iapp_scope
+admt,Automated decision-making and profiling tools that produce decisions with legal/significant effects.,Automated Decision-Making scope,"A, A*"
+generative_ai,"AI systems that generate text, images, audio, or video (LLMs, image generators, voice synthesis).",User-Facing AI; Frontier or General-Purpose AI,"F, G"
+synthetic_media_system,"AI systems specifically producing synthetic media with deception/harm risk (deepfakes, CSAM generators, voice clones).",AI CSAM; AI Intimate Images; AI Deepfakes; AI Likeness,
+biometric_ai,"AI systems processing biometric data including facial recognition, emotion detection, or biometric-based identification.",facial recognition (in Key Requirements text),
+recommender_system,"Algorithmic content recommendation and curation systems (social media feeds, news, advertising).",AI in Social Media & Online Platforms,
+algorithmic_pricing,"AI systems used to set prices, rates, or terms dynamically.",Algorithmic Pricing,
+predictive_analytics,"Predictive models used in consequential decisions (credit scoring, predictive policing, insurance rating).",Automated Decision-Making,A
+general_purpose_ai,Foundation models or general-purpose AI systems with broad capabilities not restricted to one use case.,Frontier or General-Purpose AI; Comprehensive AI,F
+all_ai_systems,Laws applying to any AI system without a specific system-type restriction.,Comprehensive AI; AI in Government (broad),G

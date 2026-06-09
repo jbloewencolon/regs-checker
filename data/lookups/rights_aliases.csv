@@ -1,0 +1,18 @@
+raw_term,source,count,example_source,proposed_code,ambiguity_flag
+opt_out,right_type,154,extraction_db,opt_out,no
+notice,right_type,139,extraction_db,notice,no
+access,right_type,137,extraction_db,access,no
+appeal,right_type,71,extraction_db,appeal,no
+non_discrimination,right_type,59,extraction_db,non_discrimination,no
+deletion,right_type,43,extraction_db,deletion,no
+explanation,right_type,23,extraction_db,explanation,no
+human_review,right_type,11,extraction_db,human_review,no
+portability,right_type,11,extraction_db,portability,no
+correction,right_type,8,extraction_db,correction,no
+correct,right_type,1,extraction_db,correction,no
+General notice,iapp_col,50,iapp_law_tracker.csv,notice,no
+Explanation/incident reporting,iapp_col,35,iapp_law_tracker.csv,explanation,yes
+Opt out/appeal,iapp_col,30,iapp_law_tracker.csv,opt_out,yes
+Third-party review,iapp_col,25,iapp_law_tracker.csv,human_review,yes
+Nondiscrimination,iapp_col,20,iapp_law_tracker.csv,non_discrimination,no
+Labeling/notification,iapp_col,45,iapp_law_tracker.csv,notice,yes
