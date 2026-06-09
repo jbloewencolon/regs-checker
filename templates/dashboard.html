@@ -529,6 +529,50 @@
             <div style="color:var(--text-muted);font-size:13px;">Loading monitor...</div>
           </div>
         </div>
+
+        <!-- Diagnostic tools -->
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+
+          <!-- Agent Latency -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#9202;</span> Agent Latency (p50 / p95)
+            </summary>
+            <div style="padding:8px 12px;"
+                 hx-get="/dashboard/api/run/extract/latency"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
+          <!-- Failed Attempts Drill-down -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#9888;</span> Failed Attempts
+            </summary>
+            <div style="padding:8px 12px;"
+                 hx-get="/dashboard/api/run/failed-detail"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
+          <!-- Pipeline Event Log -->
+          <details style="border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);">
+            <summary style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;">
+              <span>&#128221;</span> Pipeline Event Log
+            </summary>
+            <div style="padding:8px 12px;" id="pipeline-event-log"
+                 hx-get="/dashboard/api/run/pipeline-events"
+                 hx-trigger="toggle from:closest details"
+                 hx-swap="innerHTML">
+              <span style="color:var(--text-muted);font-size:13px;">Loading…</span>
+            </div>
+          </details>
+
+        </div>
       </div>
     </div>
 

@@ -35,10 +35,12 @@ from src.db.models import (
     Extraction,
     ExtractionJob,
     ExtractionType,
+    FailedExtractionAttempt,
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
     ObligationDependency,
+    PipelineEvent,
     RawArtifact,
     ReviewAction,
     ReviewQueueItem,
@@ -2993,6 +2995,270 @@ def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
 
     return HTMLResponse(
         f'<div style="font-size:0.85em;">{state_badge}{errors_html}</div>'
+    )
+
+
+@router.get("/api/run/extract/latency")
+def extract_latency(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Per-agent p50/p95 latency from PipelineEvent rows (last 24 h)."""
+    from sqlalchemy import text as sa_text
+
+    rows = db.execute(sa_text("""
+        SELECT
+            agent_name,
+            COUNT(*) AS call_count,
+            ROUND(AVG(duration_ms))::int AS avg_ms,
+            ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY duration_ms))::int AS p50_ms,
+            ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms))::int AS p95_ms,
+            MAX(duration_ms) AS max_ms
+        FROM pipeline_events
+        WHERE event_type IN ('agent_success', 'agent_error')
+          AND duration_ms IS NOT NULL
+          AND created_at > NOW() - INTERVAL '24 hours'
+        GROUP BY agent_name
+        ORDER BY avg_ms DESC NULLS LAST
+    """)).all()
+
+    if not rows:
+        return HTMLResponse(
+            '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">'
+            'No latency data in the last 24 hours.</div>'
+        )
+
+    def fmt_ms(ms):
+        if ms is None:
+            return "—"
+        if ms >= 60_000:
+            return f"{ms / 60_000:.1f}m"
+        if ms >= 1_000:
+            return f"{ms / 1_000:.1f}s"
+        return f"{ms}ms"
+
+    max_p95 = max((r.p95_ms or 0) for r in rows) or 1
+
+    trs = ""
+    for r in rows:
+        p95 = r.p95_ms or 0
+        bar_pct = round(p95 / max_p95 * 100)
+        bar_color = "#27ae60" if p95 < 10_000 else "#f39c12" if p95 < 30_000 else "#e74c3c"
+        trs += (
+            f'<tr>'
+            f'<td style="padding:3px 8px;font-size:12px;"><code>{html_escape(r.agent_name or "")}</code></td>'
+            f'<td style="padding:3px 8px;font-size:12px;text-align:right;">{r.call_count}</td>'
+            f'<td style="padding:3px 8px;font-size:12px;text-align:right;">{fmt_ms(r.avg_ms)}</td>'
+            f'<td style="padding:3px 8px;font-size:12px;text-align:right;">{fmt_ms(r.p50_ms)}</td>'
+            f'<td style="padding:3px 8px;font-size:12px;text-align:right;">{fmt_ms(r.p95_ms)}</td>'
+            f'<td style="padding:3px 8px;min-width:80px;">'
+            f'<div style="height:8px;border-radius:3px;background:{bar_color};width:{bar_pct}%;"></div>'
+            f'</td>'
+            f'</tr>'
+        )
+
+    return HTMLResponse(
+        '<table style="border-collapse:collapse;width:100%;">'
+        '<thead><tr style="border-bottom:1px solid var(--border);">'
+        '<th style="padding:3px 8px;font-size:11px;text-align:left;">Agent</th>'
+        '<th style="padding:3px 8px;font-size:11px;text-align:right;">Calls</th>'
+        '<th style="padding:3px 8px;font-size:11px;text-align:right;">Avg</th>'
+        '<th style="padding:3px 8px;font-size:11px;text-align:right;">P50</th>'
+        '<th style="padding:3px 8px;font-size:11px;text-align:right;">P95</th>'
+        '<th style="padding:3px 8px;font-size:11px;">P95 bar</th>'
+        '</tr></thead>'
+        f'<tbody>{trs}</tbody>'
+        '</table>'
+        '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Last 24 h · green &lt;10s · yellow &lt;30s · red ≥30s</div>'
+    )
+
+
+@router.get("/api/run/failed-detail")
+def get_failed_detail(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Unretried FailedExtractionAttempt rows with section path and full error."""
+    from sqlalchemy import desc
+
+    rows = db.execute(
+        select(
+            FailedExtractionAttempt.id,
+            FailedExtractionAttempt.agent_name,
+            FailedExtractionAttempt.error_type,
+            FailedExtractionAttempt.error_message,
+            FailedExtractionAttempt.created_at,
+            NormalizedSourceRecord.section_path,
+            NormalizedSourceRecord.id.label("record_id"),
+        )
+        .join(NormalizedSourceRecord,
+              FailedExtractionAttempt.source_record_id == NormalizedSourceRecord.id,
+              isouter=True)
+        .where(FailedExtractionAttempt.retried == False)  # noqa: E712
+        .order_by(desc(FailedExtractionAttempt.created_at))
+        .limit(100)
+    ).all()
+
+    if not rows:
+        return HTMLResponse(
+            '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">'
+            'No unretried failures.</div>'
+        )
+
+    type_colors = {
+        "llm_error": "#e74c3c",
+        "validation_error": "#f39c12",
+        "db_error": "#8e44ad",
+    }
+
+    trs = ""
+    for r in rows:
+        color = type_colors.get(r.error_type or "", "#888")
+        section = html_escape(r.section_path or "—")
+        msg_short = html_escape((r.error_message or "")[:160])
+        msg_full = html_escape(r.error_message or "")
+        ts = r.created_at.strftime("%m-%d %H:%M") if r.created_at else ""
+        trs += (
+            f'<tr style="border-bottom:1px solid var(--border);">'
+            f'<td style="padding:4px 6px;font-size:11px;white-space:nowrap;">{ts}</td>'
+            f'<td style="padding:4px 6px;font-size:11px;">'
+            f'<code>{html_escape(r.agent_name or "")}</code></td>'
+            f'<td style="padding:4px 6px;font-size:11px;">'
+            f'<span style="color:{color};font-weight:600;">{html_escape(r.error_type or "")}</span></td>'
+            f'<td style="padding:4px 6px;font-size:11px;color:var(--text-muted);">{section}</td>'
+            f'<td style="padding:4px 6px;font-size:11px;max-width:340px;">'
+            f'<span title="{msg_full}">{msg_short}{"…" if len(r.error_message or "") > 160 else ""}</span>'
+            f'</td>'
+            f'</tr>'
+        )
+
+    return HTMLResponse(
+        f'<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">'
+        f'{len(rows)} unretried failure{"s" if len(rows) != 1 else ""}</div>'
+        '<div style="overflow-x:auto;">'
+        '<table style="border-collapse:collapse;width:100%;min-width:600px;">'
+        '<thead><tr style="border-bottom:1px solid var(--border);">'
+        '<th style="padding:3px 6px;font-size:11px;text-align:left;">Time</th>'
+        '<th style="padding:3px 6px;font-size:11px;text-align:left;">Agent</th>'
+        '<th style="padding:3px 6px;font-size:11px;text-align:left;">Type</th>'
+        '<th style="padding:3px 6px;font-size:11px;text-align:left;">Section</th>'
+        '<th style="padding:3px 6px;font-size:11px;text-align:left;">Error</th>'
+        '</tr></thead>'
+        f'<tbody>{trs}</tbody>'
+        '</table>'
+        '</div>'
+    )
+
+
+@router.get("/api/run/pipeline-events")
+def get_pipeline_events(
+    offset: int = 0,
+    limit: int = 50,
+    event_type: str = "",
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Paginated PipelineEvent log with optional event_type filter."""
+    from sqlalchemy import desc, func as sa_func
+
+    q = select(PipelineEvent).order_by(desc(PipelineEvent.created_at))
+    if event_type and event_type != "all":
+        q = q.where(PipelineEvent.event_type == event_type)
+
+    total = db.scalar(select(sa_func.count()).select_from(q.subquery())) or 0
+    rows = db.scalars(q.offset(offset).limit(limit)).all()
+
+    event_types = ["all", "agent_error", "agent_success", "agent_abstention",
+                   "passage_complete", "circuit_breaker", "validation_error", "run_start", "run_complete"]
+    filter_buttons = ""
+    for et in event_types:
+        active = (et == event_type) or (et == "all" and not event_type)
+        style = (
+            "background:var(--primary);color:#fff;"
+            if active else
+            "background:var(--bg-secondary);color:var(--text);"
+        )
+        filter_buttons += (
+            f'<button style="padding:2px 8px;font-size:11px;border:1px solid var(--border);'
+            f'border-radius:3px;cursor:pointer;{style}" '
+            f'hx-get="/dashboard/api/run/pipeline-events?offset=0&limit={limit}&event_type={et}" '
+            f'hx-target="#pipeline-event-log" hx-swap="innerHTML">{et}</button>'
+        )
+
+    type_colors = {
+        "agent_error": "#e74c3c",
+        "agent_success": "#27ae60",
+        "agent_abstention": "#888",
+        "passage_complete": "#3b82f6",
+        "circuit_breaker": "#8e44ad",
+        "validation_error": "#f39c12",
+        "run_start": "#27ae60",
+        "run_complete": "#27ae60",
+    }
+
+    trs = ""
+    for r in rows:
+        color = type_colors.get(r.event_type or "", "#888")
+        dur = f"{r.duration_ms / 1000:.1f}s" if r.duration_ms else "—"
+        msg = html_escape((r.error_message or "")[:120])
+        msg_full = html_escape(r.error_message or "")
+        ts = r.created_at.strftime("%H:%M:%S") if r.created_at else ""
+        trs += (
+            f'<tr style="border-bottom:1px solid var(--border);">'
+            f'<td style="padding:3px 6px;font-size:11px;white-space:nowrap;color:var(--text-muted);">{ts}</td>'
+            f'<td style="padding:3px 6px;font-size:11px;">'
+            f'<span style="color:{color};font-weight:600;">{html_escape(r.event_type or "")}</span></td>'
+            f'<td style="padding:3px 6px;font-size:11px;"><code>{html_escape(r.agent_name or "")}</code></td>'
+            f'<td style="padding:3px 6px;font-size:11px;text-align:right;">{dur}</td>'
+            f'<td style="padding:3px 6px;font-size:11px;text-align:right;">'
+            f'{r.extraction_count if r.extraction_count is not None else "—"}</td>'
+            f'<td style="padding:3px 6px;font-size:11px;max-width:300px;">'
+            f'<span title="{msg_full}">{msg}{"…" if len(r.error_message or "") > 120 else ""}</span>'
+            f'</td>'
+            f'</tr>'
+        )
+
+    prev_offset = max(0, offset - limit)
+    next_offset = offset + limit
+    has_prev = offset > 0
+    has_next = next_offset < total
+
+    pagination = (
+        f'<div style="display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;">'
+        f'<span style="color:var(--text-muted);">{offset + 1}–{min(offset + limit, total)} of {total}</span>'
+    )
+    if has_prev:
+        pagination += (
+            f'<button style="padding:2px 8px;font-size:11px;border:1px solid var(--border);'
+            f'border-radius:3px;cursor:pointer;" '
+            f'hx-get="/dashboard/api/run/pipeline-events?offset={prev_offset}&limit={limit}&event_type={event_type}" '
+            f'hx-target="#pipeline-event-log" hx-swap="innerHTML">← Prev</button>'
+        )
+    if has_next:
+        pagination += (
+            f'<button style="padding:2px 8px;font-size:11px;border:1px solid var(--border);'
+            f'border-radius:3px;cursor:pointer;" '
+            f'hx-get="/dashboard/api/run/pipeline-events?offset={next_offset}&limit={limit}&event_type={event_type}" '
+            f'hx-target="#pipeline-event-log" hx-swap="innerHTML">Next →</button>'
+        )
+    pagination += '</div>'
+
+    if not rows:
+        table_html = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No events found.</div>'
+    else:
+        table_html = (
+            '<div style="overflow-x:auto;">'
+            '<table style="border-collapse:collapse;width:100%;min-width:550px;">'
+            '<thead><tr style="border-bottom:1px solid var(--border);">'
+            '<th style="padding:3px 6px;font-size:11px;text-align:left;">Time</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:left;">Type</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:left;">Agent</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:right;">Dur</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:right;">Ext</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:left;">Message</th>'
+            '</tr></thead>'
+            f'<tbody>{trs}</tbody>'
+            '</table>'
+            '</div>'
+            + pagination
+        )
+
+    return HTMLResponse(
+        f'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">{filter_buttons}</div>'
+        + table_html
     )
 
 
