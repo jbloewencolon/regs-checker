@@ -2896,6 +2896,106 @@ def cancel_extract() -> HTMLResponse:
     )
 
 
+@router.post("/api/run/extract/pause")
+def pause_extract() -> HTMLResponse:
+    """Pause the extraction loop between passages (resumable)."""
+    from src.ingestion.extractor import is_cancelled, is_paused, request_pause
+
+    if is_cancelled():
+        return HTMLResponse('<div class="result-panel warning">Run already terminated.</div>')
+    if is_paused():
+        return HTMLResponse('<div class="result-panel info">Already paused.</div>')
+    request_pause()
+    return HTMLResponse(
+        '<div class="result-panel info">'
+        'Paused — current passage will finish, then the loop will wait. '
+        '<button class="btn btn-sm" style="margin-left:8px;" '
+        'hx-post="/dashboard/api/run/extract/resume" '
+        'hx-target="#extract-pause-status" hx-swap="innerHTML">Resume</button>'
+        '</div>'
+    )
+
+
+@router.post("/api/run/extract/resume")
+def resume_extract() -> HTMLResponse:
+    """Resume a paused extraction run."""
+    from src.ingestion.extractor import is_cancelled, is_paused, request_resume
+
+    if is_cancelled():
+        return HTMLResponse('<div class="result-panel warning">Run was terminated — start a new extraction.</div>')
+    if not is_paused():
+        return HTMLResponse('<div class="result-panel info">Extraction is already running.</div>')
+    request_resume()
+    return HTMLResponse(
+        '<div class="result-panel success">'
+        'Resumed. '
+        '<button class="btn btn-sm" style="margin-left:8px;" '
+        'hx-post="/dashboard/api/run/extract/pause" '
+        'hx-target="#extract-pause-status" hx-swap="innerHTML">Pause</button>'
+        '</div>'
+    )
+
+
+@router.get("/api/run/extract/health")
+def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return a short health snippet: pause state, stuck detection, recent errors."""
+    from src.ingestion.extractor import is_cancelled, is_paused, seconds_since_last_passage
+    from sqlalchemy import desc, select as sa_select
+    from src.db.models import PipelineEvent
+
+    paused = is_paused()
+    cancelled = is_cancelled()
+    idle_secs = seconds_since_last_passage()
+
+    # Stuck if passage started > 90 s ago and run is not paused/cancelled
+    stuck = idle_secs > 90 and not paused and not cancelled and idle_secs > 0
+
+    # Last 5 agent_error events across any recent run
+    error_rows = db.execute(
+        sa_select(
+            PipelineEvent.agent_name,
+            PipelineEvent.error_message,
+            PipelineEvent.created_at,
+        )
+        .where(PipelineEvent.event_type == "agent_error")
+        .order_by(desc(PipelineEvent.created_at))
+        .limit(5)
+    ).all()
+
+    state_badge = ""
+    if cancelled:
+        state_badge = '<span style="color:#e74c3c;font-weight:600;">● Terminated</span>'
+    elif paused:
+        state_badge = '<span style="color:#f39c12;font-weight:600;">⏸ Paused</span>'
+    elif stuck:
+        m = int(idle_secs // 60)
+        s = int(idle_secs % 60)
+        state_badge = f'<span style="color:#e74c3c;font-weight:600;">⚠ Possibly stuck ({m}m {s}s on current passage)</span>'
+    elif idle_secs > 0:
+        state_badge = f'<span style="color:#27ae60;font-weight:600;">▶ Running</span> <span style="color:#888;font-size:0.85em;">last passage {int(idle_secs)}s ago</span>'
+
+    errors_html = ""
+    if error_rows:
+        rows = "".join(
+            f'<tr><td style="padding:2px 6px;color:#888;font-size:0.8em;">{r.agent_name or "—"}</td>'
+            f'<td style="padding:2px 6px;font-size:0.8em;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"'
+            f' title="{html_escape(r.error_message or "")}">{html_escape((r.error_message or "")[:120])}</td>'
+            f'<td style="padding:2px 6px;color:#888;font-size:0.8em;">{r.created_at.strftime("%H:%M:%S") if r.created_at else ""}</td>'
+            f'</tr>'
+            for r in error_rows
+        )
+        errors_html = (
+            '<div style="margin-top:6px;">'
+            '<div style="font-size:0.8em;color:#888;margin-bottom:2px;">Recent agent errors</div>'
+            f'<table style="border-collapse:collapse;width:100%;">{rows}</table>'
+            '</div>'
+        )
+
+    return HTMLResponse(
+        f'<div style="font-size:0.85em;">{state_badge}{errors_html}</div>'
+    )
+
+
 @router.post("/api/run/export-passages")
 def run_export_passages(
     limit: int | None = None,

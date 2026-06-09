@@ -94,10 +94,18 @@ logger = structlog.get_logger()
 # Global cancellation event — set to signal running extraction to stop.
 _cancel_event = threading.Event()
 
+# Global pause event — cleared to pause the loop, set to run.
+_pause_event = threading.Event()
+_pause_event.set()  # running by default
+
+# Heartbeat: updated each time a passage loop iteration starts.
+_last_passage_at: float = 0.0
+
 
 def request_cancel() -> None:
     """Signal the running extraction pipeline to stop after the current passage."""
     _cancel_event.set()
+    _pause_event.set()  # wake the loop so it sees the cancel immediately
 
 
 def is_cancelled() -> bool:
@@ -108,6 +116,33 @@ def is_cancelled() -> bool:
 def clear_cancel() -> None:
     """Reset the cancellation flag (called at extraction start)."""
     _cancel_event.clear()
+
+
+def request_pause() -> None:
+    """Pause the extraction loop between passages."""
+    _pause_event.clear()
+
+
+def request_resume() -> None:
+    """Resume a paused extraction loop."""
+    _pause_event.set()
+
+
+def is_paused() -> bool:
+    """Return True when the extraction loop is requested to pause."""
+    return not _pause_event.is_set()
+
+
+def clear_pause() -> None:
+    """Reset pause state (called at extraction start)."""
+    _pause_event.set()
+
+
+def seconds_since_last_passage() -> float:
+    """Seconds elapsed since the last passage loop iteration, or 0 if not started."""
+    if _last_passage_at == 0.0:
+        return 0.0
+    return time.monotonic() - _last_passage_at
 
 
 # ---------------------------------------------------------------------------
@@ -1837,8 +1872,11 @@ def run_extraction(
     Returns:
         Summary dict with counts and token usage.
     """
-    # Clear any stale cancellation from a previous run
+    # Clear any stale cancellation/pause from a previous run
     clear_cancel()
+    clear_pause()
+    global _last_passage_at
+    _last_passage_at = 0.0
 
     # Ensure all extraction type enum values exist in local Postgres
     _ensure_extraction_enums(db, on_progress)
@@ -2116,6 +2154,9 @@ def run_extraction(
         job_failures = 0
 
         for i, passage in enumerate(merged_passages):
+            # Update heartbeat so the dashboard can detect stuck runs.
+            _last_passage_at = time.monotonic()
+
             # Check for cancellation between passages
             if is_cancelled():
                 _log(f"\nExtraction terminated by user after {summary['records_processed']} passages.")
@@ -2127,6 +2168,10 @@ def run_extraction(
                 _monitor.stop_run(cancelled=True)
                 archiver.finalize(db, summary)
                 return summary
+
+            # Pause loop: sleep in short increments so cancel is still responsive.
+            while is_paused() and not is_cancelled():
+                time.sleep(0.25)
 
             try:
                 count = extract_single_record(
