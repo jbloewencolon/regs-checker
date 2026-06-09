@@ -877,3 +877,157 @@ class ExtractionVerificationStatus(Base):
 
     extraction = relationship("Extraction", foreign_keys=[extraction_id])
     verification_run = relationship("VerificationRunSummary")
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — Compliance-concept layer (the product bridge)
+# ---------------------------------------------------------------------------
+
+
+class ConceptReviewStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    flagged = "flagged"          # tracker conflict / D-tier member — needs analyst
+    rejected = "rejected"
+
+
+class ComplianceConcept(Base):
+    """A business-facing compliance requirement grouped from normalized fragments.
+
+    The product unit is a concept, not a raw extraction row.  A concept bundles
+    several normalized extractions (an obligation + its deadline + exceptions +
+    enforcement + tracker refs + evidence) into one requirement that a compliance
+    team can act on.  Concepts are the hand-off unit to the (deferred) law-card
+    builder (§7 of the unified plan).
+
+    Grouping is deterministic: concepts are keyed on
+    (document_version_id, concept_type, regulated_actor_family).
+    """
+
+    __tablename__ = "compliance_concepts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_version_id = Column(
+        Integer, ForeignKey("document_versions.id"), nullable=False, index=True
+    )
+
+    # Deterministic grouping key
+    concept_type = Column(String(80), nullable=False, index=True)
+    regulated_actor_family = Column(String(50), nullable=True, index=True)
+    right_holder_family = Column(String(50), nullable=True)
+    covered_system_type = Column(String(80), nullable=True)
+
+    # Human-facing summary fields
+    title = Column(Text, nullable=False)
+    summary = Column(Text, nullable=True)
+    trigger_condition = Column(Text, nullable=True)
+    required_action = Column(Text, nullable=True)
+    deadline = Column(Text, nullable=True)
+
+    # Structured aggregates (JSONB)
+    exceptions = Column(JSONB, default=list)        # [{extraction_id, text}]
+    enforcement_refs = Column(JSONB, default=list)  # [{extraction_id, penalty_type, enforcing_body}]
+    source_extraction_ids = Column(JSONB, default=list)
+    tracker_ref_ids = Column(JSONB, default=list)   # ["orrick:CO/SB 205", "iapp:CO/SB 205"]
+
+    # Scoring + review
+    confidence_score = Column(Float, nullable=True)
+    confidence_tier = Column(String(1), nullable=True)   # "A"/"B"/"C"/"D"
+    grounding_status = Column(String(30), default="ungrounded", nullable=False)
+    # "tracker_grounded" / "tracker_conflict" / "ungrounded"
+    review_status = Column(
+        Enum(ConceptReviewStatus), nullable=False, default=ConceptReviewStatus.pending
+    )
+    member_count = Column(Integer, default=0, nullable=False)
+
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    document_version = relationship("DocumentVersion")
+    extraction_links = relationship(
+        "ConceptExtractionLink", back_populates="concept",
+        cascade="all, delete-orphan",
+    )
+    tracker_links = relationship(
+        "ConceptTrackerLink", back_populates="concept",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_compliance_concept_key",
+            "document_version_id", "concept_type", "regulated_actor_family",
+            unique=True,
+        ),
+        Index("ix_compliance_concept_review", "review_status"),
+        Index("ix_compliance_concept_grounding", "grounding_status"),
+    )
+
+
+class ConceptExtractionLink(Base):
+    """Links a compliance concept to one of its member extractions.
+
+    role distinguishes the structural part each extraction plays:
+      "anchor"      — obligation / right / mechanism that defines the requirement
+      "enforcement" — a penalty or enforcing-body extraction (law-wide)
+      "exception"   — a carve-out / exemption threshold (law-wide)
+      "supporting"  — definition, actor map, or other context
+    """
+
+    __tablename__ = "concept_extraction_links"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    concept_id = Column(
+        Integer, ForeignKey("compliance_concepts.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    extraction_id = Column(
+        Integer, ForeignKey("extractions.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    role = Column(String(20), nullable=False, default="anchor")
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    concept = relationship("ComplianceConcept", back_populates="extraction_links")
+    extraction = relationship("Extraction")
+
+    __table_args__ = (
+        Index(
+            "uq_concept_extraction_link",
+            "concept_id", "extraction_id",
+            unique=True,
+        ),
+    )
+
+
+class ConceptTrackerLink(Base):
+    """Links a compliance concept to a tracker reference (Orrick / IAPP).
+
+    match_status records the three-state trust check (§7 principle 6):
+      "tracker_grounded" — tracker confirms the concept
+      "tracker_conflict" — concept contradicts the tracker
+      "tracker_silent"   — tracker has no value for this dimension
+    """
+
+    __tablename__ = "concept_tracker_links"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    concept_id = Column(
+        Integer, ForeignKey("compliance_concepts.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    tracker_source = Column(String(20), nullable=False)   # "orrick" / "iapp"
+    tracker_ref = Column(String(120), nullable=False)     # "CO/SB 205"
+    match_status = Column(String(30), nullable=False, default="tracker_grounded")
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    concept = relationship("ComplianceConcept", back_populates="tracker_links")
+
+    __table_args__ = (
+        Index(
+            "uq_concept_tracker_link",
+            "concept_id", "tracker_source", "tracker_ref",
+            unique=True,
+        ),
+    )

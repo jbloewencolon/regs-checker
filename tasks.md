@@ -48,9 +48,9 @@
 - 🔒 **4d** — enforce source linkage: tracker ref or verified span, else `ungrounded`. *(after 2a batch)*
 
 ### Phase 5 — Compliance-concept layer (the product bridge)
-- 🔒 **5a** — `compliance_concepts` + `concept_extraction_links` + `concept_tracker_links` tables (§7). *(after 4)*
-- 🔒 **5b** — dedup + concept-grouping pass; concept-level confidence; link to tracker refs + evidence.
-- 🔒 **5c** — concept review queue; concepts (not rows) are the hand-off unit to the law-card builder.
+- ✅ **5a** — `ComplianceConcept` + `ConceptExtractionLink` + `ConceptTrackerLink` models; migration `p2q8r4s6t017` (3 tables, `conceptreviewstatus` enum, deterministic grouping-key unique index). *(SDPA)*
+- ✅ **5b** — `src/core/concept_grouping.py`: deterministic grouping keyed on `(dv_id, concept_type, regulated_actor_family)`. Obligations classified via ratified `obligation_family` aliases; mechanisms→family; rights→`right_<code>`. Enforcement + exceptions attach law-wide. Concept-level confidence = mean of anchors; grounding from tracker presence; idempotent re-runs. *(BE, RPR)*
+- ✅ **5c** — `src/core/concept_review.py`: priority-banded review queue (tracker_conflict→flagged-D→flagged→ungrounded), `resolve_concept`, `concept_review_counts`. Runnable via `python -m src.scripts.group_concepts`. *(BE)*
 
 ### Phase 6 — Human review
 - ⏳ **6a** — analyst-review step + queue (C3 conflicts); auth identity; immutable audit log. *(BE, RPR)*
@@ -62,8 +62,8 @@
 - 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **4a verification_results table** — in progress; unblocks 4b alignment pass.
-2. **4b IAPP ingestion + three-state comparison** — unblocks confidence recompute.
+1. **Run the substrate end-to-end** — apply migrations `n0k6l2m4i915`→`p2q8r4s6t017`, run extraction→verification→`group_concepts` on a live DB to populate concepts.
+2. **4c confidence recompute** — full v3 weight model; validate against gold fixtures before serving.
 3. **1a confirm query** — settle the applicability-row contradiction.
 4. **2a test batch** — measure the v1.1 verbatim-prompt lift.
 
