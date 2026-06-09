@@ -267,6 +267,57 @@ def _ensure_failed_attempts_table(db, _log=None) -> None:
         _log("Table created.")
 
 
+def _ensure_pipeline_events_table(db, _log=None) -> None:
+    """Create the pipeline_events table if it doesn't exist (RR6a).
+
+    Mirrors migration t6u2v8w0x021 so extraction works even when that
+    migration has not been applied to the local database.
+    """
+    from sqlalchemy import inspect as sa_inspect, text
+
+    bind = db.get_bind()
+    inspector = sa_inspect(bind)
+    if inspector.has_table("pipeline_events"):
+        return
+
+    if _log:
+        _log("Creating pipeline_events table...")
+
+    with bind.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS pipeline_events (
+                id SERIAL PRIMARY KEY,
+                run_id INTEGER REFERENCES extraction_runs(id) ON DELETE SET NULL,
+                source_record_id INTEGER,
+                event_type VARCHAR(50) NOT NULL,
+                agent_name VARCHAR(100),
+                extraction_count INTEGER,
+                input_tokens INTEGER,
+                output_tokens INTEGER,
+                duration_ms INTEGER,
+                confidence_tier VARCHAR(1),
+                error_message TEXT,
+                details JSONB,
+                created_at TIMESTAMP NOT NULL DEFAULT now()
+            )
+        """))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_run_type "
+            "ON pipeline_events (run_id, event_type)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_created_at "
+            "ON pipeline_events (created_at)"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_run_id "
+            "ON pipeline_events (run_id)"
+        ))
+
+    if _log:
+        _log("Table created.")
+
+
 def _record_failed_attempt(
     db,
     source_record_id: int,
@@ -385,21 +436,23 @@ def _persist_pipeline_event(
     Fires best-effort: exceptions are logged and swallowed so an event
     persistence failure never disrupts the extraction pipeline.
     """
+    # Use a savepoint so a write failure (e.g. table missing) rolls back only
+    # this insert, never the surrounding extraction transaction.
     try:
-        db.add(PipelineEvent(
-            run_id=run_id,
-            source_record_id=source_record_id,
-            event_type=event_type,
-            agent_name=agent_name,
-            extraction_count=extraction_count,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            duration_ms=duration_ms,
-            confidence_tier=confidence_tier,
-            error_message=error_message[:2000] if error_message else None,
-            details=details,
-        ))
-        db.flush()
+        with db.begin_nested():
+            db.add(PipelineEvent(
+                run_id=run_id,
+                source_record_id=source_record_id,
+                event_type=event_type,
+                agent_name=agent_name,
+                extraction_count=extraction_count,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                duration_ms=duration_ms,
+                confidence_tier=confidence_tier,
+                error_message=error_message[:2000] if error_message else None,
+                details=details,
+            ))
     except Exception as e:
         logger.warning("pipeline_event_persist_error", event_type=event_type, error=str(e))
 
@@ -1884,6 +1937,9 @@ def run_extraction(
     # Ensure failed_extraction_attempts table exists for error tracking
     _ensure_failed_attempts_table(db, on_progress)
 
+    # Ensure pipeline_events table exists for the durable event log (RR6a)
+    _ensure_pipeline_events_table(db, on_progress)
+
     # --- Explicit purge (opt-in only) ---
     # Never runs automatically. The caller must pass purge=True to wipe
     # existing extractions. Idempotent runs rely on per-agent dedup instead.
@@ -2351,6 +2407,7 @@ def run_retry_failed(
 
     _ensure_extraction_enums(db, on_progress)
     _ensure_failed_attempts_table(db, on_progress)
+    _ensure_pipeline_events_table(db, on_progress)
 
     # Find un-retried failures
     query = (
