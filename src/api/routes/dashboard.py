@@ -2952,17 +2952,23 @@ def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
     # Stuck if passage started > 90 s ago and run is not paused/cancelled
     stuck = idle_secs > 90 and not paused and not cancelled and idle_secs > 0
 
-    # Last 5 agent_error events across any recent run
-    error_rows = db.execute(
-        sa_select(
-            PipelineEvent.agent_name,
-            PipelineEvent.error_message,
-            PipelineEvent.created_at,
-        )
-        .where(PipelineEvent.event_type == "agent_error")
-        .order_by(desc(PipelineEvent.created_at))
-        .limit(5)
-    ).all()
+    # Last 5 agent_error events across any recent run. The pipeline_events
+    # table is created by migration t6u2v8w0x021; if it is missing (migration
+    # not yet applied) degrade gracefully rather than poisoning the session.
+    error_rows = []
+    try:
+        error_rows = db.execute(
+            sa_select(
+                PipelineEvent.agent_name,
+                PipelineEvent.error_message,
+                PipelineEvent.created_at,
+            )
+            .where(PipelineEvent.event_type == "agent_error")
+            .order_by(desc(PipelineEvent.created_at))
+            .limit(5)
+        ).all()
+    except Exception:
+        db.rollback()
 
     state_badge = ""
     if cancelled:
@@ -3003,21 +3009,29 @@ def extract_latency(db: Session = Depends(get_db)) -> HTMLResponse:
     """Per-agent p50/p95 latency from PipelineEvent rows (last 24 h)."""
     from sqlalchemy import text as sa_text
 
-    rows = db.execute(sa_text("""
-        SELECT
-            agent_name,
-            COUNT(*) AS call_count,
-            ROUND(AVG(duration_ms))::int AS avg_ms,
-            ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY duration_ms))::int AS p50_ms,
-            ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms))::int AS p95_ms,
-            MAX(duration_ms) AS max_ms
-        FROM pipeline_events
-        WHERE event_type IN ('agent_success', 'agent_error')
-          AND duration_ms IS NOT NULL
-          AND created_at > NOW() - INTERVAL '24 hours'
-        GROUP BY agent_name
-        ORDER BY avg_ms DESC NULLS LAST
-    """)).all()
+    try:
+        rows = db.execute(sa_text("""
+            SELECT
+                agent_name,
+                COUNT(*) AS call_count,
+                ROUND(AVG(duration_ms))::int AS avg_ms,
+                ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY duration_ms))::int AS p50_ms,
+                ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms))::int AS p95_ms,
+                MAX(duration_ms) AS max_ms
+            FROM pipeline_events
+            WHERE event_type IN ('agent_success', 'agent_error')
+              AND duration_ms IS NOT NULL
+              AND created_at > NOW() - INTERVAL '24 hours'
+            GROUP BY agent_name
+            ORDER BY avg_ms DESC NULLS LAST
+        """)).all()
+    except Exception:
+        db.rollback()
+        return HTMLResponse(
+            '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">'
+            'Latency data unavailable — run <code>alembic upgrade head</code> to '
+            'create the <code>pipeline_events</code> table.</div>'
+        )
 
     if not rows:
         return HTMLResponse(
@@ -3158,8 +3172,16 @@ def get_pipeline_events(
     if event_type and event_type != "all":
         q = q.where(PipelineEvent.event_type == event_type)
 
-    total = db.scalar(select(sa_func.count()).select_from(q.subquery())) or 0
-    rows = db.scalars(q.offset(offset).limit(limit)).all()
+    try:
+        total = db.scalar(select(sa_func.count()).select_from(q.subquery())) or 0
+        rows = db.scalars(q.offset(offset).limit(limit)).all()
+    except Exception:
+        db.rollback()
+        return HTMLResponse(
+            '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">'
+            'Event log unavailable — run <code>alembic upgrade head</code> to '
+            'create the <code>pipeline_events</code> table.</div>'
+        )
 
     event_types = ["all", "agent_error", "agent_success", "agent_abstention",
                    "passage_complete", "circuit_breaker", "validation_error", "run_start", "run_complete"]
