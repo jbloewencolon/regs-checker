@@ -1334,6 +1334,9 @@ def extract_single_record(
                         "orrick_alignment": confidence.orrick_alignment,
                         "cross_validation": confidence.cross_validation,
                         "orrick_gated": confidence.orrick_gated,
+                        "source_grounding_score": confidence.source_grounding_score,
+                        "tracker_alignment_score": confidence.tracker_alignment_score,
+                        "schema_completeness_score": confidence.schema_completeness_score,
                     }
 
                     # Generate plain-English summary from the verified payload
@@ -2395,6 +2398,9 @@ def run_retry_failed(
                             "orrick_alignment": confidence.orrick_alignment,
                             "cross_validation": confidence.cross_validation,
                             "orrick_gated": confidence.orrick_gated,
+                            "source_grounding_score": confidence.source_grounding_score,
+                            "tracker_alignment_score": confidence.tracker_alignment_score,
+                            "schema_completeness_score": confidence.schema_completeness_score,
                         }
                         extraction_meta["retried_from"] = attempt.id
                         try:
@@ -3178,6 +3184,9 @@ def _recompute_confidence_with_cv(
         "cross_validation": new_conf.cross_validation,
         "orrick_gated": new_conf.orrick_gated,
         "recomputed_with_cross_validation": True,
+        "source_grounding_score": new_conf.source_grounding_score,
+        "tracker_alignment_score": new_conf.tracker_alignment_score,
+        "schema_completeness_score": new_conf.schema_completeness_score,
     }
     extraction.metadata_ = updated_meta
 

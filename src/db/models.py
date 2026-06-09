@@ -270,7 +270,30 @@ class IngestionJob(Base):
 
 # ---------------------------------------------------------------------------
 # 5. Raw Artifacts (immutable, content-addressable)
+#
+# RR4e: split into two tables:
+#   ContentBlob — globally deduplicated by SHA-256 (the actual file store)
+#   RawArtifact — per-document-version link to a ContentBlob
+#
+# Before RR4e the sha256_hash UNIQUE constraint was on raw_artifacts itself,
+# which prevented two document versions from sharing the same PDF blob.
+# Now ContentBlob owns the unique constraint; RawArtifact links DV→Blob.
 # ---------------------------------------------------------------------------
+
+
+class ContentBlob(Base):
+    """Globally deduplicated content store keyed by SHA-256 hash (RR4e)."""
+
+    __tablename__ = "content_blobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sha256_hash = Column(String(64), nullable=False, unique=True)
+    s3_key = Column(Text, nullable=False)
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    raw_artifacts = relationship("RawArtifact", back_populates="content_blob")
 
 
 class RawArtifact(Base):
@@ -280,14 +303,20 @@ class RawArtifact(Base):
     document_version_id = Column(
         Integer, ForeignKey("document_versions.id"), nullable=False, index=True
     )
-    sha256_hash = Column(String(64), nullable=False, unique=True)
+    # sha256_hash kept for backwards compat; unique constraint moved to content_blobs.
+    sha256_hash = Column(String(64), nullable=False, index=True)
     s3_key = Column(Text, nullable=False)
     content_type = Column(String(100), nullable=False)
     size_bytes = Column(Integer, nullable=False)
     is_primary = Column(Boolean, default=True)
+    # RR4e: FK to the canonical blob row (nullable for rows pre-dating the migration)
+    content_blob_id = Column(
+        Integer, ForeignKey("content_blobs.id"), nullable=True, index=True
+    )
     created_at = Column(DateTime, server_default=func.now())
 
     document_version = relationship("DocumentVersion", back_populates="raw_artifacts")
+    content_blob = relationship("ContentBlob", back_populates="raw_artifacts")
 
 
 # ---------------------------------------------------------------------------

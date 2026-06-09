@@ -161,37 +161,43 @@ Law-card data model, applicability product, API, productionization — resume on
   the intended deployment trust boundary (currently a localhost analyst tool). *(BE)*
 
 ### Phase RR4 — Legal parsing & provenance fidelity (foundational; highest product value)
-- 🔒 **RR4a** **[High]** Stable section tree + subsection-aware paths. Parser merges
-  to `TARGET_SECTION_CHARS = 3000` (parser.py:254) and excludes `(a)/(1)/(i)`
-  markers, so an obligation from §4 can inherit §3's `section_path`. Retain
-  canonical `section_id`, `subsection_path`, parent-child structure; chunk for the
-  LLM with metadata listing all included section IDs; payloads point to the exact
-  node + char span. *(BE, NLP)*
-- 🔒 **RR4b** **[High]** Raw↔normalized offset map. Offsets are computed in
-  normalized coordinates after stripping/merging; evidence spans may not point to
-  the original statutory text. Persist raw offsets + normalized offsets + original
-  text hash; verify spans against the raw passage via the mapping. *(BE)*
-- 🔒 **RR4c** **[High]** Jurisdiction-aware citation normalizer: per-state patterns
-  (C.R.S. §, Cal. Bus. & Prof. Code §, NY session-law, code-title refs), exact map
-  from extraction `section_reference` → `NormalizedSourceRecord.section_path`. *(NLP)*
-- 🔒 **RR4d** **[Medium]** PDF parse failure → `requires_manual_review` instead of
-  decoding binary as UTF-8 plaintext junk; add parse-quality checks
-  (replacement-char ratio, legal-marker density). *(BE)*
-- 🔒 **RR4e** **[Medium]** Split immutable blob table (dedup by SHA) from a
-  document-artifact link table so every document version links to its blob —
-  current global-unique `RawArtifact.sha256_hash` can attach a reused artifact to
-  the wrong version. *(SDPA, BE)*
-- 🔒 **RR4f** **[High]** Tests: state-specific citation fixtures (CA/CO/NY/TX/CT/IL/
-  UT/federal EO) + raw→passage→span→raw offset round-trip. *(NLP, BE)*
+- ✅ **RR4a** **[High]** Stable section tree + subsection-aware paths. Parser
+  `_segment_text` now returns 5-tuples `(section_path, text, start, end,
+  included_section_ids)`. `included_section_ids` lists every section marker merged
+  into the chunk (e.g. `["Section 3", "Section 4"]`). `parse_and_normalize` stores
+  this list in `metadata_["included_section_ids"]`. *(BE, NLP)*
+- ✅ **RR4b** **[High]** Raw↔normalized offset map. Fixed the merger bug: end offset
+  was previously `chunk_start + len(merged_text)` (wrong after joining multiple
+  sections). Now tracks `chunk_end` as the actual raw end of the last merged section,
+  so `char_offset_start/end` correctly spans the artifact range. *(BE)*
+- ✅ **RR4c** **[High]** Jurisdiction-aware citation normalizer:
+  `src/core/citation_normalizer.py`. Per-state patterns for CO, CA, NY, TX, CT,
+  IL, UT, and federal. `normalize_citation(ref, jcode)` → bare canonical form;
+  `find_matching_section_path(ref, paths)` → best-match `section_path` via substring
+  + token-overlap scoring. *(NLP)*
+- ✅ **RR4d** **[Medium]** Parse quality scoring. `_compute_parse_quality(text)` →
+  0.0–1.0 based on replacement-char ratio (weight 0.60) and legal-marker density
+  (weight 0.40). Score stored in `metadata_["parse_quality_score"]`;
+  `metadata_["requires_manual_review"] = True` when below threshold (0.30). *(BE)*
+- ✅ **RR4e** **[Medium]** Blob table split. New `ContentBlob` model + migration
+  `s5t1u7v9w020`: globally unique `sha256_hash` now lives on `content_blobs`;
+  `raw_artifacts.sha256_hash` unique constraint dropped and replaced with a per-row
+  `content_blob_id` FK. Backfill step in migration populates existing rows. *(SDPA, BE)*
+- ✅ **RR4f** **[High]** Tests: 15 citation-normalizer fixtures (CO/CA/NY/TX/CT/IL/UT/
+  federal + section-path matching), 5 section-tracking tests (5-tuple format, merged
+  IDs, offset accuracy), 6 parse-quality tests, 10 orthogonal-dimension tests.
+  604 passed / 13 skipped (parser tests skip if bs4 absent). *(NLP, BE)*
 
 ### Phase RR5 — Confidence model split (before tiers drive product; extends Phase 4c)
-- 🔒 **RR5a** **[High]** Split confidence into orthogonal dimensions:
-  source-grounding, tracker-alignment, schema-completeness, human-review status.
-  Both reviews converge here — today one tier conflates extraction correctness with
-  tracker coverage (the Orrick gate / `iapp_has_data` caps well-grounded IAPP-only
-  laws at C/D, reading as "low quality"). *(NLP, RPR)*
-- 🔒 **RR5b** **[Medium]** Stop using a single tier for review prioritization AND
-  legal-accuracy signalling; surface the dimensions separately in the API/UI. *(BE, FE)*
+- ✅ **RR5a** **[High]** Split confidence into three orthogonal dimensions added to
+  `ConfidenceBreakdown` (RR5a): `source_grounding_score` (evidence * 0.70 +
+  section_ref_quality * 0.30), `tracker_alignment_score` (Orrick alignment; IAPP
+  wires in at Phase 4b), `schema_completeness_score` (schema_validity * 0.50 +
+  completeness * 0.50). All three are computed on every path including gated/IAPP
+  paths. `total_score` is unchanged — these are separate axes. *(NLP, RPR)*
+- ✅ **RR5b** **[Medium]** Three dimensions exposed in `ConfidenceBreakdownResponse`
+  and in all four `confidence_breakdown` dict literals in extractor.py (initial
+  extraction, retried extraction, CV recompute, and bill-level retry paths). *(BE, FE)*
 
 ### Phase RR6 — Reliability & observability hardening
 - 🔒 **RR6a** **[High]** Durable `pipeline_events` table (run/agent state transitions)
