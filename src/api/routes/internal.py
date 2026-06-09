@@ -197,3 +197,43 @@ def _queue_item_to_response(item: ReviewQueueItem) -> ReviewQueueResponse:
         status=item.status.value if hasattr(item.status, "value") else item.status,
         created_at=item.created_at,
     )
+
+
+# ---------------------------------------------------------------------------
+# Verification trigger (POST only — runs LLMs)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/verification/run")
+def trigger_verification_run(
+    document_version_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Trigger a verification pass (cross-validation + gap detection).
+
+    This endpoint runs LLM calls and may take several minutes.
+    Results are persisted to verification_run_summaries and readable
+    via GET /v1/verification.
+
+    Use document_version_id to scope to a single document; omit to
+    run across all extracted documents.
+    """
+    from dataclasses import asdict
+
+    from src.ingestion.extractor import run_verification_pass
+
+    results = run_verification_pass(db, document_version_id)
+    return {
+        "triggered": True,
+        "documents_processed": len(results),
+        "documents": [asdict(r) for r in results],
+        "summary": {
+            "total_documents": len(results),
+            "total_cv_flagged": sum(r.cross_validation_flagged for r in results),
+            "total_gaps": sum(r.gaps_found for r in results),
+            "total_high_confidence_gaps": sum(r.high_confidence_gaps for r in results),
+            "total_citations_checked": sum(r.citations_checked for r in results),
+            "total_citations_unverified": sum(r.citations_unverified for r in results),
+            "total_tokens": sum(r.total_tokens for r in results),
+        },
+    }

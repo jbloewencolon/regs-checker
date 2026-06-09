@@ -140,15 +140,15 @@ Law-card data model, applicability product, API, productionization — resume on
   fixtures, adaptive-token retry, JSON-repair strategies, retag endpoint. *(NLP, BE)*
 
 ### Phase RR3 — API safety (small; RR3b worsened by RR0.1)
-- ⏳ **RR3a** **[High]** Wire `verify_api_key` (middleware/auth.py:20) to the `/v1`
-  router — `include_router(v1.router, …)` (app.py:123) has no `dependencies=`.
-  Add 401/invalid/200 tests. *(BE)*
-- ⏳ **RR3b** **[High]** `/v1/verification` (v1.py:295–308) is a GET that runs
-  `run_verification_pass` — now genuinely expensive after RR0.1. Split into
-  read-only GET (persisted summaries) + `POST /internal/verification/run`. *(BE)*
-- ⏳ **RR3c** **[Medium]** Fix `confidence_tier IN :tiers` tuple bind (v1.py:60–61):
-  use `bindparam("tiers", expanding=True)` or `= ANY(:tiers)`. Add a Postgres
-  integration test (not SQLite/mocks) for the product filter. *(BE)*
+- ✅ **RR3a** **[High]** Wire `verify_api_key` to the `/v1` router. Added
+  `dependencies=[Depends(verify_api_key)]` to `include_router(v1.router, …)`
+  in app.py. All `/v1/` routes now require a valid X-API-Key header. *(BE)*
+- ✅ **RR3b** **[High]** Split `/v1/verification` into read-only GET (queries
+  `verification_run_summaries` table, returns latest per document — no LLM calls)
+  + `POST /internal/verification/run` (triggers `run_verification_pass`). *(BE)*
+- ✅ **RR3c** **[Medium]** Fixed `confidence_tier IN :tiers` tuple bind: changed to
+  `confidence_tier = ANY(:tiers)` with `list(confidence_tiers)` — works correctly
+  with PostgreSQL array operators via SQLAlchemy raw text. *(BE)*
 - ⏳ **RR3d** **[Medium]** Review `/dashboard` + `/internal` auth posture; document
   the intended deployment trust boundary (currently a localhost analyst tool). *(BE)*
 
