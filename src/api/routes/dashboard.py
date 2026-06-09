@@ -26,6 +26,9 @@ from sqlalchemy.orm import Session
 from src.db.engine import get_db
 from src.db.models import (
     ApplicabilityCondition,
+    ComplianceConcept,
+    ConceptExtractionLink,
+    ConceptReviewStatus,
     ConfidenceTier,
     DocumentFamily,
     DocumentVersion,
@@ -4518,6 +4521,280 @@ def run_verification(
     """
 
     return HTMLResponse(table_html)
+
+
+# ===================================================================
+# COMPLIANCE CONCEPTS — Phase 5 grouping + review UI
+# ===================================================================
+
+
+@router.get("/concepts", response_class=HTMLResponse)
+def concepts_page(request: Request, db: Session = Depends(get_db)):
+    """Compliance concept overview page."""
+    from src.core.concept_review import concept_review_counts
+
+    try:
+        counts = concept_review_counts(db)
+    except Exception:
+        db.rollback()
+        counts = {
+            "total": 0, "pending": 0, "flagged": 0, "approved": 0,
+            "rejected": 0, "tracker_conflict": 0, "ungrounded": 0,
+        }
+    return _render(request, "concepts.html", {"counts": counts})
+
+
+@router.post("/api/concepts/group", response_class=HTMLResponse)
+def group_concepts_endpoint(
+    document_version_id: int | None = Query(default=None),
+) -> HTMLResponse:
+    """Run concept grouping in background thread."""
+    step_key = "concept_group"
+    if _background_jobs.get(step_key, {}).get("running"):
+        return HTMLResponse(
+            f'<div class="result-panel info" hx-get="/dashboard/api/job-status/{step_key}" '
+            f'hx-trigger="every 2s" hx-swap="outerHTML">'
+            f'<span class="spinner"></span> Concept grouping already running&hellip;</div>'
+        )
+
+    def _do_group(db):
+        from src.core.concept_grouping import run_concept_grouping
+
+        results = run_concept_grouping(
+            db,
+            document_version_id=document_version_id,
+        )
+        db.commit()
+
+        total_created = sum(r.concepts_created for r in results)
+        total_flagged = sum(r.concepts_flagged for r in results)
+        laws = len(results)
+
+        if total_created == 0 and laws == 0:
+            return '<div class="result-panel info">No extractions available to group into concepts.</div>'
+
+        return (
+            f'<div class="result-panel success">'
+            f'Grouped <strong>{total_created}</strong> concepts across <strong>{laws}</strong> laws. '
+            f'<strong>{total_flagged}</strong> flagged for review. '
+            f'<a href="/dashboard/concepts">View concepts &rarr;</a>'
+            f'</div>'
+        )
+
+    _run_in_background(step_key, _do_group)
+    return HTMLResponse(
+        f'<div class="result-panel info" hx-get="/dashboard/api/job-status/{step_key}" '
+        f'hx-trigger="every 2s" hx-swap="outerHTML">'
+        f'<span class="spinner"></span> Concept grouping started&hellip;</div>'
+    )
+
+
+@router.get("/api/concepts/list", response_class=HTMLResponse)
+def list_concepts(
+    concept_type: str | None = Query(default=None),
+    grounding_status: str | None = Query(default=None),
+    review_status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Return filterable concepts table as HTML fragment."""
+    try:
+        stmt = (
+            select(
+                ComplianceConcept,
+                DocumentFamily.short_cite,
+                Source.jurisdiction_code,
+            )
+            .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
+            .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+            .join(Source, DocumentFamily.source_id == Source.id)
+            .order_by(ComplianceConcept.confidence_score.asc().nullslast(), ComplianceConcept.id)
+            .limit(500)
+        )
+        if concept_type:
+            stmt = stmt.where(ComplianceConcept.concept_type == concept_type)
+        if grounding_status:
+            stmt = stmt.where(ComplianceConcept.grounding_status == grounding_status)
+        if review_status:
+            stmt = stmt.where(
+                ComplianceConcept.review_status == ConceptReviewStatus(review_status)
+            )
+
+        rows = db.execute(stmt).all()
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error loading concepts: {html_escape(str(e))}</div>'
+        )
+
+    if not rows:
+        return HTMLResponse(
+            '<div class="result-panel info">No concepts found. Run "Group Concepts" first.</div>'
+        )
+
+    grounding_colors = {
+        "tracker_grounded": "var(--success)",
+        "iapp_grounded": "var(--info)",
+        "tracker_conflict": "var(--danger)",
+        "ungrounded": "var(--warning)",
+    }
+    tier_colors = {"A": "var(--success)", "B": "var(--info)", "C": "var(--warning)", "D": "var(--danger)"}
+
+    table_rows = ""
+    for concept, short_cite, jur_code in rows:
+        rs = concept.review_status.value if hasattr(concept.review_status, "value") else str(concept.review_status)
+        gs = concept.grounding_status or "ungrounded"
+        gs_color = grounding_colors.get(gs, "var(--text-muted)")
+        tier = concept.confidence_tier or "—"
+        tier_color = tier_colors.get(tier, "var(--text-muted)")
+        score = f"{concept.confidence_score:.2f}" if concept.confidence_score is not None else "—"
+        ctype = html_escape(concept.concept_type or "—")
+        actor = html_escape(concept.regulated_actor_family or concept.right_holder_family or "—")
+        title = html_escape((concept.title or "")[:80])
+        cite = html_escape(short_cite or "")
+        jur = html_escape(jur_code or "")
+
+        table_rows += (
+            f'<tr>'
+            f'<td><strong>{jur}</strong> {cite}</td>'
+            f'<td style="font-size:11px;">{ctype}</td>'
+            f'<td>{actor}</td>'
+            f'<td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>'
+            f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}</td>'
+            f'<td style="text-align:right;">{score}</td>'
+            f'<td style="text-align:center;">{concept.member_count}</td>'
+            f'<td style="color:{gs_color};font-size:11px;">{gs}</td>'
+            f'<td style="font-size:11px;">{rs}</td>'
+            f'</tr>'
+        )
+
+    return HTMLResponse(
+        f'<div style="margin-top:8px;">'
+        f'<div class="table-wrap">'
+        f'<table class="review-table">'
+        f'<thead><tr>'
+        f'<th>Law</th><th>Type</th><th>Actor</th><th>Title</th>'
+        f'<th style="text-align:center;">Tier</th>'
+        f'<th style="text-align:right;">Score</th>'
+        f'<th style="text-align:center;">Members</th>'
+        f'<th>Grounding</th><th>Review</th>'
+        f'</tr></thead>'
+        f'<tbody>{table_rows}</tbody>'
+        f'</table></div>'
+        f'<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
+        f'Showing {len(rows)} concepts (capped at 500). '
+        f'Use filters to narrow results.'
+        f'</div></div>'
+    )
+
+
+@router.get("/api/concepts/review-queue", response_class=HTMLResponse)
+def concept_review_queue_fragment(
+    jurisdiction: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Return priority-banded concept review queue as HTML."""
+    from src.core.concept_review import get_concept_review_queue
+
+    try:
+        items = get_concept_review_queue(db, limit=100, jurisdiction=jurisdiction or None)
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Error loading queue: {html_escape(str(e))}</div>'
+        )
+
+    if not items:
+        return HTMLResponse(
+            '<div class="result-panel success" style="margin-top:8px;">'
+            'No concepts need review — queue is empty.'
+            '</div>'
+        )
+
+    band_labels = {
+        0: ("Tracker Conflict", "var(--danger)"),
+        1: ("Flagged — Tier D", "var(--danger)"),
+        2: ("Flagged", "var(--warning)"),
+        3: ("Ungrounded", "var(--warning)"),
+        4: ("Clean", "var(--success)"),
+    }
+
+    # Group by priority band
+    from collections import defaultdict
+    by_band: dict[int, list] = defaultdict(list)
+    for item in items:
+        by_band[item.priority_band].append(item)
+
+    html_parts = ['<div style="margin-top:8px;">']
+    for band in sorted(by_band.keys()):
+        band_items = by_band[band]
+        label, color = band_labels.get(band, (f"Band {band}", "var(--text)"))
+        html_parts.append(
+            f'<div style="margin-bottom:12px;">'
+            f'<div style="font-weight:600;color:{color};font-size:13px;margin-bottom:6px;">'
+            f'{label} ({len(band_items)})</div>'
+        )
+        for item in band_items:
+            rs_val = item.review_status if isinstance(item.review_status, str) else item.review_status.value
+            html_parts.append(
+                f'<div style="display:flex;align-items:baseline;gap:8px;padding:6px 8px;'
+                f'border:1px solid var(--border);border-radius:4px;margin-bottom:4px;'
+                f'font-size:12px;background:var(--bg-secondary);">'
+                f'<strong style="min-width:24px;color:{color};">{item.priority_band}</strong>'
+                f'<span style="min-width:40px;color:var(--text-muted);">{item.jurisdiction or "—"}</span>'
+                f'<span style="min-width:120px;font-size:11px;">{html_escape(item.concept_type)}</span>'
+                f'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" '
+                f'title="{html_escape(item.title)}">{html_escape(item.title[:60])}</span>'
+                f'<span style="min-width:32px;text-align:center;font-weight:bold;">'
+                f'{item.confidence_tier or "—"}</span>'
+                f'<span style="min-width:36px;text-align:right;color:var(--text-muted);">'
+                f'{f"{item.confidence_score:.2f}" if item.confidence_score is not None else "—"}</span>'
+                f'<form style="display:inline-flex;gap:4px;" '
+                f'hx-post="/dashboard/api/concepts/resolve/{item.concept_id}" '
+                f'hx-target="closest div[data-concept-row]" hx-swap="outerHTML" '
+                f'hx-include="this">'
+                f'<select name="status" style="font-size:11px;padding:2px 4px;">'
+                f'<option value="approved">Approve</option>'
+                f'<option value="rejected">Reject</option>'
+                f'<option value="flagged" {"selected" if rs_val == "flagged" else ""}>Flag</option>'
+                f'</select>'
+                f'<button type="submit" class="btn btn-sm btn-primary" style="font-size:11px;">Save</button>'
+                f'</form>'
+                f'</div>'
+            )
+        html_parts.append('</div>')
+
+    html_parts.append('</div>')
+    return HTMLResponse("".join(html_parts))
+
+
+@router.post("/api/concepts/resolve/{concept_id}", response_class=HTMLResponse)
+def resolve_concept_action(
+    concept_id: int,
+    status: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Record analyst review decision on a concept."""
+    from src.core.concept_review import resolve_concept
+
+    try:
+        status_enum = ConceptReviewStatus(status)
+    except ValueError:
+        return HTMLResponse(
+            f'<div class="result-panel error">Invalid status: {html_escape(status)}</div>'
+        )
+
+    found = resolve_concept(db, concept_id, status_enum)
+    db.commit()
+
+    if not found:
+        return HTMLResponse(
+            f'<div class="result-panel error">Concept {concept_id} not found.</div>'
+        )
+    return HTMLResponse(
+        f'<div style="padding:4px 8px;font-size:12px;color:var(--success);">'
+        f'Concept {concept_id} marked <strong>{status}</strong>.'
+        f'</div>'
+    )
 
 
 # ===================================================================

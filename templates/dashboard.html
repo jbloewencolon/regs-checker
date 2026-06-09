@@ -643,6 +643,36 @@
 
     <div class="step-connector"></div>
 
+    <!-- STEP 4.25: Verify Extractions -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">4.25</div>
+        <div class="step-title">Verify Extractions</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Three-layer post-extraction verification: cross-validation (CV) accuracy,
+          gap detection, and citation verification. Results are persisted to
+          <code>extraction_verification_status</code> and inform confidence tiers
+          via the Orrick + IAPP grounding gate.
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/verify"
+                  hx-target="#verify-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Run Verification (All Laws)</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Verifying…</span>
+          </button>
+        </div>
+        <div class="step-result" id="verify-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
     <!-- STEP 4.5: Generate Plain-English Summaries -->
     <div class="step">
       <div class="step-header">
@@ -676,6 +706,40 @@
           </button>
         </div>
         <div class="step-result" id="summary-result"></div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <!-- STEP 4.75: Group Compliance Concepts -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number auto">4.75</div>
+        <div class="step-title">Group Compliance Concepts</div>
+        <span class="step-badge auto">Automated</span>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Groups extraction fragments into business-facing compliance concepts
+          (disclosure, impact assessment, opt-out rights&hellip;) keyed by
+          concept type &times; regulated actor. Attaches Orrick/IAPP grounding
+          status and surfaces flagged/conflicted/ungrounded concepts in the review queue.
+          <div style="margin-top:4px;font-size:13px;">
+            Idempotent — safe to re-run after new extractions.
+            <a href="/dashboard/concepts">View concepts &rarr;</a>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/concepts/group"
+                  hx-target="#concepts-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Group All Laws</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Grouping…</span>
+          </button>
+        </div>
+        <div class="step-result" id="concepts-result"></div>
       </div>
     </div>
 
