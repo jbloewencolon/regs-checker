@@ -72,6 +72,161 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ---
 
+## Remediation Plan — Engineering Review Findings (RR)
+
+> Synthesis of two independent reviews: the **agent-engineering review**
+> (verification trust + normalization) and the **code-audit review** (idempotency,
+> parser fidelity, API safety, pipeline state). The two are *complementary* — the
+> first caught the runtime verification fail-open; the second caught the
+> idempotency/purge/parser issues. Neither caught both. Treat as one backlog.
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Severity in **[ ]**.
+>
+> **⚠️ Coupling note (most important):** RR1a (idempotency) and RR1b (auto-purge)
+> are **one change, not two**. Full runs (`limit=None`) purge-then-redo, so a
+> *clean complete* full run masks the skip-missing-agents bug; the bug bites
+> limited runs and interrupted full runs. Removing the purge (RR1b) **without**
+> per-agent dedup (RR1a) makes full re-extraction a silent no-op, because the
+> candidate query `Extraction.id.is_(None)` (extractor.py:1876) excludes every
+> already-touched passage. Land them together.
+
+### Phase RR0 — Already landed this session ✅
+- ✅ **RR0.1** **[Critical]** Verification fail-closed. CV/gap agents unpacked
+  `provider.call()` as a 4-tuple but it returns `LLMResponse` → `TypeError` on
+  every call, swallowed by `except` → fake neutral passes wired into confidence +
+  `extraction_verification_status`. Fixed: consume `response.text/.usage/.model_id`;
+  added explicit `status` (completed/skipped/failed) to both summaries; caller
+  gates on `status=="completed"`; `cv_passages_failed`/`gd_passages_failed`
+  persisted (model + migration `q3r9s5t7u018`); tests now mock real `LLMResponse`
+  + fail-closed regression + malformed-JSON test. *(NLP, BE)*
+- ✅ **RR0.2** Phase 5 concepts UI: `/dashboard/concepts` page, Group-Concepts
+  pipeline step (4.75), Verify step (4.25) wired to `/api/verify`, concept review
+  queue + filterable table + resolve endpoint. *(FE, BE)*
+- ⏳ **RR0.3** **[Critical, follow-up]** Backfill/invalidate verification data
+  written by the pre-RR0.1 broken path: `verification_run_summaries` /
+  `extraction_verification_status` rows and confidence tiers recomputed against
+  fabricated CV passes are stale. One-shot re-verify + recompute script. *(BE)*
+
+### Phase RR1 — Pipeline integrity (do first; RR1a+RR1b coupled)
+- ⏳ **RR1a** **[Critical]** Fix extraction idempotency. Candidate query
+  (extractor.py:1872–1879) selects only `Extraction.id.is_(None)`, and
+  `existing_hashes` (1838–1846) pre-populates *every* agent's hash from passage
+  text alone — so any passage with ≥1 extraction skips all agents. Re-key dedup on
+  `(source_record_id, agent_name, prompt_hash/model_id)`; build the existing set
+  from **actual agent attempts**, not text; include partially-extracted passages
+  as candidates so missing/failed/newly-added agents are retried. *(BE, NLP)*
+- ⏳ **RR1b** **[Critical]** Stop destructive auto-purge. `if limit is None:` deletes
+  ReviewAction/ReviewQueueItem/FailedExtractionAttempt/Extraction/ExtractionJob
+  (extractor.py:1744–1765) — wipes human review state + history on every full run.
+  Stop-the-bleeding: gate purge behind an explicit opt-in flag (not automatic on
+  `limit=None`); never delete reviewed rows. **Must ship with RR1a.** *(BE)*
+- ⏳ **RR1c** **[High]** Persist per-attempt agent run state
+  (pending/running/succeeded/failed/skipped) — the durable substrate that makes
+  RR1a real and enables recovery of interrupted runs. *(BE, SDPA)*
+- ⏳ **RR1d** **[High]** Regression test: interrupted run with one succeeded + one
+  failed agent on a passage must retry **only** the missing agent, not skip the
+  passage and not re-run the succeeded agent. *(BE)*
+
+### Phase RR2 — Restore the safety net (tests / CI / lint)
+- ⏳ **RR2a** **[High]** Fix test collection. `pytest` fails at import on archived/
+  removed modules (`AnthropicProvider`, `src.ingestion.connector`,
+  `src.agents.discovery`, `src.ingestion.pdf_tracker`) + missing `httpx`. Delete/
+  update stale tests; restore only intentional compat shims. *(BE)*
+- ⏳ **RR2b** **[High]** Add CI workflow (none exists): `pytest tests/unit` (post
+  RR2a) + `ruff check src/` excluding `_archived/`. Gate active code first. *(DevOps)*
+- ⏳ **RR2c** **[Medium]** Ruff cleanup on active `src/` (758 errors, mostly in
+  archives/tests under the configured E,F,I,N,W,UP set). Exclude `_archived/`. *(BE)*
+- 🔒 **RR2d** **[High]** Add the high-value missing tests the reviews list (after
+  RR2a): bill-level agent payloads, signal-routing recall vs all-agent on gold
+  fixtures, adaptive-token retry, JSON-repair strategies, retag endpoint. *(NLP, BE)*
+
+### Phase RR3 — API safety (small; RR3b worsened by RR0.1)
+- ⏳ **RR3a** **[High]** Wire `verify_api_key` (middleware/auth.py:20) to the `/v1`
+  router — `include_router(v1.router, …)` (app.py:123) has no `dependencies=`.
+  Add 401/invalid/200 tests. *(BE)*
+- ⏳ **RR3b** **[High]** `/v1/verification` (v1.py:295–308) is a GET that runs
+  `run_verification_pass` — now genuinely expensive after RR0.1. Split into
+  read-only GET (persisted summaries) + `POST /internal/verification/run`. *(BE)*
+- ⏳ **RR3c** **[Medium]** Fix `confidence_tier IN :tiers` tuple bind (v1.py:60–61):
+  use `bindparam("tiers", expanding=True)` or `= ANY(:tiers)`. Add a Postgres
+  integration test (not SQLite/mocks) for the product filter. *(BE)*
+- ⏳ **RR3d** **[Medium]** Review `/dashboard` + `/internal` auth posture; document
+  the intended deployment trust boundary (currently a localhost analyst tool). *(BE)*
+
+### Phase RR4 — Legal parsing & provenance fidelity (foundational; highest product value)
+- 🔒 **RR4a** **[High]** Stable section tree + subsection-aware paths. Parser merges
+  to `TARGET_SECTION_CHARS = 3000` (parser.py:254) and excludes `(a)/(1)/(i)`
+  markers, so an obligation from §4 can inherit §3's `section_path`. Retain
+  canonical `section_id`, `subsection_path`, parent-child structure; chunk for the
+  LLM with metadata listing all included section IDs; payloads point to the exact
+  node + char span. *(BE, NLP)*
+- 🔒 **RR4b** **[High]** Raw↔normalized offset map. Offsets are computed in
+  normalized coordinates after stripping/merging; evidence spans may not point to
+  the original statutory text. Persist raw offsets + normalized offsets + original
+  text hash; verify spans against the raw passage via the mapping. *(BE)*
+- 🔒 **RR4c** **[High]** Jurisdiction-aware citation normalizer: per-state patterns
+  (C.R.S. §, Cal. Bus. & Prof. Code §, NY session-law, code-title refs), exact map
+  from extraction `section_reference` → `NormalizedSourceRecord.section_path`. *(NLP)*
+- 🔒 **RR4d** **[Medium]** PDF parse failure → `requires_manual_review` instead of
+  decoding binary as UTF-8 plaintext junk; add parse-quality checks
+  (replacement-char ratio, legal-marker density). *(BE)*
+- 🔒 **RR4e** **[Medium]** Split immutable blob table (dedup by SHA) from a
+  document-artifact link table so every document version links to its blob —
+  current global-unique `RawArtifact.sha256_hash` can attach a reused artifact to
+  the wrong version. *(SDPA, BE)*
+- 🔒 **RR4f** **[High]** Tests: state-specific citation fixtures (CA/CO/NY/TX/CT/IL/
+  UT/federal EO) + raw→passage→span→raw offset round-trip. *(NLP, BE)*
+
+### Phase RR5 — Confidence model split (before tiers drive product; extends Phase 4c)
+- 🔒 **RR5a** **[High]** Split confidence into orthogonal dimensions:
+  source-grounding, tracker-alignment, schema-completeness, human-review status.
+  Both reviews converge here — today one tier conflates extraction correctness with
+  tracker coverage (the Orrick gate / `iapp_has_data` caps well-grounded IAPP-only
+  laws at C/D, reading as "low quality"). *(NLP, RPR)*
+- 🔒 **RR5b** **[Medium]** Stop using a single tier for review prioritization AND
+  legal-accuracy signalling; surface the dimensions separately in the API/UI. *(BE, FE)*
+
+### Phase RR6 — Reliability & observability hardening
+- 🔒 **RR6a** **[High]** Durable `pipeline_events` table (run/agent state transitions)
+  — replace the in-memory monitor that clears between runs. *(BE, SDPA)*
+- 🔒 **RR6b** **[High]** Per-model concurrency limits + backpressure; default LM
+  Studio concurrency = 1 (single-GPU thrash under `ThreadPoolExecutor`). *(BE)*
+- 🔒 **RR6c** **[Medium]** Enforce Alembic at startup; remove runtime DDL/enum
+  patching except an explicit dev-repair command. *(BE, DevOps)*
+- 🔒 **RR6d** **[Medium]** Retry taxonomy: LLM-timeout / validation / DB-conflict /
+  parse / sync — each with its own policy. *(BE)*
+- 🔒 **RR6e** **[Medium]** Sync robustness: server-side cursor / paginated ID
+  windows; durable sync cursors; explicit skipped-row audit table. *(BE)*
+
+### Phase RR7 — Architecture & legal versioning (long-term)
+- 🔒 **RR7a** **[Medium]** Split `extractor.py` (3,619 lines) into `routing` /
+  `agent_runner` / `persistence` / `confidence_pipeline` / `bill_level_runner` /
+  `verification_runner`. *(BE)*
+- 🔒 **RR7b** **[High]** Legal source versioning: source URL, retrieved timestamp,
+  publication/effective/amended dates, state session year, bill/chapter number,
+  code-citation fields, source hash per version. Treat re-ingest as a candidate new
+  version, not an overwrite (today everything seeds as `version_label="Current"`).
+  *(SDPA, RPR)*
+- 🔒 **RR7c** **[Medium]** Routing recall: triage labels as hints not hard filters;
+  periodic all-agent sampling; track per-agent abstention/false-negative vs gold. *(NLP)*
+- 🔒 **RR7d** **[Medium]** Immutable `ExtractionRun` versions + `is_serving` pointer
+  (the end-state RR1b's opt-in flag is a placeholder for). Builds on Phase 1b. *(BE, SDPA)*
+- 🔒 **RR7e** **[Low]** Pin dependencies + lockfile + scanning (pyproject uses broad
+  `>=` lower bounds). *(DevOps)*
+- 🔒 **RR7f** **[Low]** Doc fixes: prompt README → YAML prompt-loader + retired
+  ambiguity agent; single source of truth for default model (CLAUDE.md/.env/config
+  disagree: Gemma vs `openai/gpt-oss-20b`). *(BE)*
+
+### RR sequencing (recommended)
+1. **RR1a + RR1b together** (+ RR1c/RR1d) — blocking; unblocks reliable batches.
+2. **RR2a** then **RR2b** — restore the regression net before further change.
+3. **RR3a–RR3c** — small, and RR3b is worse post-RR0.1.
+4. **RR0.3** — backfill stale verification/confidence data once RR1 is stable.
+5. **RR4** — the foundational legal-fidelity lift (highest product value).
+6. **RR5** — before tiers drive any product surface.
+7. **RR6 / RR7** — hardening + long-term architecture.
+
+---
+
 ## Active Tasks
 
 - **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (IN PROGRESS)**
