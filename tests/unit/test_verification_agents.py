@@ -23,6 +23,23 @@ from src.agents.gap_detector import (
     GapDetectionSummary,
     run_gap_detection,
 )
+from src.core.llm_provider import LLMResponse, LLMUsage
+
+
+def _llm_response(payload: dict, input_tokens: int = 100, output_tokens: int = 50) -> LLMResponse:
+    """Build a real LLMResponse exactly as a provider returns it.
+
+    The verification agents consume ``provider.call(...).text`` etc. These tests
+    deliberately use a genuine LLMResponse (not a tuple) so the mocked interface
+    matches production. A regression to the old tuple-unpacking bug would make
+    these tests fail instead of silently passing.
+    """
+    return LLMResponse(
+        text=json.dumps(payload),
+        usage=LLMUsage(input_tokens=input_tokens, output_tokens=output_tokens),
+        model_id="openai/gpt-oss-20b",
+        stop_reason="stop",
+    )
 from src.agents.citation_verifier import (
     CitationVerificationResult,
     _normalize_citation,
@@ -45,8 +62,8 @@ class TestCrossValidation:
     """Tests for the cross-validation agent."""
 
     @patch("src.agents.cross_validation.get_extraction_provider")
-    def test_empty_extractions_returns_neutral(self, mock_provider):
-        """Cross-validating zero extractions should return a neutral summary."""
+    def test_empty_extractions_is_skipped(self, mock_provider):
+        """Cross-validating zero extractions should be a 'skipped' (not failed) summary."""
         result = run_cross_validation(
             passage_text="Some legal text here.",
             extractions=[],
@@ -55,30 +72,22 @@ class TestCrossValidation:
         assert isinstance(result, CrossValidationSummary)
         assert result.extractions_checked == 0
         assert result.avg_accuracy_score == 1.0
+        assert result.status == "skipped"
 
     @patch("src.agents.cross_validation.get_extraction_provider")
     def test_valid_extraction_parses(self, mock_provider):
         """A valid cross-validation response should be parsed correctly."""
-        mock_usage = MagicMock()
-        mock_usage.input_tokens = 100
-        mock_usage.output_tokens = 50
-
-        mock_provider.return_value.call.return_value = (
-            json.dumps({
-                "validations": [
-                    {
-                        "extraction_index": 0,
-                        "is_valid": True,
-                        "accuracy_score": 0.95,
-                        "issues": [],
-                        "notes": "Extraction is accurate."
-                    }
-                ]
-            }),
-            mock_usage,
-            "openai/gpt-oss-20b",
-            "stop",
-        )
+        mock_provider.return_value.call.return_value = _llm_response({
+            "validations": [
+                {
+                    "extraction_index": 0,
+                    "is_valid": True,
+                    "accuracy_score": 0.95,
+                    "issues": [],
+                    "notes": "Extraction is accurate."
+                }
+            ]
+        })
 
         result = run_cross_validation(
             passage_text="A developer shall comply with all requirements.",
@@ -90,6 +99,7 @@ class TestCrossValidation:
             passage_record_id=1,
         )
 
+        assert result.status == "completed"
         assert result.extractions_checked == 1
         assert result.extractions_valid == 1
         assert result.extractions_flagged == 0
@@ -98,32 +108,23 @@ class TestCrossValidation:
     @patch("src.agents.cross_validation.get_extraction_provider")
     def test_flagged_extraction(self, mock_provider):
         """An extraction with issues should be flagged."""
-        mock_usage = MagicMock()
-        mock_usage.input_tokens = 100
-        mock_usage.output_tokens = 80
-
-        mock_provider.return_value.call.return_value = (
-            json.dumps({
-                "validations": [
-                    {
-                        "extraction_index": 0,
-                        "is_valid": False,
-                        "accuracy_score": 0.3,
-                        "issues": [
-                            {
-                                "issue_type": "hallucination",
-                                "severity": "high",
-                                "field_name": "action",
-                                "explanation": "Action not supported by text",
-                            }
-                        ],
-                    }
-                ]
-            }),
-            mock_usage,
-            "openai/gpt-oss-20b",
-            "stop",
-        )
+        mock_provider.return_value.call.return_value = _llm_response({
+            "validations": [
+                {
+                    "extraction_index": 0,
+                    "is_valid": False,
+                    "accuracy_score": 0.3,
+                    "issues": [
+                        {
+                            "issue_type": "hallucination",
+                            "severity": "high",
+                            "field_name": "action",
+                            "explanation": "Action not supported by text",
+                        }
+                    ],
+                }
+            ]
+        }, output_tokens=80)
 
         result = run_cross_validation(
             passage_text="A developer shall implement protections.",
@@ -135,6 +136,7 @@ class TestCrossValidation:
             passage_record_id=1,
         )
 
+        assert result.status == "completed"
         assert result.extractions_flagged == 1
         assert result.extractions_valid == 0
         assert result.avg_accuracy_score == 0.3
@@ -142,8 +144,13 @@ class TestCrossValidation:
         assert result.results[0]["issues"][0]["issue_type"] == "hallucination"
 
     @patch("src.agents.cross_validation.get_extraction_provider")
-    def test_provider_failure_returns_neutral(self, mock_provider):
-        """If the LLM call fails, return neutral result (don't penalize)."""
+    def test_provider_failure_fails_closed(self, mock_provider):
+        """A failed LLM call must FAIL CLOSED, not return a neutral pass.
+
+        Regression guard for the trust bug: failure must be an explicit
+        "failed" status with empty results and NO neutral 0.75 accuracy that a
+        caller could fold into a document average or use to raise confidence.
+        """
         mock_provider.return_value.call.side_effect = RuntimeError("API error")
 
         result = run_cross_validation(
@@ -152,9 +159,29 @@ class TestCrossValidation:
             passage_record_id=1,
         )
 
-        assert result.extractions_checked == 1
-        assert result.avg_accuracy_score == 0.75  # neutral-ish
-        assert len(result.results) == 0
+        assert result.status == "failed"
+        assert result.avg_accuracy_score != 0.75  # the old neutral sentinel is gone
+        assert result.extractions_checked == 0    # not counted as a checked passage
+        assert result.results == []
+
+    @patch("src.agents.cross_validation.get_extraction_provider")
+    def test_malformed_json_fails_closed(self, mock_provider):
+        """Unparseable model output must also fail closed, not pass neutrally."""
+        mock_provider.return_value.call.return_value = LLMResponse(
+            text="this is not json at all",
+            usage=LLMUsage(input_tokens=10, output_tokens=5),
+            model_id="openai/gpt-oss-20b",
+            stop_reason="stop",
+        )
+
+        result = run_cross_validation(
+            passage_text="Some text.",
+            extractions=[{"subject": "test", "modality": "shall", "action": "act"}],
+            passage_record_id=1,
+        )
+
+        assert result.status == "failed"
+        assert result.results == []
 
 
 # ---------------------------------------------------------------------------
@@ -167,20 +194,11 @@ class TestGapDetection:
 
     @patch("src.agents.gap_detector.get_extraction_provider")
     def test_no_gaps_found(self, mock_provider):
-        """When no gaps exist, should return empty candidates."""
-        mock_usage = MagicMock()
-        mock_usage.input_tokens = 100
-        mock_usage.output_tokens = 30
-
-        mock_provider.return_value.call.return_value = (
-            json.dumps({
-                "gaps_found": [],
-                "analysis_notes": "No missed extractions identified."
-            }),
-            mock_usage,
-            "openai/gpt-oss-20b",
-            "stop",
-        )
+        """When no gaps exist, should return empty candidates with completed status."""
+        mock_provider.return_value.call.return_value = _llm_response({
+            "gaps_found": [],
+            "analysis_notes": "No missed extractions identified."
+        }, output_tokens=30)
 
         result = run_gap_detection(
             passage_text="A developer shall implement protections.",
@@ -193,45 +211,37 @@ class TestGapDetection:
         )
 
         assert isinstance(result, GapDetectionSummary)
+        assert result.status == "completed"
         assert result.gaps_found == 0
         assert result.candidates == []
 
     @patch("src.agents.gap_detector.get_extraction_provider")
     def test_gaps_found_and_filtered(self, mock_provider):
         """Should return only medium+ confidence gaps."""
-        mock_usage = MagicMock()
-        mock_usage.input_tokens = 200
-        mock_usage.output_tokens = 150
-
-        mock_provider.return_value.call.return_value = (
-            json.dumps({
-                "gaps_found": [
-                    {
-                        "extraction_type": "obligation",
-                        "summary": "Second obligation in sentence",
-                        "subject": "developer",
-                        "action": "maintain records",
-                        "modality": "shall",
-                        "evidence_text": "and maintain records of compliance",
-                        "why_missed": "Buried in compound sentence after first obligation",
-                        "confidence": "high",
-                    },
-                    {
-                        "extraction_type": "obligation",
-                        "summary": "Possible implicit duty",
-                        "subject": "deployer",
-                        "action": "maybe something",
-                        "modality": "may",
-                        "evidence_text": "deployers may",
-                        "why_missed": "Very unclear",
-                        "confidence": "low",
-                    },
-                ]
-            }),
-            mock_usage,
-            "openai/gpt-oss-20b",
-            "stop",
-        )
+        mock_provider.return_value.call.return_value = _llm_response({
+            "gaps_found": [
+                {
+                    "extraction_type": "obligation",
+                    "summary": "Second obligation in sentence",
+                    "subject": "developer",
+                    "action": "maintain records",
+                    "modality": "shall",
+                    "evidence_text": "and maintain records of compliance",
+                    "why_missed": "Buried in compound sentence after first obligation",
+                    "confidence": "high",
+                },
+                {
+                    "extraction_type": "obligation",
+                    "summary": "Possible implicit duty",
+                    "subject": "deployer",
+                    "action": "maybe something",
+                    "modality": "may",
+                    "evidence_text": "deployers may",
+                    "why_missed": "Very unclear",
+                    "confidence": "low",
+                },
+            ]
+        }, input_tokens=200, output_tokens=150)
 
         result = run_gap_detection(
             passage_text="A developer shall implement protections and maintain records of compliance.",
@@ -244,13 +254,18 @@ class TestGapDetection:
         )
 
         # Only the "high" confidence gap should pass through
+        assert result.status == "completed"
         assert result.gaps_found == 1
         assert result.high_confidence_gaps == 1
         assert result.candidates[0]["confidence"] == "high"
 
     @patch("src.agents.gap_detector.get_extraction_provider")
-    def test_provider_failure_returns_empty(self, mock_provider):
-        """If the LLM call fails, return empty result."""
+    def test_provider_failure_fails_closed(self, mock_provider):
+        """A failed gap-detection call must FAIL CLOSED, not look like 'no gaps'.
+
+        Regression guard: a failure returns status="failed" so the caller can
+        route the passage to review instead of treating zero gaps as clean.
+        """
         mock_provider.return_value.call.side_effect = RuntimeError("API down")
 
         result = run_gap_detection(
@@ -259,6 +274,7 @@ class TestGapDetection:
             passage_record_id=1,
         )
 
+        assert result.status == "failed"
         assert result.gaps_found == 0
         assert result.candidates == []
 

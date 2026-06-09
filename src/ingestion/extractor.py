@@ -3363,6 +3363,7 @@ def run_verification_pass(
         cv_flagged = 0
         cv_accuracy_sum = 0.0
         cv_tier_changes = 0  # extractions whose tier moved after CV recompute
+        cv_failed = 0        # passages whose CV call failed (fail-closed)
         cv_issues: list[dict[str, Any]] = []
 
         if not skip_cross_validation:
@@ -3392,12 +3393,24 @@ def run_verification_pass(
                     context=ctx,
                 )
 
+                total_input_tokens += cv_result.input_tokens
+                total_output_tokens += cv_result.output_tokens
+
+                # FAIL CLOSED: a failed CV call must not contribute a neutral
+                # accuracy to the document average, nor count as a checked
+                # passage. It is tracked separately and surfaced in the run
+                # summary so the failure is visible. A "skipped" passage (no
+                # extractions to check) is simply ignored.
+                if cv_result.status == "failed":
+                    cv_failed += 1
+                    continue
+                if cv_result.status != "completed":
+                    continue
+
                 cv_passages += 1
                 cv_valid += cv_result.extractions_valid
                 cv_flagged += cv_result.extractions_flagged
                 cv_accuracy_sum += cv_result.avg_accuracy_score
-                total_input_tokens += cv_result.input_tokens
-                total_output_tokens += cv_result.output_tokens
 
                 # Phase 2b: wire the cross-validation score into confidence.
                 # Record the result for EVERY validated extraction (not just
@@ -3486,10 +3499,11 @@ def run_verification_pass(
                     db.add(evs)
 
             cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
+            fail_note = f", {cv_failed} FAILED" if cv_failed else ""
             _log(
                 f"    {cv_passages} passages checked, {cv_valid} valid, "
                 f"{cv_flagged} flagged, avg accuracy: {cv_avg:.3f}, "
-                f"{cv_tier_changes} tier change(s) after recompute"
+                f"{cv_tier_changes} tier change(s) after recompute{fail_note}"
             )
         else:
             cv_avg = 1.0
@@ -3498,6 +3512,7 @@ def run_verification_pass(
         gd_passages = 0
         gd_gaps = 0
         gd_high = 0
+        gd_failed = 0  # passages whose gap detection failed (fail-closed)
         gd_candidates: list[dict[str, Any]] = []
 
         if not skip_gap_detection:
@@ -3522,11 +3537,19 @@ def run_verification_pass(
                     context=ctx,
                 )
 
+                total_input_tokens += gd_result.input_tokens
+                total_output_tokens += gd_result.output_tokens
+
+                # FAIL CLOSED: a failed detection is not a clean "no gaps"
+                # result — count it separately and route the passage to review
+                # instead of folding it in as zero gaps.
+                if gd_result.status == "failed":
+                    gd_failed += 1
+                    continue
+
                 gd_passages += 1
                 gd_gaps += gd_result.gaps_found
                 gd_high += gd_result.high_confidence_gaps
-                total_input_tokens += gd_result.input_tokens
-                total_output_tokens += gd_result.output_tokens
 
                 for candidate in gd_result.candidates:
                     gd_candidates.append({
@@ -3535,9 +3558,10 @@ def run_verification_pass(
                         **candidate,
                     })
 
+            gd_fail_note = f", {gd_failed} FAILED" if gd_failed else ""
             _log(
                 f"    {gd_passages} passages checked, "
-                f"{gd_gaps} gaps found ({gd_high} high confidence)"
+                f"{gd_gaps} gaps found ({gd_high} high confidence){gd_fail_note}"
             )
 
         # --- Layer 3: Citation Verification ---
@@ -3574,10 +3598,12 @@ def run_verification_pass(
 
         # Phase 4a: finalize the VerificationRunSummary with aggregated results.
         vrs.cv_passages_checked = cv_passages
+        vrs.cv_passages_failed = cv_failed
         vrs.cv_extractions_valid = cv_valid
         vrs.cv_extractions_flagged = cv_flagged
         vrs.cv_avg_accuracy = round(cv_avg, 4) if cv_passages > 0 else None
         vrs.gd_passages_checked = gd_passages
+        vrs.gd_passages_failed = gd_failed
         vrs.gd_gaps_found = gd_gaps
         vrs.gd_high_confidence = gd_high
         vrs.gap_candidates = gd_candidates

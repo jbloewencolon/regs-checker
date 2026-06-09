@@ -793,12 +793,16 @@ class VerificationRunSummary(Base):
 
     # Cross-validation aggregates
     cv_passages_checked = Column(Integer, default=0, nullable=False)
+    # Passages whose CV call failed (fail-closed — excluded from cv_avg_accuracy)
+    cv_passages_failed = Column(Integer, default=0, nullable=False)
     cv_extractions_valid = Column(Integer, default=0, nullable=False)
     cv_extractions_flagged = Column(Integer, default=0, nullable=False)
     cv_avg_accuracy = Column(Float, nullable=True)
 
     # Gap detection aggregates
     gd_passages_checked = Column(Integer, default=0, nullable=False)
+    # Passages whose gap detection failed (fail-closed — not counted as "no gaps")
+    gd_passages_failed = Column(Integer, default=0, nullable=False)
     gd_gaps_found = Column(Integer, default=0, nullable=False)
     gd_high_confidence = Column(Integer, default=0, nullable=False)
     gap_candidates = Column(JSONB, default=list)

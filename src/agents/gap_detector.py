@@ -66,7 +66,14 @@ class GapDetectionResult(BaseModel):
 
 @dataclass
 class GapDetectionSummary:
-    """Summary of gap detection across passages."""
+    """Summary of gap detection across passages.
+
+    ``status`` makes the outcome explicit (fail-closed):
+      - "completed" — the model ran; ``gaps_found`` reflects a real check
+      - "failed"    — the provider call or parse failed; ``gaps_found`` is 0
+                      only because nothing ran. Callers MUST NOT treat a failed
+                      detection as a clean "no gaps" result.
+    """
 
     passage_record_id: int
     existing_extraction_count: int
@@ -75,6 +82,7 @@ class GapDetectionSummary:
     candidates: list[dict[str, Any]]
     input_tokens: int = 0
     output_tokens: int = 0
+    status: str = "completed"
 
 
 GAP_DETECTION_SYSTEM_PROMPT = """You are a legal extraction auditor specializing in COMPLETENESS verification.
@@ -188,11 +196,14 @@ EXISTING EXTRACTIONS ({len(existing_extractions)} found):
     )
 
     try:
-        raw_output, usage, model_id, stop_reason = provider.call(
+        response = provider.call(
             system_prompt=system_prompt,
             user_prompt=prompt,
             model_override="openai/gpt-oss-20b",
         )
+        raw_output = response.text
+        usage = response.usage
+        model_id = response.model_id
 
         cleaned = raw_output.strip()
         if cleaned.startswith("```"):
@@ -231,6 +242,7 @@ EXISTING EXTRACTIONS ({len(existing_extractions)} found):
             candidates=valid_gaps,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
+            status="completed",
         )
 
     except Exception as e:
@@ -239,10 +251,14 @@ EXISTING EXTRACTIONS ({len(existing_extractions)} found):
             record_id=passage_record_id,
             error=str(e),
         )
+        # FAIL CLOSED: a failed detection is not "zero gaps found". Mark it
+        # failed so the caller routes the passage to review instead of
+        # treating it as clean.
         return GapDetectionSummary(
             passage_record_id=passage_record_id,
             existing_extraction_count=len(existing_extractions),
             gaps_found=0,
             high_confidence_gaps=0,
             candidates=[],
+            status="failed",
         )
