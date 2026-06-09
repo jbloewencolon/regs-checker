@@ -356,8 +356,20 @@
         <!-- Tab: Local LLM -->
         <div class="extract-tab-panel" id="tab-local">
           <div class="step-description" style="margin-bottom: 8px;">
-            Runs 7 extraction agents via <strong>LM Studio</strong> (GPT-OSS 20B + Qwen 3.5 9B).
+            Runs 7 extraction agents via <strong>LM Studio</strong>.
             Requires LM Studio running at <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
+            <a href="/dashboard/models" style="font-size:12px;margin-left:6px;">Configure models ›</a>
+          </div>
+
+          <!-- LM Studio connection status — polled every 10 s -->
+          <div id="lm-studio-status"
+               hx-get="/dashboard/api/models/status"
+               hx-trigger="load, every 10s"
+               hx-swap="innerHTML"
+               style="margin-bottom:8px;min-height:36px;">
+            <div style="padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);">
+              Checking LM Studio…
+            </div>
           </div>
           <div class="step-actions">
             <button class="btn btn-primary"

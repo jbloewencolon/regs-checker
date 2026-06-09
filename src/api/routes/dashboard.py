@@ -5290,3 +5290,132 @@ def reset_model_config(request: Request):
         "Reset to defaults. Reload this page to see updated values."
         "</div>"
     )
+
+
+@router.get("/api/models/status")
+def get_models_status() -> HTMLResponse:
+    """Compact LM Studio connection + loaded-model status for polling.
+
+    Polled every 5 s from both the Models page header and the pipeline page
+    Extract step.  Returns a self-contained HTML snippet (no outer wrapper
+    needed) suitable for hx-swap="innerHTML".
+    """
+    from src.core.model_config import fetch_available_models, get_config
+
+    available = fetch_available_models(timeout=2.0)
+    model_ids = sorted({m["id"] for m in available}) if available else []
+    connected = len(model_ids) > 0
+
+    cfg = get_config()
+    # Collect unique models currently configured across extraction agents
+    configured = sorted({
+        cfg.get(name).model
+        for name in ("obligation", "rights_protection", "definition_actor",
+                     "threshold_exception", "compliance_mechanism", "preemption")
+        if cfg.get(name).model
+    })
+
+    if connected:
+        dot = '<span style="color:#27ae60;font-size:16px;" title="LM Studio connected">●</span>'
+        model_list = " &nbsp;·&nbsp; ".join(
+            f'<span style="font-family:monospace;font-size:12px;">{html_escape(m)}</span>'
+            for m in model_ids
+        )
+        body = (
+            f'{dot} <strong>LM Studio connected</strong> &mdash; '
+            f'{len(model_ids)} model{"s" if len(model_ids) != 1 else ""} loaded: {model_list}'
+        )
+        if configured:
+            cfg_str = " &nbsp;·&nbsp; ".join(
+                f'<span style="font-family:monospace;font-size:12px;">{html_escape(m)}</span>'
+                for m in configured
+            )
+            body += f'<br><span style="font-size:12px;color:var(--text-muted);">Configured for extraction: {cfg_str}</span>'
+        color = "var(--success-bg, #ecfdf5)"
+        border = "var(--success, #27ae60)"
+    else:
+        dot = '<span style="color:#e74c3c;font-size:16px;" title="LM Studio unreachable">●</span>'
+        body = f'{dot} <strong>LM Studio not reachable</strong> &mdash; check it is running on <code>{html_escape(settings.local_llm_url)}</code>'
+        color = "var(--warning-bg, #fffbeb)"
+        border = "var(--warning, #f39c12)"
+
+    # Also inject options into any .model-select dropdowns on the page
+    options_js = ""
+    if model_ids:
+        options_html = "".join(
+            f'<option value="{html_escape(mid)}">{html_escape(mid)}</option>'
+            for mid in model_ids
+        )
+        # language=JavaScript
+        options_js = (
+            "<script>"
+            "document.querySelectorAll('select.model-select, select.apply-all-select').forEach(function(sel){"
+            "  var cur=sel.value;"
+            "  if(!sel.dataset.populated){"
+            "    sel.innerHTML='<option value=\"\">(default)</option>"
+            + options_html.replace("'", "\\'")
+            + "';"
+            "    sel.dataset.populated='1';"
+            "  }"
+            "  if(cur){var m=sel.querySelector('option[value=\"'+cur+'\"]');if(m)m.selected=true;}"
+            "});"
+            "</script>"
+        )
+
+    return HTMLResponse(
+        f'<div style="padding:8px 12px;background:{color};border:1px solid {border};'
+        f'border-radius:var(--radius-sm,4px);font-size:13px;">{body}</div>'
+        + options_js
+    )
+
+
+@router.post("/api/models/apply-all")
+async def apply_model_to_all(request: Request) -> HTMLResponse:
+    """Set all extraction agents (not triage) to the selected model and save.
+
+    Accepts form param ``model`` — the model ID string.  Triage agent is
+    intentionally excluded because it uses a smaller/faster model by design.
+    """
+    from src.core.model_config import (
+        AGENT_DISPLAY,
+        AgentModelConfig,
+        ModelConfigStore,
+        get_config,
+        save_config,
+    )
+    from src.ingestion.extractor import reload_agents
+
+    form = await request.form()
+    model = (form.get("model") or "").strip()
+
+    if not model:
+        return HTMLResponse(
+            '<div class="alert alert-warning">No model selected.</div>'
+        )
+
+    cfg = get_config()
+    updated = {}
+    for name in AGENT_DISPLAY:
+        existing = cfg.get(name)
+        if name == "triage":
+            # Keep triage as-is
+            updated[name] = existing
+        else:
+            updated[name] = AgentModelConfig(
+                model=model,
+                max_tokens=existing.max_tokens,
+                context_length=existing.context_length,
+                temperature=existing.temperature,
+                reasoning_effort=existing.reasoning_effort,
+            )
+
+    store = ModelConfigStore(agents=updated)
+    save_config(store)
+    reload_agents()
+
+    return HTMLResponse(
+        f'<div class="alert alert-success">'
+        f'All extraction agents set to <code>{html_escape(model)}</code>. '
+        f'Reload the page to see updated dropdowns.'
+        f'</div>'
+    )
