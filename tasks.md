@@ -241,6 +241,18 @@ Law-card data model, applicability product, API, productionization — resume on
 - ✅ **RR7f** **[Low]** Single source of truth for default model: `src/core/config.py`
   sets `local_llm_model = local_extraction_model = extraction_model =
   "google/gemma-4-26b-a4b"` (matches CLAUDE.md). *(BE)*
+- ✅ **RR7g** **[High]** Replace `existing_hashes` with attempt-state dedup. New
+  `succeeded_attempts: dict[tuple[int,str], set[str]]` preloaded from
+  `ExtractionAttempt` rows WHERE `status='succeeded'` — correctly skips agents
+  that abstained (0 extractions) on prior runs. New `input_text_hash` column
+  (sha256[:24]) on `ExtractionAttempt`; alembic migration `w9x5y1z3a024` adds
+  column + partial index `ix_extraction_attempts_succeeded`. *(BE)*
+- ✅ **RR7h** **[Medium]** Extract routing into `src/ingestion/routing.py` as pure
+  functions (`is_boilerplate`, `route_by_signal`, `select_agent_names`) with zero
+  SQLAlchemy/agent-object dependencies. Covered by 38 new unit tests in
+  `tests/unit/test_routing.py`. Fixed recall-sampling ordering: definitions-header
+  check now runs before the sampling gate (was intermittently non-deterministic).
+  `extractor.py` delegates via thin wrappers for backward compat. *(BE, NLP)*
 
 ### RR sequencing (recommended)
 1. **RR1a + RR1b together** (+ RR1c/RR1d) — blocking; unblocks reliable batches.
