@@ -70,6 +70,7 @@ from src.db.models import (
     ConfidenceTier,
     DocumentVersion,
     Extraction,
+    ExtractionAttempt,
     ExtractionJob,
     ExtractionType,
     ExtractionVerificationStatus,
@@ -251,6 +252,77 @@ def _record_failed_attempt(
     except Exception as e:
         # Don't let failure tracking itself block the pipeline
         logger.warning("failed_attempt_recording_error", error=str(e))
+
+
+def _begin_attempt(
+    db,
+    source_record_id: int,
+    agent_name: str,
+    run_id: int | None = None,
+) -> int | None:
+    """Insert an ExtractionAttempt row with status='running'. Returns row id."""
+    try:
+        from datetime import datetime
+        row = ExtractionAttempt(
+            source_record_id=source_record_id,
+            agent_name=agent_name,
+            run_id=run_id,
+            status="running",
+            started_at=datetime.utcnow(),
+        )
+        db.add(row)
+        db.flush()
+        return row.id
+    except Exception as e:
+        logger.warning("attempt_begin_error", agent=agent_name, error=str(e))
+        return None
+
+
+def _finish_attempt(
+    db,
+    attempt_id: int | None,
+    status: str,
+    extractions_produced: int = 0,
+    error_message: str | None = None,
+) -> None:
+    """Update an ExtractionAttempt row to a terminal status."""
+    if attempt_id is None:
+        return
+    try:
+        from datetime import datetime
+        row = db.get(ExtractionAttempt, attempt_id)
+        if row:
+            row.status = status
+            row.completed_at = datetime.utcnow()
+            row.extractions_produced = extractions_produced
+            if error_message:
+                row.error_message = error_message[:2000]
+            db.flush()
+    except Exception as e:
+        logger.warning("attempt_finish_error", attempt_id=attempt_id, error=str(e))
+
+
+def _skip_attempt(
+    db,
+    source_record_id: int,
+    agent_name: str,
+    run_id: int | None = None,
+) -> None:
+    """Insert an ExtractionAttempt row with status='skipped' (no agent call made)."""
+    try:
+        from datetime import datetime
+        now = datetime.utcnow()
+        db.add(ExtractionAttempt(
+            source_record_id=source_record_id,
+            agent_name=agent_name,
+            run_id=run_id,
+            status="skipped",
+            started_at=now,
+            completed_at=now,
+        ))
+        db.flush()
+    except Exception as e:
+        logger.warning("attempt_skip_error", agent=agent_name, error=str(e))
 
 
 def _ensure_triage_table(db, _log=None) -> None:
@@ -1081,6 +1153,11 @@ def extract_single_record(
         logger.debug("all_agents_skipped", record_id=record.id)
         return 0
 
+    # Record skipped attempts for excluded agents (RR1c)
+    excluded_agent_names = set(agents.keys()) - set(selected_agents.keys())
+    for excluded_name in excluded_agent_names:
+        _skip_attempt(db, record.id, excluded_name, run_id=run_id)
+
     # Calculate per-passage token budget.  Short passages never produce
     # large outputs — scaling down avoids wasted GPU time waiting for tokens
     # the model would never fill.  The base budget comes from each agent's
@@ -1104,6 +1181,7 @@ def extract_single_record(
                         agent=agent_name,
                         record_id=record.id,
                     )
+                    _skip_attempt(db, record.id, agent_name, run_id=run_id)
                     continue
 
                 # Scale token budget to passage length so short passages don't
@@ -1111,24 +1189,25 @@ def extract_single_record(
                 base_tokens = agent.max_tokens_override or settings.extraction_max_tokens
                 scaled_tokens = _scale_tokens_for_passage(passage_len, base_tokens)
 
+                attempt_id = _begin_attempt(db, record.id, agent_name, run_id=run_id)
                 future = executor.submit(
                     _run_agent, agent_name, agent, passage.text, ctx,
                     call_max_tokens=scaled_tokens,
                 )
-                futures[future] = (agent_name, content_hash)
+                futures[future] = (agent_name, content_hash, attempt_id)
 
             # Collect results for this model group
             for future in as_completed(futures):
-                agent_name, content_hash = futures[future]
+                agent_name, content_hash, attempt_id = futures[future]
                 name, result, duration_ms = future.result()
-                agent_results.append((name, content_hash, result, duration_ms))
+                agent_results.append((name, content_hash, attempt_id, result, duration_ms))
 
     # Import monitor for live event emission
     from src.core.extraction_monitor import get_monitor
     monitor = get_monitor()
 
     # Process results (back on main thread for DB writes)
-    for name, content_hash, result, duration_ms in agent_results:
+    for name, content_hash, attempt_id, result, duration_ms in agent_results:
         if isinstance(result, Exception):
             logger.error(
                 "agent_extraction_failed",
@@ -1137,6 +1216,7 @@ def extract_single_record(
                 error=str(result),
                 section_path=record.section_path,
             )
+            _finish_attempt(db, attempt_id, "failed", error_message=str(result))
             # Record for retry
             _record_failed_attempt(
                 db, record.id, name, "llm_error", str(result),
@@ -1187,6 +1267,7 @@ def extract_single_record(
                 output_tokens=result.output_tokens,
                 duration_ms=duration_ms,
             )
+            _finish_attempt(db, attempt_id, "succeeded", extractions_produced=0)
             continue
 
         # Mark hash as seen
@@ -1198,6 +1279,7 @@ def extract_single_record(
         schema_class = EXTRACTION_TYPE_SCHEMAS.get(default_type.value)
 
         # Write extractions against all source records in the merged passage
+        agent_extractions_before = extractions_created
         for source_record in passage.source_records:
             for item in result.extractions:
                 # Use a savepoint so a single failed INSERT (e.g. missing
@@ -1347,6 +1429,12 @@ def extract_single_record(
                         tracker.record_failure(
                             f"db_insert agent={name} record={source_record.id}: {e}"
                         )
+
+        # Mark attempt as succeeded with the number of extractions produced
+        _finish_attempt(
+            db, attempt_id, "succeeded",
+            extractions_produced=extractions_created - agent_extractions_before,
+        )
 
     # Record passage-level completion to monitor
     monitor.record_passage_complete(

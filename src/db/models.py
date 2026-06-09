@@ -449,6 +449,47 @@ class ExtractionJob(Base):
 
 
 # ---------------------------------------------------------------------------
+# 8c. Extraction Attempts — per-agent run-state tracking (RR1c)
+# ---------------------------------------------------------------------------
+
+
+class ExtractionAttempt(Base):
+    """One row per (source_record, agent_name) per extraction run.
+
+    Tracks the full lifecycle of each agent call so interrupted runs can be
+    detected and resumed.  On each re-run, new rows are inserted (not updated
+    in-place) so the history of retries is preserved.
+
+    Status lifecycle:
+      running   → succeeded   (agent returned extractions or abstained cleanly)
+      running   → failed      (LLM call or DB write raised an exception)
+      (none)    → skipped     (agent excluded by signal routing or dedup guard)
+    """
+
+    __tablename__ = "extraction_attempts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_record_id = Column(
+        Integer, ForeignKey("normalized_source_records.id"), nullable=False, index=True
+    )
+    agent_name = Column(String(100), nullable=False)
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
+    status = Column(String(20), nullable=False)  # running|succeeded|failed|skipped
+    extractions_produced = Column(Integer, default=0, nullable=False)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    source_record = relationship("NormalizedSourceRecord")
+
+    __table_args__ = (
+        Index("ix_extraction_attempts_record_agent", "source_record_id", "agent_name"),
+        Index("ix_extraction_attempts_run_status", "run_id", "status"),
+    )
+
+
+# ---------------------------------------------------------------------------
 # 9. Review Queue
 # ---------------------------------------------------------------------------
 

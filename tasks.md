@@ -101,10 +101,13 @@ Law-card data model, applicability product, API, productionization — resume on
 - ✅ **RR0.2** Phase 5 concepts UI: `/dashboard/concepts` page, Group-Concepts
   pipeline step (4.75), Verify step (4.25) wired to `/api/verify`, concept review
   queue + filterable table + resolve endpoint. *(FE, BE)*
-- ⏳ **RR0.3** **[Critical, follow-up]** Backfill/invalidate verification data
+- ✅ **RR0.3** **[Critical, follow-up]** Backfill/invalidate verification data
   written by the pre-RR0.1 broken path: `verification_run_summaries` /
   `extraction_verification_status` rows and confidence tiers recomputed against
-  fabricated CV passes are stale. One-shot re-verify + recompute script. *(BE)*
+  fabricated CV passes are stale. `src/scripts/backfill_verification.py` restores
+  `confidence_before`/`tier_before` on each linked Extraction, then deletes all
+  `ExtractionVerificationStatus` + `VerificationRunSummary` rows. Supports
+  `--dry-run`. *(BE)*
 
 ### Phase RR1 — Pipeline integrity (do first; RR1a+RR1b coupled)
 - ✅ **RR1a** **[Critical]** Fix extraction idempotency. Fixed candidate query
@@ -116,9 +119,14 @@ Law-card data model, applicability product, API, productionization — resume on
 - ✅ **RR1b** **[Critical]** Stop destructive auto-purge. Added `purge: bool = False`
   to `run_extraction()`; purge block now gates on `if purge:` instead of
   `if limit is None:`. Callers must opt in explicitly — no accidental wipes. *(BE)*
-- ⏳ **RR1c** **[High]** Persist per-attempt agent run state
-  (pending/running/succeeded/failed/skipped) — the durable substrate that makes
-  RR1a real and enables recovery of interrupted runs. *(BE, SDPA)*
+- ✅ **RR1c** **[High]** Persist per-attempt agent run state
+  (running/succeeded/failed/skipped). `ExtractionAttempt` model + migration
+  `r4s0t6u8v019`. Three helpers: `_begin_attempt` (inserts `running` row, returns
+  id), `_finish_attempt` (updates to terminal state + extractions_produced),
+  `_skip_attempt` (inserts `skipped` row). Wired into `extract_single_record`:
+  excluded agents → `_skip_attempt`; deduped agents → `_skip_attempt`; each
+  submitted agent → `_begin_attempt` before submit; failed result → `_finish_attempt("failed")`; abstained → `_finish_attempt("succeeded", 0)`; succeeded
+  → `_finish_attempt("succeeded", N)`. *(BE, SDPA)*
 - ✅ **RR1d** **[High]** 5 regression tests in `TestRR1Idempotency`: reverse-map
   completeness, per-agent dedup correctness, buggy-logic documentation, purge
   default, multi-type agent coverage. *(BE)*
