@@ -854,7 +854,7 @@ _DEFINITION_SIGNALS = re.compile(
 )
 _OBLIGATION_SIGNALS = re.compile(
     r'\b(?:shall|must|require[sd]?|obligat|mandate[sd]?|prohibit|may not|'
-    r'responsible for|duty to|ensure that)\b',
+    r'responsible for|duty to|ensure that|is the policy|it is the policy)\b',
     re.IGNORECASE,
 )
 _RIGHTS_SIGNALS = re.compile(

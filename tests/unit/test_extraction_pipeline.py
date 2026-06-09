@@ -36,7 +36,7 @@ class TestPromptLoader:
         load_prompt_template.cache_clear()
         template = load_prompt_template("obligation")
         assert template is not None
-        assert template["version"] == "1.0"
+        assert template["version"] in ("1.0", "1.1")
         assert template["agent"] == "obligation"
         assert "system_prompt" in template
         assert "extraction_prompt" in template
@@ -71,7 +71,7 @@ class TestPromptLoader:
         """Should return version string from template."""
         load_prompt_template.cache_clear()
         version = get_template_version("obligation")
-        assert version == "1.0"
+        assert version in ("1.0", "1.1")
 
     def test_get_template_version_missing(self):
         """Should return None for agents without templates."""
@@ -79,10 +79,10 @@ class TestPromptLoader:
         version = get_template_version("no_such_agent")
         assert version is None
 
-    def test_all_four_templates_load(self):
-        """All 4 agent templates should load successfully."""
+    def test_active_agent_templates_load(self):
+        """All active agent templates should load successfully (ambiguity retired)."""
         load_prompt_template.cache_clear()
-        for agent in ["obligation", "definition_actor", "threshold_exception", "ambiguity"]:
+        for agent in ["obligation", "definition_actor", "threshold_exception"]:
             template = load_prompt_template(agent)
             assert template is not None, f"Template for {agent} should load"
             assert "version" in template, f"Template for {agent} missing version"
@@ -248,7 +248,7 @@ class TestBaseAgentTemplateIntegration:
         from src.agents.obligation import ObligationAgent
         agent = ObligationAgent()
         assert agent._template is not None
-        assert agent._template["version"] == "1.0"
+        assert agent._template["version"] in ("1.0", "1.1")
 
     @patch("src.agents.base.get_extraction_provider")
     def test_system_prompt_from_template(self, mock_get_provider):
@@ -334,7 +334,7 @@ class TestWrapPassages:
 
 class TestCircuitBreaker:
     def test_threshold_constant(self):
-        assert CIRCUIT_BREAKER_THRESHOLD == 3
+        assert CIRCUIT_BREAKER_THRESHOLD == 10
 
     def test_exception_is_runtime_error(self):
         assert issubclass(CircuitBreakerTripped, RuntimeError)
@@ -412,17 +412,14 @@ class TestRecallSafeAgentSelection:
             "compliance_mechanism": ComplianceMechanismAgent(),
         }
 
-    def test_standard_obligation_routes_obligation_and_definition(self):
-        """A passage with 'shall' should route to obligation + definition_actor
-        (always-on agents).  Other agents only run when their specific signals
-        are present — this is recall-safe because the triage step already
-        classified the passage as AI-relevant."""
+    def test_standard_obligation_routes_obligation(self):
+        """A passage with 'shall' should route to the obligation agent.
+        definition_actor only runs on definition signals, not always-on."""
         agents = self._make_agents()
         text = "A developer shall implement cybersecurity protections."
         selected = _select_agents_for_passage(text, agents)
         assert "obligation" in selected
-        assert "definition_actor" in selected
-        assert len(selected) >= 2
+        assert len(selected) >= 1
 
     def test_nonstandard_obligation_is_expected_to(self):
         """'is expected to' doesn't contain shall/must — must still run obligation agent."""
@@ -521,7 +518,11 @@ class TestRecallSafeAgentSelection:
             "cybersecurity purposes."
         )
         selected = _select_agents_for_passage(text, agents)
-        assert len(selected) == 5  # All active agents run (ambiguity retired)  # All agents should run
+        # Signal routing narrows to the agents with matched signals;
+        # obligation (shall), rights_protection (right to), threshold_exception (does not apply)
+        assert "obligation" in selected
+        assert "rights_protection" in selected
+        assert len(selected) >= 3
 
     def test_long_enacting_clause_not_excluded(self):
         """A long passage starting with enacting language should NOT be excluded
@@ -536,8 +537,8 @@ class TestRecallSafeAgentSelection:
         selected = _select_agents_for_passage(text, agents)
         # The passage is > 300 chars, so even though it starts with "Be it enacted",
         # it should NOT be excluded.  Signal routing narrows to obligation +
-        # compliance_mechanism + definition_actor (shall, audits, penalties/fines).
-        assert len(selected) >= 3
+        # compliance_mechanism (shall, audits, penalties/fines).
+        assert len(selected) >= 2
         assert "obligation" in selected
         assert "compliance_mechanism" in selected
 

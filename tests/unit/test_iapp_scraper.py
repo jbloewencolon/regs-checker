@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+pytest.importorskip("httpx")  # legacy scraper requires httpx; skip if not installed
+
 from src.ingestion.legacy.iapp_scraper import (
     IAPPScraperError,
     STATE_CODES,

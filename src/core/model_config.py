@@ -12,8 +12,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -149,6 +147,7 @@ def fetch_available_models(timeout: float = 3.0) -> list[dict[str, Any]]:
     Each dict has at least ``id`` (the model name string).
     Returns an empty list on connection failure.
     """
+    import httpx  # lazy — not installed in all environments (e.g., test)
     url = f"{settings.local_llm_url}/v1/models"
     try:
         resp = httpx.get(url, timeout=timeout)

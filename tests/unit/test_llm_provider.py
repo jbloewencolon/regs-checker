@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.core.llm_provider import (
-    AnthropicProvider,
     BaseLLMProvider,
     LLMResponse,
     LLMUsage,
@@ -44,66 +43,6 @@ class TestLLMResponse:
         assert resp.stop_reason is None
 
 
-class TestAnthropicProvider:
-    @patch("src.core.llm_provider.settings")
-    def test_model_id(self, mock_settings):
-        mock_settings.anthropic_api_key = "test-key"
-        mock_settings.extraction_model = "claude-haiku-4-5-20251001"
-
-        mock_anthropic = MagicMock()
-        with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
-            provider = AnthropicProvider()
-            assert provider.model_id == "claude-haiku-4-5-20251001"
-
-    @patch("src.core.llm_provider.settings")
-    def test_call_returns_llm_response(self, mock_settings):
-        mock_settings.anthropic_api_key = "test-key"
-        mock_settings.extraction_model = "claude-haiku-4-5-20251001"
-
-        mock_block = MagicMock()
-        mock_block.type = "text"
-        mock_block.text = '{"result": "test"}'
-
-        mock_response = MagicMock()
-        mock_response.content = [mock_block]
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage.input_tokens = 100
-        mock_response.usage.output_tokens = 50
-
-        mock_anthropic = MagicMock()
-        mock_anthropic.Anthropic.return_value.messages.create.return_value = mock_response
-
-        with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
-            provider = AnthropicProvider()
-            result = provider.call("system", "user")
-
-        assert isinstance(result, LLMResponse)
-        assert result.text == '{"result": "test"}'
-        assert result.usage.input_tokens == 100
-        assert result.usage.output_tokens == 50
-
-    @patch("src.core.llm_provider.settings")
-    def test_call_raises_on_empty_response(self, mock_settings):
-        mock_settings.anthropic_api_key = "test-key"
-        mock_settings.extraction_model = "claude-haiku-4-5-20251001"
-
-        mock_block = MagicMock()
-        mock_block.type = "text"
-        mock_block.text = "   "
-
-        mock_response = MagicMock()
-        mock_response.content = [mock_block]
-        mock_response.stop_reason = "end_turn"
-
-        mock_anthropic = MagicMock()
-        mock_anthropic.Anthropic.return_value.messages.create.return_value = mock_response
-
-        with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
-            provider = AnthropicProvider()
-            with pytest.raises(ValueError, match="Empty text response"):
-                provider.call("system", "user")
-
-
 class TestLocalLLMProvider:
     @patch("src.core.llm_provider.settings")
     def test_model_id_prefix(self, mock_settings):
@@ -123,8 +62,10 @@ class TestLocalLLMProvider:
     def test_call_returns_llm_response(self, mock_settings):
         mock_settings.local_llm_url = "http://localhost:8080"
         mock_settings.local_llm_model = "llama-3.1-8b"
+        mock_settings.local_context_length = 131072
 
         mock_resp = MagicMock()
+        mock_resp.status_code = 200
         mock_resp.json.return_value = {
             "choices": [
                 {
@@ -152,8 +93,10 @@ class TestLocalLLMProvider:
     def test_call_raises_on_empty_response(self, mock_settings):
         mock_settings.local_llm_url = "http://localhost:8080"
         mock_settings.local_llm_model = "llama-3.1-8b"
+        mock_settings.local_context_length = 131072
 
         mock_resp = MagicMock()
+        mock_resp.status_code = 200
         mock_resp.json.return_value = {
             "choices": [{"message": {"content": ""}, "finish_reason": "stop"}],
             "usage": {},
@@ -175,18 +118,6 @@ class TestGetProvider:
     def teardown_method(self):
         _provider_cache.clear()
 
-    @patch("src.core.llm_provider.AnthropicProvider")
-    @patch("src.core.llm_provider.settings")
-    def test_get_anthropic_provider(self, mock_settings, mock_cls):
-        mock_settings.llm_provider = "anthropic"
-        mock_instance = MagicMock()
-        mock_instance.model_id = "claude-haiku-4-5-20251001"
-        mock_cls.return_value = mock_instance
-
-        provider = get_provider("anthropic")
-        assert provider is mock_instance
-        mock_cls.assert_called_once()
-
     @patch("src.core.llm_provider.LocalLLMProvider")
     @patch("src.core.llm_provider.settings")
     def test_get_local_provider(self, mock_settings, mock_cls):
@@ -204,15 +135,15 @@ class TestGetProvider:
         with pytest.raises(ValueError, match="Unknown LLM provider"):
             get_provider("unknown")
 
-    @patch("src.core.llm_provider.AnthropicProvider")
+    @patch("src.core.llm_provider.LocalLLMProvider")
     @patch("src.core.llm_provider.settings")
     def test_caches_provider(self, mock_settings, mock_cls):
-        mock_settings.llm_provider = "anthropic"
+        mock_settings.llm_provider = "local"
         mock_instance = MagicMock()
-        mock_instance.model_id = "claude-haiku-4-5-20251001"
+        mock_instance.model_id = "local:llama-3.1-8b"
         mock_cls.return_value = mock_instance
 
-        p1 = get_provider("anthropic")
-        p2 = get_provider("anthropic")
+        p1 = get_provider("local")
+        p2 = get_provider("local")
         assert p1 is p2
         mock_cls.assert_called_once()

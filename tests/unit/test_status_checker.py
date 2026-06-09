@@ -160,8 +160,9 @@ class TestApplyStatusChange:
         version = MagicMock()
         version.id = 42
 
-        # Mock db
+        # Mock db — scalars().first() must return None so dedup check passes
         db = MagicMock()
+        db.scalars.return_value.first.return_value = None
 
         change = StatusChange(
             document_version_id=42,
