@@ -1720,14 +1720,21 @@ def run_extraction(
     limit: int | None = None,
     on_progress: Callable[[str], None] | None = None,
     batch_mode: bool = False,
+    purge: bool = False,
 ) -> dict:
     """Run extraction agents against all unprocessed passages.
+
+    Idempotent: passages already fully extracted are skipped via per-agent
+    content-hash deduplication.  Partially-extracted passages (where only
+    some agents have run) have the missing agents filled in.
 
     Args:
         db: SQLAlchemy session
         limit: Max passages to process (None = all unprocessed)
         on_progress: Optional callback(message: str) for status updates
         batch_mode: Deprecated, ignored. Batch API has been archived.
+        purge: Explicitly wipe all existing extractions before running.
+            Must be set to True intentionally — never triggered automatically.
 
     Returns:
         Summary dict with counts and token usage.
@@ -1741,17 +1748,15 @@ def run_extraction(
     # Ensure failed_extraction_attempts table exists for error tracking
     _ensure_failed_attempts_table(db, on_progress)
 
-    # --- Auto-purge previous extraction run (full runs only) ---
-    # Only purge when running without a limit (i.e. a full/production run).
-    # Partial/test runs (limit != None) must never wipe existing extractions —
-    # users rely on "Extract 5 (Test)" to verify agent behaviour without losing
-    # results from a prior full run.
+    # --- Explicit purge (opt-in only) ---
+    # Never runs automatically. The caller must pass purge=True to wipe
+    # existing extractions. Idempotent runs rely on per-agent dedup instead.
     from sqlalchemy import delete as sa_delete
-    if limit is None:
+    if purge:
         old_ext_count = db.scalar(select(func.count()).select_from(Extraction)) or 0
         if old_ext_count > 0:
             if on_progress:
-                on_progress(f"Purging {old_ext_count} extractions from previous run...")
+                on_progress(f"Purging {old_ext_count} extractions (explicit purge requested)...")
             # Delete in FK order
             db.execute(sa_delete(ApplicabilityCondition))
             db.execute(sa_delete(ObligationDependency))
@@ -1771,7 +1776,7 @@ def run_extraction(
     # Full runs purge all extractions first and start a fresh session.
     # Batch runs (with limit) accumulate into the existing active folder.
     from src.core.run_archiver import RunArchiver
-    archiver = RunArchiver.start("extract", is_fresh_run=(limit is None))
+    archiver = RunArchiver.start("extract", is_fresh_run=purge)
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
@@ -1832,22 +1837,31 @@ def run_extraction(
         _token_columns_available = False
         _run_id_available = False
 
-    # Build set of existing content hashes for deduplication.
-    # Pre-populate from DB so re-runs don't re-call agents on passages that
-    # already have extractions (e.g. after an interrupted run or re-run).
+    # Build set of existing content hashes for per-agent deduplication.
+    # Key: _content_hash(agent_name, text_content) for each (passage, agent)
+    # pair where that specific agent already has an extraction. This lets
+    # partially-extracted passages continue from where they left off — only
+    # the agents that haven't run yet will be called.
+    _type_to_agent: dict[str, str] = {
+        ext_type.value: agent_name
+        for agent_name, types in AGENT_EXTRACTION_TYPES.items()
+        for ext_type in types
+    }
     existing_hashes: set[str] = set()
     _already_extracted = db.execute(
-        select(NormalizedSourceRecord.text_content)
+        select(NormalizedSourceRecord.text_content, Extraction.extraction_type)
         .join(Extraction, Extraction.source_record_id == NormalizedSourceRecord.id)
         .distinct()
     ).all()
-    for (text_content,) in _already_extracted:
-        for agent_name in agents:
+    for (text_content, ext_type) in _already_extracted:
+        ext_type_val = ext_type.value if hasattr(ext_type, "value") else str(ext_type)
+        agent_name = _type_to_agent.get(ext_type_val)
+        if agent_name:
             existing_hashes.add(_content_hash(agent_name, text_content))
     if existing_hashes:
         logger.info(
             "dedup_hashes_loaded",
-            passages_with_extractions=len(_already_extracted),
+            agent_passage_pairs=len(_already_extracted),
             total_hashes=len(existing_hashes),
         )
     del _already_extracted
@@ -1857,11 +1871,13 @@ def run_extraction(
             on_progress(msg)
         logger.info(msg)
 
-    # Find passages that:
-    #   1. Have no extractions yet, AND
-    #   2. Have been triaged as relevant or uncertain (not "not_relevant")
+    # Find passages that have been triaged as relevant or uncertain.
+    # We include ALL such passages (not just those with zero extractions) so
+    # that partially-extracted passages — where only some agents have run —
+    # can have their missing agents filled in.  Per-agent dedup via
+    # existing_hashes prevents re-running agents that already completed.
     # If triage hasn't been run yet, passages without any triage result are
-    # also excluded — the user must run "Triage Passages" first.
+    # excluded — the user must run "Triage Passages" first.
     triaged_relevant_ids = (
         select(SectionTriageResult.source_record_id)
         .where(SectionTriageResult.decision.in_([
@@ -1871,11 +1887,10 @@ def run_extraction(
     )
     query = (
         select(NormalizedSourceRecord)
-        .outerjoin(Extraction)
         .where(
-            Extraction.id.is_(None),
             NormalizedSourceRecord.id.in_(triaged_relevant_ids),
         )
+        .distinct()
     )
     if limit:
         query = query.limit(limit)
@@ -1900,7 +1915,6 @@ def run_extraction(
     }
 
     if not records:
-        # Distinguish between "everything already extracted" vs "triage not run"
         total_passages = db.scalar(
             select(func.count()).select_from(NormalizedSourceRecord)
         ) or 0
@@ -1913,7 +1927,7 @@ def run_extraction(
                 f"Run 'Triage Passages' before extracting."
             )
         else:
-            _log("No unprocessed passages found — all triaged-relevant passages already extracted.")
+            _log("No triaged-relevant passages found.")
         archiver.finalize(db, summary)
         return summary
 
