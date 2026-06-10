@@ -33,7 +33,8 @@ LLM agents.** `output/law_tag_categories.json` says so plainly in its own notes:
 The tell-tale sign is the `ai_topic` vocabulary, which contains keyword-extraction noise
 like `ai-healthcare-the`, `frontier`, `user`, and `automated` — tokens scraped from
 titles, not concepts an LLM curated. The agents' real work lands in the database — and a
-snapshot of one run is now exported to `output/extraction_runs/` (**Section 3.5**).
+snapshot of one run is exported to `output/extraction_runs/` (**Section 3.5** — these
+files are gitignored and live only on the developer machine after a run).
 
 ---
 
