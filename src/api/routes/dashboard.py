@@ -380,7 +380,6 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
     step_bars = ""
     for s in p["steps"]:
         bar_color = "var(--success)" if s["is_complete"] else "var(--primary)"
-        failed_tag = f' <span style="color:var(--danger);font-size:11px;">({s["failed"]} failed)</span>' if s.get("failed", 0) > 0 else ""
 
         if s.get("display_mode") == "found":
             # One-shot step (Discovery): show "N found" instead of "N/N"
@@ -834,7 +833,6 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         raw_url = str(r.fetch_url or "")
         url = html_escape(raw_url)
         url_short = html_escape(raw_url[:50])
-        ctype = html_escape(str(r.content_type or "—"))
         size_kb = f"{r.size_bytes / 1024:.0f} KB" if r.size_bytes else "—"
         passages = r.passages or 0
         status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")

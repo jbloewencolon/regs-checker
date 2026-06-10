@@ -231,9 +231,6 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
             ReviewQueueItem.status.in_([ReviewStatus.approved, ReviewStatus.rejected])
         )
     ) or 0
-    pending_review = db.scalar(
-        select(func.count()).where(ReviewQueueItem.status == ReviewStatus.pending)
-    ) or 0
 
     step6 = StepProgress(
         step=6,

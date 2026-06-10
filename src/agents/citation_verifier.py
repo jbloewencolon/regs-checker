@@ -193,7 +193,6 @@ def verify_citations(
         section_ref = payload.get("section_reference")
         if section_ref and isinstance(section_ref, str) and section_ref.strip():
             total_checked += 1
-            normalized = _normalize_citation(section_ref)
             closest = _find_closest_section(section_ref, section_index)
 
             if closest:
