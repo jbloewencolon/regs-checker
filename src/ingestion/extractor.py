@@ -1199,6 +1199,11 @@ def extract_single_record(
 
     ctx = _build_context(db, record, bill_context=bill_context)
 
+    # Import monitor for live event emission (used by the jurisdiction-skip
+    # path below as well as result processing).
+    from src.core.extraction_monitor import get_monitor
+    monitor = get_monitor()
+
     # Jurisdiction cross-check: skip if document state doesn't match law state.
     # Return -1 (not 0) so the caller can distinguish a jurisdiction skip from
     # a legitimate zero-extraction passage and surface it in run_summary.
@@ -1274,17 +1279,13 @@ def extract_single_record(
                     _run_agent, agent_name, agent, passage.text, ctx,
                     call_max_tokens=scaled_tokens,
                 )
-                futures[future] = (agent_name, content_hash, attempt_id)
+                futures[future] = (agent_name, passage_text_hash, attempt_id)
 
             # Collect results for this model group
             for future in as_completed(futures):
                 agent_name, content_hash, attempt_id = futures[future]
                 name, result, duration_ms = future.result()
                 agent_results.append((name, content_hash, attempt_id, result, duration_ms))
-
-    # Import monitor for live event emission
-    from src.core.extraction_monitor import get_monitor
-    monitor = get_monitor()
 
     # Process results (back on main thread for DB writes)
     for name, content_hash, attempt_id, result, duration_ms in agent_results:
@@ -1356,10 +1357,6 @@ def extract_single_record(
             )
             _finish_attempt(db, attempt_id, "succeeded", extractions_produced=0)
             continue
-
-        # Mark hash as seen
-        if existing_hashes is not None:
-            existing_hashes.add(content_hash)
 
         # Process each extraction from the multi-extraction result
         default_type = AGENT_EXTRACTION_TYPES[name][0]

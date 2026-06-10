@@ -35,8 +35,12 @@ Tiers:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from src.core.orrick_validation import OrrickSimilarityResult
 
 
 @dataclass

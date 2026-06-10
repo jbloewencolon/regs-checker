@@ -5322,6 +5322,7 @@ def get_models_status() -> HTMLResponse:
     Extract step.  Returns a self-contained HTML snippet (no outer wrapper
     needed) suitable for hx-swap="innerHTML".
     """
+    from src.core.config import settings
     from src.core.model_config import fetch_available_models, get_config
 
     available = fetch_available_models(timeout=2.0)
