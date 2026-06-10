@@ -25,7 +25,6 @@ Materialized views (not tables):
 """
 
 import enum
-from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,

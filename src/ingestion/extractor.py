@@ -47,10 +47,10 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from pydantic import ValidationError
-from sqlalchemy import func, inspect as sa_inspect, select, update as sa_update
+from sqlalchemy import func, select
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import update as sa_update
 
-from src.core.config import settings
 from src.agents.base import BaseExtractionAgent, ExtractionResult
 from src.agents.compliance_mechanism import ComplianceMechanismAgent
 from src.agents.definition_actor import DefinitionActorAgent
@@ -60,20 +60,18 @@ from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.confidence import compute_confidence
-from src.core.orrick_validation import validate_extraction_against_orrick
+from src.core.config import settings
 from src.core.jurisdiction_check import (
-    JurisdictionMismatch,
     validate_extraction_jurisdiction,
 )
+from src.core.orrick_validation import validate_extraction_against_orrick
 from src.db.models import (
     ApplicabilityCondition,
     ConfidenceTier,
-    DocumentVersion,
     Extraction,
     ExtractionAttempt,
     ExtractionJob,
     ExtractionType,
-    ExtractionVerificationStatus,
     FailedExtractionAttempt,
     IngestionJob,
     NormalizedSourceRecord,
@@ -85,7 +83,6 @@ from src.db.models import (
     SectionTriageResult,
     TriageDecision,
     TriageMethod,
-    VerificationRunSummary,
 )
 from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
@@ -230,7 +227,8 @@ def _ensure_extraction_enums(db, _log=None) -> None:
 
 def _ensure_failed_attempts_table(db, _log=None) -> None:
     """Create the failed_extraction_attempts table if it doesn't exist."""
-    from sqlalchemy import inspect as sa_inspect, text
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
 
     bind = db.get_bind()
     inspector = sa_inspect(bind)
@@ -273,7 +271,8 @@ def _ensure_pipeline_events_table(db, _log=None) -> None:
     Mirrors migration t6u2v8w0x021 so extraction works even when that
     migration has not been applied to the local database.
     """
-    from sqlalchemy import inspect as sa_inspect, text
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
 
     bind = db.get_bind()
     inspector = sa_inspect(bind)
@@ -463,7 +462,8 @@ def _ensure_triage_table(db, _log=None) -> None:
     Handles the case where the alembic migration hasn't been applied
     to the local database. Creates enum types and the table idempotently.
     """
-    from sqlalchemy import inspect as sa_inspect, text
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
 
     bind = db.get_bind()
     inspector = sa_inspect(bind)
@@ -1018,10 +1018,6 @@ def _payload_hash(payload: dict) -> str:
 # ---------------------------------------------------------------------------
 
 from src.ingestion.routing import (  # noqa: E402
-    _BOILERPLATE_PATTERN,
-    _ENACTING_CLAUSE_PATTERN,
-    _SIGNAL_MAP,
-    is_boilerplate,
     route_by_signal,
     select_agent_names,
 )
@@ -1639,9 +1635,10 @@ def run_triage(
 
     # Pre-build bill-level context per document_version so every passage in
     # the same bill shares definitions/scope/structure context.
-    from src.core.bill_context import get_or_build_bill_context
     from itertools import groupby
     from operator import attrgetter
+
+    from src.core.bill_context import get_or_build_bill_context
 
     # Group records by document_version_id so we build context once per bill
     records_sorted = sorted(records, key=attrgetter("document_version_id", "ordinal"))
@@ -1769,7 +1766,7 @@ def _run_bill_level_agents(
     passages: list,
     bill_context: dict,
     _log=None,
-    token_usage: "TokenUsageSummary | None" = None,
+    token_usage: TokenUsageSummary | None = None,
     run_id: int | None = None,
 ) -> int:
     """Run all bill-level agents for one document version.
@@ -1783,8 +1780,8 @@ def _run_bill_level_agents(
     domain is already covered by Orrick are skipped; a synthetic
     BillLevelExtraction is written with model_id="orrick_facts_parser".
     """
-    from src.db.models import BillLevelExtraction, ReviewStatus
     from src.agents.bill_level_base import BillLevelResult
+    from src.db.models import BillLevelExtraction, ReviewStatus
     from src.ingestion.orrick_facts_parser import parse_orrick_facts
 
     if _log is None:
@@ -1975,8 +1972,9 @@ def run_extraction(
     # Skipped gracefully if the migration hasn't been applied yet.
     current_run_id: int | None = None
     try:
-        from src.db.models import ExtractionRun
         import subprocess
+
+        from src.db.models import ExtractionRun
         _git_sha = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], text=True, timeout=5
         ).strip()
@@ -2760,7 +2758,8 @@ def run_recovery_extraction(
     Returns:
         Summary dict with counts.
     """
-    from sqlalchemy import distinct, func as sqlfunc
+    from sqlalchemy import distinct
+    from sqlalchemy import func as sqlfunc
 
     agents = _get_agents()
     token_usage = TokenUsageSummary()
@@ -3003,7 +3002,8 @@ def run_recovery_extraction(
 
 from src.ingestion.completeness import (  # noqa: E402
     DocumentCompleteness,
-    PassageCoverage,
+)
+from src.ingestion.completeness import (
     compute_completeness_manifest as _completeness_manifest_impl,
 )
 
@@ -3021,11 +3021,5 @@ def compute_completeness_manifest(
 # ---------------------------------------------------------------------------
 
 from src.ingestion.verification_runner import (  # noqa: E402
-    VerificationResult,
-    _grounding_status_from_breakdown,
     _iapp_has_data_for_ctx,
-    _orrick_status_from_breakdown,
-    _recompute_confidence_with_cv,
-    _run_iapp_alignment_for_dv,
-    run_verification_pass,
 )

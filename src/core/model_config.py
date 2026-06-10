@@ -55,7 +55,7 @@ class ModelConfigStore:
     # ------------------------------------------------------------------
 
     @classmethod
-    def load(cls) -> "ModelConfigStore":
+    def load(cls) -> ModelConfigStore:
         """Load from JSON file, falling back to built-in defaults."""
         if CONFIG_PATH.exists():
             try:
@@ -78,7 +78,7 @@ class ModelConfigStore:
         logger.info("Saved agent model config to %s", CONFIG_PATH)
 
     @classmethod
-    def defaults(cls) -> "ModelConfigStore":
+    def defaults(cls) -> ModelConfigStore:
         """Built-in defaults — tuned for legislative extraction workload.
 
         Large input context, small output: models ingest full bill passages

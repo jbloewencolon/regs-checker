@@ -13,12 +13,10 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
 from starlette.templating import Jinja2Templates
-
-from fastapi import Depends
 
 from src.api.middleware.auth import verify_api_key
 from src.api.routes import dashboard, internal, v1

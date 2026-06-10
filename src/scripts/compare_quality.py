@@ -9,13 +9,10 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import os
-import sys
-from collections import Counter
+from pathlib import Path
 
 from dotenv import load_dotenv
-from pathlib import Path
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 

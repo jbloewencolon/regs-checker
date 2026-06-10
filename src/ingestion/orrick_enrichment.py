@@ -30,7 +30,7 @@ from typing import Any
 
 import structlog
 
-from src.db.models import DocumentFamily, NormalizedSourceRecord
+from src.db.models import DocumentFamily
 
 logger = structlog.get_logger()
 

@@ -345,8 +345,8 @@ async def tracker_add_row(request: Request) -> HTMLResponse:
 @router.get("/api/tracker/export")
 def tracker_export() -> StreamingResponse:
     """Download the tracker CSV."""
-    import io
     import csv
+    import io
 
     rows = _read_tracker()
     buf = io.StringIO()

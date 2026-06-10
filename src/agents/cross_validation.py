@@ -17,14 +17,13 @@ score feeds into the confidence model.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
-import json
 import structlog
 from pydantic import BaseModel, Field
 
-from src.agents.base import BaseExtractionAgent
 from src.core.llm_provider import get_extraction_provider
 
 logger = structlog.get_logger()

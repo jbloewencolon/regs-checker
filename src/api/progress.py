@@ -7,8 +7,7 @@ at each stage and deriving what percentage of total work is done.
 
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -353,7 +352,6 @@ def _get_extraction_rate(db: Session) -> float | None:
 
 def get_confidence_distribution(db: Session) -> dict[str, Any]:
     """Get confidence score distribution for analytics."""
-    from src.db.models import ConfidenceTier
 
     distribution = {"A": 0, "B": 0, "C": 0, "D": 0}
     rows = db.execute(

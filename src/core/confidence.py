@@ -111,7 +111,7 @@ def compute_confidence(
     extraction_payload: dict,
     schema_class: type[BaseModel],
     parse_quality_score: float | None = None,
-    orrick_similarity: "OrrickSimilarityResult | None" = None,
+    orrick_similarity: OrrickSimilarityResult | None = None,
     cross_validation_score: float | None = None,
     passage_text: str | None = None,
     iapp_has_data: bool = False,
@@ -133,7 +133,6 @@ def compute_confidence(
     Returns:
         ConfidenceBreakdown with component scores and final tier.
     """
-    from src.core.orrick_validation import OrrickSimilarityResult
 
     # 1. Schema validity (binary)
     schema_score = 1.0 if schema_valid else 0.0

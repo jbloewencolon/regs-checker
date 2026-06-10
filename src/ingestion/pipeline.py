@@ -15,11 +15,9 @@ import threading
 from datetime import datetime
 
 import structlog
-
-from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
-from src.core.config import settings
 from sqlalchemy import select
 
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.db.models import (
     IngestionJob,
     IngestionStatus,

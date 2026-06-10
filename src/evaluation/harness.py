@@ -34,10 +34,10 @@ from typing import Any
 import structlog
 
 from src.agents.base import BaseExtractionAgent
-from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.agents.definition_actor import DefinitionActorAgent
 from src.agents.obligation import ObligationAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
+from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.core.config import settings
 from src.schemas.extraction import AbstentionResult
 

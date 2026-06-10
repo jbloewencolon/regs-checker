@@ -364,7 +364,7 @@ def run_verification_pass(
         cv_issues: list[dict[str, Any]] = []
 
         if not skip_cross_validation:
-            _log(f"  [1/3] Cross-validation...")
+            _log("  [1/3] Cross-validation...")
             for record in records:
                 if len(record.text_content) < MIN_PASSAGE_LENGTH:
                     continue
@@ -497,7 +497,7 @@ def run_verification_pass(
         gd_candidates: list[dict[str, Any]] = []
 
         if not skip_gap_detection:
-            _log(f"  [2/3] Gap detection...")
+            _log("  [2/3] Gap detection...")
             for record in records:
                 if len(record.text_content) < MIN_PASSAGE_LENGTH:
                     continue
@@ -549,7 +549,7 @@ def run_verification_pass(
         cit_issues: list[dict[str, Any]] = []
 
         if not skip_citation_verification:
-            _log(f"  [3/3] Citation verification...")
+            _log("  [3/3] Citation verification...")
             cit_result = verify_citations(db, dv_id)
             cit_checked = cit_result.total_citations_checked
             cit_verified = cit_result.citations_verified

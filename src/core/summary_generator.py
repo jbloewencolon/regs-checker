@@ -27,7 +27,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import structlog
@@ -360,6 +359,7 @@ def generate_summaries_batch(
         Summary dict with counts.
     """
     from sqlalchemy import select
+
     from src.db.models import (
         DocumentFamily,
         DocumentVersion,

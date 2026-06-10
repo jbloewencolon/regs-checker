@@ -68,8 +68,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
-import yaml
 import structlog
+import yaml
 
 from src.db.engine import SessionLocal
 from src.db.models import (
@@ -250,6 +250,7 @@ def seed_federal_nist_ai_rmf(db) -> IngestionJob:
 def seed_via_pdf(db) -> list[IngestionJob]:
     """[LEGACY] Seed from ai_law_tracker.csv (primary) or Orrick PDF (fallback)."""
     import csv
+
     from src.ingestion._archived.pdf_tracker import STATE_CODES, seed_from_tracker
 
     csv_path = Path("static/ai_law_tracker.csv")
@@ -657,7 +658,7 @@ def main():
             print(f"  Agents skipped:     {summary.get('agents_skipped_by_signal', 0)}")
             tokens = summary.get("token_usage", {})
             if tokens.get("total_calls"):
-                print(f"\nToken usage:")
+                print("\nToken usage:")
                 print(f"  Input tokens:  {tokens['input_tokens']:,}")
                 print(f"  Output tokens: {tokens['output_tokens']:,}")
                 print(f"  Total tokens:  {tokens['total_tokens']:,}")
@@ -672,7 +673,7 @@ def main():
             print(f"  Errors:              {summary.get('errors', 0)}")
             tokens = summary.get("token_usage", {})
             if tokens.get("total_calls"):
-                print(f"\nToken usage:")
+                print("\nToken usage:")
                 print(f"  Input tokens:  {tokens['input_tokens']:,}")
                 print(f"  Output tokens: {tokens['output_tokens']:,}")
                 print(f"  Total tokens:  {tokens['total_tokens']:,}")

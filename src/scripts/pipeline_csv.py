@@ -17,7 +17,6 @@ Usage:
 from __future__ import annotations
 
 import csv
-import io
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -32,7 +31,6 @@ from src.db.models import (
     IngestionJob,
     IngestionStatus,
     NormalizedSourceRecord,
-    Source,
     TemporalStatus,
 )
 
@@ -191,7 +189,7 @@ def import_discovery_csv(db: Session, input_path: str) -> dict[str, int]:
     if not path.exists():
         raise FileNotFoundError(f"CSV file not found: {input_path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
 
@@ -261,7 +259,7 @@ def import_discovery_csv(db: Session, input_path: str) -> dict[str, int]:
 
     db.commit()
 
-    print(f"CSV import complete:")
+    print("CSV import complete:")
     print(f"  Rows processed:     {updates['total_rows']}")
     print(f"  Families updated:   {updates['families_updated']}")
     print(f"  URLs updated:       {updates['urls_updated']}")

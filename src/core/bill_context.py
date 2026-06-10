@@ -306,8 +306,9 @@ def get_or_build_bill_context(
     Returns:
         Bill context dict (definitions, scope, structure, defined_terms, stats)
     """
-    from src.db.models import DocumentVersion, NormalizedSourceRecord
     from sqlalchemy import select
+
+    from src.db.models import DocumentVersion, NormalizedSourceRecord
 
     dv = db.get(DocumentVersion, document_version_id)
     if not dv:

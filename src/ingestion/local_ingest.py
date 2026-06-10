@@ -384,6 +384,7 @@ def ingest_local_files(
     Returns summary dict.
     """
     from sqlalchemy import select
+
     from src.ingestion.parser import parse_and_normalize
 
     query = select(IngestionJob).where(
@@ -531,6 +532,7 @@ def _compute_parse_quality(records) -> float:
 def _upload_to_s3(key: str, content: bytes, content_type: str) -> None:
     """Upload content to S3/MinIO."""
     import boto3
+
     from src.core.config import settings
 
     s3 = boto3.client(

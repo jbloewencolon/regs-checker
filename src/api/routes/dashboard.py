@@ -16,25 +16,35 @@ from __future__ import annotations
 
 import threading
 from html import escape as html_escape
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
-from sqlalchemy import String, func, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from src.api.routes._dashboard_helpers import (
+    _acquire_pipeline_lock,
+    _get_export_files,
+    _get_pipeline_stats,
+    _pipeline_lock,
+    _render,
+)
+from src.api.routes.review_routes import router as review_router
+from src.api.routes.tracker_routes import (
+    _tracker_csv_to_records,
+)
+from src.api.routes.tracker_routes import (
+    router as tracker_router,
+)
 from src.db.engine import get_db
 from src.db.models import (
     ApplicabilityCondition,
     ComplianceConcept,
-    ConceptExtractionLink,
     ConceptReviewStatus,
-    ConfidenceTier,
     DocumentFamily,
     DocumentVersion,
     Extraction,
     ExtractionJob,
-    ExtractionType,
     FailedExtractionAttempt,
     IngestionJob,
     IngestionStatus,
@@ -46,20 +56,6 @@ from src.db.models import (
     ReviewQueueItem,
     ReviewStatus,
     Source,
-)
-
-from src.api.routes._dashboard_helpers import (
-    EXPORT_DIR,
-    _acquire_pipeline_lock,
-    _get_export_files,
-    _get_pipeline_stats,
-    _pipeline_lock,
-    _render,
-)
-from src.api.routes.review_routes import router as review_router
-from src.api.routes.tracker_routes import (
-    _tracker_csv_to_records,
-    router as tracker_router,
 )
 
 router = APIRouter()
@@ -177,7 +173,7 @@ def triage_page(
     db: Session = Depends(get_db),
 ):
     """Section triage review page — accordion by state with passage details."""
-    from src.db.models import SectionTriageResult, TriageDecision, TriageMethod
+    from src.db.models import SectionTriageResult
 
     # Get totals — gracefully handle missing/empty table
     totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
@@ -488,7 +484,6 @@ def get_progress(db: Session = Depends(get_db)) -> HTMLResponse:
 @router.get("/api/triage-stats")
 def triage_stats(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return live triage summary stats as an HTML fragment."""
-    from src.db.models import SectionTriageResult
 
     totals = {"relevant": 0, "uncertain": 0, "not_relevant": 0, "quality_fail": 0, "total": 0}
     try:
@@ -1276,8 +1271,8 @@ def run_fetch(
             if summary["skipped"] > 0:
                 failed_note += f', <span style="color:var(--warning);">{summary["skipped"]} need review</span>'
             failed_note += (
-                f' — switch to the <strong>Failed Documents</strong> tab to upload or edit.'
-                f'</div>'
+                ' — switch to the <strong>Failed Documents</strong> tab to upload or edit.'
+                '</div>'
             )
 
         return (
@@ -1322,7 +1317,6 @@ def reset_fetch(db: Session = Depends(get_db)) -> HTMLResponse:
     Jobs without a raw artifact are set to 'pending' for full re-fetch.
     Completed jobs are never touched.
     """
-    from sqlalchemy import update
 
     try:
         # Find jobs eligible for reset
@@ -1425,6 +1419,7 @@ def reset_fetch_all(db: Session = Depends(get_db)) -> HTMLResponse:
     Also deletes downstream NormalizedSourceRecords so passages are rebuilt.
     """
     from sqlalchemy import delete
+
     from src.db.models import SectionTriageResult
 
     try:
@@ -1653,7 +1648,8 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
     High-confidence 'relevant' and 'not_relevant' decisions are preserved,
     as are manually overridden results.
     """
-    from sqlalchemy import or_, delete
+    from sqlalchemy import delete, or_
+
     from src.db.models import SectionTriageResult, TriageDecision
     from src.ingestion.extractor import _ensure_triage_table
 
@@ -1700,6 +1696,7 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
 def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
     """Hard reset: clear ALL triage results so every passage is re-triaged."""
     from sqlalchemy import delete
+
     from src.db.models import SectionTriageResult
     from src.ingestion.extractor import _ensure_triage_table
 
@@ -1736,8 +1733,10 @@ def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
 def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return detailed triage results breakdown: by method, quality issues, low-confidence passages."""
     from src.db.models import (
-        SectionTriageResult, NormalizedSourceRecord, DocumentVersion,
         DocumentFamily,
+        DocumentVersion,
+        NormalizedSourceRecord,
+        SectionTriageResult,
     )
 
     try:
@@ -2110,7 +2109,9 @@ def clear_triage_warnings() -> HTMLResponse:
 @router.get("/api/triage-warnings/export.csv")
 def export_triage_warnings_csv() -> StreamingResponse:
     """Download all triage warnings as a CSV file."""
-    import csv, io, json as _json
+    import csv
+    import io
+    import json as _json
     from pathlib import Path
 
     log_path = Path("output/triage_warnings.jsonl")
@@ -2145,7 +2146,9 @@ def export_triage_warnings_csv() -> StreamingResponse:
 @router.get("/api/failed-extractions/export.csv")
 def export_failed_extractions_csv(db: Session = Depends(get_db)) -> StreamingResponse:
     """Download all failed extraction attempts as a CSV file."""
-    import csv, io
+    import csv
+    import io
+
     from src.db.models import FailedExtractionAttempt
 
     rows = db.scalars(
@@ -2182,7 +2185,10 @@ def export_low_confidence_extractions_csv(
     Query params:
       - tier: filter by 'C', 'D', or 'C,D' (default: both)
     """
-    import csv, io, json as _json
+    import csv
+    import io
+    import json as _json
+
     from src.db.models import ConfidenceTier, NormalizedSourceRecord
 
     tiers_to_export = []
@@ -2195,7 +2201,6 @@ def export_low_confidence_extractions_csv(
         tiers_to_export = [ConfidenceTier.c, ConfidenceTier.d]
 
     # Fetch extractions with full context
-    from sqlalchemy import and_, or_
     query = (
         select(Extraction, NormalizedSourceRecord, DocumentVersion)
         .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
@@ -2277,6 +2282,7 @@ def export_low_confidence_extractions_jsonl(
       - full extraction payload
     """
     import json as _json
+
     from src.db.models import ConfidenceTier, NormalizedSourceRecord
 
     tiers_to_export = []
@@ -2941,9 +2947,11 @@ def resume_extract() -> HTMLResponse:
 @router.get("/api/run/extract/health")
 def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return a short health snippet: pause state, stuck detection, recent errors."""
-    from src.ingestion.extractor import is_cancelled, is_paused, seconds_since_last_passage
-    from sqlalchemy import desc, select as sa_select
+    from sqlalchemy import desc
+    from sqlalchemy import select as sa_select
+
     from src.db.models import PipelineEvent
+    from src.ingestion.extractor import is_cancelled, is_paused, seconds_since_last_passage
 
     paused = is_paused()
     cancelled = is_cancelled()
@@ -3166,7 +3174,8 @@ def get_pipeline_events(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Paginated PipelineEvent log with optional event_type filter."""
-    from sqlalchemy import desc, func as sa_func
+    from sqlalchemy import desc
+    from sqlalchemy import func as sa_func
 
     q = select(PipelineEvent).order_by(desc(PipelineEvent.created_at))
     if event_type and event_type != "all":
@@ -3621,9 +3630,9 @@ def run_sync_to_supabase(
         missing.append("REGS_SUPABASE_KEY")
     elif not supabase_key.startswith("eyJ"):
         diagnostics.append(
-            f'<code>REGS_SUPABASE_KEY</code> does not look like a JWT token '
-            f'(should start with <code>eyJ</code>). Get it from Supabase Dashboard &rarr; '
-            f'Settings &rarr; API &rarr; <code>service_role</code> key.'
+            '<code>REGS_SUPABASE_KEY</code> does not look like a JWT token '
+            '(should start with <code>eyJ</code>). Get it from Supabase Dashboard &rarr; '
+            'Settings &rarr; API &rarr; <code>service_role</code> key.'
         )
 
     if missing or diagnostics:
@@ -3736,6 +3745,7 @@ def run_sync_preflight() -> HTMLResponse:
       2. synced_extractions table exists with the expected columns.
     """
     import os
+
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
@@ -3870,6 +3880,7 @@ def run_sync_preflight() -> HTMLResponse:
 def run_bridge_check() -> HTMLResponse:
     """Check for bridge gaps."""
     import os
+
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
@@ -3885,7 +3896,9 @@ def run_bridge_check() -> HTMLResponse:
         )
 
     try:
-        from src.core.bridge_monitor import detect_unbridged_families, format_bridge_gap_notification
+        from src.core.bridge_monitor import (
+            detect_unbridged_families,
+        )
         source_engine = create_engine(source_url)
         target_engine = create_engine(target_url)
         source_session = sessionmaker(bind=source_engine)()
@@ -4027,7 +4040,7 @@ async def edit_document_metadata(
     # Title
     new_title = form.get("title", "").strip()
     if new_title and new_title != family.canonical_title:
-        changes.append(f"title updated")
+        changes.append("title updated")
         family.canonical_title = new_title
 
     # Short cite
@@ -4039,7 +4052,7 @@ async def edit_document_metadata(
     # Subject area
     new_subject = form.get("subject_area", "").strip()
     if new_subject and new_subject != family.subject_area:
-        changes.append(f"subject_area updated")
+        changes.append("subject_area updated")
         family.subject_area = new_subject
 
     # Bill ID, IAPP bill number, and IAPP status (stored in family metadata)
@@ -4066,7 +4079,7 @@ async def edit_document_metadata(
     # Fetch URL
     new_url = form.get("fetch_url", "").strip()
     if new_url and new_url != job.fetch_url:
-        changes.append(f"fetch_url updated")
+        changes.append("fetch_url updated")
         job.fetch_url = new_url
         # If the job was failed, reset to pending so it can be retried
         if job.status in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
@@ -4110,7 +4123,6 @@ async def upload_document(
     import hashlib
     from datetime import datetime
 
-    from src.ingestion.local_ingest import _upload_to_s3
     from src.ingestion.parser import parse_and_normalize
     from src.ingestion.pipeline import compute_parse_quality
 
@@ -4373,8 +4385,8 @@ async def resolve_discrepancy(
             job.error_message = None
         db.commit()
         return HTMLResponse(
-            f'<span style="color:var(--success);font-size:12px;">'
-            f'URL updated. Job reset to pending.</span>'
+            '<span style="color:var(--success);font-size:12px;">'
+            'URL updated. Job reset to pending.</span>'
         )
     elif field_name == "title":
         family.canonical_title = f"{family.source.jurisdiction_code} - {value}"
@@ -4394,7 +4406,7 @@ async def resolve_discrepancy(
 @router.get("/api/failed-documents")
 def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
     """List all failed, manual-review, and missing-URL ingestion jobs with upload + edit forms."""
-    from sqlalchemy import or_, and_
+    from sqlalchemy import and_, or_
 
     jobs = db.scalars(
         select(IngestionJob)
@@ -4614,7 +4626,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
 def export_failed_txt(db: Session = Depends(get_db)):
     """Export all failed/missing-URL documents as a plain .txt file for searching/printing."""
     from fastapi.responses import PlainTextResponse
-    from sqlalchemy import or_, and_
+    from sqlalchemy import and_, or_
 
     jobs = db.scalars(
         select(IngestionJob)
@@ -4838,7 +4850,6 @@ def run_verification(
     Three layers: cross-validation, gap detection, and citation verification.
     Returns results as HTML for the dashboard.
     """
-    from dataclasses import asdict
 
     from src.ingestion.extractor import run_verification_pass
 

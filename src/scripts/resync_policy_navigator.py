@@ -7,8 +7,7 @@ MCP-style pagination, applies payload_adapter, and POSTs to Policy Navigator.
 from __future__ import annotations
 
 import json
-import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 
@@ -205,7 +204,7 @@ def main():
             "source_text_excerpt": nsr_text.get(src_record_id),
             "system_a_created_at": ext["created_at"],
             "review_status": ext["review_status"],
-            "synced_at": datetime.now(timezone.utc).isoformat(),
+            "synced_at": datetime.now(UTC).isoformat(),
         })
 
     print(f"  Ready to sync: {len(synced_rows)}")

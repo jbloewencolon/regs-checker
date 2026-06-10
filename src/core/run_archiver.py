@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -164,7 +163,6 @@ class RunArchiver:
             DocumentFamily,
             DocumentVersion,
             Extraction,
-            ExtractionJob,
             NormalizedSourceRecord,
             Source,
         )

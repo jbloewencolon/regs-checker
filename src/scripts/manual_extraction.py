@@ -25,10 +25,8 @@ Export workflow:
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -276,15 +274,15 @@ def export_passages(
         batch_count += 1
         print(f"  Wrote {filename} ({len(batch)} passages, IDs: {record_ids[0]}..{record_ids[-1]})")
 
-    print(f"\nExport complete:")
+    print("\nExport complete:")
     print(f"  Total passages:  {len(filtered)}")
     print(f"  Short skipped:   {skipped}")
     print(f"  Batches created: {batch_count}")
-    print(f"\nNext steps:")
-    print(f"  1. Open each batch_*.txt file")
-    print(f"  2. Paste the content into Claude Code or Claude Chat")
-    print(f"  3. Save Claude's JSON response as batch_*_results.json")
-    print(f"  4. Run: python -m src.scripts.seed_pipeline --mode import-extractions")
+    print("\nNext steps:")
+    print("  1. Open each batch_*.txt file")
+    print("  2. Paste the content into Claude Code or Claude Chat")
+    print("  3. Save Claude's JSON response as batch_*_results.json")
+    print("  4. Run: python -m src.scripts.seed_pipeline --mode import-extractions")
 
     return {
         "total_passages": len(filtered),
@@ -351,7 +349,7 @@ def import_extractions(
         for passage_data in passages:
             passage_id = passage_data.get("passage_id")
             if not passage_id:
-                print(f"  WARN: Missing passage_id, skipping entry")
+                print("  WARN: Missing passage_id, skipping entry")
                 file_errors += 1
                 continue
 
@@ -459,7 +457,7 @@ def import_extractions(
         result_file.rename(done_path)
         print(f"  Renamed to {done_path.name}")
 
-    print(f"\nImport complete:")
+    print("\nImport complete:")
     print(f"  Files processed:     {files_processed}")
     print(f"  Extractions created: {total_created}")
     print(f"  Duplicates skipped:  {total_skipped}")

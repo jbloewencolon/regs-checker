@@ -25,7 +25,6 @@ import httpx
 import structlog
 from bs4 import BeautifulSoup
 
-from src.core.config import settings
 from src.db.models import (
     DocumentFamily,
     DocumentVersion,

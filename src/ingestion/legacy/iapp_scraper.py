@@ -15,8 +15,6 @@ This module:
 
 from __future__ import annotations
 
-import re
-
 import httpx
 import structlog
 from bs4 import BeautifulSoup

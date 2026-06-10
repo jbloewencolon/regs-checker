@@ -39,7 +39,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -242,7 +242,7 @@ def sync_extractions(
                 "section_path": row["section_path"],
                 "passage_text": row["passage_text"],
                 "source_created_at": row["created_at"],
-                "synced_at": datetime.now(timezone.utc),
+                "synced_at": datetime.now(UTC),
             })
 
             max_id = max(max_id, extraction_id)
@@ -261,7 +261,7 @@ def sync_extractions(
 
         target_session.commit()
 
-        print(f"\nSync complete:")
+        print("\nSync complete:")
         print(f"  Synced:              {synced}")
         print(f"  Skipped (no bridge): {skipped_no_bridge}")
         print(f"  Skipped (excluded):  {skipped_excluded}")

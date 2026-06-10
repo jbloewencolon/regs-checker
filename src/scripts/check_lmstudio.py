@@ -4,9 +4,9 @@ Usage:
     python -m src.scripts.check_lmstudio
 """
 
-import httpx
-import json
 import sys
+
+import httpx
 
 
 def main():
@@ -57,7 +57,7 @@ def main():
                 print(f"  Reply: {reply}")
                 print(f"  Prompt tokens: {usage.get('prompt_tokens', '?')}")
                 print(f"  Completion tokens: {usage.get('completion_tokens', '?')}")
-                print(f"  Status: OK")
+                print("  Status: OK")
         except Exception as e:
             print(f"  ERROR: {e}")
         print()
@@ -71,7 +71,7 @@ def main():
         if "deepseek" in lower:
             print(f'  Ambiguity agent (reasoning): model_override = "{model_id}"')
         elif "qwen" in lower:
-            print(f'  (Qwen available but not assigned — no thinking mode toggle)')
+            print('  (Qwen available but not assigned — no thinking mode toggle)')
         elif "gpt" in lower or "oss" in lower:
             print(f'  Obligation agent:            model_override = "{model_id}"')
             print(f'  Compliance Mechanism agent:   model_override = "{model_id}"')

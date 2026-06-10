@@ -28,11 +28,10 @@ characters, and encoding issues that could cause extraction failures.
 from __future__ import annotations
 
 import json as _json
-import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import structlog
@@ -54,7 +53,7 @@ def _log_triage_warning(
 ) -> None:
     """Append a triage warning to output/triage_warnings.jsonl."""
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "record_id": record_id,
         "warning_type": warning_type,
         "details": details,

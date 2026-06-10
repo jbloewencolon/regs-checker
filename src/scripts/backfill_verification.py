@@ -13,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
 
 from sqlalchemy import delete, select
 
