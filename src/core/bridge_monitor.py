@@ -15,9 +15,8 @@ process when new families are added?"
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -45,7 +44,7 @@ class BridgeGapReport:
     bridged_families: int = 0
     unbridged_families: int = 0
     unbridged: list[UnbridgedFamily] = field(default_factory=list)
-    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def has_gaps(self) -> bool:

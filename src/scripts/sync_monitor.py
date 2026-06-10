@@ -245,34 +245,34 @@ def print_report(report: HealthReport) -> None:
     print(f"  Sync Health Monitor — {status}")
     print(f"{'=' * 60}")
 
-    print(f"\n--- Source: Regs Checker Supabase ---")
+    print("\n--- Source: Regs Checker Supabase ---")
     print(f"  Total extractions:   {report.source_total_extractions:,}")
     print(f"  Max extraction ID:   {report.source_max_id:,}")
     print(f"  Document families:   {report.source_doc_families}")
     if report.source_by_type:
-        print(f"  By type:")
+        print("  By type:")
         for t, count in sorted(report.source_by_type.items()):
             print(f"    {t:25s} {count:>6,}")
     if report.source_by_tier:
-        print(f"  By confidence tier:")
+        print("  By confidence tier:")
         for tier, count in sorted(report.source_by_tier.items()):
             pct = count / report.source_total_extractions * 100 if report.source_total_extractions else 0
             print(f"    Tier {tier}: {count:>6,}  ({pct:5.1f}%)")
     if report.source_by_status:
-        print(f"  By review status:")
+        print("  By review status:")
         for status_val, count in sorted(report.source_by_status.items()):
             print(f"    {status_val:25s} {count:>6,}")
 
-    print(f"\n--- Target: Policy Navigator Supabase ---")
+    print("\n--- Target: Policy Navigator Supabase ---")
     print(f"  Total synced:        {report.target_total_synced:,}")
     print(f"  Max synced ID:       {report.target_max_id:,}")
     print(f"  Bridge entries:      {report.bridge_entries}")
     if report.target_by_type:
-        print(f"  By type:")
+        print("  By type:")
         for t, count in sorted(report.target_by_type.items()):
             print(f"    {t:25s} {count:>6,}")
 
-    print(f"\n--- Sync Status ---")
+    print("\n--- Sync Status ---")
     print(f"  Sync lag:            {report.sync_lag:,} extractions")
     print(f"  Bridge coverage:     {report.bridged_families}/{report.source_doc_families} families")
     print(f"  Cursor:              source max={report.source_max_id}, target max={report.target_max_id}")
@@ -282,7 +282,7 @@ def print_report(report: HealthReport) -> None:
         for i, alert in enumerate(report.alerts, 1):
             print(f"  [{i}] {alert}")
     else:
-        print(f"\n  No alerts. All checks passed.")
+        print("\n  No alerts. All checks passed.")
 
     print(f"\n{'=' * 60}")
 

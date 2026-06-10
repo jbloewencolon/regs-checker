@@ -16,7 +16,6 @@ are populated.
 from __future__ import annotations
 
 import argparse
-import sys
 
 from src.core.concept_grouping import run_concept_grouping
 from src.core.concept_review import concept_review_counts
@@ -51,7 +50,7 @@ def main() -> None:
 
         if args.review_summary:
             counts = concept_review_counts(db)
-            print(f"\n  Review queue summary:")
+            print("\n  Review queue summary:")
             for k, v in counts.items():
                 print(f"    {k}: {v}")
         print("Done.")

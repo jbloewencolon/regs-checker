@@ -94,6 +94,14 @@ def _grounding_status_from_breakdown(breakdown: dict) -> str:
     return "tracker_silent"
 
 
+# IAPP alignment status → 0.0–1.0 score for tracker_alignment_score dimension.
+# "tracker_silent" and None are excluded (treated as no data, not penalized).
+_IAPP_STATUS_TO_SCORE: dict[str, float] = {
+    "aligned": 1.0,
+    "scope_mismatch": 0.3,
+}
+
+
 def _recompute_confidence_with_cv(
     db,
     extraction,
@@ -129,6 +137,18 @@ def _recompute_confidence_with_cv(
 
     orrick_sim = validate_extraction_against_orrick(payload, ctx)
 
+    # Phase 4b: look up IAPP alignment for this specific extraction's actor.
+    iapp_alignment_score: float | None = None
+    try:
+        from src.core.iapp_alignment import get_iapp_entry_for_context
+        iapp_entry = get_iapp_entry_for_context(ctx)
+        if iapp_entry is not None and iapp_entry.has_data:
+            from src.core.iapp_alignment import check_iapp_alignment
+            status = check_iapp_alignment(payload.get("subject_normalized"), iapp_entry)
+            iapp_alignment_score = _IAPP_STATUS_TO_SCORE.get(status)
+    except Exception:
+        pass  # IAPP lookup failure must not block confidence recompute
+
     new_conf = compute_confidence(
         schema_valid=True,
         evidence_spans=evidence,
@@ -139,6 +159,7 @@ def _recompute_confidence_with_cv(
         cross_validation_score=cv_score,
         passage_text=record.text_content,
         iapp_has_data=_iapp_has_data_for_ctx(ctx),
+        iapp_alignment_score=iapp_alignment_score,
     )
 
     old_tier = (
@@ -364,7 +385,7 @@ def run_verification_pass(
         cv_issues: list[dict[str, Any]] = []
 
         if not skip_cross_validation:
-            _log(f"  [1/3] Cross-validation...")
+            _log("  [1/3] Cross-validation...")
             for record in records:
                 if len(record.text_content) < MIN_PASSAGE_LENGTH:
                     continue
@@ -497,7 +518,7 @@ def run_verification_pass(
         gd_candidates: list[dict[str, Any]] = []
 
         if not skip_gap_detection:
-            _log(f"  [2/3] Gap detection...")
+            _log("  [2/3] Gap detection...")
             for record in records:
                 if len(record.text_content) < MIN_PASSAGE_LENGTH:
                     continue
@@ -549,7 +570,7 @@ def run_verification_pass(
         cit_issues: list[dict[str, Any]] = []
 
         if not skip_citation_verification:
-            _log(f"  [3/3] Citation verification...")
+            _log("  [3/3] Citation verification...")
             cit_result = verify_citations(db, dv_id)
             cit_checked = cit_result.total_citations_checked
             cit_verified = cit_result.citations_verified

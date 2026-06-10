@@ -22,7 +22,6 @@ from src.schemas.api import (
     DependencyNode,
     DependencyTreeResponse,
     ExtractionResponse,
-    ObligationQuery,
     PaginatedResponse,
 )
 

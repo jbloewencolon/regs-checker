@@ -38,6 +38,9 @@ static/*.png
 
 # Extraction run archives (keep .gitkeep, ignore run data)
 output/extraction_runs/*/
+output/extraction_runs/*.csv
+output/extraction_runs/*.jsonl
+output/extraction_runs/agent_stats.json
 
 # OS
 .DS_Store

@@ -12,19 +12,15 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 import structlog
 from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
 from src.db.models import (
-    DocumentFamily,
     DocumentVersion,
     Extraction,
-    ExtractionType,
     NormalizedSourceRecord,
-    Source,
 )
 
 logger = structlog.get_logger()

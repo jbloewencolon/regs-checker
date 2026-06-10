@@ -406,3 +406,74 @@ class TestIAPPGateRefinement:
         assert without_iapp.total_score == with_iapp.total_score
         assert without_iapp.orrick_gated is False
         assert with_iapp.orrick_gated is False
+
+
+class TestIAPPAlignmentScore:
+    """Phase 4b: iapp_alignment_score feeds into tracker_alignment_score (diagnostic)."""
+
+    def _base_kwargs(self, orrick_score: float = 0.3):
+        sim = MagicMock()
+        sim.has_orrick_data = True
+        sim.combined_score = orrick_score
+        sim.matched_tokens = ["ai"]
+        return dict(
+            schema_valid=True,
+            evidence_spans=[{"field_name": "f", "text": "x", "verified": True}],
+            extraction_payload={"subject": "developer", "action": "comply"},
+            schema_class=ObligationPayload,
+            orrick_similarity=sim,
+        )
+
+    def test_iapp_aligned_raises_tracker_alignment_score(self):
+        """iapp_alignment_score=1.0 blends with mid-band Orrick to raise tracker_alignment.
+
+        combined_score=0.15 → orrick_score = 0.5 + (0.05/0.15)*0.5 ≈ 0.6667.
+        Blended: 0.6667 * 0.60 + 1.0 * 0.40 ≈ 0.80.
+        """
+        without = compute_confidence(**self._base_kwargs(orrick_score=0.15))
+        with_iapp = compute_confidence(
+            **self._base_kwargs(orrick_score=0.15), iapp_alignment_score=1.0
+        )
+        assert with_iapp.tracker_alignment_score > without.tracker_alignment_score
+        expected_orrick = 0.5 + (0.15 - 0.10) / (0.25 - 0.10) * 0.5
+        expected_blended = expected_orrick * 0.60 + 1.0 * 0.40
+        assert abs(with_iapp.tracker_alignment_score - expected_blended) < 0.01
+
+    def test_iapp_scope_mismatch_lowers_tracker_alignment_score(self):
+        """scope_mismatch (0.3) blended with perfect Orrick → 1.0*0.60+0.3*0.40 = 0.72."""
+        # combined_score=0.25 → orrick_score=1.0 (≥0.25 threshold)
+        without = compute_confidence(**self._base_kwargs(orrick_score=0.25))
+        with_mismatch = compute_confidence(
+            **self._base_kwargs(orrick_score=0.25), iapp_alignment_score=0.3
+        )
+        assert with_mismatch.tracker_alignment_score < without.tracker_alignment_score
+        assert abs(with_mismatch.tracker_alignment_score - (1.0 * 0.60 + 0.3 * 0.40)) < 0.01
+
+    def test_iapp_only_no_orrick(self):
+        """IAPP score alone (no Orrick) sets tracker_alignment_score to iapp score."""
+        sim = MagicMock()
+        sim.has_orrick_data = False
+        sim.combined_score = 0.0
+        sim.matched_tokens = []
+        result = compute_confidence(
+            schema_valid=True,
+            evidence_spans=[{"field_name": "f", "text": "x", "verified": True}],
+            extraction_payload={"subject": "developer", "action": "comply"},
+            schema_class=ObligationPayload,
+            orrick_similarity=sim,
+            iapp_has_data=True,
+            iapp_alignment_score=1.0,
+        )
+        assert abs(result.tracker_alignment_score - 1.0) < 0.01
+
+    def test_no_iapp_score_unchanged(self):
+        """Without iapp_alignment_score, tracker_alignment_score equals orrick_alignment."""
+        result = compute_confidence(**self._base_kwargs(orrick_score=0.5))
+        assert abs(result.tracker_alignment_score - result.orrick_alignment) < 0.01
+
+    def test_iapp_score_does_not_affect_total_score(self):
+        """Phase 4b: iapp_alignment_score must NOT change total_score (Phase 4c only)."""
+        without = compute_confidence(**self._base_kwargs())
+        with_iapp = compute_confidence(**self._base_kwargs(), iapp_alignment_score=1.0)
+        assert without.total_score == with_iapp.total_score
+        assert without.tier == with_iapp.tier

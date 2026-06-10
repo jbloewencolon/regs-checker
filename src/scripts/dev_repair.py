@@ -16,7 +16,6 @@ Options:
 from __future__ import annotations
 
 import argparse
-import sys
 
 import structlog
 
@@ -69,7 +68,8 @@ def _patch_extraction_enums(db, dry_run: bool = False) -> list[str]:
 
 def _patch_failed_attempts_table(db, dry_run: bool = False) -> list[str]:
     """Create failed_extraction_attempts table if missing."""
-    from sqlalchemy import inspect as sa_inspect, text
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
 
     bind = db.get_bind()
     if sa_inspect(bind).has_table("failed_extraction_attempts"):
@@ -106,7 +106,8 @@ def _patch_failed_attempts_table(db, dry_run: bool = False) -> list[str]:
 
 def _patch_triage_table(db, dry_run: bool = False) -> list[str]:
     """Create section_triage_results table and its enum types if missing."""
-    from sqlalchemy import inspect as sa_inspect, text
+    from sqlalchemy import inspect as sa_inspect
+    from sqlalchemy import text
 
     bind = db.get_bind()
     if sa_inspect(bind).has_table("section_triage_results"):

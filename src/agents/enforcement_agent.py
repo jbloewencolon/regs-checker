@@ -15,8 +15,6 @@ Output schema maps directly to:
 
 from __future__ import annotations
 
-import json
-
 from src.agents.bill_level_base import BillLevelAgent
 
 _PROMPT_TEMPLATE = """\

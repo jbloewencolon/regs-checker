@@ -10,10 +10,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import yaml
-from jinja2 import Environment, BaseLoader
-
 import structlog
+import yaml
+from jinja2 import BaseLoader, Environment
 
 logger = structlog.get_logger()
 

@@ -13,7 +13,6 @@ from src.db.engine import get_db
 from src.db.models import (
     Extraction,
     ExtractionType,
-    NormalizedSourceRecord,
     ReviewAction,
     ReviewQueueItem,
     ReviewStatus,

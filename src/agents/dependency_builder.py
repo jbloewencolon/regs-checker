@@ -17,7 +17,6 @@ Relationship types (from DependencyType enum):
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 import structlog
@@ -26,8 +25,8 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from src.agents.prompt_loader import load_prompt_template, render_prompt
-from src.core.llm_provider import get_extraction_provider
 from src.core.config import settings
+from src.core.llm_provider import get_extraction_provider
 from src.db.models import (
     DependencyType,
     DocumentVersion,

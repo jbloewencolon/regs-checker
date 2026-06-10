@@ -20,9 +20,8 @@ from __future__ import annotations
 
 import csv
 import pathlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
 
 _IAPP_CSV = pathlib.Path(__file__).parent.parent.parent / "static" / "iapp_law_tracker.csv"
 _DIM_JURISDICTIONS = (
@@ -173,7 +172,7 @@ def reload_iapp_index() -> None:
     _load_jurisdiction_abbrevs.cache_clear()
 
 
-def get_iapp_entry(jurisdiction: str, bill_number: str) -> Optional[IAPPEntry]:
+def get_iapp_entry(jurisdiction: str, bill_number: str) -> IAPPEntry | None:
     """Look up an IAPP entry by jurisdiction and bill number.
 
     Matching is case-insensitive.  Returns None if no entry found.
@@ -184,8 +183,8 @@ def get_iapp_entry(jurisdiction: str, bill_number: str) -> Optional[IAPPEntry]:
 
 
 def check_iapp_alignment(
-    subject_normalized: Optional[str],
-    iapp_entry: Optional[IAPPEntry],
+    subject_normalized: str | None,
+    iapp_entry: IAPPEntry | None,
 ) -> str:
     """Determine three-state IAPP alignment for an extraction's actor.
 
@@ -209,7 +208,7 @@ def check_iapp_alignment(
     return "scope_mismatch"
 
 
-def get_iapp_entry_for_context(context: dict) -> Optional[IAPPEntry]:
+def get_iapp_entry_for_context(context: dict) -> IAPPEntry | None:
     """Convenience wrapper that extracts jurisdiction/bill from a build context dict.
 
     The context dict is produced by _build_context() in extractor.py and contains:

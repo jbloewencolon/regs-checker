@@ -255,17 +255,7 @@ def infer_jurisdiction(title: str, source_url: str) -> str | None:
     if "nyc" in combined or "local law 144" in combined:
         return "new york"
 
-    # Specific bill number prefixes that indicate a state
-    bill_prefix_map = {
-        "AB": "california",   # AB = Assembly Bill (CA, WI, NV — default CA)
-        "SB": None,           # Too ambiguous
-        "HB": None,           # Too ambiguous
-        "HF": "minnesota",    # House File
-        "SF": "minnesota",    # Senate File
-        "LB": "nebraska",     # Legislative Bill
-    }
-    # Only use this as last resort — not reliable enough for general use
-
+    # Bill number prefixes were considered but not reliable enough for general use.
     return None
 
 

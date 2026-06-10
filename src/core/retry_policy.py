@@ -24,14 +24,13 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable
 
 import structlog
 from tenacity import (
     RetryError,
     retry,
-    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
     wait_fixed,

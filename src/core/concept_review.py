@@ -15,7 +15,6 @@ Within a priority band, lower confidence_score sorts first.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from sqlalchemy import select
 
@@ -23,7 +22,6 @@ from src.db.models import (
     ComplianceConcept,
     ConceptReviewStatus,
     DocumentVersion,
-    Source,
 )
 
 
@@ -46,12 +44,12 @@ class ConceptReviewItem:
 
     concept_id: int
     document_version_id: int
-    jurisdiction: Optional[str]
+    jurisdiction: str | None
     concept_type: str
-    regulated_actor_family: Optional[str]
+    regulated_actor_family: str | None
     title: str
-    confidence_tier: Optional[str]
-    confidence_score: Optional[float]
+    confidence_tier: str | None
+    confidence_score: float | None
     grounding_status: str
     review_status: str
     member_count: int
@@ -124,7 +122,7 @@ def get_concept_review_queue(
     return items
 
 
-def _jurisdiction_for_concept(db, concept: ComplianceConcept) -> Optional[str]:
+def _jurisdiction_for_concept(db, concept: ComplianceConcept) -> str | None:
     """Look up the jurisdiction_code for a concept's law."""
     dv = db.get(DocumentVersion, concept.document_version_id)
     if dv is None or dv.family is None or dv.family.source is None:

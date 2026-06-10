@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import re
-
 import warnings
 
 import structlog
@@ -454,6 +453,7 @@ def _parse_pdf(content: bytes) -> list[tuple[str, str, int, int]]:
     """
     try:
         import io
+
         import pdfplumber
 
         text_parts = []
@@ -487,8 +487,8 @@ def _parse_pdf_ocr(content: bytes) -> list[tuple[str, str, int, int]]:
     Requires system packages: tesseract-ocr, poppler-utils.
     """
     try:
-        from pdf2image import convert_from_bytes
         import pytesseract
+        from pdf2image import convert_from_bytes
 
         images = convert_from_bytes(content, dpi=300)
         text_parts = []
@@ -536,6 +536,7 @@ def extract_text_sample(artifact, max_chars: int = 4000) -> str:
     elif artifact.content_type == "application/pdf":
         try:
             import io
+
             import pdfplumber
 
             text_parts = []

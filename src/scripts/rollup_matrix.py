@@ -23,12 +23,11 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from src.core.vocab_loader import get_canonical_codes, normalize, flush_unrecognized
+from src.core.vocab_loader import get_canonical_codes, normalize
 
 
 def _parse_payload(raw) -> dict:

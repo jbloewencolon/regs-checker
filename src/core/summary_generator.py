@@ -27,7 +27,6 @@ Usage:
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import structlog
@@ -89,7 +88,6 @@ def _summarize_threshold(p: dict, jur: str | None) -> str:
     """Template summary for threshold/exception extractions."""
     parts = []
 
-    ttype = p.get("threshold_type", "")
     tval = p.get("threshold_value", "")
     tunit = p.get("threshold_unit", "")
     condition = p.get("threshold_condition", "")
@@ -360,6 +358,7 @@ def generate_summaries_batch(
         Summary dict with counts.
     """
     from sqlalchemy import select
+
     from src.db.models import (
         DocumentFamily,
         DocumentVersion,

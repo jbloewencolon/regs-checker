@@ -23,7 +23,7 @@
 - ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)* **Operator query: `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name;`**
 - ✅ **1b** — run versioning: `ExtractionRun` model + Alembic migration `m9j5k1l3h814` + nullable `run_id` FK on `extractions`/`bill_level_extractions` + run creation/finalization in `run_extraction()`. Purge kept for now; query-filter refactor deferred to when serving-run queries land. *(SDPA, BE, DevOps)*
 - ✅ **1c** — **metric schema** (C-2 fix): `TokenUsageSummary` extended with `clause_level_*`/`bill_level_*` token buckets, `abstention_count`, `error_count`, `extraction_item_count`, `llm_call_count`; `run_summary.json` now emits named counters with `scope` annotation; `agent_stats.json` emits matching `scope`/`scope_note`. All call sites updated. Tests updated + passing. *(BE)*
-- ⏳ **1d** — coverage 138→232: seed 135 text-ready laws; re-fetch **SB 205** (priority) + **SB_2966** (file missing). Checklist in `docs/r1_findings_supplement.md`.
+- ⏳ **1d** — coverage 138→232: seed 135 text-ready laws; re-fetch **SB 205** (priority) + **SB_2966** (file missing). *(checklist was in r1_findings_supplement.md, now archived)*
 
 ### Phase 2 — Cheap trust wins (no taxonomy dependency; front-loaded)
 - ✅ **2a** — E-1 verbatim evidence-span prompts (4 prompts v1.1). ⏳ Run 10–20 law test batch (`_v2` suffix); capture baseline first.
@@ -42,8 +42,8 @@
 - 🔒 **3g** — re-harvest after 1a; lock codes when two prompt versions agree.
 
 ### Phase 4 — Tracker alignment & confidence recompute (the trust check)
-- 🔧 **4a** — persist `verification_results` table (currently ephemeral in `metadata_`). Migration `o1p7q3r5s016`; per-extraction alignment status rows; confidence breakdown written once. *(BE, SDPA)*
-- ⏳ **4b** — ingest `static/iapp_law_tracker.csv`; alignment pass vs **both** trackers → `tracker_grounded`/`orrick_aligned`/`iapp_aligned`/`tracker_conflict`/`extraction_only_claim`/`tracker_only_claim`; refine Orrick gate (IAPP-only laws currently auto-Tier-D). *(unblocked)*
+- ✅ **4a** — `ExtractionVerificationStatus` + `VerificationRunSummary` models + migration `o1p7q3r5s016` + write calls in `verification_runner.py` all complete. Tables created on `alembic upgrade head` (pending operator run). *(BE, SDPA)*
+- ✅ **4b** — IAPP tracker ingested (`src/core/iapp_alignment.py`); `iapp_has_data` flag prevents auto-Tier-D for IAPP-only laws (caps at C instead); `_run_iapp_alignment_for_dv` writes per-extraction `iapp_status` to `ExtractionVerificationStatus`; `iapp_alignment_score` now blended into `tracker_alignment_score` diagnostic dimension (Orrick 60% + IAPP 40% when both present). `total_score`/tier unchanged until Phase 4c weight validation. `_recompute_confidence_with_cv` passes IAPP score on every verify recompute. 5 new tests in `TestIAPPAlignmentScore`. *(2026-06-10)*
 - 🔒 **4c** — recompute confidence with v3 weights (Orrick 30/IAPP 20/evidence 15/citation 10/cross-val 10/gap 5/analyst 10). **Validate against gold-standard fixtures before serving.** *(after 4a,4b)*
 - 🔒 **4d** — enforce source linkage: tracker ref or verified span, else `ungrounded`. *(after 2a batch)*
 
@@ -62,10 +62,13 @@
 - 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **Run the substrate end-to-end** — apply migrations `n0k6l2m4i915`→`p2q8r4s6t017`, run extraction→verification→`group_concepts` on a live DB to populate concepts.
-2. **4c confidence recompute** — full v3 weight model; validate against gold fixtures before serving.
-3. **1a confirm query** — settle the applicability-row contradiction.
-4. **2a test batch** — measure the v1.1 verbatim-prompt lift.
+1. **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError fixes that crash extraction. Must merge before next run.
+2. **Run `alembic upgrade head`** on operator machine — migration `l8i4j0k2g713`.
+3. **Selective triage reset + Extract All** — unblocks everything downstream.
+4. **1a confirm query** — settle the applicability-row contradiction (`SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name`).
+5. **4a** — persist `verification_results` table (code drafted; needs migration + run).
+6. **4c confidence recompute** — full v3 weight model; validate against gold fixtures before serving.
+7. **2a test batch** — measure the v1.1 verbatim-prompt lift.
 
 ### Deferred (confirmed)
 Law-card data model, applicability product, API, productionization — resume on clean tracker-grounded data; the concept layer (Phase 5) is the hand-off boundary.
@@ -267,27 +270,24 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ## Active Tasks
 
-- **Phase 6 — Full reset + re-seed + ingest + triage + extract + sync (IN PROGRESS)**
-  - **Phase 6 Steps 1–2 complete**: Reset pipeline, re-seed from CSV, re-ingest, run triage
-  - **Phase 6 Step 2 status**: Triage run started; ~19 passages failed due to Gemma token exhaustion (FIXED in Phase 8 below).
-  - **Phase 7M complete**: Orrick enrichment, JSON repair, adaptive retry, Extract 5 fix, agent routing optimization all committed to `claude/onboard-government-project-3bq7i`
-  - **Phase 8 complete** (2026-05-10): Export endpoints bug, Gemma token doubling, channel-thought recovery, tab-key JSON repair, low-confidence persistence all committed to `claude/onboard-government-project-PyyB9`
-  - **Next: selective triage reset** on the ~19 failed passages (use "Reset Triage" on Triage page, then re-run triage).
-  - **Next: run `alembic upgrade head`** to apply migration `l8i4j0k2g713` (adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table).
-  - After triage is clean: proceed to extraction (Step 3), then sync (Steps 5→6).
-  - 16 laws with still-quarantined source text will be skipped on re-ingest (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
-  - Step 3 uses **6 agents** (ambiguity retired) + **3 bill-level agents** (enforcement, applicability, compliance_timeline).
-  - Model: `google/gemma-4-26b-a4b` — all agents configured in `config/agent_models.json` with pre-doubling token budgets.
+### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
+- **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run). Also contains lint cleanup, CI gate fix, repo cleanup. **Do this before hitting Extract All.**
 
-- **Apply pending Alembic migration** — Run `alembic upgrade head` to add `duration_ms` / `input_tokens` / `output_tokens` columns to the `extractions` table (migration `l8i4j0k2g713`).
+### Operator actions (need live machine + DB)
+- **Run `alembic upgrade head`** — migration `l8i4j0k2g713` adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table.
+- **Selective triage reset** — Re-triage ~19 passages that failed with `finish_reason=length` (Gemma token exhaustion, now fixed). Triage page → Reset Failed → re-run triage.
+- **Run Extract All (Step 3)** — unblocks everything: bill_level_extractions, Phase 1.H, concept grouping, confidence recompute, taxonomy Phases 1–2. Model: `google/gemma-4-26b-a4b`, 6 passage agents + 3 bill-level agents. 16 quarantined laws will be skipped (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
+- **After extraction:** Run `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name` (1a check), then Verify step, then `python -m src.scripts.group_concepts`, then sync (Steps 5→6).
+- **Obtain correct source text for 16 quarantined laws** — Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
 
-- **Selective triage reset** — Re-triage ~19 passages that failed with `finish_reason=length` (Gemma token exhaustion, now fixed). Use Triage page → Reset Failed → re-run triage.
-
-- **Obtain correct source text for 16 quarantined laws** — See `output/law_texts_quarantine/NEEDED_SOURCES.md`. Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
-
+### Pending decisions
 - **TN quarantine files contain TX bill content** — TX SB 1188, SB 2373, SB 815, SB 20, SB 1621 may be legitimate TX AI laws. Decide whether to add as new TX entries in `fact_laws.csv`.
+- **`business` actor code (122 mentions)** — PENDING_LKA ruling to ungate Phase 3d→3f.
+- **Eval set (ANALYSIS-1)** — 100-row lawyer-verified sample. Name a responsible person; gates Phase 4 + the trust bar.
+- **Sync to Policy Navigator** — all extraction types or approved-only?
 
-- **Merge feature branches to main** — Phase 7M work on `claude/onboard-government-project-3bq7i` and Phase 8 work on `claude/onboard-government-project-PyyB9`. Needs review and merge after Phase 6 validation.
+### Merge backlog
+- `claude/onboard-government-project-3bq7i` (Phase 7M) and `claude/onboard-government-project-PyyB9` (Phase 8) — review and merge after extraction validates on main.
 
 ---
 
@@ -633,30 +633,13 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 
 ## Immediate Next Tasks (blocking Phase 1: Taxonomy)
 
-1. **BLOCKING**: Run extraction to populate bill_level_extractions (prerequisite for Phases 1.H, 2.A, 2.C, 2.D)
-   - Current: table structure exists but empty
-   - Unblocks: Phase 1.H (preemption_status), Phase 2.A (covered_sectors), Phase 2.C (harm_categories), Phase 2.D (obligation Level-2)
-   - Dashboard Step 3 ("Extract All"); monitor Live Extraction Monitor widget
-   - Expected improvements from Phase 8 fixes:
-     - Empty response errors drop significantly with token doubling restored
-     - Channel-thought HTTP 400 errors successfully recovered
-     - Token scaling and agent routing optimization improve pipeline speed
-   
-2. **DONE 2026-05-26 — Taxonomy doc drift reconciled.** Planning docs now in `docs/taxonomy_strategy_summary.md` and `docs/taxonomy_dev_plan.md`. Verified-real drift fixed:
-   - Law count: authoritative count is **232** (matches `data/fact_laws.csv` data rows). Strategy + dev plan updated.
-   - Anthropic SDK refs (dev plan §5.3 Track 3.F): replaced with local Gemma / LM Studio reality.
-   - Agent version tracking: `bill_level_extractions` has no `agent_version` column; agreed to use `agent_name` suffix convention (e.g. `applicability_agent_v2`). Dev plan §5.3 + §5.7 + §8 cross-phase risks updated.
-   - `data/lookups/` directory: confirmed missing; Phase 1 Track 1.C now creates it as the first action.
-   - `--mode recover`: **drift claim was wrong** — flag exists at `src/scripts/seed_pipeline.py:521,665`. Dev plan reference is correct.
-   - "7 agents" references: **not present** in these two planning docs. Drift, if any, lives in older handoffs / older README sections; flag for a separate pass if needed.
-   - Phase 1 success gates (strategy §6) had cross-phase contamination (`dim_actor_types` join + matching-engine deltas were Phase 2 work); rewritten to be Phase-1-internal, with a new "Phase 2 success gates" section added.
-   - Phase 1 Track 1.H given an explicit "blocked until extraction populates `bill_level_extractions`" note.
-   
-3. Verify claim that subject_area is "hardcoded to 'artificial_intelligence'" in Policy Navigator fact_laws (impacts Phase 1.A normalization table design)
-4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` to add `duration_ms`, `input_tokens`, `output_tokens` columns to `extractions` table (if not already applied).
-5. **Sync local → Supabase** — Dashboard Step 5
-6. **Sync Regs Checker → Policy Navigator** — Dashboard Step 6
-7. **Run rollup matrix** — `python -m src.scripts.rollup_matrix`
+1. **BLOCKING**: Merge `claude/brave-lamport-d9zgjx` + run extraction to populate `bill_level_extractions`. See Active Tasks above.
+2. **DONE 2026-05-26** — Taxonomy doc drift reconciled. *(see completed_tasks.md)*
+3. Verify claim that `subject_area` is "hardcoded to 'artificial_intelligence'" in Policy Navigator `fact_laws` (impacts Phase 1.A normalization table design).
+4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` (see Active Tasks).
+5. **Sync local → Supabase** — Dashboard Step 5.
+6. **Sync Regs Checker → Policy Navigator** — Dashboard Step 6.
+7. **Run rollup matrix** — `python -m src.scripts.rollup_matrix`.
 
 ## Bugs / Issues
 
@@ -667,8 +650,61 @@ Only 2 Orrick laws + 53 IAPP active bills lack Orrick data. The 53 IAPP bills ar
 ### BUG-3: Supabase sync "not configured" — FIXED
 ### BUG-4: Unicode normalization in evidence spans — FIXED (Phase 1, 2026-04-05)
 
+### BUG-7: NameError crash in `extract_single_record` — FIXED (2026-06-10, `claude/brave-lamport-d9zgjx`)
+Three undefined-name regressions from the RR7g dedup refactor (`content_hash` renamed to `passage_text_hash`, stale `existing_hashes` block, `monitor` used before import). Would have crashed every passage on the next extraction run. Pending merge to main.
+
+### BUG-8: LM Studio status endpoint crashes when LM Studio unreachable — FIXED (2026-06-10)
+`get_models_status()` in `dashboard.py` referenced `settings` without importing it in the error branch. Fixed.
+
 ### BUG-5: Gemma 4 `<|channel>thought` HTTP 400 — KNOWN / WORKAROUND
 LM Studio + Gemma 4 26B-A4B occasionally emits a structured thinking token that triggers a 400 error. Affects ~2 passages per run; they fall through as `uncertain` triage. Fix: update LM Studio when a Gemma-4-compatible release is available.
 
 ### BUG-6: Alembic migration `g3d9e5f7b208` DuplicateObject — FIXED (2026-05-09)
 `triagedecision` / `triagemethod` enum types collided between manual `CREATE TYPE` and SQLAlchemy DDL. Fixed by removing manual blocks; SQLAlchemy owns enum creation via `sa.Enum(create_constraint=False)`.
+
+---
+
+## Engineering Session — Bug Fix, Lint & Repo Cleanup (2026-06-10)
+
+**Branch:** `claude/brave-lamport-d9zgjx` — **pending merge to main**
+
+### Completed
+
+**Critical bugs fixed** (3 NameErrors would have crashed the next extraction run):
+- `extractor.py`: `content_hash` → `passage_text_hash` (RR7g rename not propagated to futures tuple and success path)
+- `extractor.py`: removed stale `existing_hashes.add(content_hash)` block (superseded by attempt-state dedup)
+- `extractor.py`: `monitor` acquisition moved above first use (was 80 lines below jurisdiction-skip path)
+- `dashboard.py`: `settings` import added to `get_models_status()` error branch
+- `confidence.py`: `OrrickSimilarityResult` moved under `TYPE_CHECKING`
+
+**Lint cleanup (RR2c partial):**
+- ruff F821 (undefined names) now clean — would catch NameErrors at push time
+- Safe autofixes applied (F401/F541/I001/UP*): 580 → 375 errors remaining (rest is E501 + naming style)
+- Removed dead code: unused `pending_review` COUNT query in `progress.py`, redundant `_normalize_citation` call in `citation_verifier.py`, unused `failed_tag`/`ctype`/`elapsed_min`/`old`/`subject` locals
+
+**CI gate hardened:**
+- `.github/workflows/ci.yml` lint job now gates hard on `--select E9,F` (syntax + undefined names); full ruleset runs as advisory info only. This is what would have caught BUG-7 at push time.
+
+**Repo cleanup:**
+- 11 dead files deleted (5 archived agent/connector scripts, 3 orphaned scripts, dagster pipelines, compare_models)
+- 10 superseded docs moved to `archive/docs/` (strategy v2, merged plans, completed remediation docs, historical run findings)
+- 7 old handoff files moved to `archive/handoffs/` — `HANDOFF-2026-03-21.md` remains definitive
+- `archive/README.md` created with retirement log
+- `output/extraction_runs/*.csv|*.jsonl|agent_stats.json` added to `.gitignore`; 12.8 MB `extractions.csv` untracked from git (repo pack shrinks from ~20 MB to ~7 MB)
+- 695 unit tests pass throughout
+
+### Still needed from this session
+- Merge `claude/brave-lamport-d9zgjx` to main *(operator action)*
+- Phase 4a: `verification_results` table persistence *(code drafted; needs migration + run to validate)*
+- dashboard.py split *(deferred — see below)*
+
+### Deferred: dashboard.py split
+`src/api/routes/dashboard.py` is 5,400+ lines. Natural split into 6 modules:
+1. `pipeline_ops.py` — seed/fetch/triage/extract/sync (`/api/run/*`)
+2. `monitoring.py` — stats, progress, monitor, events, latency, health
+3. `documents.py` — list docs, edit metadata, upload, completeness
+4. `exports.py` — all CSV/JSONL export endpoints
+5. `concepts.py` — concepts page + concept API (already self-contained)
+6. `models.py` — models page + model config API (already self-contained)
+Shared helpers (HTML builders, `_run_in_background`) move to `dashboard_utils.py`.
+Deferred until after extraction run validates, to avoid churn on active code.

@@ -7,8 +7,7 @@ at each stage and deriving what percentage of total work is done.
 
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -206,10 +205,8 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         # Passages not yet triaged should also be counted (pending triage)
         untriaged = total_passages - triage_count
         extraction_total = triage_relevant + untriaged
-        triage_skipped = triage_count - triage_relevant
     else:
         extraction_total = total_passages
-        triage_skipped = 0
 
     extracted_passage_ids = select(Extraction.source_record_id).distinct()
     extracted_passages = db.scalar(
@@ -231,9 +228,6 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         select(func.count()).where(
             ReviewQueueItem.status.in_([ReviewStatus.approved, ReviewStatus.rejected])
         )
-    ) or 0
-    pending_review = db.scalar(
-        select(func.count()).where(ReviewQueueItem.status == ReviewStatus.pending)
     ) or 0
 
     step6 = StepProgress(
@@ -353,7 +347,6 @@ def _get_extraction_rate(db: Session) -> float | None:
 
 def get_confidence_distribution(db: Session) -> dict[str, Any]:
     """Get confidence score distribution for analytics."""
-    from src.db.models import ConfidenceTier
 
     distribution = {"A": 0, "B": 0, "C": 0, "D": 0}
     rows = db.execute(

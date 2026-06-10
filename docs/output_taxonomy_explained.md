@@ -5,6 +5,9 @@
 LLM agents actually produced.
 **Companion doc:** For the full, deep field-by-field reference see
 [`docs/data_dictionary.md`](./data_dictionary.md). This page is the short version.
+**Last verified:** 2026-06-09, against the run export in `output/extraction_runs/`
+(run of 2026-05-10→11 — still the latest run of record). All counts in §2, §3.5
+re-checked against `extractions.csv`, `run_summary.json`, and `agent_stats.json`.
 
 > **One thing to get straight up front.** The data in `output/` is the **catalog
 > layer** — a lightweight, searchable index of every law. It is *not* the deep,
@@ -30,7 +33,8 @@ LLM agents.** `output/law_tag_categories.json` says so plainly in its own notes:
 The tell-tale sign is the `ai_topic` vocabulary, which contains keyword-extraction noise
 like `ai-healthcare-the`, `frontier`, `user`, and `automated` — tokens scraped from
 titles, not concepts an LLM curated. The agents' real work lands in the database — and a
-snapshot of one run is now exported to `output/extraction_runs/` (**Section 3.5**).
+snapshot of one run is exported to `output/extraction_runs/` (**Section 3.5** — these
+files are gitignored and live only on the developer machine after a run).
 
 ---
 
@@ -78,8 +82,9 @@ catalog layer is a search index, not a completeness guarantee.
 
 The agents are the deep-extraction engine. They read the **full statutory text** and
 emit structured legal facts into the database — the **extraction layer**, *not* the
-catalog tags above. All run on **local models via LM Studio** (`openai/gpt-oss-20b`);
-there is no Anthropic API in this project.
+catalog tags above. All run on **local models via LM Studio**
+(`google/gemma-4-26b-a4b` — every row in the latest run export carries
+`model_id = google-gemma-4-26b-a4b-local`); there is no Anthropic API in this project.
 
 There are two batteries plus a gatekeeper.
 

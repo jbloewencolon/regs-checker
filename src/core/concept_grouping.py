@@ -23,9 +23,9 @@ the law and no member is in conflict; ungrounded when neither tracker has data.
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -70,7 +70,7 @@ def _tier_for_score(score: float) -> str:
 
 
 # Cached obligation_family alias → code map, built once from the ratified table.
-_OBLIGATION_FAMILY_ALIASES: Optional[list[tuple[str, str]]] = None
+_OBLIGATION_FAMILY_ALIASES: list[tuple[str, str]] | None = None
 
 
 def _obligation_family_alias_pairs() -> list[tuple[str, str]]:
@@ -135,8 +135,8 @@ class _ConceptBucket:
     """Accumulator for one (concept_type, actor_family) group within a law."""
 
     concept_type: str
-    regulated_actor_family: Optional[str]
-    right_holder_family: Optional[str] = None
+    regulated_actor_family: str | None
+    right_holder_family: str | None = None
     anchor_ids: list[int] = field(default_factory=list)
     confidences: list[float] = field(default_factory=list)
     actions: list[str] = field(default_factory=list)
@@ -156,7 +156,7 @@ class ConceptGroupingResult:
     anchors_grouped: int
 
 
-def _actor_family(raw: Optional[str], fallback: Optional[str] = None) -> Optional[str]:
+def _actor_family(raw: str | None, fallback: str | None = None) -> str | None:
     """Normalize an actor string to a canonical family, or None when empty."""
     val = (raw or fallback or "").strip()
     if not val:
@@ -166,7 +166,7 @@ def _actor_family(raw: Optional[str], fallback: Optional[str] = None) -> Optiona
 
 def _grounding_for_extraction(
     db, extraction_id: int
-) -> Optional[str]:
+) -> str | None:
     """Return the most recent grounding_status for an extraction, if recorded."""
     return db.scalars(
         select(ExtractionVerificationStatus.grounding_status)
@@ -264,7 +264,7 @@ def group_concepts_for_dv(
     if not extractions:
         return ConceptGroupingResult(dv_id, 0, 0, 0)
 
-    buckets: dict[tuple[str, Optional[str]], _ConceptBucket] = {}
+    buckets: dict[tuple[str, str | None], _ConceptBucket] = {}
     enforcement_refs: list[dict[str, Any]] = []
     enforcement_ids: list[int] = []
     exception_refs: list[dict[str, Any]] = []
