@@ -205,6 +205,11 @@ class ExtractionMonitor:
             "warning": 0, "error": 0, "critical": 0,
         }
 
+    @property
+    def is_running(self) -> bool:
+        """True while an extraction run is actively in progress."""
+        return self._is_running
+
     def start_run(self, total_passages: int) -> None:
         """Reset state and mark a new extraction run as started."""
         with self._lock:

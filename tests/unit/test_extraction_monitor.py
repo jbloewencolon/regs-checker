@@ -63,6 +63,16 @@ class TestExtractionMonitor:
         snap = m.snapshot()
         assert not snap.is_running
 
+    def test_is_running_property_tracks_run_state(self):
+        # The is_running property backs seconds_since_last_passage()'s gate,
+        # which prevents a finished run's stale heartbeat from reporting "stuck".
+        m = self._make_monitor()
+        assert m.is_running is False
+        m.start_run(total_passages=5)
+        assert m.is_running is True
+        m.stop_run()
+        assert m.is_running is False
+
     def test_start_run_clears_previous(self):
         m = self._make_monitor()
         m.start_run(total_passages=10)

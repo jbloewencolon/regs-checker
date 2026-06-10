@@ -139,7 +139,16 @@ def clear_pause() -> None:
 
 
 def seconds_since_last_passage() -> float:
-    """Seconds elapsed since the last passage loop iteration, or 0 if not started."""
+    """Seconds elapsed since the last passage loop iteration.
+
+    Returns 0.0 when no extraction is actively running, so a stale heartbeat
+    left over from a finished or dead run is never mistaken for a stuck
+    passage by the dashboard health endpoint.
+    """
+    from src.core.extraction_monitor import get_monitor
+
+    if not get_monitor().is_running:
+        return 0.0
     if _last_passage_at == 0.0:
         return 0.0
     return time.monotonic() - _last_passage_at
