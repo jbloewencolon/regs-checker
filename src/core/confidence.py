@@ -115,6 +115,7 @@ def compute_confidence(
     cross_validation_score: float | None = None,
     passage_text: str | None = None,
     iapp_has_data: bool = False,
+    iapp_alignment_score: float | None = None,
 ) -> ConfidenceBreakdown:
     """Compute the confidence score for an extraction.
 
@@ -129,6 +130,11 @@ def compute_confidence(
             agent (0.0-1.0). None means not yet verified.
         iapp_has_data: True if the law has an IAPP tracker entry (Phase 4b).
             Prevents the Orrick gate from forcing Tier D for IAPP-only laws.
+        iapp_alignment_score: Optional 0.0–1.0 IAPP alignment score (Phase 4b).
+            Blended into tracker_alignment_score (diagnostic only; does not affect
+            total_score until Phase 4c weight recompute is validated).
+            Mapped from iapp_status: "aligned" → 1.0, "scope_mismatch" → 0.3,
+            "tracker_silent"/None → not included.
 
     Returns:
         ConfidenceBreakdown with component scores and final tier.
@@ -225,7 +231,8 @@ def compute_confidence(
             capped_score = min(diag_total, TIER_B_THRESHOLD - 0.01)
             tier = _score_to_tier(capped_score)
             sg, ta, sc = _compute_orthogonal_dimensions(
-                evidence_score, section_ref_quality, 0.0, schema_score, completeness_score
+                evidence_score, section_ref_quality, 0.0, schema_score, completeness_score,
+                iapp_alignment_score=iapp_alignment_score,
             )
             return ConfidenceBreakdown(
                 schema_validity=schema_score,
@@ -248,7 +255,8 @@ def compute_confidence(
         # No tracker data at all → Tier D.
         capped_score = min(diag_total, TIER_C_THRESHOLD - 0.01)
         sg, ta, sc = _compute_orthogonal_dimensions(
-            evidence_score, section_ref_quality, 0.0, schema_score, completeness_score
+            evidence_score, section_ref_quality, 0.0, schema_score, completeness_score,
+            iapp_alignment_score=iapp_alignment_score,
         )
         return ConfidenceBreakdown(
             schema_validity=schema_score,
@@ -293,7 +301,8 @@ def compute_confidence(
     tier = _score_to_tier(total)
 
     sg, ta, sc = _compute_orthogonal_dimensions(
-        evidence_score, section_ref_quality, orrick_score, schema_score, completeness_score
+        evidence_score, section_ref_quality, orrick_score, schema_score, completeness_score,
+        iapp_alignment_score=iapp_alignment_score,
     )
     return ConfidenceBreakdown(
         schema_validity=schema_score,
@@ -319,13 +328,22 @@ def _compute_orthogonal_dimensions(
     orrick_alignment: float,
     schema_validity: float,
     completeness: float,
+    iapp_alignment_score: float | None = None,
 ) -> tuple[float, float, float]:
-    """Compute the three orthogonal confidence dimensions (RR5a).
+    """Compute the three orthogonal confidence dimensions (RR5a + Phase 4b).
 
     Returns (source_grounding_score, tracker_alignment_score, schema_completeness_score).
+    tracker_alignment_score blends Orrick and IAPP when both are present.
     """
     source_grounding = round(evidence_grounding * 0.70 + section_ref_quality * 0.30, 4)
-    tracker_alignment = round(orrick_alignment, 4)
+    if iapp_alignment_score is not None:
+        # Blend: Orrick 0.60 + IAPP 0.40 when both present; fall back to each alone.
+        if orrick_alignment > 0.0:
+            tracker_alignment = round(orrick_alignment * 0.60 + iapp_alignment_score * 0.40, 4)
+        else:
+            tracker_alignment = round(iapp_alignment_score, 4)
+    else:
+        tracker_alignment = round(orrick_alignment, 4)
     schema_completeness = round(schema_validity * 0.50 + completeness * 0.50, 4)
     return source_grounding, tracker_alignment, schema_completeness
 

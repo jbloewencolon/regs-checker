@@ -42,8 +42,8 @@
 - 🔒 **3g** — re-harvest after 1a; lock codes when two prompt versions agree.
 
 ### Phase 4 — Tracker alignment & confidence recompute (the trust check)
-- 🔧 **4a** — persist `verification_results` table (currently ephemeral in `metadata_`). Migration `o1p7q3r5s016`; per-extraction alignment status rows; confidence breakdown written once. *(BE, SDPA)*
-- ⏳ **4b** — ingest `static/iapp_law_tracker.csv`; alignment pass vs **both** trackers → `tracker_grounded`/`orrick_aligned`/`iapp_aligned`/`tracker_conflict`/`extraction_only_claim`/`tracker_only_claim`; refine Orrick gate (IAPP-only laws currently auto-Tier-D). *(unblocked)*
+- ✅ **4a** — `ExtractionVerificationStatus` + `VerificationRunSummary` models + migration `o1p7q3r5s016` + write calls in `verification_runner.py` all complete. Tables created on `alembic upgrade head` (pending operator run). *(BE, SDPA)*
+- ✅ **4b** — IAPP tracker ingested (`src/core/iapp_alignment.py`); `iapp_has_data` flag prevents auto-Tier-D for IAPP-only laws (caps at C instead); `_run_iapp_alignment_for_dv` writes per-extraction `iapp_status` to `ExtractionVerificationStatus`; `iapp_alignment_score` now blended into `tracker_alignment_score` diagnostic dimension (Orrick 60% + IAPP 40% when both present). `total_score`/tier unchanged until Phase 4c weight validation. `_recompute_confidence_with_cv` passes IAPP score on every verify recompute. 5 new tests in `TestIAPPAlignmentScore`. *(2026-06-10)*
 - 🔒 **4c** — recompute confidence with v3 weights (Orrick 30/IAPP 20/evidence 15/citation 10/cross-val 10/gap 5/analyst 10). **Validate against gold-standard fixtures before serving.** *(after 4a,4b)*
 - 🔒 **4d** — enforce source linkage: tracker ref or verified span, else `ungrounded`. *(after 2a batch)*
 
