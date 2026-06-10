@@ -205,10 +205,8 @@ def compute_pipeline_progress(db: Session) -> PipelineProgress:
         # Passages not yet triaged should also be counted (pending triage)
         untriaged = total_passages - triage_count
         extraction_total = triage_relevant + untriaged
-        triage_skipped = triage_count - triage_relevant
     else:
         extraction_total = total_passages
-        triage_skipped = 0
 
     extracted_passage_ids = select(Extraction.source_record_id).distinct()
     extracted_passages = db.scalar(

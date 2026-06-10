@@ -2694,7 +2694,6 @@ def get_extraction_monitor() -> HTMLResponse:
         )
 
     # --- Health gauges ---
-    elapsed_min = d["elapsed_seconds"] / 60 if d["elapsed_seconds"] > 0 else 0
     pct_done = (
         round(d["passages_processed"] / d["passages_total"] * 100, 1)
         if d["passages_total"] > 0
@@ -4375,7 +4374,6 @@ async def resolve_discrepancy(
         )
 
     if field_name == "fetch_url":
-        old = job.fetch_url or ""
         job.fetch_url = value
         # Reset failed jobs so they can retry with the new URL
         if job.status in (IngestionStatus.failed, IngestionStatus.requires_manual_review):
@@ -4441,7 +4439,6 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         jurisdiction = ""
         short_cite = ""
         title = ""
-        subject = ""
         bill_id = ""
         iapp_bill_number = ""
         iapp_status = ""
@@ -4451,7 +4448,6 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             jurisdiction = source.jurisdiction_code if source else ""
             short_cite = dv.family.short_cite or ""
             title = dv.family.canonical_title or ""
-            subject = dv.family.subject_area or ""
             label = short_cite or title or "unknown"
             meta = dv.family.metadata_ or {}
             bill_id = meta.get("bill_id", "")

@@ -88,7 +88,6 @@ def _summarize_threshold(p: dict, jur: str | None) -> str:
     """Template summary for threshold/exception extractions."""
     parts = []
 
-    ttype = p.get("threshold_type", "")
     tval = p.get("threshold_value", "")
     tunit = p.get("threshold_unit", "")
     condition = p.get("threshold_condition", "")
