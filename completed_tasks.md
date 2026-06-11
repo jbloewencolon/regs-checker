@@ -1,5 +1,70 @@
 # Regs Checker — Completed Tasks
 
+## Recently Completed (2026-06-10) — Bug Check, Cleanup & Phase 4a/4b
+
+**Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
+**Scope**: Full bug check, lint cleanup, CI gate hardening, repo cleanup, Phase 4a confirmation, Phase 4b completion. 700 unit tests pass; ruff hard gate (E9,F) clean.
+
+### BUG-7: Three NameError crashes in extract_single_record — FIXED (Critical)
+Regressions from the RR7g dedup refactor (committed after the May run of record);
+would have crashed **every passage** on the next extraction run:
+- `extractor.py` futures tuple referenced removed `content_hash` → now `passage_text_hash`
+- Stale `existing_hashes.add(content_hash)` block on success path → removed (attempt-state dedup owns this)
+- `monitor` used in jurisdiction-skip path 80 lines before its import → `get_monitor()` moved above first use
+Not caught by tests (function not exercised end-to-end) nor by CI (lint job was red at 580 errors and effectively ignored).
+
+### BUG-8: LM Studio status endpoint 500 — FIXED
+`get_models_status()` in `dashboard.py` referenced `settings` without import in the
+**error branch only** — the 5-second status poll crashed exactly when LM Studio was
+unreachable. Import added.
+
+### Lint cleanup (RR2c partial)
+- Safe ruff autofixes (F401/F541/I001/UP*/E401) across 49 files: 580 → 375 errors (remainder is E501 line-length + naming style)
+- All F-class correctness errors now clean, including 11 F841 dead-code removals
+  (notably: a wasted `COUNT(*)` query on every dashboard progress poll; an unused
+  `bill_prefix_map` dict; redundant `_normalize_citation` call per extraction)
+- `confidence.py`: `OrrickSimilarityResult` imported under `TYPE_CHECKING`
+
+### CI gate hardened
+`.github/workflows/ci.yml` lint job split into two steps: hard gate on
+`ruff --select E9,F` (syntax errors + undefined names — this would have caught BUG-7
+at push time) plus a full-ruleset advisory run that never fails the build.
+
+### Repo cleanup
+- **11 dead files deleted** (zero importers verified): `src/ingestion/_archived/{connector,discovery,verification,ambiguity_agent,web_search}.py`, `_archived/dagster_pipelines/`, `_archived/compare_models.py`, `src/scripts/{compare_quality,pipeline_csv,resync_policy_navigator}.py`
+- **10 superseded docs** → `archive/docs/` (strategy v2, merged agent strategies, completed remediation plans, r1/r2-r3 findings, taxonomy v1 draft)
+- **7 older handoffs** → `archive/handoffs/`; `archive/HANDOFF-2026-03-21.md` remains definitive; `archive/README.md` documents all retirements
+- `SETUP_ISSUES_AND_OPTIMIZATIONS.md` archived (all issues resolved)
+- `.gitignore` now covers `output/extraction_runs/*.csv|*.jsonl|agent_stats.json`; the 12.8 MB `extractions.csv` untracked (repo pack ~20 MB → ~7 MB; file remains on dev machines)
+- Kept (live imports confirmed): `pdf_tracker.py`, `iapp_pdf_tracker.py`, `sync_extractions.py`, `sync_monitor.py`, `manual_extraction.py`, `extract_iapp_links.py`
+
+### Taxonomy doc verification
+`docs/output_taxonomy_explained.md` verified against the run-of-record export
+(all counts re-checked); fixed model drift (claimed gpt-oss-20b; actual
+`google-gemma-4-26b-a4b-local` on all 6,274 rows); "Last verified" stamp added.
+
+### Phase 4a — CONFIRMED COMPLETE (was marked 🔧 in progress)
+Audit found `ExtractionVerificationStatus` + `VerificationRunSummary` models,
+migration `o1p7q3r5s016`, and all write paths in `verification_runner.py` already
+implemented. Only operator `alembic upgrade head` remains.
+
+### Phase 4b — COMPLETED: IAPP alignment wired into confidence dimensions
+- `compute_confidence()` gains `iapp_alignment_score: float | None`
+- `tracker_alignment_score` now blends Orrick (0.60) + IAPP (0.40) when both present;
+  IAPP-only and Orrick-only paths fall back gracefully
+- `_recompute_confidence_with_cv()` performs the per-extraction IAPP lookup
+  (`_IAPP_STATUS_TO_SCORE`: aligned→1.0, scope_mismatch→0.3) on every verify recompute;
+  lookup failure never blocks scoring
+- **Invariant preserved**: `total_score`/tier unchanged — weight integration is Phase 4c,
+  gated on gold-standard fixtures
+- 5 new tests in `TestIAPPAlignmentScore` (700 total pass)
+
+### tasks.md restructure
+Active Tasks rewritten: merge-required warning first, operator actions grouped as a
+single flow, pending decisions separated, stale references fixed, BUG-7/BUG-8 logged.
+
+---
+
 ## Recently Completed (2026-05-23)
 
 ### Phase 8: Critical Extraction Issues (COMPLETED)
