@@ -140,11 +140,16 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
     export_files = _get_export_files()
     progress = compute_pipeline_progress(db)
 
+    from src.core.model_config import get_config as _get_model_config
+    active_provider = _get_model_config().provider
+
     return _render(request, "dashboard.html", {
         "stats": stats,
         "export_files": export_files,
         "progress": progress.to_dict(),
         "config": settings,
+        "active_provider": active_provider,
+        "nvidia_model": settings.nvidia_extraction_model,
     })
 
 
@@ -3404,14 +3409,16 @@ def run_import_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
 @router.post("/api/run/extract")
 def run_api_extract(
     limit: int | None = None,
-    provider: str | None = None,
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Run extraction via local LLM (runs in background thread).
+    """Run extraction with the active provider (runs in background thread).
+
+    The backend (local LM Studio vs NVIDIA) is selected by the provider
+    toggle on the Models page (persisted in config/agent_models.json and
+    read by get_extraction_provider). There is no per-call provider override.
 
     Args:
         limit: Max passages to extract (None = all).
-        provider: Force "local" or "anthropic". Defaults to REGS_EXTRACTION_PROVIDER.
     """
     if _background_jobs.get("extract", {}).get("running"):
         return HTMLResponse(
@@ -3420,32 +3427,16 @@ def run_api_extract(
             '<span class="spinner"></span> Extraction already running&hellip;</div>'
         )
 
-    def _do_extract(db, limit=None, provider=None):
-        import os
+    def _do_extract(db, limit=None):
+        from src.ingestion.extractor import run_extraction
+        summary = run_extraction(db, limit=limit)
 
-        # Temporarily override the extraction provider if explicitly requested
-        old_provider = os.environ.get("REGS_EXTRACTION_PROVIDER")
-        if provider:
-            os.environ["REGS_EXTRACTION_PROVIDER"] = provider
-            from src.core.llm_provider import _provider_cache
-            _provider_cache.pop("extraction", None)
-            _provider_cache.pop("local_extraction", None)
-
-        try:
-            from src.ingestion.extractor import run_extraction
-            summary = run_extraction(db, limit=limit)
-        finally:
-            if provider:
-                if old_provider is not None:
-                    os.environ["REGS_EXTRACTION_PROVIDER"] = old_provider
-                else:
-                    os.environ.pop("REGS_EXTRACTION_PROVIDER", None)
-                from src.core.llm_provider import _provider_cache
-                _provider_cache.pop("extraction", None)
-                _provider_cache.pop("local_extraction", None)
+        # Label the result with whichever backend actually ran.
+        from src.core.model_config import get_config
+        active = get_config().provider
+        label = "via NVIDIA" if active == "nvidia" else "via local LM Studio"
 
         tokens = summary.get("token_usage", {})
-        label = f"via {provider}" if provider else ""
         panel_class = "success"
         cancelled_note = ""
         if summary.get("cancelled"):
@@ -3516,7 +3507,7 @@ def run_api_extract(
             f'</div>'
         )
 
-    _run_in_background("extract", _do_extract, {"limit": limit, "provider": provider})
+    _run_in_background("extract", _do_extract, {"limit": limit})
     return HTMLResponse(
         '<div class="result-panel info" hx-get="/dashboard/api/job-status/extract" '
         'hx-trigger="every 2s" hx-swap="outerHTML">'
