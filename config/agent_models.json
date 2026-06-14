@@ -1,61 +1,62 @@
 {
+  "provider": "nvidia",
   "agents": {
     "obligation": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 4096,
       "context_length": 131072,
       "temperature": 0.0
     },
     "rights_protection": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "definition_actor": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "meta/llama-3.1-8b-instruct",
       "max_tokens": 1536,
       "context_length": 131072,
       "temperature": 0.0
     },
     "threshold_exception": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "compliance_mechanism": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 1536,
       "context_length": 131072,
       "temperature": 0.0
     },
     "preemption": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "meta/llama-3.1-8b-instruct",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0
     },
     "triage": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "meta/llama-3.1-8b-instruct",
       "max_tokens": 256,
       "context_length": 131072,
       "temperature": 0.0
     },
     "enforcement_agent": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 1024,
       "context_length": 131072,
       "temperature": 0.0
     },
     "applicability_agent": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
     },
     "compliance_timeline_agent": {
-      "model": "google/gemma-4-26b-a4b",
+      "model": "openai/gpt-oss-120b",
       "max_tokens": 2048,
       "context_length": 131072,
       "temperature": 0.0
