@@ -597,16 +597,36 @@ def get_discovery_provider() -> BaseLLMProvider:
     return get_provider(settings.discovery_provider)
 
 
+def clear_provider_cache() -> None:
+    """Drop all cached provider instances.
+
+    Call this after switching providers (e.g. the dashboard provider toggle)
+    so the next ``get_extraction_provider()`` rebuilds against the new backend.
+    """
+    _provider_cache.clear()
+    logger.info("llm_provider_cache_cleared")
+
+
 def get_extraction_provider() -> BaseLLMProvider:
     """Get the provider configured for extraction tasks.
 
-    Respects ``REGS_EXTRACTION_PROVIDER``:
-    - "local"  (default) → LocalLLMProvider using ``local_extraction_model``
-    - "nvidia"            → NvidiaLLMProvider using ``nvidia_extraction_model``
+    Resolution order (first non-empty wins):
+    1. ``ModelConfigStore.provider`` — the runtime source of truth driven by the
+       dashboard provider toggle (persisted in config/agent_models.json).
+    2. ``REGS_EXTRACTION_PROVIDER`` env / settings fallback.
+    3. ``REGS_LLM_PROVIDER`` env / settings fallback.
 
+    Values: "local" → LocalLLMProvider; "nvidia" → NvidiaLLMProvider.
     Per-agent ``model_override`` attributes still take precedence at call time.
     """
-    effective = settings.extraction_provider or settings.llm_provider
+    # Lazy import avoids a circular dependency at module load time.
+    from src.core.model_config import get_config
+
+    effective = (
+        get_config().provider
+        or settings.extraction_provider
+        or settings.llm_provider
+    )
     if effective == "nvidia":
         cache_key = "nvidia_extraction"
         if cache_key not in _provider_cache:

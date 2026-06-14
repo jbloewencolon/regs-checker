@@ -5216,10 +5216,15 @@ def models_page(request: Request):
             "temperature": acfg.temperature,
         })
 
+    from src.core.config import settings as _settings
+
     return _render(request, "models.html", {
         "agents": agents_data,
         "available_models": model_ids,
         "lm_studio_connected": len(available) > 0,
+        "current_provider": cfg.provider,
+        "nvidia_configured": bool(_settings.nvidia_api_key),
+        "nvidia_model": _settings.nvidia_extraction_model,
     })
 
 
@@ -5273,6 +5278,7 @@ async def save_model_config(request: Request):
         AGENT_DISPLAY,
         AgentModelConfig,
         ModelConfigStore,
+        get_config,
         save_config,
     )
     from src.ingestion.extractor import reload_agents
@@ -5291,7 +5297,8 @@ async def save_model_config(request: Request):
             temperature=temperature,
         )
 
-    store = ModelConfigStore(agents=agents)
+    # Preserve the active provider — this form only edits per-agent models.
+    store = ModelConfigStore(agents=agents, provider=get_config().provider)
     save_config(store)
     reload_agents()
 
@@ -5304,17 +5311,84 @@ async def save_model_config(request: Request):
 
 @router.post("/api/models/reset")
 def reset_model_config(request: Request):
-    """Reset all agents to default models."""
-    from src.core.model_config import ModelConfigStore, save_config
+    """Reset all agents to default models (provider selection is preserved)."""
+    from src.core.model_config import ModelConfigStore, get_config, save_config
     from src.ingestion.extractor import reload_agents
 
+    current_provider = get_config().provider
     store = ModelConfigStore.defaults()
+    store.provider = current_provider  # don't silently switch backends on reset
     save_config(store)
     reload_agents()
 
     return HTMLResponse(
         '<div class="alert alert-success">'
         "Reset to defaults. Reload this page to see updated values."
+        "</div>"
+    )
+
+
+@router.post("/api/models/set-provider")
+async def set_extraction_provider(request: Request):
+    """Switch the extraction backend between local LM Studio and the NVIDIA API.
+
+    Persists the choice to config/agent_models.json, clears the provider cache,
+    and reloads agents so the next extraction run uses the new backend.
+    No server restart required.
+    """
+    from src.core.config import settings
+    from src.core.llm_provider import clear_provider_cache
+    from src.core.model_config import get_config, save_config
+    from src.ingestion.extractor import is_paused, reload_agents
+
+    form = await request.form()
+    provider = (form.get("provider") or "").strip().lower()
+
+    if provider not in ("local", "nvidia"):
+        return HTMLResponse(
+            '<div class="alert alert-danger">'
+            f'Invalid provider "{html_escape(provider)}". Use "local" or "nvidia".'
+            "</div>",
+            status_code=400,
+        )
+
+    # Guard: don't switch to NVIDIA if the key isn't configured.
+    if provider == "nvidia" and not settings.nvidia_api_key:
+        return HTMLResponse(
+            '<div class="alert alert-danger">'
+            "NVIDIA_API_KEY is not set. Add it to your .env and restart the "
+            "server before switching to the NVIDIA provider."
+            "</div>",
+            status_code=400,
+        )
+
+    store = get_config()
+    store.provider = provider
+    save_config(store)
+
+    # Rebuild provider + agent instances so the change takes effect immediately.
+    clear_provider_cache()
+    reload_agents()
+
+    if provider == "nvidia":
+        label = f"NVIDIA API &mdash; <code>{html_escape(settings.nvidia_extraction_model)}</code>"
+        note = (
+            "Calls now route to integrate.api.nvidia.com. Verify your credits "
+            "and rate limits before a full run."
+        )
+    else:
+        label = f"Local LM Studio &mdash; <code>{html_escape(settings.local_extraction_model)}</code>"
+        note = "Calls now route to your local LM Studio server."
+
+    paused_note = (
+        " Extraction is currently paused; the new provider applies when you resume."
+        if is_paused()
+        else ""
+    )
+
+    return HTMLResponse(
+        '<div class="alert alert-success">'
+        f"Extraction provider set to <strong>{label}</strong>. {note}{paused_note}"
         "</div>"
     )
 

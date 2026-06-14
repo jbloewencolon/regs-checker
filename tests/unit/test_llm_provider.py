@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.core.llm_provider import (
-    BaseLLMProvider,
     LLMResponse,
     LLMUsage,
     LocalLLMProvider,
@@ -161,10 +160,13 @@ class TestGetProvider:
         provider = get_provider("nvidia")
         assert provider is mock_instance
 
+    @patch("src.core.model_config.get_config")
     @patch("src.core.llm_provider.NvidiaLLMProvider")
     @patch("src.core.llm_provider.settings")
-    def test_get_extraction_provider_nvidia(self, mock_settings, mock_cls):
-        mock_settings.extraction_provider = "nvidia"
+    def test_get_extraction_provider_nvidia(self, mock_settings, mock_cls, mock_get_config):
+        # Config store provider is the runtime source of truth.
+        mock_get_config.return_value.provider = "nvidia"
+        mock_settings.extraction_provider = "local"
         mock_settings.llm_provider = "local"
         mock_instance = MagicMock()
         mock_instance.model_id = "openai-gpt-oss-120b-nvidia"
@@ -173,9 +175,11 @@ class TestGetProvider:
         provider = get_extraction_provider()
         assert provider is mock_instance
 
+    @patch("src.core.model_config.get_config")
     @patch("src.core.llm_provider.LocalLLMProvider")
     @patch("src.core.llm_provider.settings")
-    def test_get_extraction_provider_local_default(self, mock_settings, mock_cls):
+    def test_get_extraction_provider_local_default(self, mock_settings, mock_cls, mock_get_config):
+        mock_get_config.return_value.provider = "local"
         mock_settings.extraction_provider = "local"
         mock_settings.llm_provider = "local"
         mock_settings.local_extraction_model = "google/gemma-4-26b-a4b"
@@ -185,6 +189,22 @@ class TestGetProvider:
 
         provider = get_extraction_provider()
         assert provider is mock_instance
+
+    @patch("src.core.model_config.get_config")
+    @patch("src.core.llm_provider.NvidiaLLMProvider")
+    @patch("src.core.llm_provider.settings")
+    def test_config_store_provider_overrides_settings(self, mock_settings, mock_cls, mock_get_config):
+        # Even when settings say "local", the config-store toggle wins.
+        mock_get_config.return_value.provider = "nvidia"
+        mock_settings.extraction_provider = "local"
+        mock_settings.llm_provider = "local"
+        mock_instance = MagicMock()
+        mock_instance.model_id = "openai-gpt-oss-120b-nvidia"
+        mock_cls.return_value = mock_instance
+
+        provider = get_extraction_provider()
+        assert provider is mock_instance
+        mock_cls.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
