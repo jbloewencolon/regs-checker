@@ -231,15 +231,15 @@
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset failed jobs for re-parsing? Completed jobs will not be affected.">
-            Reset (Re-parse Failed)
+                  hx-confirm="Requeue failed jobs so the next Fetch &amp; Parse re-processes them? Completed jobs will not be affected.">
+            Requeue Failed
           </button>
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/fetch/reset-all"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="HARD RESET: Re-parse ALL documents including completed ones? Existing passages will be deleted and rebuilt from scratch.">
-            Reset All (Re-parse All)
+                  hx-confirm="HARD RESET: Requeue ALL documents including completed ones? Existing passages will be deleted and rebuilt on the next Fetch &amp; Parse.">
+            Requeue All
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/triage"
