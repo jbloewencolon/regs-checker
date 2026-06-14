@@ -5286,16 +5286,31 @@ def resolve_concept_action(
 
 @router.get("/models", response_class=HTMLResponse)
 def models_page(request: Request):
-    """Full-page model configuration UI."""
+    """Full-page model configuration UI.
+
+    Settings are edited per-backend: the page shows the *active* provider's
+    config block.  Model choices come from that backend's catalog — LM Studio's
+    loaded models for "local", the NVIDIA catalog (lazy-loaded) for "nvidia".
+    """
     from src.core.model_config import AGENT_DISPLAY, fetch_available_models, get_config
 
     cfg = get_config()
-    available = fetch_available_models()
-    model_ids = sorted({m["id"] for m in available}) if available else []
+    active = cfg.provider
 
+    # Only probe LM Studio when it's the active backend — avoids a 3s stall
+    # on the NVIDIA path.  NVIDIA model ids are typed (with catalog datalist).
+    if active == "local":
+        available = fetch_available_models()
+        model_ids = sorted({m["id"] for m in available}) if available else []
+        lm_connected = len(available) > 0
+    else:
+        model_ids = []
+        lm_connected = False
+
+    active_agents = cfg.agents_for(active)
     agents_data = []
     for name, display in AGENT_DISPLAY.items():
-        acfg = cfg.get(name)
+        acfg = active_agents.get(name) or cfg.get(name)
         agents_data.append({
             "name": name,
             "label": display["label"],
@@ -5311,8 +5326,9 @@ def models_page(request: Request):
     return _render(request, "models.html", {
         "agents": agents_data,
         "available_models": model_ids,
-        "lm_studio_connected": len(available) > 0,
-        "current_provider": cfg.provider,
+        "lm_studio_connected": lm_connected,
+        "current_provider": active,
+        "provider_kind": active,
         "nvidia_configured": bool(_settings.nvidia_api_key),
         "nvidia_model": _settings.nvidia_extraction_model,
     })
@@ -5363,57 +5379,69 @@ def get_available_models():
 
 @router.post("/api/models/save")
 async def save_model_config(request: Request):
-    """Save agent model assignments from the UI form."""
+    """Save agent model assignments for the *active* backend only.
+
+    The other backend's settings are preserved untouched, so LM Studio and
+    NVIDIA configurations stay independent.
+    """
     from src.core.model_config import (
         AGENT_DISPLAY,
         AgentModelConfig,
-        ModelConfigStore,
         get_config,
         save_config,
     )
     from src.ingestion.extractor import reload_agents
 
     form = await request.form()
+    store = get_config()
+    active = store.provider
+    existing = store.agents_for(active)
+
     agents = {}
     for name in AGENT_DISPLAY:
-        model = form.get(f"{name}_model", "")
+        model = (form.get(f"{name}_model", "") or "").strip()
         max_tokens = int(form.get(f"{name}_max_tokens", "65536") or "65536")
         context_length = int(form.get(f"{name}_context_length", "131072") or "131072")
         temperature = float(form.get(f"{name}_temperature", "0.0") or "0.0")
+        # Preserve reasoning_effort (not exposed in the form).
+        prior = existing.get(name)
         agents[name] = AgentModelConfig(
             model=model,
             max_tokens=max_tokens,
             context_length=context_length,
             temperature=temperature,
+            reasoning_effort=prior.reasoning_effort if prior else None,
         )
 
-    # Preserve the active provider — this form only edits per-agent models.
-    store = ModelConfigStore(agents=agents, provider=get_config().provider)
+    store.set_agents(active, agents)
     save_config(store)
     reload_agents()
 
     return HTMLResponse(
         '<div class="alert alert-success" id="save-result">'
-        "Configuration saved. Agents will use new models on next extraction run."
+        f"Saved <strong>{html_escape(active)}</strong> configuration. "
+        "Agents will use it on the next extraction run."
         "</div>"
     )
 
 
 @router.post("/api/models/reset")
 def reset_model_config(request: Request):
-    """Reset all agents to default models (provider selection is preserved)."""
+    """Reset the *active* backend's agents to defaults (other backend untouched)."""
     from src.core.model_config import ModelConfigStore, get_config, save_config
     from src.ingestion.extractor import reload_agents
 
-    current_provider = get_config().provider
-    store = ModelConfigStore.defaults()
-    store.provider = current_provider  # don't silently switch backends on reset
+    store = get_config()
+    active = store.provider
+    defaults = ModelConfigStore.defaults()
+    store.set_agents(active, defaults.agents_for(active))
     save_config(store)
     reload_agents()
 
     return HTMLResponse(
         '<div class="alert alert-success">'
-        "Reset to defaults. Reload this page to see updated values."
+        f"Reset <strong>{html_escape(active)}</strong> agents to defaults. "
+        "Reload this page to see updated values."
         "</div>"
     )
 
@@ -5571,7 +5599,6 @@ async def apply_model_to_all(request: Request) -> HTMLResponse:
     from src.core.model_config import (
         AGENT_DISPLAY,
         AgentModelConfig,
-        ModelConfigStore,
         get_config,
         save_config,
     )
@@ -5585,12 +5612,14 @@ async def apply_model_to_all(request: Request) -> HTMLResponse:
             '<div class="alert alert-warning">No model selected.</div>'
         )
 
-    cfg = get_config()
+    store = get_config()
+    active = store.provider
+    existing_agents = store.agents_for(active)
     updated = {}
     for name in AGENT_DISPLAY:
-        existing = cfg.get(name)
+        existing = existing_agents.get(name) or store.get(name)
         if name == "triage":
-            # Keep triage as-is
+            # Keep triage as-is — it uses a smaller/faster model by design.
             updated[name] = existing
         else:
             updated[name] = AgentModelConfig(
@@ -5601,13 +5630,56 @@ async def apply_model_to_all(request: Request) -> HTMLResponse:
                 reasoning_effort=existing.reasoning_effort,
             )
 
-    store = ModelConfigStore(agents=updated)
+    store.set_agents(active, updated)
     save_config(store)
     reload_agents()
 
     return HTMLResponse(
         f'<div class="alert alert-success">'
-        f'All extraction agents set to <code>{html_escape(model)}</code>. '
-        f'Reload the page to see updated dropdowns.'
+        f'All extraction agents set to <code>{html_escape(model)}</code> '
+        f'for the <strong>{html_escape(active)}</strong> backend. '
+        f'Reload the page to see updated values.'
         f'</div>'
+    )
+
+
+@router.get("/api/models/nvidia-available")
+def get_nvidia_models() -> HTMLResponse:
+    """HTMX endpoint: fetch the NVIDIA catalog and populate model datalists.
+
+    Separate from the LM Studio check so each backend is verified on its own.
+    """
+    import json as _json
+
+    from src.core.config import settings
+    from src.core.model_config import fetch_nvidia_models
+
+    if not settings.nvidia_api_key:
+        return HTMLResponse(
+            '<div class="alert alert-warning">'
+            "NVIDIA_API_KEY is not set. Add it to <code>.env</code> and restart."
+            "</div>"
+        )
+
+    models = fetch_nvidia_models()
+    if not models:
+        return HTMLResponse(
+            '<div class="alert alert-warning">'
+            "Could not reach the NVIDIA catalog. Check your key, credits, and "
+            "network access to <code>integrate.api.nvidia.com</code>."
+            "</div>"
+        )
+
+    options_html = "".join(
+        f'<option value="{html_escape(m)}"></option>' for m in models
+    )
+    return HTMLResponse(
+        f'<div class="alert alert-success">'
+        f"NVIDIA catalog reachable &mdash; {len(models)} models available. "
+        f"Type to search in any model field below."
+        f"</div>"
+        f"<script>"
+        f'var dl=document.getElementById("nvidia-model-list");'
+        f"if(dl){{dl.innerHTML={_json.dumps(options_html)};}}"
+        f"</script>"
     )
