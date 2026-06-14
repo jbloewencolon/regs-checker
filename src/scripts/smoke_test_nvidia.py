@@ -91,7 +91,7 @@ def main() -> None:
         result = provider.call(
             system_prompt="You are a helpful assistant. Output only valid JSON.",
             user_prompt='Reply with exactly this JSON object and nothing else: {"ok": true}',
-            max_tokens=50,
+            max_tokens=512,
             temperature=0.0,
         )
         elapsed = time.monotonic() - t0
