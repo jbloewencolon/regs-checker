@@ -317,6 +317,38 @@ def _ensure_pipeline_events_table(db, _log=None) -> None:
         _log("Table created.")
 
 
+def _classify_llm_error(exc: Exception | str) -> str:
+    """Map an extraction exception to a coarse error_type for the UI.
+
+    Distinguishes provider-level failures (auth, quota) from model/output
+    failures so the dashboard can color-code and filter them.  Returns one of:
+    "auth_error", "quota_error", "validation_error", "timeout_error", "llm_error".
+    """
+    # Prefer the HTTP status code when present (NVIDIA / OpenAI-compatible APIs).
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    if status in (401, 403):
+        return "auth_error"
+    if status == 429:
+        return "quota_error"
+
+    msg = str(exc).lower()
+    if "429" in msg or "rate limit" in msg or "quota" in msg:
+        return "quota_error"
+    if "401" in msg or "403" in msg or "auth" in msg or "entitlement" in msg or "api key" in msg:
+        return "auth_error"
+    if "timeout" in msg or "timed out" in msg or "connecterror" in msg:
+        return "timeout_error"
+    if (
+        "json" in msg
+        or "validation" in msg
+        or "schema" in msg
+        or "parse" in msg
+        or "expecting value" in msg
+    ):
+        return "validation_error"
+    return "llm_error"
+
+
 def _record_failed_attempt(
     db,
     source_record_id: int,
@@ -428,13 +460,23 @@ def _persist_pipeline_event(
     duration_ms: int | None = None,
     confidence_tier: str | None = None,
     error_message: str | None = None,
+    model_id: str | None = None,
     details: dict | None = None,
 ) -> None:
     """Write a PipelineEvent row to the DB (RR6a — durable event log).
 
     Fires best-effort: exceptions are logged and swallowed so an event
     persistence failure never disrupts the extraction pipeline.
+
+    ``model_id`` defaults to the active extraction provider's model_id (e.g.
+    ``…-nvidia`` / ``…-local``) so every event carries backend attribution.
     """
+    if model_id is None:
+        try:
+            from src.core.llm_provider import get_extraction_provider
+            model_id = get_extraction_provider().model_id
+        except Exception:
+            model_id = None  # never let attribution lookup break event logging
     # Use a savepoint so a write failure (e.g. table missing) rolls back only
     # this insert, never the surrounding extraction transaction.
     try:
@@ -450,6 +492,7 @@ def _persist_pipeline_event(
                 duration_ms=duration_ms,
                 confidence_tier=confidence_tier,
                 error_message=error_message[:2000] if error_message else None,
+                model_id=model_id,
                 details=details,
             ))
     except Exception as e:
@@ -1293,6 +1336,7 @@ def extract_single_record(
                 error=str(result),
                 section_path=record.section_path,
             )
+            error_type = _classify_llm_error(result)
             _finish_attempt(db, attempt_id, "failed", error_message=str(result))
             _persist_pipeline_event(
                 db, "agent_error",
@@ -1300,10 +1344,12 @@ def extract_single_record(
                 source_record_id=record.id,
                 agent_name=name,
                 error_message=str(result),
+                details={"error_type": error_type},
             )
-            # Record for retry
+            # Record for retry, tagged with the classified error type so the
+            # dashboard can distinguish auth/quota failures from model errors.
             _record_failed_attempt(
-                db, record.id, name, "llm_error", str(result),
+                db, record.id, name, error_type, str(result),
                 extraction_job_id=extraction_job.id if extraction_job else None,
             )
             if tracker is not None:
