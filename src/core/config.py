@@ -1,5 +1,6 @@
 """Application configuration via environment variables."""
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -70,6 +71,13 @@ class Settings(BaseSettings):
 
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"
+
+    # NVIDIA hosted LLM (OpenAI-compatible — https://integrate.api.nvidia.com/v1)
+    # NVIDIA_API_KEY has no REGS_ prefix by convention; set it directly in .env or CI secrets.
+    nvidia_api_key: str = Field("", validation_alias="NVIDIA_API_KEY")
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_extraction_model: str = "openai/gpt-oss-120b"
+    nvidia_discovery_model: str = "openai/gpt-oss-120b"
 
     model_config = {"env_prefix": "REGS_", "env_file": ".env", "extra": "ignore"}
 
