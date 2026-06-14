@@ -212,19 +212,34 @@
         </div>
 
         <div class="step-actions">
+          <button class="btn btn-primary"
+                  hx-post="/dashboard/api/run/fetch"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this">
+            <span class="btn-label">Fetch &amp; Parse Documents</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Fetching &amp; parsing...</span>
+          </button>
+          <button class="btn"
+                  hx-post="/dashboard/api/run/fetch/cancel"
+                  hx-target="#step2-result"
+                  hx-swap="innerHTML"
+                  hx-confirm="Stop the running fetch &amp; parse after the current document?">
+            Cancel Parse
+          </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Reset failed jobs for re-parsing? Completed jobs will not be affected.">
-            Reset (Re-parse Failed)
+                  hx-confirm="Requeue failed jobs so the next Fetch &amp; Parse re-processes them? Completed jobs will not be affected.">
+            Requeue Failed
           </button>
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/fetch/reset-all"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="HARD RESET: Re-parse ALL documents including completed ones? Existing passages will be deleted and rebuilt from scratch.">
-            Reset All (Re-parse All)
+                  hx-confirm="HARD RESET: Requeue ALL documents including completed ones? Existing passages will be deleted and rebuilt on the next Fetch &amp; Parse.">
+            Requeue All
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/triage"
@@ -341,27 +356,29 @@
         <!-- Extraction method tabs -->
         <div class="tabs" id="extract-tabs">
           <button class="tab active" onclick="switchExtractTab('local')">
-            Local LLM
-            <span class="tab-count">Free</span>
-          </button>
-          <button class="tab" onclick="switchExtractTab('api')">
-            Cloud API
-            <span class="paid-tag" style="margin-left:0;">$ Paid</span>
+            Run Extraction
           </button>
           <button class="tab" onclick="switchExtractTab('manual')">
             Manual Export
           </button>
         </div>
 
-        <!-- Tab: Local LLM -->
+        <!-- Tab: Run Extraction (uses the active provider set on the Models page) -->
         <div class="extract-tab-panel" id="tab-local">
-          <div class="step-description" style="margin-bottom: 8px;">
-            Runs 7 extraction agents via <strong>LM Studio</strong>.
-            Requires LM Studio running at <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
-            <a href="/dashboard/models" style="font-size:12px;margin-left:6px;">Configure models ›</a>
+          <!-- Active provider indicator — the backend is chosen on the Models page toggle -->
+          {% if active_provider == 'nvidia' %}
+          <div style="margin-bottom:8px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);">
+            Active provider: <strong>NVIDIA API</strong> &mdash; <code>{{ nvidia_model }}</code>
+            <span style="color:var(--warning);">($ paid — verify credits)</span>
+            <a href="/dashboard/models" style="font-size:12px;margin-left:6px;">Change provider ›</a>
           </div>
-
-          <!-- LM Studio connection status — polled every 10 s -->
+          {% else %}
+          <div class="step-description" style="margin-bottom: 8px;">
+            Active provider: <strong>Local LM Studio</strong> (free) at
+            <code>{{ config.local_llm_url or 'http://localhost:1234' }}</code>.
+            <a href="/dashboard/models" style="font-size:12px;margin-left:6px;">Change provider ›</a>
+          </div>
+          <!-- LM Studio connection status — polled every 10 s (local only) -->
           <div id="lm-studio-status"
                hx-get="/dashboard/api/models/status"
                hx-trigger="load, every 10s"
@@ -371,9 +388,10 @@
               Checking LM Studio…
             </div>
           </div>
+          {% endif %}
           <div class="step-actions">
             <button class="btn btn-primary"
-                    hx-post="/dashboard/api/run/extract?provider=local&limit=5"
+                    hx-post="/dashboard/api/run/extract?limit=5"
                     hx-target="#extract-result"
                     hx-swap="innerHTML"
                     hx-disabled-elt="this">
@@ -381,7 +399,7 @@
               <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
             </button>
             <button class="btn btn-primary"
-                    hx-post="/dashboard/api/run/extract?provider=local&limit=50"
+                    hx-post="/dashboard/api/run/extract?limit=50"
                     hx-target="#extract-result"
                     hx-swap="innerHTML"
                     hx-disabled-elt="this">
@@ -389,49 +407,13 @@
               <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
             </button>
             <button class="btn"
-                    hx-post="/dashboard/api/run/extract?provider=local"
+                    hx-post="/dashboard/api/run/extract"
                     hx-target="#extract-result"
                     hx-swap="innerHTML"
                     hx-disabled-elt="this"
-                    hx-confirm="Run extraction on ALL unprocessed passages? This may take a while.">
+                    hx-confirm="Run extraction on ALL unprocessed passages with the active provider? This may take a while.">
               <span class="btn-label">Extract All</span>
               <span class="htmx-indicator"><span class="spinner"></span> Running agents...</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Tab: Cloud API -->
-        <div class="extract-tab-panel" id="tab-api" style="display:none;">
-          <div class="step-description" style="margin-bottom: 8px;">
-            Sends passages to the <strong>Anthropic API</strong> (Claude Haiku). ~$0.02-0.05 per bill.
-          </div>
-          <div class="step-actions">
-            <button class="btn"
-                    hx-post="/dashboard/api/run/extract?provider=anthropic&limit=10"
-                    hx-target="#extract-result"
-                    hx-swap="innerHTML"
-                    hx-disabled-elt="this"
-                    hx-confirm="This will make paid API calls. Extract 10 passages?">
-              <span class="btn-label">Extract 10 (API)</span>
-              <span class="htmx-indicator"><span class="spinner"></span></span>
-            </button>
-            <button class="btn"
-                    hx-post="/dashboard/api/run/extract?provider=anthropic&limit=50"
-                    hx-target="#extract-result"
-                    hx-swap="innerHTML"
-                    hx-disabled-elt="this"
-                    hx-confirm="This will make paid API calls. Extract 50 passages?">
-              <span class="btn-label">Extract 50 (API)</span>
-              <span class="htmx-indicator"><span class="spinner"></span></span>
-            </button>
-            <button class="btn"
-                    hx-post="/dashboard/api/run/extract?provider=anthropic"
-                    hx-target="#extract-result"
-                    hx-swap="innerHTML"
-                    hx-disabled-elt="this"
-                    hx-confirm="This will make paid API calls for ALL remaining passages. Continue?">
-              <span class="btn-label">Extract All (API)</span>
-              <span class="htmx-indicator"><span class="spinner"></span></span>
             </button>
           </div>
         </div>
