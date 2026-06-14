@@ -2967,13 +2967,38 @@ def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
                 PipelineEvent.agent_name,
                 PipelineEvent.error_message,
                 PipelineEvent.created_at,
+                PipelineEvent.model_id,
+                PipelineEvent.details,
             )
             .where(PipelineEvent.event_type == "agent_error")
             .order_by(desc(PipelineEvent.created_at))
-            .limit(5)
+            .limit(10)
         ).all()
     except Exception:
         db.rollback()
+
+    # Provider-health badge: if recent failures are auth/quota errors, the run
+    # is failing for a *backend* reason (e.g. out of NVIDIA credits) — prompt a
+    # switch rather than letting it look like generic model noise.
+    provider_badge = ""
+    quota_hits = [
+        r for r in error_rows
+        if (r.details or {}).get("error_type") in ("quota_error", "auth_error")
+    ]
+    if quota_hits:
+        kinds = {(r.details or {}).get("error_type") for r in quota_hits}
+        on_nvidia = any((r.model_id or "").endswith("-nvidia") for r in quota_hits)
+        kind_label = "quota/credit" if "quota_error" in kinds else "auth"
+        backend = "NVIDIA" if on_nvidia else "the provider"
+        provider_badge = (
+            '<div style="margin-top:6px;padding:6px 10px;background:rgba(243,156,18,0.12);'
+            'border-left:3px solid #f39c12;font-size:0.82em;">'
+            f'&#9888; <strong>{kind_label} errors from {backend}</strong> '
+            f'({len(quota_hits)} recent). '
+            'Consider switching the extraction provider on the '
+            '<a href="/dashboard/models">Models page</a> and retrying failed items.'
+            '</div>'
+        )
 
     state_badge = ""
     if cancelled:
@@ -2987,16 +3012,40 @@ def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
     elif idle_secs > 0:
         state_badge = f'<span style="color:#27ae60;font-weight:600;">▶ Running</span> <span style="color:#888;font-size:0.85em;">last passage {int(idle_secs)}s ago</span>'
 
+    _ETYPE_COLOR = {
+        "quota_error": "#f39c12",
+        "auth_error": "#e74c3c",
+        "validation_error": "#e67e22",
+        "timeout_error": "#9b59b6",
+        "llm_error": "#888",
+        "db_error": "#8e44ad",
+    }
+
     errors_html = ""
     if error_rows:
-        rows = "".join(
-            f'<tr><td style="padding:2px 6px;color:#888;font-size:0.8em;">{r.agent_name or "—"}</td>'
-            f'<td style="padding:2px 6px;font-size:0.8em;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"'
-            f' title="{html_escape(r.error_message or "")}">{html_escape((r.error_message or "")[:120])}</td>'
-            f'<td style="padding:2px 6px;color:#888;font-size:0.8em;">{r.created_at.strftime("%H:%M:%S") if r.created_at else ""}</td>'
-            f'</tr>'
-            for r in error_rows
-        )
+        def _row(r):
+            etype = (r.details or {}).get("error_type", "")
+            type_tag = ""
+            if etype:
+                type_tag = (
+                    f'<span style="font-size:0.72em;color:{_ETYPE_COLOR.get(etype, "#888")};'
+                    f'font-weight:600;">{html_escape(etype)}</span> '
+                )
+            backend = ""
+            if r.model_id:
+                backend = "NVIDIA" if r.model_id.endswith("-nvidia") else "local"
+            return (
+                f'<tr><td style="padding:2px 6px;color:#888;font-size:0.8em;white-space:nowrap;">'
+                f'{html_escape(r.agent_name or "—")}'
+                f'{(" · " + backend) if backend else ""}</td>'
+                f'<td style="padding:2px 6px;font-size:0.8em;max-width:520px;overflow:hidden;'
+                f'text-overflow:ellipsis;white-space:nowrap;" title="{html_escape(r.error_message or "")}">'
+                f'{type_tag}{html_escape((r.error_message or "")[:300])}</td>'
+                f'<td style="padding:2px 6px;color:#888;font-size:0.8em;white-space:nowrap;">'
+                f'{r.created_at.strftime("%H:%M:%S") if r.created_at else ""}</td>'
+                f'</tr>'
+            )
+        rows = "".join(_row(r) for r in error_rows[:5])
         errors_html = (
             '<div style="margin-top:6px;">'
             '<div style="font-size:0.8em;color:#888;margin-bottom:2px;">Recent agent errors</div>'
@@ -3005,7 +3054,7 @@ def extract_health(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
     return HTMLResponse(
-        f'<div style="font-size:0.85em;">{state_badge}{errors_html}</div>'
+        f'<div style="font-size:0.85em;">{state_badge}{provider_badge}{errors_html}</div>'
     )
 
 
@@ -3120,15 +3169,18 @@ def get_failed_detail(db: Session = Depends(get_db)) -> HTMLResponse:
 
     type_colors = {
         "llm_error": "#e74c3c",
-        "validation_error": "#f39c12",
+        "validation_error": "#e67e22",
         "db_error": "#8e44ad",
+        "quota_error": "#f39c12",
+        "auth_error": "#e74c3c",
+        "timeout_error": "#9b59b6",
     }
 
     trs = ""
     for r in rows:
         color = type_colors.get(r.error_type or "", "#888")
         section = html_escape(r.section_path or "—")
-        msg_short = html_escape((r.error_message or "")[:160])
+        msg_short = html_escape((r.error_message or "")[:300])
         msg_full = html_escape(r.error_message or "")
         ts = r.created_at.strftime("%m-%d %H:%M") if r.created_at else ""
         trs += (
@@ -3140,7 +3192,7 @@ def get_failed_detail(db: Session = Depends(get_db)) -> HTMLResponse:
             f'<span style="color:{color};font-weight:600;">{html_escape(r.error_type or "")}</span></td>'
             f'<td style="padding:4px 6px;font-size:11px;color:var(--text-muted);">{section}</td>'
             f'<td style="padding:4px 6px;font-size:11px;max-width:340px;">'
-            f'<span title="{msg_full}">{msg_short}{"…" if len(r.error_message or "") > 160 else ""}</span>'
+            f'<span title="{msg_full}">{msg_short}{"…" if len(r.error_message or "") > 300 else ""}</span>'
             f'</td>'
             f'</tr>'
         )
@@ -3221,20 +3273,24 @@ def get_pipeline_events(
     for r in rows:
         color = type_colors.get(r.event_type or "", "#888")
         dur = f"{r.duration_ms / 1000:.1f}s" if r.duration_ms else "—"
-        msg = html_escape((r.error_message or "")[:120])
+        msg = html_escape((r.error_message or "")[:300])
         msg_full = html_escape(r.error_message or "")
         ts = r.created_at.strftime("%H:%M:%S") if r.created_at else ""
+        backend = "—"
+        if r.model_id:
+            backend = "NVIDIA" if r.model_id.endswith("-nvidia") else "local"
         trs += (
             f'<tr style="border-bottom:1px solid var(--border);">'
             f'<td style="padding:3px 6px;font-size:11px;white-space:nowrap;color:var(--text-muted);">{ts}</td>'
             f'<td style="padding:3px 6px;font-size:11px;">'
             f'<span style="color:{color};font-weight:600;">{html_escape(r.event_type or "")}</span></td>'
             f'<td style="padding:3px 6px;font-size:11px;"><code>{html_escape(r.agent_name or "")}</code></td>'
+            f'<td style="padding:3px 6px;font-size:11px;color:var(--text-muted);" title="{html_escape(r.model_id or "")}">{backend}</td>'
             f'<td style="padding:3px 6px;font-size:11px;text-align:right;">{dur}</td>'
             f'<td style="padding:3px 6px;font-size:11px;text-align:right;">'
             f'{r.extraction_count if r.extraction_count is not None else "—"}</td>'
             f'<td style="padding:3px 6px;font-size:11px;max-width:300px;">'
-            f'<span title="{msg_full}">{msg}{"…" if len(r.error_message or "") > 120 else ""}</span>'
+            f'<span title="{msg_full}">{msg}{"…" if len(r.error_message or "") > 300 else ""}</span>'
             f'</td>'
             f'</tr>'
         )
@@ -3274,6 +3330,7 @@ def get_pipeline_events(
             '<th style="padding:3px 6px;font-size:11px;text-align:left;">Time</th>'
             '<th style="padding:3px 6px;font-size:11px;text-align:left;">Type</th>'
             '<th style="padding:3px 6px;font-size:11px;text-align:left;">Agent</th>'
+            '<th style="padding:3px 6px;font-size:11px;text-align:left;">Backend</th>'
             '<th style="padding:3px 6px;font-size:11px;text-align:right;">Dur</th>'
             '<th style="padding:3px 6px;font-size:11px;text-align:right;">Ext</th>'
             '<th style="padding:3px 6px;font-size:11px;text-align:left;">Message</th>'
@@ -3398,6 +3455,48 @@ def run_api_extract(
                 '</div>'
             )
             panel_class = "warning"
+        # Circuit-breaker trip is the single most important "run aborted early"
+        # signal — surface it prominently instead of only in the live feed.
+        cb_note = ""
+        if summary.get("circuit_breaker_tripped"):
+            panel_class = "error"
+            detail = html_escape(str(summary.get("circuit_breaker_detail", ""))[:400])
+            cb_note = (
+                '<div style="margin-top:8px;padding:8px 10px;background:rgba(231,76,60,0.08);'
+                'border-left:3px solid #e74c3c;font-size:13px;">'
+                '<strong>&#9888; Circuit breaker tripped — run stopped early.</strong>'
+                f'<div style="margin-top:4px;color:var(--text-muted);font-size:12px;">{detail}</div>'
+                '</div>'
+            )
+
+        # Pull the most recent agent_error (with its classified type + backend)
+        # so the completion panel shows what failed without opening a drill-down.
+        last_error_note = ""
+        try:
+            from sqlalchemy import desc as _desc
+
+            from src.db.models import PipelineEvent as _PE
+            row = db.execute(
+                select(_PE.agent_name, _PE.error_message, _PE.model_id, _PE.details)
+                .where(_PE.event_type == "agent_error")
+                .order_by(_desc(_PE.created_at))
+                .limit(1)
+            ).first()
+            if row and row.error_message:
+                etype = (row.details or {}).get("error_type", "llm_error")
+                backend = ""
+                if row.model_id:
+                    backend = " on " + ("NVIDIA" if row.model_id.endswith("-nvidia") else "local")
+                last_error_note = (
+                    '<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'
+                    f'Last error ({html_escape(etype)}{backend}, agent '
+                    f'{html_escape(row.agent_name or "?")}): '
+                    f'{html_escape(row.error_message[:200])}'
+                    '</div>'
+                )
+        except Exception:
+            db.rollback()
+
         run_folder = summary.get("folder", "")
         run_note = ""
         if run_folder:
@@ -3413,7 +3512,7 @@ def run_api_extract(
             f'Extracted {summary["total_extractions"]} items from '
             f'{summary["records_processed"]} passages {label}. '
             f'Tokens: {tokens.get("total_tokens", 0):,}'
-            f'{cancelled_note}{run_note}'
+            f'{cb_note}{cancelled_note}{last_error_note}{run_note}'
             f'</div>'
         )
 
@@ -5216,10 +5315,15 @@ def models_page(request: Request):
             "temperature": acfg.temperature,
         })
 
+    from src.core.config import settings as _settings
+
     return _render(request, "models.html", {
         "agents": agents_data,
         "available_models": model_ids,
         "lm_studio_connected": len(available) > 0,
+        "current_provider": cfg.provider,
+        "nvidia_configured": bool(_settings.nvidia_api_key),
+        "nvidia_model": _settings.nvidia_extraction_model,
     })
 
 
@@ -5273,6 +5377,7 @@ async def save_model_config(request: Request):
         AGENT_DISPLAY,
         AgentModelConfig,
         ModelConfigStore,
+        get_config,
         save_config,
     )
     from src.ingestion.extractor import reload_agents
@@ -5291,7 +5396,8 @@ async def save_model_config(request: Request):
             temperature=temperature,
         )
 
-    store = ModelConfigStore(agents=agents)
+    # Preserve the active provider — this form only edits per-agent models.
+    store = ModelConfigStore(agents=agents, provider=get_config().provider)
     save_config(store)
     reload_agents()
 
@@ -5304,17 +5410,84 @@ async def save_model_config(request: Request):
 
 @router.post("/api/models/reset")
 def reset_model_config(request: Request):
-    """Reset all agents to default models."""
-    from src.core.model_config import ModelConfigStore, save_config
+    """Reset all agents to default models (provider selection is preserved)."""
+    from src.core.model_config import ModelConfigStore, get_config, save_config
     from src.ingestion.extractor import reload_agents
 
+    current_provider = get_config().provider
     store = ModelConfigStore.defaults()
+    store.provider = current_provider  # don't silently switch backends on reset
     save_config(store)
     reload_agents()
 
     return HTMLResponse(
         '<div class="alert alert-success">'
         "Reset to defaults. Reload this page to see updated values."
+        "</div>"
+    )
+
+
+@router.post("/api/models/set-provider")
+async def set_extraction_provider(request: Request):
+    """Switch the extraction backend between local LM Studio and the NVIDIA API.
+
+    Persists the choice to config/agent_models.json, clears the provider cache,
+    and reloads agents so the next extraction run uses the new backend.
+    No server restart required.
+    """
+    from src.core.config import settings
+    from src.core.llm_provider import clear_provider_cache
+    from src.core.model_config import get_config, save_config
+    from src.ingestion.extractor import is_paused, reload_agents
+
+    form = await request.form()
+    provider = (form.get("provider") or "").strip().lower()
+
+    if provider not in ("local", "nvidia"):
+        return HTMLResponse(
+            '<div class="alert alert-danger">'
+            f'Invalid provider "{html_escape(provider)}". Use "local" or "nvidia".'
+            "</div>",
+            status_code=400,
+        )
+
+    # Guard: don't switch to NVIDIA if the key isn't configured.
+    if provider == "nvidia" and not settings.nvidia_api_key:
+        return HTMLResponse(
+            '<div class="alert alert-danger">'
+            "NVIDIA_API_KEY is not set. Add it to your .env and restart the "
+            "server before switching to the NVIDIA provider."
+            "</div>",
+            status_code=400,
+        )
+
+    store = get_config()
+    store.provider = provider
+    save_config(store)
+
+    # Rebuild provider + agent instances so the change takes effect immediately.
+    clear_provider_cache()
+    reload_agents()
+
+    if provider == "nvidia":
+        label = f"NVIDIA API &mdash; <code>{html_escape(settings.nvidia_extraction_model)}</code>"
+        note = (
+            "Calls now route to integrate.api.nvidia.com. Verify your credits "
+            "and rate limits before a full run."
+        )
+    else:
+        label = f"Local LM Studio &mdash; <code>{html_escape(settings.local_extraction_model)}</code>"
+        note = "Calls now route to your local LM Studio server."
+
+    paused_note = (
+        " Extraction is currently paused; the new provider applies when you resume."
+        if is_paused()
+        else ""
+    )
+
+    return HTMLResponse(
+        '<div class="alert alert-success">'
+        f"Extraction provider set to <strong>{label}</strong>. {note}{paused_note}"
         "</div>"
     )
 

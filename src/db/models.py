@@ -1148,6 +1148,10 @@ class PipelineEvent(Base):
     duration_ms = Column(Integer, nullable=True)
     confidence_tier = Column(String(1), nullable=True)
     error_message = Column(Text, nullable=True)
+    # Provider/model attribution — e.g. "openai-gpt-oss-120b-nvidia" or
+    # "google-gemma-4-26b-a4b-local". The "-nvidia"/"-local" suffix lets the
+    # dashboard attribute failures to the active backend in mixed-provider runs.
+    model_id = Column(String(100), nullable=True)
     details = Column(JSONB, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 

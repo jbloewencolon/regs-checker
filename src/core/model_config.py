@@ -47,8 +47,16 @@ class AgentModelConfig:
 
 @dataclass
 class ModelConfigStore:
-    """Full config mapping agent names → settings."""
+    """Full config mapping agent names → settings.
+
+    ``provider`` selects the LLM backend for extraction at runtime:
+      - "local"  → LocalLLMProvider (LM Studio / vLLM / Ollama)
+      - "nvidia" → NvidiaLLMProvider (integrate.api.nvidia.com)
+    It is the runtime source of truth for the dashboard provider toggle, seeded
+    from ``settings.extraction_provider`` on first load.
+    """
     agents: dict[str, AgentModelConfig] = field(default_factory=dict)
+    provider: str = "local"
 
     # ------------------------------------------------------------------
     # Persistence
@@ -65,7 +73,10 @@ class ModelConfigStore:
                     name: AgentModelConfig(**{k: v for k, v in cfg.items() if k in valid_fields})
                     for name, cfg in raw.get("agents", {}).items()
                 }
-                return cls(agents=agents)
+                # provider key is optional for backward compatibility with
+                # pre-toggle agent_models.json files — seed from settings.
+                provider = raw.get("provider") or settings.extraction_provider or "local"
+                return cls(agents=agents, provider=provider)
             except Exception:
                 logger.warning("Corrupt agent_models.json — using defaults", exc_info=True)
         return cls.defaults()
@@ -73,9 +84,12 @@ class ModelConfigStore:
     def save(self) -> None:
         """Persist current config to JSON."""
         CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        data = {"agents": {name: cfg.to_dict() for name, cfg in self.agents.items()}}
+        data = {
+            "provider": self.provider,
+            "agents": {name: cfg.to_dict() for name, cfg in self.agents.items()},
+        }
         CONFIG_PATH.write_text(json.dumps(data, indent=2) + "\n")
-        logger.info("Saved agent model config to %s", CONFIG_PATH)
+        logger.info("Saved agent model config to %s (provider=%s)", CONFIG_PATH, self.provider)
 
     @classmethod
     def defaults(cls) -> ModelConfigStore:
@@ -119,7 +133,7 @@ class ModelConfigStore:
                     temperature=settings.extraction_temperature,
                     reasoning_effort="off",
                 )
-        return cls(agents=agents)
+        return cls(agents=agents, provider=settings.extraction_provider or "local")
 
     # ------------------------------------------------------------------
     # Accessors

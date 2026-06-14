@@ -291,87 +291,12 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ---
 
-### Phase 8 — Export Bugs + Gemma Model Fixes + Low-Confidence Persistence (COMPLETED ✓)
+### Phase 8 — Export Bugs + Gemma Model Fixes + Low-Confidence Persistence (COMPLETED ✓ 2026-05-23)
 
-**Status**: All sub-fixes applied and tested. 16,322 rows synced successfully. README.md and architecture.md reconciled with current pipeline.
-
-**Sub-fixes:**
-- ✓ Fixed export endpoints: rewind buffer for CSV/JSON flagger downloader
-- ✓ Implemented persistent low-confidence storage: `_active/<extraction_run>/low_confidence_extractions/` with RunArchiver
-- ✓ Fixed Supabase sync failures:
-  - Raw_artifacts 409: Added TABLE_CONFLICT_COLUMNS dict + ?on_conflict query param to PostgREST
-  - Extractions 400: Added 3 missing columns (duration_ms, input_tokens, output_tokens)
-  - Bill_level_extractions: Created table with (document_version_id, agent_name) unique constraint
-  - Failed_extraction_attempts: Created table with retry tracking
-- ✓ Updated README: Agent list (6 passage + 3 bill-level), Gemma 4-26b model, token doubling docs, bill-level table, LocalLLMProvider section, low_confidence_extractions files
-- ✓ Reconciled architecture.md: Section 3 rewritten (signal-based routing, bill-level agents, ambiguity retirement, enforcement context injection)
-
-**Technical Detail** (see completed_tasks.md for comprehensive breakdown):
-
-#### Phase 8A: Export Endpoints Bug Fix — DONE
-- **Root cause**: Dashboard low-confidence export endpoints (`/api/low-confidence/export.csv` and `/api/low-confidence/export.jsonl`) referenced non-existent `dv.document_family` relationship
-- **Fix**: Changed to correct relationship name `dv.family`; added null guards before accessing `.source`, `.canonical_title`, `.metadata_`
-- **Files modified**: `src/api/routes/dashboard.py` (lines 2222-2223, 2298-2312)
-
-#### Phase 8B: Gemma Token Doubling + reasoning_effort Caching — DONE
-- **Root cause**: `config/agent_models.json` had `reasoning_effort: "off"` for all agents. Gemma rejects this parameter (HTTP 400); on retry the token doubling logic had already decided NOT to double. Result: Gemma ran full thinking mode with no JSON budget (~50% empty response errors).
-- **Fix**: Removed `reasoning_effort: "off"` from configs; restored pre-doubling values. Added `_reasoning_effort_unsupported: set[str]` cache to LocalLLMProvider.
-- **Files modified**: `config/agent_models.json`, `src/core/llm_provider.py` (lines 239, 256-265, 359)
-
-#### Phase 8C: Channel-Thought Recovery — DONE
-- **Root cause**: Gemma 4 emits `<|channel>thought` tokens that LM Studio can't tokenize (HTTP 400); actual JSON appears in error body
-- **Fix**: Added recovery logic in LocalLLMProvider.call() (lines 273-304) to extract JSON from error body, validate, and return
-- **Files modified**: `src/core/llm_provider.py` (lines 273-304)
-
-#### Phase 8D: JSON Key Whitespace Stripping — DONE
-- **Root cause**: Some models emit tab-prefixed JSON keys like `"\tterm"` instead of `"term"`
-- **Fix**: Added recursive `_strip_keys()` helper in `_repair_json()` (lines 699-710) that strips leading/trailing whitespace from all dict keys
-- **Files modified**: `src/agents/base.py` (lines 699-710)
-
-#### Phase 8E: Low-Confidence Persistence to Disk — DONE
-- **Root cause**: Export CSV/JSONL disappeared after extraction reset (app reset)
-- **Solution**: Added `_export_low_confidence()` method to RunArchiver that writes persistent files at end of every run:
-  - `output/extraction_runs/active/low_confidence_extractions.csv` (12 columns, Tier C/D only, ordered by confidence_score ascending)
-  - `output/extraction_runs/active/low_confidence_extractions.jsonl` (one JSON object per line with full payload)
-- **Persistence**: Files survive resets (archived to timestamped folder with active folder preserved)
-- **Called from**: `finalize()` method after `_export_extractions()` and before `_export_agent_stats()`
-- **Files modified**: `src/core/run_archiver.py` (added ~127 lines)
-
-**Documentation Updates** (2026-05-23):
-
-#### README.md Reconciliation
-- Completely rewrote agent section: corrected all agents to google/gemma-4-26b-a4b (was claiming Qwen/GPT-OSS 20B)
-- Changed 7-agent list to 6 passage-level + 3 bill-level agents
-- Added LocalLLMProvider section explaining token doubling, channel-thought recovery, loop detection, reasoning_effort caching
-- Added bill-level agents table with output tables
-- Removed MinIO as required; noted local:// path support
-- Updated run archiver section with low_confidence_extractions files
-
-#### architecture.md Reconciliation (Section 3)
-- Completely rewrote Extraction section: 7 agents → 6 passage-level + 3 bill-level agents
-- Documented signal-based routing with fallback behavior
-- Documented ambiguity agent retirement (Phase 1B) with archive path
-- Explained interpretation_risks embedding on obligation/rights payloads
-- Added bill enforcement context injection from src/core/bill_context.py
-- Added bill-level agents table with output tables and frequency
-- Documented per-extraction processing (Unicode normalization, Orrick similarity, confidence scoring, adaptive retry, failed_extraction_attempts)
-- Updated Key Dependencies (Gemma 4-26b, removed MinIO requirement)
-- Updated Test Infrastructure gap list (6 + 3 agent pipeline)
-
-#### Supabase Sync Script Fix (src/scripts/sync_to_supabase.py)
-- Added SYNC_TABLES entries: bill_level_extractions, failed_extraction_attempts (correct FK order)
-- New TABLE_CONFLICT_COLUMNS dict (5 entries): raw_artifacts, normalized_source_records, section_triage_results, review_queue, bill_level_extractions
-- Modified _supabase_post() to pass ?on_conflict query param when table in TABLE_CONFLICT_COLUMNS
-- Clarified clear_supabase_tables() docstring (id=gte.0 filter works on all current serial integer PK tables)
-
-**Files committed**: All work committed to branch `claude/onboard-government-project-PyyB9`; 4 extraction sub-fixes + 2 file edits for sync script + comprehensive documentation rewrites.
-
-**Impact**: 
-- Next extraction run should see empty response errors drop significantly
-- HTTP 400 channel-thought errors successfully recovered
-- Tab-key JSON errors fixed
-- Low-confidence extractions persisted to disk in `output/extraction_runs/active/`, surviving resets
-- Documentation now matches actual 6 + 3 agent pipeline
+All sub-fixes applied and tested; 16,322 rows synced. Export buffer rewind, Gemma
+token doubling + reasoning_effort caching, channel-thought recovery, tab-key JSON
+repair, low-confidence persistence to disk, Supabase sync schema alignment, and
+README/architecture.md reconciliation. **Full breakdown: `completed_tasks.md` (2026-05-23 entry).**
 
 ---
 
@@ -664,41 +589,14 @@ LM Studio + Gemma 4 26B-A4B occasionally emits a structured thinking token that 
 
 ---
 
-## Engineering Session — Bug Fix, Lint & Repo Cleanup (2026-06-10)
+## Engineering Session (2026-06-10) — COMPLETED ✓
 
-**Branch:** `claude/brave-lamport-d9zgjx` — **pending merge to main**
+Bug check (BUG-7/BUG-8 fixed), lint cleanup (RR2c partial), CI hard gate, repo
+cleanup, Phase 4a confirmed, Phase 4b completed. All on `claude/brave-lamport-d9zgjx`
+— **pending merge to main**. **Full breakdown: `completed_tasks.md` (2026-06-10 entry).**
 
-### Completed
+## Upcoming: dashboard.py split (deferred until after extraction run validates)
 
-**Critical bugs fixed** (3 NameErrors would have crashed the next extraction run):
-- `extractor.py`: `content_hash` → `passage_text_hash` (RR7g rename not propagated to futures tuple and success path)
-- `extractor.py`: removed stale `existing_hashes.add(content_hash)` block (superseded by attempt-state dedup)
-- `extractor.py`: `monitor` acquisition moved above first use (was 80 lines below jurisdiction-skip path)
-- `dashboard.py`: `settings` import added to `get_models_status()` error branch
-- `confidence.py`: `OrrickSimilarityResult` moved under `TYPE_CHECKING`
-
-**Lint cleanup (RR2c partial):**
-- ruff F821 (undefined names) now clean — would catch NameErrors at push time
-- Safe autofixes applied (F401/F541/I001/UP*): 580 → 375 errors remaining (rest is E501 + naming style)
-- Removed dead code: unused `pending_review` COUNT query in `progress.py`, redundant `_normalize_citation` call in `citation_verifier.py`, unused `failed_tag`/`ctype`/`elapsed_min`/`old`/`subject` locals
-
-**CI gate hardened:**
-- `.github/workflows/ci.yml` lint job now gates hard on `--select E9,F` (syntax + undefined names); full ruleset runs as advisory info only. This is what would have caught BUG-7 at push time.
-
-**Repo cleanup:**
-- 11 dead files deleted (5 archived agent/connector scripts, 3 orphaned scripts, dagster pipelines, compare_models)
-- 10 superseded docs moved to `archive/docs/` (strategy v2, merged plans, completed remediation docs, historical run findings)
-- 7 old handoff files moved to `archive/handoffs/` — `HANDOFF-2026-03-21.md` remains definitive
-- `archive/README.md` created with retirement log
-- `output/extraction_runs/*.csv|*.jsonl|agent_stats.json` added to `.gitignore`; 12.8 MB `extractions.csv` untracked from git (repo pack shrinks from ~20 MB to ~7 MB)
-- 695 unit tests pass throughout
-
-### Still needed from this session
-- Merge `claude/brave-lamport-d9zgjx` to main *(operator action)*
-- Phase 4a: `verification_results` table persistence *(code drafted; needs migration + run to validate)*
-- dashboard.py split *(deferred — see below)*
-
-### Deferred: dashboard.py split
 `src/api/routes/dashboard.py` is 5,400+ lines. Natural split into 6 modules:
 1. `pipeline_ops.py` — seed/fetch/triage/extract/sync (`/api/run/*`)
 2. `monitoring.py` — stats, progress, monitor, events, latency, health
@@ -707,4 +605,3 @@ LM Studio + Gemma 4 26B-A4B occasionally emits a structured thinking token that 
 5. `concepts.py` — concepts page + concept API (already self-contained)
 6. `models.py` — models page + model config API (already self-contained)
 Shared helpers (HTML builders, `_run_in_background`) move to `dashboard_utils.py`.
-Deferred until after extraction run validates, to avoid churn on active code.

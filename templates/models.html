@@ -26,6 +26,47 @@
     </div>
   </div>
 
+  <!-- Extraction Provider toggle: local LM Studio vs NVIDIA API -->
+  <div style="margin-bottom:20px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Extraction Provider</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+      Choose where extraction model calls are routed. Takes effect on the next
+      run (or on resume if paused) — no server restart needed.
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn {% if current_provider != 'nvidia' %}btn-primary{% endif %}"
+              hx-post="/dashboard/api/models/set-provider"
+              hx-vals='{"provider": "local"}'
+              hx-target="#provider-result"
+              hx-swap="innerHTML">
+        Local LM Studio
+        {% if current_provider != 'nvidia' %}<span style="margin-left:6px;">&#10003;</span>{% endif %}
+      </button>
+      <button class="btn {% if current_provider == 'nvidia' %}btn-primary{% endif %}"
+              hx-post="/dashboard/api/models/set-provider"
+              hx-vals='{"provider": "nvidia"}'
+              hx-target="#provider-result"
+              hx-swap="innerHTML"
+              {% if not nvidia_configured %}disabled title="Set NVIDIA_API_KEY in .env to enable"{% endif %}>
+        NVIDIA API
+        {% if current_provider == 'nvidia' %}<span style="margin-left:6px;">&#10003;</span>{% endif %}
+      </button>
+      <span style="font-size:12px;color:var(--text-muted);">
+        Active:
+        <strong>
+          {% if current_provider == 'nvidia' %}NVIDIA &mdash; {{ nvidia_model }}{% else %}Local LM Studio{% endif %}
+        </strong>
+      </span>
+    </div>
+    {% if not nvidia_configured %}
+      <p style="font-size:11px;color:var(--warning, #b45309);margin-top:8px;margin-bottom:0;">
+        NVIDIA option disabled: <code>NVIDIA_API_KEY</code> is not set. Add it to
+        <code>.env</code> and restart to enable.
+      </p>
+    {% endif %}
+    <div id="provider-result" style="margin-top:8px;"></div>
+  </div>
+
   <!-- Quick Apply: set all extraction agents to one model -->
   <div style="margin-bottom:20px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);">
     <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Quick Apply</div>

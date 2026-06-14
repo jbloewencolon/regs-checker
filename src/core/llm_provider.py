@@ -396,6 +396,165 @@ class LocalLLMProvider(BaseLLMProvider):
 
 
 # ---------------------------------------------------------------------------
+# NVIDIA hosted LLM provider
+# ---------------------------------------------------------------------------
+
+
+class NvidiaLLMProvider(BaseLLMProvider):
+    """NVIDIA-hosted LLM via OpenAI-compatible API (integrate.api.nvidia.com).
+
+    IMPORTANT: The NVIDIA base URL already includes ``/v1``.  This class
+    therefore POSTs to ``{base_url}/chat/completions`` — NOT ``/v1/chat/completions``
+    — to avoid a double-``/v1`` path that returns 404.
+
+    API key is read from ``NVIDIA_API_KEY`` (no ``REGS_`` prefix).
+    Provider is selected by setting ``REGS_EXTRACTION_PROVIDER=nvidia``.
+    """
+
+    # gpt-oss-120b may emit reasoning_content in the response.
+    # We always use the ``content`` field for extraction output and ignore
+    # reasoning_content — the caller sets reasoning_effort="off" in AgentModelConfig
+    # but NVIDIA may not honour that parameter.  Stripping is defensive.
+    _REASONING_CONTENT_KEY = "reasoning_content"
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        self._base_url = (base_url or settings.nvidia_base_url).rstrip("/")
+        self._model = model or settings.nvidia_extraction_model
+        self._api_key = settings.nvidia_api_key
+
+        if not self._api_key:
+            raise ValueError(
+                "NVIDIA_API_KEY is not set.  Add it to .env or your CI secrets "
+                "before using the NVIDIA provider."
+            )
+        if not self._base_url:
+            raise ValueError("REGS_NVIDIA_BASE_URL is not configured.")
+
+        logger.info(
+            "nvidia_llm_provider_init",
+            base_url=self._base_url,
+            model=self._model,
+        )
+
+    @property
+    def model_id(self) -> str:
+        return self._model.replace("/", "-") + "-nvidia"
+
+    def call(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 16384,
+        temperature: float = 0.0,
+        model_override: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> LLMResponse:
+        import httpx
+
+        effective_model = model_override or self._model
+
+        payload: dict[str, Any] = {
+            "model": effective_model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": False,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Accept": "application/json",
+        }
+
+        # NVIDIA base URL already ends in /v1 — append only /chat/completions.
+        response = httpx.post(
+            f"{self._base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=300.0,
+        )
+
+        if response.status_code in (401, 403):
+            raise httpx.HTTPStatusError(
+                f"NVIDIA auth/entitlement error (HTTP {response.status_code}) — "
+                "verify NVIDIA_API_KEY and model access in your NVIDIA account.",
+                request=response.request,
+                response=response,
+            )
+        if response.status_code == 429:
+            logger.warning(
+                "nvidia_quota_exhausted",
+                model=effective_model,
+                status=429,
+            )
+            raise httpx.HTTPStatusError(
+                "NVIDIA rate/quota limit hit (429).  Check credits and RPM limits "
+                "in your NVIDIA account before retrying.",
+                request=response.request,
+                response=response,
+            )
+        if response.status_code >= 400:
+            body = response.text[:500] if response.text else ""
+            raise httpx.HTTPStatusError(
+                f"NVIDIA API HTTP {response.status_code} for model {effective_model}: {body}",
+                request=response.request,
+                response=response,
+            )
+
+        data = response.json()
+        choice = data["choices"][0]
+        message = choice["message"]
+        text = (message.get("content") or "").strip()
+        finish_reason = choice.get("finish_reason")
+
+        # Log unexpected reasoning tokens (means reasoning_effort was not honoured).
+        if message.get(self._REASONING_CONTENT_KEY):
+            logger.warning(
+                "nvidia_unexpected_reasoning_content",
+                model=effective_model,
+                reasoning_len=len(message[self._REASONING_CONTENT_KEY]),
+            )
+
+        usage_data = data.get("usage", {})
+        usage = LLMUsage(
+            input_tokens=usage_data.get("prompt_tokens", 0),
+            output_tokens=usage_data.get("completion_tokens", 0),
+        )
+
+        if not text:
+            raise ValueError(
+                f"Empty response from NVIDIA LLM "
+                f"(finish_reason={finish_reason}, model={effective_model})"
+            )
+
+        effective_model_id = effective_model.replace("/", "-") + "-nvidia"
+
+        logger.debug(
+            "nvidia_llm_response",
+            model=effective_model,
+            model_id=effective_model_id,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            finish_reason=finish_reason,
+            response_length=len(text),
+        )
+
+        return LLMResponse(
+            text=text,
+            usage=usage,
+            model_id=effective_model_id,
+            stop_reason=finish_reason,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Provider factory
 # ---------------------------------------------------------------------------
 
@@ -423,8 +582,10 @@ def get_provider(provider_type: str | None = None) -> BaseLLMProvider:
 
     if resolved == "local":
         provider = LocalLLMProvider()
+    elif resolved == "nvidia":
+        provider = NvidiaLLMProvider()
     else:
-        raise ValueError(f"Unknown LLM provider: {resolved!r}. Use 'local'.")
+        raise ValueError(f"Unknown LLM provider: {resolved!r}. Use 'local' or 'nvidia'.")
 
     _provider_cache[resolved] = provider
     logger.info("llm_provider_created", provider=resolved, model=provider.model_id)
@@ -436,12 +597,48 @@ def get_discovery_provider() -> BaseLLMProvider:
     return get_provider(settings.discovery_provider)
 
 
+def clear_provider_cache() -> None:
+    """Drop all cached provider instances.
+
+    Call this after switching providers (e.g. the dashboard provider toggle)
+    so the next ``get_extraction_provider()`` rebuilds against the new backend.
+    """
+    _provider_cache.clear()
+    logger.info("llm_provider_cache_cleared")
+
+
 def get_extraction_provider() -> BaseLLMProvider:
     """Get the provider configured for extraction tasks.
 
-    Uses ``local_extraction_model`` as the base model. Per-agent
-    ``model_override`` attributes still take precedence at call time.
+    Resolution order (first non-empty wins):
+    1. ``ModelConfigStore.provider`` — the runtime source of truth driven by the
+       dashboard provider toggle (persisted in config/agent_models.json).
+    2. ``REGS_EXTRACTION_PROVIDER`` env / settings fallback.
+    3. ``REGS_LLM_PROVIDER`` env / settings fallback.
+
+    Values: "local" → LocalLLMProvider; "nvidia" → NvidiaLLMProvider.
+    Per-agent ``model_override`` attributes still take precedence at call time.
     """
+    # Lazy import avoids a circular dependency at module load time.
+    from src.core.model_config import get_config
+
+    effective = (
+        get_config().provider
+        or settings.extraction_provider
+        or settings.llm_provider
+    )
+    if effective == "nvidia":
+        cache_key = "nvidia_extraction"
+        if cache_key not in _provider_cache:
+            _provider_cache[cache_key] = NvidiaLLMProvider()
+            logger.info(
+                "llm_provider_created",
+                provider=cache_key,
+                model=_provider_cache[cache_key].model_id,
+            )
+        return _provider_cache[cache_key]
+
+    # Default: local
     cache_key = "local_extraction"
     if cache_key not in _provider_cache:
         _provider_cache[cache_key] = LocalLLMProvider(
