@@ -1679,11 +1679,17 @@ def run_triage(
         _log("No untriaged passages found.")
         return summary
 
-    # Get LLM provider for Layer 2/3 triage (keyword-only passages are free)
+    # Get LLM provider for Layer 2/3 triage (keyword-only passages are free).
+    # Must use the EXTRACTION provider (driven by the dashboard backend toggle),
+    # not the discovery provider: section_triage reads the triage model name from
+    # get_config().get("triage") — the active backend's config block. If the
+    # provider here came from a different toggle (e.g. local LM Studio) while the
+    # model name came from the NVIDIA block, the local server would be called with
+    # an NVIDIA model name and fail with "No models loaded".
     llm_provider = None
     try:
-        from src.core.llm_provider import get_discovery_provider
-        llm_provider = get_discovery_provider()
+        from src.core.llm_provider import get_extraction_provider
+        llm_provider = get_extraction_provider()
         _log(f"Triaging {len(records)} passages with LLM fallback ({llm_provider.model_id})...")
     except Exception as e:
         _log(f"Triaging {len(records)} passages (keyword-only, no LLM: {e})...")
