@@ -3643,7 +3643,10 @@ def get_failed_triage_count(db: Session = Depends(get_db)) -> HTMLResponse:
     try:
         count = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
-            .where(SectionTriageResult.quality_flags.contains(["triage_error"]))
+            .where(
+                SectionTriageResult.method == "passthrough",
+                SectionTriageResult.quality_flags.contains(["llm_error"]),
+            )
         ) or 0
         if count > 0:
             return HTMLResponse(

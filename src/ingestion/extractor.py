@@ -1809,11 +1809,16 @@ def run_retry_failed_triage(
             on_progress(msg)
         logger.info(msg)
 
-    # Find all triage rows that failed and were recorded as passthrough/triage_error.
-    # quality_flags is JSONB so we can use the @> containment operator.
+    # Find all triage rows where the LLM call itself failed (rate-limit, timeout,
+    # connection error). These are recorded with quality_flags containing "llm_error"
+    # by triage_passage()'s except block, and method=passthrough.
+    # ("triage_error" is the outer run_triage fallback — rarely hit.)
     error_ids: list[int] = list(db.scalars(
         select(SectionTriageResult.source_record_id)
-        .where(SectionTriageResult.quality_flags.contains(["triage_error"]))
+        .where(
+            SectionTriageResult.method == "passthrough",
+            SectionTriageResult.quality_flags.contains(["llm_error"]),
+        )
     ).all())
 
     cleared = len(error_ids)
@@ -1821,7 +1826,7 @@ def run_retry_failed_triage(
         _log("No failed triage rows to retry.")
         return {"cleared": 0, "total": 0, "relevant": 0, "uncertain": 0, "skipped": 0}
 
-    _log(f"Clearing {cleared} triage_error rows so they can be re-triaged...")
+    _log(f"Clearing {cleared} llm_error triage rows so they can be re-triaged...")
     db.execute(
         sa_delete(SectionTriageResult)
         .where(SectionTriageResult.source_record_id.in_(error_ids))
