@@ -1803,6 +1803,47 @@ def run_triage(
     return summary
 
 
+def run_retry_failed_triage(
+    db,
+    on_progress=None,
+) -> dict:
+    """Delete triage_error rows and re-run triage only for those passages.
+
+    Returns a dict with keys: cleared, total, relevant, uncertain, skipped.
+    """
+    from collections.abc import Callable
+
+    def _log(msg: str) -> None:
+        if on_progress:
+            on_progress(msg)
+        logger.info(msg)
+
+    # Find all triage rows that failed and were recorded as passthrough/triage_error.
+    # quality_flags is JSONB so we can use the @> containment operator.
+    error_ids: list[int] = list(db.scalars(
+        select(SectionTriageResult.source_record_id)
+        .where(SectionTriageResult.quality_flags.contains(["triage_error"]))
+    ).all())
+
+    cleared = len(error_ids)
+    if cleared == 0:
+        _log("No failed triage rows to retry.")
+        return {"cleared": 0, "total": 0, "relevant": 0, "uncertain": 0, "skipped": 0}
+
+    _log(f"Clearing {cleared} triage_error rows so they can be re-triaged...")
+    db.execute(
+        sa_delete(SectionTriageResult)
+        .where(SectionTriageResult.source_record_id.in_(error_ids))
+    )
+    db.commit()
+
+    # run_triage picks up all passages that no longer have a triage row — including
+    # these freshly cleared ones and any that were never triaged.
+    summary = run_triage(db, on_progress=on_progress)
+    summary["cleared"] = cleared
+    return summary
+
+
 def _get_bill_level_agents():
     """Lazily import and instantiate available bill-level agents.
 

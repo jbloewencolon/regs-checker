@@ -458,6 +458,8 @@ class NvidiaLLMProvider(BaseLLMProvider):
         reasoning_effort: str | None = None,
         top_p: float | None = None,
     ) -> LLMResponse:
+        import time
+
         import httpx
 
         effective_model = model_override or self._model
@@ -485,85 +487,101 @@ class NvidiaLLMProvider(BaseLLMProvider):
             "Accept": "application/json",
         }
 
-        # NVIDIA base URL already ends in /v1 — append only /chat/completions.
-        response = httpx.post(
-            f"{self._base_url}/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=300.0,
-        )
-
-        if response.status_code in (401, 403):
-            raise httpx.HTTPStatusError(
-                f"NVIDIA auth/entitlement error (HTTP {response.status_code}) — "
-                "verify NVIDIA_API_KEY and model access in your NVIDIA account.",
-                request=response.request,
-                response=response,
+        _max_retries = 5
+        for attempt in range(_max_retries + 1):
+            # NVIDIA base URL already ends in /v1 — append only /chat/completions.
+            response = httpx.post(
+                f"{self._base_url}/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=300.0,
             )
-        if response.status_code == 429:
-            logger.warning(
-                "nvidia_quota_exhausted",
+
+            if response.status_code in (401, 403):
+                raise httpx.HTTPStatusError(
+                    f"NVIDIA auth/entitlement error (HTTP {response.status_code}) — "
+                    "verify NVIDIA_API_KEY and model access in your NVIDIA account.",
+                    request=response.request,
+                    response=response,
+                )
+
+            if response.status_code == 429:
+                if attempt < _max_retries:
+                    wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
+                    logger.warning(
+                        "nvidia_rate_limited_retrying",
+                        model=effective_model,
+                        attempt=attempt + 1,
+                        wait_s=wait_s,
+                    )
+                    time.sleep(wait_s)
+                    continue
+                logger.warning(
+                    "nvidia_quota_exhausted",
+                    model=effective_model,
+                    status=429,
+                )
+                raise httpx.HTTPStatusError(
+                    "NVIDIA rate/quota limit hit (429).  Check credits and RPM limits "
+                    "in your NVIDIA account before retrying.",
+                    request=response.request,
+                    response=response,
+                )
+
+            if response.status_code >= 400:
+                body = response.text[:500] if response.text else ""
+                raise httpx.HTTPStatusError(
+                    f"NVIDIA API HTTP {response.status_code} for model {effective_model}: {body}",
+                    request=response.request,
+                    response=response,
+                )
+
+            data = response.json()
+            choice = data["choices"][0]
+            message = choice["message"]
+            text = (message.get("content") or "").strip()
+            finish_reason = choice.get("finish_reason")
+
+            # Log unexpected reasoning tokens (means reasoning_effort was not honoured).
+            if message.get(self._REASONING_CONTENT_KEY):
+                logger.warning(
+                    "nvidia_unexpected_reasoning_content",
+                    model=effective_model,
+                    reasoning_len=len(message[self._REASONING_CONTENT_KEY]),
+                )
+
+            usage_data = data.get("usage", {})
+            usage = LLMUsage(
+                input_tokens=usage_data.get("prompt_tokens", 0),
+                output_tokens=usage_data.get("completion_tokens", 0),
+            )
+
+            if not text:
+                raise ValueError(
+                    f"Empty response from NVIDIA LLM "
+                    f"(finish_reason={finish_reason}, model={effective_model})"
+                )
+
+            effective_model_id = effective_model.replace("/", "-") + "-nvidia"
+
+            logger.debug(
+                "nvidia_llm_response",
                 model=effective_model,
-                status=429,
-            )
-            raise httpx.HTTPStatusError(
-                "NVIDIA rate/quota limit hit (429).  Check credits and RPM limits "
-                "in your NVIDIA account before retrying.",
-                request=response.request,
-                response=response,
-            )
-        if response.status_code >= 400:
-            body = response.text[:500] if response.text else ""
-            raise httpx.HTTPStatusError(
-                f"NVIDIA API HTTP {response.status_code} for model {effective_model}: {body}",
-                request=response.request,
-                response=response,
+                model_id=effective_model_id,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                finish_reason=finish_reason,
+                response_length=len(text),
             )
 
-        data = response.json()
-        choice = data["choices"][0]
-        message = choice["message"]
-        text = (message.get("content") or "").strip()
-        finish_reason = choice.get("finish_reason")
-
-        # Log unexpected reasoning tokens (means reasoning_effort was not honoured).
-        if message.get(self._REASONING_CONTENT_KEY):
-            logger.warning(
-                "nvidia_unexpected_reasoning_content",
-                model=effective_model,
-                reasoning_len=len(message[self._REASONING_CONTENT_KEY]),
+            return LLMResponse(
+                text=text,
+                usage=usage,
+                model_id=effective_model_id,
+                stop_reason=finish_reason,
             )
 
-        usage_data = data.get("usage", {})
-        usage = LLMUsage(
-            input_tokens=usage_data.get("prompt_tokens", 0),
-            output_tokens=usage_data.get("completion_tokens", 0),
-        )
-
-        if not text:
-            raise ValueError(
-                f"Empty response from NVIDIA LLM "
-                f"(finish_reason={finish_reason}, model={effective_model})"
-            )
-
-        effective_model_id = effective_model.replace("/", "-") + "-nvidia"
-
-        logger.debug(
-            "nvidia_llm_response",
-            model=effective_model,
-            model_id=effective_model_id,
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            finish_reason=finish_reason,
-            response_length=len(text),
-        )
-
-        return LLMResponse(
-            text=text,
-            usage=usage,
-            model_id=effective_model_id,
-            stop_reason=finish_reason,
-        )
+        raise RuntimeError(f"NVIDIA call exhausted all {_max_retries} retries for {effective_model}")
 
 
 # ---------------------------------------------------------------------------
