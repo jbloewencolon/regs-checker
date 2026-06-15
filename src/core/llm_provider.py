@@ -497,12 +497,35 @@ class NvidiaLLMProvider(BaseLLMProvider):
         _max_retries = 5
         for attempt in range(_max_retries + 1):
             # NVIDIA base URL already ends in /v1 — append only /chat/completions.
-            response = httpx.post(
-                f"{self._base_url}/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=300.0,
-            )
+            # Connection-level failures (server drops the socket, read timeout,
+            # DNS/connect errors) raise httpx.TransportError rather than returning
+            # a response. These are transient, so retry them with the same
+            # exponential backoff used for 429s.
+            try:
+                response = httpx.post(
+                    f"{self._base_url}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    timeout=300.0,
+                )
+            except httpx.TransportError as exc:
+                if attempt < _max_retries:
+                    wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
+                    logger.warning(
+                        "nvidia_transport_error_retrying",
+                        model=effective_model,
+                        attempt=attempt + 1,
+                        wait_s=wait_s,
+                        error=str(exc)[:200],
+                    )
+                    time.sleep(wait_s)
+                    continue
+                logger.error(
+                    "nvidia_transport_error_exhausted",
+                    model=effective_model,
+                    error=str(exc)[:200],
+                )
+                raise
 
             if response.status_code in (401, 403):
                 raise httpx.HTTPStatusError(
