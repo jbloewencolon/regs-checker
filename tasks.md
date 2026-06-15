@@ -271,7 +271,7 @@ Law-card data model, applicability product, API, productionization — resume on
 ## Active Tasks
 
 ### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
-- **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run). Also contains lint cleanup, CI gate fix, repo cleanup. **Do this before hitting Extract All.**
+- **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run), the full **2026-06-15 NVIDIA-backend hardening** (429 + transport retry, reasoning_effort coercion, bare-array handling, evidence-span loosening, Re-triage Failed, archiver fix), plus lint cleanup, CI gate fix, repo cleanup. CI green (Unit tests + Ruff lint). **Do this before hitting Extract All.**
 
 ### Operator actions (need live machine + DB)
 - **Run `alembic upgrade head`** — migration `l8i4j0k2g713` adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table.
@@ -594,6 +594,53 @@ LM Studio + Gemma 4 26B-A4B occasionally emits a structured thinking token that 
 Bug check (BUG-7/BUG-8 fixed), lint cleanup (RR2c partial), CI hard gate, repo
 cleanup, Phase 4a confirmed, Phase 4b completed. All on `claude/brave-lamport-d9zgjx`
 — **pending merge to main**. **Full breakdown: `completed_tasks.md` (2026-06-10 entry).**
+
+## Engineering Session (2026-06-15) — NVIDIA backend extraction hardening — COMPLETED ✓
+
+First full-corpus run on the **NVIDIA cloud backend** (gpt-oss-120b for clause/bill
+agents, llama-3.1-8b for triage/definition_actor/preemption) instead of local LM
+Studio. Triage finished (805 relevant / 154 uncertain / 265 not-relevant of 1224).
+Extraction shook out a series of provider-specific reliability bugs, all fixed on
+`claude/brave-lamport-d9zgjx`:
+
+- ✅ **NVIDIA 429 retry** — `NvidiaLLMProvider.call()` retries rate-limit responses
+  with exponential backoff (1/2/4/8/16 s, 5 attempts). Triage was getting hammered
+  with `nvidia_quota_exhausted` and silently passing affected passages through.
+- ✅ **NVIDIA transport-error retry** — the dominant extraction failure ("Server
+  disconnected without sending a response", ~50 passages over an 11 h run) was an
+  `httpx.RemoteProtocolError` escaping the retry loop (only 429 was retried). Now
+  catches `httpx.TransportError` (covers RemoteProtocolError / ReadTimeout /
+  ConnectError) with the same backoff.
+- ✅ **reasoning_effort coercion** — NVIDIA's gpt-oss-120b only accepts
+  `low`/`medium`/`high` and 400s on `off` (which the local config uses). Provider now
+  coerces `off`/`none`/`disabled`/`minimal` → `low`. Config set to `low` for
+  rights_protection + the 3 bill-level agents (binary/structured tasks that don't
+  need full reasoning); obligation/threshold_exception/compliance_mechanism keep
+  default reasoning.
+- ✅ **Bare-array extraction output** — when the 8B model returns a top-level JSON
+  array instead of `{"extractions": [...]}`, `parsed.get()` threw `'list' object has
+  no attribute 'get'`. Now normalized to the envelope shape after `json.loads`.
+- ✅ **definition_actor budget** — NVIDIA max_tokens 2048 → 4096; definition-heavy
+  passages (omnibus privacy bills) were hitting `finish_reason=length` and forcing a
+  wasteful truncation-retry on every pass.
+- ✅ **Punctuation-insensitive evidence spans** — added a third match tier in
+  `_verify_evidence_spans` (lowercase-alphanumeric + collapsed whitespace, with an
+  index map back to char offsets). Catches models that re-case/re-punctuate quotes
+  (notably the 8B definition_actor on ALL-CAPS statutes) without verifying
+  hallucinated text — words must still appear contiguously. Gated to spans ≥ 15 chars.
+- ✅ **Re-triage Failed** — new button + `run_retry_failed_triage()`: deletes
+  `method=passthrough` + `llm_error` triage rows and re-runs triage for just those
+  passages (mirrors the extraction Retry-Failed flow; previously those rows were
+  permanently stuck because run_triage skips already-triaged passages).
+- ✅ **Archiver ConfidenceTier case bug** — `_export_low_confidence` used
+  `ConfidenceTier.c/.d` (enum values are uppercase `C`/`D`), raising
+  `AttributeError("c")` that silently dropped the low-confidence review CSV. Fixed.
+- ✅ **Lint hard-gate green** — fixed F821 (`SectionTriageResult` used without import
+  in the new failed-triage-count endpoint — was silently 500ing the badge), F841
+  (unused `existing`), F401 (unused `Callable`). CI Ruff-lint job back to green;
+  Unit-tests job already green (855 passed).
+
+**Pending merge to main** along with the 2026-06-10 work.
 
 ## Upcoming: dashboard.py split (deferred until after extraction run validates)
 
