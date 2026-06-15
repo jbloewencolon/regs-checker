@@ -857,6 +857,34 @@ class BaseExtractionAgent(ABC):
         """Full normalization pipeline: Unicode variants then whitespace."""
         return self._normalize_whitespace(self._normalize_unicode(text))
 
+    @staticmethod
+    def _loose_normalize(text: str) -> tuple[str, list[int]]:
+        """Reduce text to lowercase alphanumerics with single-space separators.
+
+        Returns the reduced string plus an index map so a position in the
+        reduced string can be translated back to the source ``text``.
+        Punctuation and casing differences are erased, so a span that the
+        model re-punctuated, re-cased, or reflowed still matches as long as
+        the same words appear contiguously and in order — which keeps this
+        from rubber-stamping hallucinated content.
+        """
+        out_chars: list[str] = []
+        index_map: list[int] = []
+        prev_space = True  # suppress a leading space
+        for i, ch in enumerate(text):
+            if ch.isalnum():
+                out_chars.append(ch.lower())
+                index_map.append(i)
+                prev_space = False
+            elif not prev_space:
+                out_chars.append(" ")
+                index_map.append(i)
+                prev_space = True
+        if out_chars and out_chars[-1] == " ":
+            out_chars.pop()
+            index_map.pop()
+        return "".join(out_chars), index_map
+
     def _verify_evidence_spans(
         self, spans: list[dict], passage: str
     ) -> list[dict]:
@@ -865,10 +893,12 @@ class BaseExtractionAgent(ABC):
         Confirms each evidence span text appears in the passage.
         Applies Unicode normalization (smart quotes, dashes, non-breaking
         spaces) followed by whitespace normalization, then falls back to
-        case-insensitive matching for minor casing differences.
+        case-insensitive matching for minor casing differences, then to a
+        punctuation-insensitive match for models that re-punctuate quotes.
         """
         norm_passage = self._normalize_text(passage)
         lower_passage = norm_passage.lower()
+        loose_passage, loose_passage_map = self._loose_normalize(norm_passage)
         verified = []
         for span_data in spans:
             if not isinstance(span_data, dict) or not span_data.get("text"):
@@ -891,8 +921,10 @@ class BaseExtractionAgent(ABC):
                         "verified": True,
                     }
                 )
+                continue
+
             # Try case-insensitive match
-            elif norm_span.lower() in lower_passage:
+            if norm_span.lower() in lower_passage:
                 start = lower_passage.index(norm_span.lower())
                 verified.append(
                     {
@@ -903,20 +935,39 @@ class BaseExtractionAgent(ABC):
                         "verified": True,
                     }
                 )
-            else:
-                logger.warning(
-                    "evidence_span_not_found",
-                    agent=self.agent_name,
-                    field=span.field_name,
-                    span_text=span.text[:80],
-                )
+                continue
+
+            # Try punctuation-insensitive ("loose") match. Only for spans long
+            # enough that a contiguous word match is meaningful (avoids spurious
+            # hits on a stray word or two).
+            loose_span, _ = self._loose_normalize(norm_span)
+            if len(loose_span) >= 15 and loose_span in loose_passage:
+                loose_start = loose_passage.index(loose_span)
+                loose_end = loose_start + len(loose_span) - 1
                 verified.append(
                     {
                         "field_name": span.field_name,
                         "text": span.text,
-                        "verified": False,
+                        "char_start": loose_passage_map[loose_start],
+                        "char_end": loose_passage_map[loose_end] + 1,
+                        "verified": True,
                     }
                 )
+                continue
+
+            logger.warning(
+                "evidence_span_not_found",
+                agent=self.agent_name,
+                field=span.field_name,
+                span_text=span.text[:80],
+            )
+            verified.append(
+                {
+                    "field_name": span.field_name,
+                    "text": span.text,
+                    "verified": False,
+                }
+            )
         return verified
 
     def _prompt_hash(self, prompt: str) -> str:
