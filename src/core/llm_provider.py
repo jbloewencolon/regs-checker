@@ -480,7 +480,14 @@ class NvidiaLLMProvider(BaseLLMProvider):
         if top_p is not None:
             payload["top_p"] = top_p
         if reasoning_effort is not None:
-            payload["reasoning_effort"] = reasoning_effort
+            # NVIDIA's reasoning models only accept 'low' | 'medium' | 'high'.
+            # There is no true "off" — the minimum is 'low'. Coerce any
+            # disable-style value (carried over from the local LM Studio config,
+            # which does support "off") to 'low' so the request doesn't 400.
+            effort = reasoning_effort.lower()
+            if effort in ("off", "none", "disabled", "minimal"):
+                effort = "low"
+            payload["reasoning_effort"] = effort
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",
