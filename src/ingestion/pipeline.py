@@ -63,28 +63,90 @@ def compute_parse_quality(records: list[NormalizedSourceRecord]) -> float:
 
 
 def fetch_document(db, job: IngestionJob):
-    """Look up the pre-downloaded RawArtifact for a job.
-
-    The local ingestion path downloads files before creating the job,
-    so this step is a DB lookup rather than a live network fetch.
+    """Look up the pre-downloaded RawArtifact for a job, or read from disk for
+    local-mode jobs that were seeded without the ingest phase.
 
     Returns:
-        RawArtifact — the most-recent artifact for the job's document version.
+        RawArtifact — existing or newly-created artifact for this job.
 
     Raises:
-        RuntimeError if no artifact exists (pipeline is mis-ordered).
+        RuntimeError if no artifact and no local file can be found.
     """
+    import hashlib
+    from datetime import datetime as _dt
+    from pathlib import Path
+
     from src.db.models import RawArtifact as RawArtifactModel
+
     artifact = db.scalars(
         select(RawArtifactModel)
         .where(RawArtifactModel.document_version_id == job.document_version_id)
         .order_by(RawArtifactModel.created_at.desc())
     ).first()
-    if artifact is None:
+    if artifact is not None:
+        return artifact
+
+    # No artifact yet — try reading from disk for local-mode jobs.
+    if (job.metadata_ or {}).get("ingest_mode") != "local":
         raise RuntimeError(
             "No raw artifact found. Use --mode seed-local to ingest "
             "local files, or upload via the dashboard."
         )
+
+    from src.ingestion.local_ingest import _detect_content_type, _resolve_local_file
+    canonical_id = (job.metadata_ or {}).get("canonical_law_id", "")
+    local_file: Path | None = None
+
+    # Try the path stored at seed time first.
+    stored = (job.metadata_ or {}).get("local_file")
+    if stored:
+        p = Path(stored)
+        if p.exists():
+            local_file = p
+
+    if local_file is None:
+        local_file = _resolve_local_file(canonical_id)
+
+    if local_file is None or not local_file.exists():
+        raise RuntimeError(
+            f"Local-mode job has no artifact and no source file on disk "
+            f"(canonical_law_id={canonical_id!r}). "
+            f"Add the file to output/law_texts/ and re-run."
+        )
+
+    content_bytes = local_file.read_bytes()
+    content_type = _detect_content_type(local_file)
+    sha256 = hashlib.sha256(content_bytes).hexdigest()
+
+    # Dedup by hash in case another job already stored the same file.
+    existing = db.query(RawArtifactModel).filter_by(sha256_hash=sha256).first()
+    if existing:
+        return existing
+
+    artifact = RawArtifactModel(
+        document_version_id=job.document_version_id,
+        sha256_hash=sha256,
+        s3_key=f"local://{local_file}",
+        content_type=content_type,
+        size_bytes=len(content_bytes),
+        is_primary=True,
+    )
+    db.add(artifact)
+
+    # Stamp retrieval time on the document version.
+    dv = job.document_version
+    if dv and not dv.retrieved_at:
+        dv.retrieved_at = _dt.utcnow()
+    if dv and not dv.source_hash:
+        dv.source_hash = sha256
+
+    db.flush()
+    logger.info(
+        "local_artifact_created_on_demand",
+        job_id=job.id,
+        canonical_id=canonical_id,
+        size_bytes=len(content_bytes),
+    )
     return artifact
 
 
@@ -94,6 +156,10 @@ def process_single_job(
     on_progress: callable | None = None,
 ) -> int:
     """Run the full fetch→store→parse→chunk pipeline for a single IngestionJob.
+
+    For local-mode jobs that were seeded without the ingest phase (seed-only),
+    fetch_document now reads the file from disk and creates the artifact inline,
+    so "Parse Documents" works even when "Seed & Ingest All" was not used.
 
     Args:
         db: SQLAlchemy session

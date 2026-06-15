@@ -1253,6 +1253,26 @@ def run_fetch(
         from src.ingestion.pipeline import run_pending_ingestion
         summary = run_pending_ingestion(db, limit=limit)
 
+        if summary["total_pending"] == 0:
+            # Check if documents already exist so the message is actionable.
+            from src.db.models import NormalizedSourceRecord as _NSR
+            passages = db.scalar(select(func.count()).select_from(_NSR)) or 0
+            if passages > 0:
+                return (
+                    '<div class="result-panel info">'
+                    f'No pending jobs — all documents already parsed '
+                    f'(<strong>{passages:,}</strong> passages in DB). '
+                    'Proceed to <strong>Triage Passages</strong>.'
+                    '</div>'
+                )
+            return (
+                '<div class="result-panel warning">'
+                '<strong>No pending ingestion jobs found.</strong> '
+                'Use <strong>Seed &amp; Ingest All</strong> (Step&nbsp;1) to read '
+                'documents from <code>output/law_texts/</code> into the database first.'
+                '</div>'
+            )
+
         total = summary["completed"] + summary["failed"] + summary["skipped"]
         panel_class = "success" if summary["failed"] == 0 and summary["skipped"] == 0 else "warning"
 
@@ -1280,8 +1300,8 @@ def run_fetch(
 
         return (
             f'<div class="result-panel {panel_class}">'
-            f'<strong>{summary["completed"]}/{total}</strong> documents fetched, '
-            f'<strong>{summary["total_passages"]}</strong> passages extracted.'
+            f'<strong>{summary["completed"]}/{total}</strong> documents parsed into '
+            f'<strong>{summary["total_passages"]}</strong> passages.'
             f'{failed_note}'
             f'{cancelled_note}'
             f'</div>'
@@ -1291,7 +1311,7 @@ def run_fetch(
     return HTMLResponse(
         '<div class="result-panel info" hx-get="/dashboard/api/job-status/fetch" '
         'hx-trigger="every 2s" hx-swap="outerHTML">'
-        '<span class="spinner"></span> Fetch started&hellip; '
+        '<span class="spinner"></span> Parsing documents&hellip; '
         'Watch the pipeline tracker above for live progress.</div>'
     )
 
@@ -1601,6 +1621,19 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
             '<span class="spinner"></span> Triage already running&hellip;</div>'
         )
 
+    # Precondition: passages must exist before triage can do anything.
+    passage_count = db.scalar(
+        select(func.count()).select_from(NormalizedSourceRecord)
+    ) or 0
+    if passage_count == 0:
+        return HTMLResponse(
+            '<div class="result-panel warning">'
+            '<strong>No passages to triage.</strong> '
+            'Run <strong>Seed &amp; Ingest All</strong> (Step&nbsp;1) first to parse '
+            'documents into passages, then come back here to triage them.'
+            '</div>'
+        )
+
     def _do_triage(db):
         global _triage_progress
         from src.ingestion.extractor import run_triage
@@ -1616,8 +1649,9 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
 
         if summary["total"] == 0:
             return (
-                '<div class="result-panel info">No untriaged passages found. '
-                'All passages have already been triaged, or no documents have been parsed yet.</div>'
+                '<div class="result-panel info">No untriaged passages found — '
+                'all passages are already triaged. '
+                'Use <strong>Reset Triage</strong> if you want to re-run uncertain results.</div>'
             )
 
         return (
@@ -3425,6 +3459,35 @@ def run_api_extract(
             '<div class="result-panel info" hx-get="/dashboard/api/job-status/extract" '
             'hx-trigger="every 2s" hx-swap="outerHTML">'
             '<span class="spinner"></span> Extraction already running&hellip;</div>'
+        )
+
+    # Precondition: triage must have run and produced relevant passages.
+    from src.db.models import SectionTriageResult, TriageDecision
+    triaged_count = db.scalar(
+        select(func.count()).select_from(SectionTriageResult)
+        .where(SectionTriageResult.decision.in_([
+            TriageDecision.relevant, TriageDecision.uncertain,
+        ]))
+    ) or 0
+    if triaged_count == 0:
+        passage_count = db.scalar(
+            select(func.count()).select_from(NormalizedSourceRecord)
+        ) or 0
+        if passage_count == 0:
+            return HTMLResponse(
+                '<div class="result-panel warning">'
+                '<strong>Nothing to extract.</strong> '
+                'No passages have been parsed yet. Run <strong>Seed &amp; Ingest All</strong> '
+                '(Step&nbsp;1), then <strong>Triage Passages</strong> (Step&nbsp;2), then extract.'
+                '</div>'
+            )
+        return HTMLResponse(
+            '<div class="result-panel warning">'
+            '<strong>Triage has not run yet.</strong> '
+            f'There are <strong>{passage_count:,}</strong> parsed passages but no triage results. '
+            'Run <strong>Triage Passages</strong> (Step&nbsp;2) first — '
+            'extraction only processes passages that triage marked as relevant.'
+            '</div>'
         )
 
     def _do_extract(db, limit=None):

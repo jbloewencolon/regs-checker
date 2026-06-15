@@ -555,7 +555,11 @@ def extract_text_sample(artifact, max_chars: int = 4000) -> str:
 
 
 def _fetch_content_from_s3(s3_key: str) -> bytes:
-    """Fetch content from S3/MinIO."""
+    """Fetch content from S3/MinIO, or read directly for local:// keys."""
+    if s3_key.startswith("local://"):
+        from pathlib import Path
+        return Path(s3_key[len("local://"):]).read_bytes()
+
     import boto3
 
     from src.core.config import settings
