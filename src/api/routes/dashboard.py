@@ -1994,7 +1994,9 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         alerts = []
         if passthrough_count > 0:
             alerts.append(
-                f'<span class="tracker-badge failed">{passthrough_count} LLM failures (passthrough)</span>'
+                f'<span class="tracker-badge failed">{passthrough_count} LLM failures (passthrough)</span> '
+                f'<span hx-get="/dashboard/api/failed-triage-count" '
+                f'hx-trigger="load" hx-swap="outerHTML"></span>'
             )
         if quality_fail_count > 0:
             alerts.append(
@@ -3603,6 +3605,61 @@ def run_retry_failed_extractions(
         return HTMLResponse(
             f'<div class="result-panel error">Retry error: {html_escape(str(e))}</div>'
         )
+
+
+@router.post("/api/run/retry-failed-triage")
+def run_retry_failed_triage_endpoint(
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """Delete triage_error rows and re-run triage for those passages."""
+    try:
+        from src.ingestion.extractor import run_retry_failed_triage
+        summary = run_retry_failed_triage(db)
+
+        if summary["cleared"] == 0:
+            return HTMLResponse(
+                '<div class="result-panel success">No failed triage rows to retry.</div>'
+            )
+
+        return HTMLResponse(
+            f'<div class="result-panel success">'
+            f'Cleared {summary["cleared"]} failed triage rows and re-ran triage: '
+            f'{summary["relevant"]} relevant, '
+            f'{summary["uncertain"]} uncertain, '
+            f'{summary["skipped"]} skipped '
+            f'({summary["total"]} passages processed).'
+            f'</div>'
+        )
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(
+            f'<div class="result-panel error">Re-triage error: {html_escape(str(e))}</div>'
+        )
+
+
+@router.get("/api/failed-triage-count")
+def get_failed_triage_count(db: Session = Depends(get_db)) -> HTMLResponse:
+    """Return count of triage_error rows with a Re-triage Failed button."""
+    try:
+        count = db.scalar(
+            select(func.count()).select_from(SectionTriageResult)
+            .where(SectionTriageResult.quality_flags.contains(["triage_error"]))
+        ) or 0
+        if count > 0:
+            return HTMLResponse(
+                f'<span class="badge warning">{count} triage errors</span> '
+                f'<button class="btn btn-sm btn-warning" '
+                f'hx-post="/dashboard/api/run/retry-failed-triage" '
+                f'hx-target="#retriage-result" '
+                f'hx-swap="innerHTML" '
+                f'hx-indicator="#retriage-spinner">'
+                f'Re-triage Failed</button>'
+                f'<span id="retriage-spinner" class="htmx-indicator"> ...</span>'
+                f'<span id="retriage-result"></span>'
+            )
+        return HTMLResponse('<span class="badge success">No triage errors</span>')
+    except Exception:
+        return HTMLResponse("")
 
 
 @router.get("/api/failed-extractions-count")
