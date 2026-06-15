@@ -183,7 +183,7 @@ def seed_from_csv(
     with open(_FACT_LAWS_CSV, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 
-    stats = {"created": 0, "skipped": 0, "total": len(rows), "errors": 0}
+    stats = {"created": 0, "skipped": 0, "repaired": 0, "total": len(rows), "errors": 0}
 
     def _log(msg: str) -> None:
         if on_progress:
@@ -204,7 +204,47 @@ def seed_from_csv(
             .first()
         )
         if existing:
-            stats["skipped"] += 1
+            # Self-heal: a partial reset can delete ingestion_jobs while leaving
+            # the family + version behind (FK-blocked deletes on the parent rows).
+            # Without a job, neither "Parse Documents" nor ingest will ever touch
+            # this law again, so re-seeding looks like a no-op. Recreate a pending
+            # job so re-seeding repairs the broken state.
+            version = (
+                db.query(DocumentVersion)
+                .filter_by(family_id=existing.id)
+                .order_by(DocumentVersion.id.desc())
+                .first()
+            )
+            if version is None:
+                # No version to attach a job to — can't safely repair without
+                # rebuilding the family; leave it as already-seeded.
+                stats["skipped"] += 1
+                continue
+            has_job = (
+                db.query(IngestionJob)
+                .filter_by(document_version_id=version.id)
+                .first()
+                is not None
+            )
+            if has_job:
+                stats["skipped"] += 1
+                continue
+            # Version exists but has no ingestion job → recreate a pending one.
+            report_entry = fulltext_report.get(canonical_law_id, {})
+            source_url = report_entry.get("url", row.get("source_url", ""))
+            local_filename = _resolve_local_file(canonical_law_id)
+            db.add(IngestionJob(
+                document_version_id=version.id,
+                status=IngestionStatus.pending,
+                fetch_url=source_url or None,
+                metadata_={
+                    "canonical_law_id": canonical_law_id,
+                    "local_file": str(local_filename) if local_filename else None,
+                    "ingest_mode": "local",
+                },
+            ))
+            db.flush()
+            stats["repaired"] += 1
             continue
 
         # Resolve jurisdiction
@@ -325,6 +365,7 @@ def seed_from_csv(
     db.commit()
     _log(
         f"Seeding complete: {stats['created']} created, "
+        f"{stats['repaired']} repaired (missing job re-created), "
         f"{stats['skipped']} skipped (already exist), "
         f"{stats['errors']} errors"
     )

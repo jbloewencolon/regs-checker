@@ -985,7 +985,13 @@ def run_seed_local(
         parts = []
         created = summary.get("created", 0)
         skipped = summary.get("skipped", 0)
+        repaired = summary.get("repaired", 0)
         parts.append(f"Seeded <strong>{created}</strong> new law families ({skipped} already existed).")
+        if repaired:
+            parts.append(
+                f'<span style="color:var(--info);">Repaired <strong>{repaired}</strong> '
+                f'families that were missing an ingestion job.</span>'
+            )
 
         if not seed_only:
             completed = summary.get("completed", 0)
@@ -1035,46 +1041,32 @@ def run_full_reset_seed_ingest(db: Session = Depends(get_db)) -> HTMLResponse:
     def _do_full_reset(db):
         from sqlalchemy import text as _text
 
-        TABLES_TO_CLEAR = [
-            "export_jobs",
-            "applicability_conditions",
-            "obligation_dependencies",
-            "review_actions",
-            "review_queue",
-            "failed_extraction_attempts",
-            "extractions",
-            "extraction_jobs",
-            "section_triage_results",
-            "normalized_source_records",
-            "ingestion_jobs",
-            "raw_artifacts",
-            "legal_events",
-            "document_versions",
-            "document_families",
-        ]
-
-        # Step 1: Clear all pipeline tables
+        # Count rows we're about to clear (for the result message) before the
+        # TRUNCATE, since TRUNCATE does not report affected-row counts.
         deleted_total = 0
-        for table in TABLES_TO_CLEAR:
-            sp = db.begin_nested()
+        for tbl in ("document_families", "normalized_source_records", "extractions"):
             try:
-                result = db.execute(_text(f"DELETE FROM {table}"))  # noqa: S608
-                deleted_total += result.rowcount
-                sp.commit()
+                deleted_total += db.scalar(_text(f"SELECT count(*) FROM {tbl}")) or 0  # noqa: S608
             except Exception:
-                sp.rollback()
-        db.commit()
+                db.rollback()
 
-        # Reset sequences for primary key columns
-        for table in ["document_families", "document_versions", "ingestion_jobs",
-                       "raw_artifacts", "normalized_source_records",
-                       "section_triage_results", "extraction_jobs", "extractions"]:
-            try:
-                db.execute(_text(
-                    f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), 1, false)"  # noqa: S608
-                ))
-            except Exception:
-                pass
+        # Step 1: Clear ALL document-derived pipeline data in one atomic step.
+        #
+        # TRUNCATE ... CASCADE follows every foreign key automatically, so child
+        # tables (compliance_concepts, bill_level_extractions, verification_*,
+        # vocab_review_queue, concept_extraction_links, extraction_attempts, …)
+        # are cleared without maintaining a hand-ordered DELETE list. The old
+        # per-table loop silently skipped tables it didn't know about; their FK
+        # rows then blocked DELETE FROM document_versions/document_families,
+        # leaving stale families that made re-seeding a no-op.
+        #
+        # export_jobs has no FK into the document graph, so name it explicitly.
+        # RESTART IDENTITY resets the sequences of every truncated table.
+        # sources / api_keys / sync_cursors / content_blobs / extraction_runs are
+        # parents (or unrelated) and are intentionally preserved.
+        db.execute(_text(
+            "TRUNCATE TABLE document_families, export_jobs RESTART IDENTITY CASCADE"
+        ))
         db.commit()
 
         # Step 2: Re-seed from fact_laws.csv
