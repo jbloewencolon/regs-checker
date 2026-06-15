@@ -1836,6 +1836,7 @@ def run_retry_failed_triage(
         return {"cleared": 0, "total": 0, "relevant": 0, "uncertain": 0, "skipped": 0}
 
     _log(f"Clearing {cleared} llm_error triage rows so they can be re-triaged...")
+    from sqlalchemy import delete as sa_delete
     db.execute(
         sa_delete(SectionTriageResult)
         .where(SectionTriageResult.source_record_id.in_(error_ids))
