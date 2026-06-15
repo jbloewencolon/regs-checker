@@ -192,12 +192,15 @@
     <div class="step">
       <div class="step-header">
         <div class="step-number auto">2</div>
-        <div class="step-title">Parse & Triage Passages</div>
+        <div class="step-title">Parse &amp; Triage Passages</div>
         <span class="step-badge auto">Automated</span>
       </div>
       <div class="step-body">
         <div class="step-description">
-          Re-parse ingested documents and triage passages for AI relevance.
+          Parse seeded documents into passages, then triage for AI relevance.
+          <strong>Parse Documents</strong> reads files from <code>output/law_texts/</code> and
+          creates searchable passages. <strong>Triage Passages</strong> uses the triage agent to
+          filter passages to only AI-relevant sections before extraction.
           {% if stats.total_passages_raw > 0 %}
           <strong>{{ stats.total_passages_raw }}</strong> passages in database.
           {% endif %}
@@ -217,28 +220,28 @@
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this">
-            <span class="btn-label">Fetch &amp; Parse Documents</span>
-            <span class="htmx-indicator"><span class="spinner"></span> Fetching &amp; parsing...</span>
+            <span class="btn-label">Parse Documents</span>
+            <span class="htmx-indicator"><span class="spinner"></span> Parsing documents...</span>
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/fetch/cancel"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Stop the running fetch &amp; parse after the current document?">
-            Cancel Parse
+                  hx-confirm="Stop the running parse after the current document?">
+            Cancel
           </button>
           <button class="btn"
                   hx-post="/dashboard/api/run/fetch/reset"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="Requeue failed jobs so the next Fetch &amp; Parse re-processes them? Completed jobs will not be affected.">
+                  hx-confirm="Requeue failed jobs so the next Parse re-processes them? Completed jobs will not be affected.">
             Requeue Failed
           </button>
           <button class="btn btn-danger"
                   hx-post="/dashboard/api/run/fetch/reset-all"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-confirm="HARD RESET: Requeue ALL documents including completed ones? Existing passages will be deleted and rebuilt on the next Fetch &amp; Parse.">
+                  hx-confirm="HARD RESET: Requeue ALL documents including completed ones? Existing passages will be deleted and rebuilt on the next Parse.">
             Requeue All
           </button>
           <button class="btn"
