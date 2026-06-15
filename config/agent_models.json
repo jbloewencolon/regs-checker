@@ -18,7 +18,7 @@
     "nvidia": {
       "agents": {
         "obligation": {"model": "openai/gpt-oss-120b", "max_tokens": 6144, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
-        "rights_protection": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "rights_protection": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
         "definition_actor": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 2048, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
         "threshold_exception": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
         "compliance_mechanism": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},

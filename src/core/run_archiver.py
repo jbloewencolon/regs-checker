@@ -345,7 +345,7 @@ class RunArchiver:
                 .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
                 .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
                 .join(Source, DocumentFamily.source_id == Source.id)
-                .where(Extraction.confidence_tier.in_([ConfidenceTier.c, ConfidenceTier.d]))
+                .where(Extraction.confidence_tier.in_([ConfidenceTier.C, ConfidenceTier.D]))
                 .order_by(Extraction.confidence_score.asc(), Extraction.id)
             )
             rows = db.execute(query).all()
