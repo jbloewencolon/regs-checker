@@ -53,6 +53,7 @@ class BaseLLMProvider(ABC):
         temperature: float = 0.0,
         model_override: str | None = None,
         reasoning_effort: str | None = None,
+        top_p: float | None = None,
     ) -> LLMResponse:
         """Make a single LLM call. Returns provider-agnostic response.
 
@@ -188,6 +189,7 @@ class LocalLLMProvider(BaseLLMProvider):
         temperature: float = 0.0,
         model_override: str | None = None,
         reasoning_effort: str | None = None,
+        top_p: float | None = None,
     ) -> LLMResponse:
         import httpx
 
@@ -237,6 +239,8 @@ class LocalLLMProvider(BaseLLMProvider):
 
         if reasoning_effort is not None and effective_model not in self._reasoning_effort_unsupported:
             payload["reasoning_effort"] = reasoning_effort
+        if top_p is not None:
+            payload["top_p"] = top_p
 
         # Large models and reasoning models need longer timeouts.
         # Gemma 4 26B at 16k max_tokens can take 3+ minutes on dense
@@ -452,6 +456,7 @@ class NvidiaLLMProvider(BaseLLMProvider):
         temperature: float = 0.0,
         model_override: str | None = None,
         reasoning_effort: str | None = None,
+        top_p: float | None = None,
     ) -> LLMResponse:
         import httpx
 
@@ -467,6 +472,13 @@ class NvidiaLLMProvider(BaseLLMProvider):
             "temperature": temperature,
             "stream": False,
         }
+
+        # Optional inference parameters — only include when explicitly set so that
+        # omitting them lets the NVIDIA API apply its own defaults.
+        if top_p is not None:
+            payload["top_p"] = top_p
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",

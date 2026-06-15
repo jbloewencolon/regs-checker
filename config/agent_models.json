@@ -1,64 +1,33 @@
 {
-  "agents": {
-    "obligation": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 4096,
-      "context_length": 131072,
-      "temperature": 0.0
+  "provider": "nvidia",
+  "providers": {
+    "local": {
+      "agents": {
+        "obligation": {"model": "google/gemma-4-26b-a4b", "max_tokens": 6144, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "rights_protection": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "definition_actor": {"model": "google/gemma-4-26b-a4b", "max_tokens": 2048, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "threshold_exception": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "compliance_mechanism": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "preemption": {"model": "google/gemma-4-26b-a4b", "max_tokens": 1536, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "triage": {"model": "google/gemma-4-26b-a4b", "max_tokens": 512, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "enforcement_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "applicability_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "compliance_timeline_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null}
+      }
     },
-    "rights_protection": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 2048,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "definition_actor": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1536,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "threshold_exception": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 2048,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "compliance_mechanism": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1536,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "preemption": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1024,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "triage": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 256,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "enforcement_agent": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 1024,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "applicability_agent": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 2048,
-      "context_length": 131072,
-      "temperature": 0.0
-    },
-    "compliance_timeline_agent": {
-      "model": "google/gemma-4-26b-a4b",
-      "max_tokens": 2048,
-      "context_length": 131072,
-      "temperature": 0.0
+    "nvidia": {
+      "agents": {
+        "obligation": {"model": "openai/gpt-oss-120b", "max_tokens": 6144, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "rights_protection": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "definition_actor": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 2048, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
+        "threshold_exception": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "compliance_mechanism": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "preemption": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 1536, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
+        "triage": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 512, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
+        "enforcement_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "applicability_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "compliance_timeline_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null}
+      }
     }
   }
 }

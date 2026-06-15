@@ -12,26 +12,44 @@
               hx-get="/dashboard/api/models/status"
               hx-target="#lm-status"
               hx-swap="innerHTML"
-              hx-trigger="load, click, every 5s">
-        <span class="btn-label">&#8635; Refresh</span>
+              hx-trigger="{% if provider_kind == 'local' %}load, {% endif %}click{% if provider_kind == 'local' %}, every 5s{% endif %}">
+        <span class="btn-label">&#8635; Check LM Studio</span>
         <span class="htmx-indicator"><span class="spinner"></span></span>
       </button>
+      {% if nvidia_configured %}
+      <button class="btn btn-sm"
+              hx-get="/dashboard/api/models/nvidia-available"
+              hx-target="#nvidia-status"
+              hx-swap="innerHTML"
+              hx-trigger="{% if provider_kind == 'nvidia' %}load, {% endif %}click">
+        <span class="btn-label">&#8635; Check NVIDIA catalog</span>
+        <span class="htmx-indicator"><span class="spinner"></span></span>
+      </button>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Connection status — auto-refreshes every 5 s -->
-  <div id="lm-status" style="margin-bottom: 16px;">
+  <!-- LM Studio connection status — auto-refreshes only when local is active -->
+  <div id="lm-status" style="margin-bottom: 12px;">
     <div style="padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--text-muted);">
-      Checking LM Studio…
+      {% if provider_kind == 'local' %}Checking LM Studio…{% else %}Click <strong>Check LM Studio</strong> to see which models are loaded locally.{% endif %}
     </div>
   </div>
+
+  <!-- NVIDIA catalog status (populates the model-name datalist below) -->
+  {% if nvidia_configured %}
+  <div id="nvidia-status" style="margin-bottom: 12px;"></div>
+  {% endif %}
+  <datalist id="nvidia-model-list"></datalist>
 
   <!-- Extraction Provider toggle: local LM Studio vs NVIDIA API -->
   <div style="margin-bottom:20px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);">
     <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Extraction Provider</div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
-      Choose where extraction model calls are routed. Takes effect on the next
-      run (or on resume if paused) — no server restart needed.
+      Choose where extraction model calls are routed. Each backend keeps its
+      <strong>own separate per-agent settings</strong> — switching here loads that
+      backend's saved models. Takes effect on the next run (or on resume if
+      paused) — no server restart needed.
     </p>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <button class="btn {% if current_provider != 'nvidia' %}btn-primary{% endif %}"
@@ -67,17 +85,34 @@
     <div id="provider-result" style="margin-top:8px;"></div>
   </div>
 
+  <!-- Which backend's settings are shown below -->
+  <div style="margin-bottom:16px;padding:10px 14px;border-left:3px solid var(--primary);background:var(--primary-light);border-radius:var(--radius-sm);font-size:13px;">
+    Editing settings for
+    <strong>{% if provider_kind == 'nvidia' %}NVIDIA API{% else %}Local LM Studio{% endif %}</strong>.
+    {% if provider_kind == 'nvidia' %}
+      Model names are typed (catalog auto-completes after a <em>Check NVIDIA catalog</em>).
+    {% else %}
+      Model choices come from the models currently loaded in LM Studio.
+    {% endif %}
+  </div>
+
   <!-- Quick Apply: set all extraction agents to one model -->
   <div style="margin-bottom:20px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);">
     <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Quick Apply</div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
-      Set all 6 extraction agents to the same model at once.
-      Triage agent is unchanged.
+      Set all extraction agents to the same model at once (Triage is unchanged),
+      for the active backend only.
     </p>
     <form hx-post="/dashboard/api/models/apply-all"
           hx-target="#apply-all-result"
           hx-swap="innerHTML"
           style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      {% if provider_kind == 'nvidia' %}
+      <input type="text" name="model"
+             list="nvidia-model-list"
+             placeholder="e.g. openai/gpt-oss-120b"
+             style="flex:1;min-width:280px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);">
+      {% else %}
       <select name="model"
               class="apply-all-select"
               style="flex:1;min-width:280px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);">
@@ -86,6 +121,7 @@
           <option value="{{ mid }}">{{ mid }}</option>
         {% endfor %}
       </select>
+      {% endif %}
       <button type="submit" class="btn btn-primary">
         <span class="btn-label">Apply to all extraction agents</span>
         <span class="htmx-indicator"><span class="spinner"></span> Saving…</span>
@@ -96,7 +132,8 @@
 
   <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">
     Or configure each agent individually below. Changes are saved to
-    <code>config/agent_models.json</code> and take effect on the next extraction run.
+    <code>config/agent_models.json</code> (under the active backend) and take
+    effect on the next extraction run.
   </p>
 </section>
 
@@ -125,6 +162,13 @@
             <label style="font-size:12px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
               Model
             </label>
+            {% if provider_kind == 'nvidia' %}
+            <input type="text" name="{{ agent.name }}_model"
+                   value="{{ agent.model }}"
+                   list="nvidia-model-list"
+                   placeholder="e.g. openai/gpt-oss-120b"
+                   style="width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface);">
+            {% else %}
             <select name="{{ agent.name }}_model"
                     class="model-select"
                     style="width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; background:var(--surface);">
@@ -136,6 +180,7 @@
                 <option value="{{ agent.model }}" selected>{{ agent.model }} (not loaded)</option>
               {% endif %}
             </select>
+            {% endif %}
           </div>
 
           <!-- Settings row -->
@@ -168,6 +213,35 @@
                      style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
             </div>
           </div>
+
+          {% if provider_kind == 'nvidia' %}
+          <!-- NVIDIA-only: reasoning effort + top_p -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Reasoning Effort
+              </label>
+              <select name="{{ agent.name }}_reasoning_effort"
+                      style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px; background:var(--surface);">
+                <option value="" {% if not agent.reasoning_effort %}selected{% endif %}>(default)</option>
+                <option value="off" {% if agent.reasoning_effort == 'off' %}selected{% endif %}>off</option>
+                <option value="low" {% if agent.reasoning_effort == 'low' %}selected{% endif %}>low</option>
+                <option value="medium" {% if agent.reasoning_effort == 'medium' %}selected{% endif %}>medium</option>
+                <option value="high" {% if agent.reasoning_effort == 'high' %}selected{% endif %}>high</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Top-P
+              </label>
+              <input type="number" name="{{ agent.name }}_top_p"
+                     value="{{ agent.top_p if agent.top_p is not none else '' }}"
+                     placeholder="(default)"
+                     min="0" max="1" step="0.05"
+                     style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
@@ -184,7 +258,7 @@
             hx-post="/dashboard/api/models/reset"
             hx-target="#save-result"
             hx-swap="innerHTML"
-            hx-confirm="Reset all agents to default models?">
+            hx-confirm="Reset this backend's agents to default models?">
       Reset to Defaults
     </button>
     <div id="save-result" style="flex:1;"></div>
