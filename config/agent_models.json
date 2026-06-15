@@ -24,9 +24,9 @@
         "compliance_mechanism": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
         "preemption": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 1536, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
         "triage": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 512, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
-        "enforcement_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
-        "applicability_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
-        "compliance_timeline_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null}
+        "enforcement_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "applicability_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "compliance_timeline_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null}
       }
     }
   }
