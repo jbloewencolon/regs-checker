@@ -3641,6 +3641,7 @@ def run_retry_failed_triage_endpoint(
 def get_failed_triage_count(db: Session = Depends(get_db)) -> HTMLResponse:
     """Return count of triage_error rows with a Re-triage Failed button."""
     try:
+        from src.db.models import SectionTriageResult
         count = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
             .where(
@@ -5512,7 +5513,6 @@ async def save_model_config(request: Request):
     form = await request.form()
     store = get_config()
     active = store.provider
-    existing = store.agents_for(active)
 
     agents = {}
     for name in AGENT_DISPLAY:
