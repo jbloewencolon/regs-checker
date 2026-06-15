@@ -213,6 +213,35 @@
                      style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
             </div>
           </div>
+
+          {% if provider_kind == 'nvidia' %}
+          <!-- NVIDIA-only: reasoning effort + top_p -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px;">
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Reasoning Effort
+              </label>
+              <select name="{{ agent.name }}_reasoning_effort"
+                      style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px; background:var(--surface);">
+                <option value="" {% if not agent.reasoning_effort %}selected{% endif %}>(default)</option>
+                <option value="off" {% if agent.reasoning_effort == 'off' %}selected{% endif %}>off</option>
+                <option value="low" {% if agent.reasoning_effort == 'low' %}selected{% endif %}>low</option>
+                <option value="medium" {% if agent.reasoning_effort == 'medium' %}selected{% endif %}>medium</option>
+                <option value="high" {% if agent.reasoning_effort == 'high' %}selected{% endif %}>high</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:500; color:var(--text-muted); display:block; margin-bottom:2px;">
+                Top-P
+              </label>
+              <input type="number" name="{{ agent.name }}_top_p"
+                     value="{{ agent.top_p if agent.top_p is not none else '' }}"
+                     placeholder="(default)"
+                     min="0" max="1" step="0.05"
+                     style="width:100%; padding:5px 6px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px;">
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
       {% endfor %}

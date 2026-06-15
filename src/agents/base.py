@@ -188,6 +188,7 @@ class BaseExtractionAgent(ABC):
     max_retries: int = 2
     model_override: str | None = None
     reasoning_effort: str | None = None
+    top_p_override: float | None = None
     max_tokens_override: int | None = None
     temperature_override: float | None = None
 
@@ -207,6 +208,8 @@ class BaseExtractionAgent(ABC):
                 self.temperature_override = cfg.temperature
             if cfg.reasoning_effort is not None:
                 self.reasoning_effort = cfg.reasoning_effort
+            if cfg.top_p is not None:
+                self.top_p_override = cfg.top_p
 
     @abstractmethod
     def get_system_prompt(self) -> str:
@@ -769,6 +772,7 @@ class BaseExtractionAgent(ABC):
             temperature=temperature,
             model_override=self.model_override,
             reasoning_effort=self.reasoning_effort,
+            top_p=self.top_p_override,
         )
 
         try:

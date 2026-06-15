@@ -5319,6 +5319,8 @@ def models_page(request: Request):
             "max_tokens": acfg.max_tokens,
             "context_length": acfg.context_length,
             "temperature": acfg.temperature,
+            "reasoning_effort": acfg.reasoning_effort,
+            "top_p": acfg.top_p,
         })
 
     from src.core.config import settings as _settings
@@ -5403,14 +5405,16 @@ async def save_model_config(request: Request):
         max_tokens = int(form.get(f"{name}_max_tokens", "65536") or "65536")
         context_length = int(form.get(f"{name}_context_length", "131072") or "131072")
         temperature = float(form.get(f"{name}_temperature", "0.0") or "0.0")
-        # Preserve reasoning_effort (not exposed in the form).
-        prior = existing.get(name)
+        reasoning_effort_raw = (form.get(f"{name}_reasoning_effort") or "").strip() or None
+        top_p_raw = (form.get(f"{name}_top_p") or "").strip()
+        top_p = float(top_p_raw) if top_p_raw else None
         agents[name] = AgentModelConfig(
             model=model,
             max_tokens=max_tokens,
             context_length=context_length,
             temperature=temperature,
-            reasoning_effort=prior.reasoning_effort if prior else None,
+            reasoning_effort=reasoning_effort_raw,
+            top_p=top_p,
         )
 
     store.set_agents(active, agents)

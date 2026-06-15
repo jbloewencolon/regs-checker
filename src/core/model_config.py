@@ -100,6 +100,7 @@ class AgentModelConfig:
     context_length: int = 131072
     temperature: float = 0.0
     reasoning_effort: str | None = None  # "low", "medium", "high", "off", or None
+    top_p: float | None = None           # nucleus sampling (0–1); None = provider default
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
