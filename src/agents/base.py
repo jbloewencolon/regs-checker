@@ -338,6 +338,12 @@ class BaseExtractionAgent(ABC):
                 cleaned = self._repair_json(cleaned)
                 parsed = json.loads(cleaned)
 
+                # Some models emit a bare top-level array of extraction objects
+                # instead of the documented {"extractions": [...]} envelope.
+                # Normalize so the downstream .get() calls don't fail on a list.
+                if isinstance(parsed, list):
+                    parsed = {"extractions": parsed}
+
                 was_truncated = stop_reason == "length"
 
                 # Check for abstention

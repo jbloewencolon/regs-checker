@@ -1811,8 +1811,6 @@ def run_retry_failed_triage(
 
     Returns a dict with keys: cleared, total, relevant, uncertain, skipped.
     """
-    from collections.abc import Callable
-
     def _log(msg: str) -> None:
         if on_progress:
             on_progress(msg)
