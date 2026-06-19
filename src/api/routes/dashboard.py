@@ -2225,11 +2225,11 @@ def export_low_confidence_extractions_csv(
     tiers_to_export = []
     if tier:
         if 'C' in tier.upper():
-            tiers_to_export.append(ConfidenceTier.c)
+            tiers_to_export.append(ConfidenceTier.C)
         if 'D' in tier.upper():
-            tiers_to_export.append(ConfidenceTier.d)
+            tiers_to_export.append(ConfidenceTier.D)
     else:
-        tiers_to_export = [ConfidenceTier.c, ConfidenceTier.d]
+        tiers_to_export = [ConfidenceTier.C, ConfidenceTier.D]
 
     # Fetch extractions with full context
     query = (
@@ -2319,11 +2319,11 @@ def export_low_confidence_extractions_jsonl(
     tiers_to_export = []
     if tier:
         if 'C' in tier.upper():
-            tiers_to_export.append(ConfidenceTier.c)
+            tiers_to_export.append(ConfidenceTier.C)
         if 'D' in tier.upper():
-            tiers_to_export.append(ConfidenceTier.d)
+            tiers_to_export.append(ConfidenceTier.D)
     else:
-        tiers_to_export = [ConfidenceTier.c, ConfidenceTier.d]
+        tiers_to_export = [ConfidenceTier.C, ConfidenceTier.D]
 
     query = (
         select(Extraction, NormalizedSourceRecord, DocumentVersion)
@@ -3859,17 +3859,39 @@ def run_sync_to_supabase(
             dry_run=dry_run,
         )
 
-        total = sum(v.get("synced", v.get("source_count", 0)) for v in summary.values() if isinstance(v, dict))
-        tables = len([v for v in summary.values() if isinstance(v, dict)])
-
         if dry_run:
+            # dry-run summary: {table: {"source": N, "target": M}, ..., "_total": N}
+            total = sum(
+                v.get("source", 0)
+                for k, v in summary.items()
+                if not k.startswith("_") and isinstance(v, dict)
+            )
+            tables = len([k for k, v in summary.items() if not k.startswith("_") and isinstance(v, dict)])
+            per_table = "".join(
+                f"<tr><td style='padding:1px 6px'>{k}</td>"
+                f"<td style='padding:1px 6px;text-align:right'>{v.get('source', 0)}</td>"
+                f"<td style='padding:1px 6px;text-align:right;color:var(--text-muted)'>{v.get('target', 0)}</td></tr>"
+                for k, v in summary.items()
+                if not k.startswith("_") and isinstance(v, dict)
+            )
             return HTMLResponse(
                 f'<div class="result-panel warning">'
-                f'<strong>Dry Run Preview</strong><br>'
-                f'{tables} tables, ~{total} rows would be synced to Regs Checker Supabase.'
+                f'<strong>Dry Run Preview</strong> &mdash; '
+                f'{tables} tables, ~{total} rows would be synced to Regs Checker Supabase.<br>'
+                f'<details style="margin-top:6px;font-size:12px;">'
+                f'<summary>Per-table counts</summary>'
+                f'<table style="margin-top:4px;border-collapse:collapse;">'
+                f'<tr><th style="padding:1px 6px;text-align:left">Table</th>'
+                f'<th style="padding:1px 6px;">New rows</th>'
+                f'<th style="padding:1px 6px;color:var(--text-muted)">Target current</th></tr>'
+                f'{per_table}</table>'
+                f'</details>'
                 f'</div>'
             )
 
+        # Live sync summary: {table: inserted_int, ..., "_total": N}
+        total = summary.get("_total", 0)
+        tables = len([k for k, v in summary.items() if not k.startswith("_") and isinstance(v, int)])
         return HTMLResponse(
             f'<div class="result-panel success">'
             f'Synced {tables} tables ({total} rows) to Regs Checker Supabase.'
@@ -5051,7 +5073,7 @@ def run_verification(
     Returns results as HTML for the dashboard.
     """
 
-    from src.ingestion.extractor import run_verification_pass
+    from src.ingestion.verification_runner import run_verification_pass
 
     if not _acquire_pipeline_lock():
         return HTMLResponse(
@@ -5393,6 +5415,209 @@ def resolve_concept_action(
         f'<div style="padding:4px 8px;font-size:12px;color:var(--success);">'
         f'Concept {concept_id} marked <strong>{status}</strong>.'
         f'</div>'
+    )
+
+
+@router.get("/api/concepts/export.csv")
+def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download all compliance concepts as a CSV file."""
+    import csv
+    import io
+    import json as _json
+
+    from src.db.models import (
+        ComplianceConcept,
+        DocumentFamily,
+        DocumentVersion,
+        Source,
+    )
+
+    query = (
+        select(
+            ComplianceConcept,
+            Source.jurisdiction_code,
+            DocumentFamily.short_cite,
+            DocumentFamily.canonical_title,
+        )
+        .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
+        .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+        .join(Source, DocumentFamily.source_id == Source.id)
+        .order_by(Source.jurisdiction_code, DocumentFamily.short_cite, ComplianceConcept.concept_type)
+    )
+
+    rows = db.execute(query).all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "concept_id", "jurisdiction", "law", "law_title",
+        "concept_type", "regulated_actor_family", "right_holder_family",
+        "covered_system_type", "title", "summary",
+        "trigger_condition", "required_action", "deadline",
+        "confidence_score", "confidence_tier", "grounding_status",
+        "review_status", "member_count",
+        "exceptions_json", "enforcement_refs_json",
+        "source_extraction_ids_json", "tracker_ref_ids_json",
+        "run_id", "created_at", "updated_at",
+    ])
+    for concept, jurisdiction, law, law_title in rows:
+        writer.writerow([
+            concept.id, jurisdiction or "", law or "", law_title or "",
+            concept.concept_type or "",
+            concept.regulated_actor_family or "",
+            concept.right_holder_family or "",
+            concept.covered_system_type or "",
+            concept.title or "",
+            concept.summary or "",
+            concept.trigger_condition or "",
+            concept.required_action or "",
+            concept.deadline or "",
+            round(float(concept.confidence_score), 4) if concept.confidence_score else "",
+            concept.confidence_tier or "",
+            concept.grounding_status or "",
+            concept.review_status.value if hasattr(concept.review_status, "value") else str(concept.review_status),
+            concept.member_count or 0,
+            _json.dumps(concept.exceptions or [], default=str),
+            _json.dumps(concept.enforcement_refs or [], default=str),
+            _json.dumps(concept.source_extraction_ids or [], default=str),
+            _json.dumps(concept.tracker_ref_ids or [], default=str),
+            concept.run_id or "",
+            concept.created_at.isoformat() if concept.created_at else "",
+            concept.updated_at.isoformat() if concept.updated_at else "",
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=compliance_concepts.csv"},
+    )
+
+
+@router.get("/api/concepts/export.jsonl")
+def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download all compliance concepts as JSONL (one JSON object per line)."""
+    import json as _json
+
+    from src.db.models import (
+        ComplianceConcept,
+        DocumentFamily,
+        DocumentVersion,
+        Source,
+    )
+
+    query = (
+        select(
+            ComplianceConcept,
+            Source.jurisdiction_code,
+            DocumentFamily.short_cite,
+            DocumentFamily.canonical_title,
+        )
+        .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
+        .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+        .join(Source, DocumentFamily.source_id == Source.id)
+        .order_by(Source.jurisdiction_code, DocumentFamily.short_cite, ComplianceConcept.concept_type)
+    )
+
+    rows = db.execute(query).all()
+
+    def _generate():
+        for concept, jurisdiction, law, law_title in rows:
+            obj = {
+                "concept_id": concept.id,
+                "jurisdiction": jurisdiction or "",
+                "law": law or "",
+                "law_title": law_title or "",
+                "concept_type": concept.concept_type or "",
+                "regulated_actor_family": concept.regulated_actor_family or "",
+                "right_holder_family": concept.right_holder_family or "",
+                "covered_system_type": concept.covered_system_type or "",
+                "title": concept.title or "",
+                "summary": concept.summary or "",
+                "trigger_condition": concept.trigger_condition or "",
+                "required_action": concept.required_action or "",
+                "deadline": concept.deadline or "",
+                "confidence_score": round(float(concept.confidence_score), 4) if concept.confidence_score else None,
+                "confidence_tier": concept.confidence_tier or "",
+                "grounding_status": concept.grounding_status or "",
+                "review_status": concept.review_status.value if hasattr(concept.review_status, "value") else str(concept.review_status),
+                "member_count": concept.member_count or 0,
+                "exceptions": concept.exceptions or [],
+                "enforcement_refs": concept.enforcement_refs or [],
+                "source_extraction_ids": concept.source_extraction_ids or [],
+                "tracker_ref_ids": concept.tracker_ref_ids or [],
+                "run_id": concept.run_id,
+                "created_at": concept.created_at.isoformat() if concept.created_at else None,
+                "updated_at": concept.updated_at.isoformat() if concept.updated_at else None,
+            }
+            yield _json.dumps(obj, default=str) + "\n"
+
+    return StreamingResponse(
+        _generate(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=compliance_concepts.jsonl"},
+    )
+
+
+@router.get("/api/extractions/summaries.csv")
+def export_extraction_summaries_csv(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download all extractions that have a plain_summary as CSV."""
+    import csv
+    import io
+
+    from src.db.models import (
+        DocumentFamily,
+        DocumentVersion,
+        NormalizedSourceRecord,
+        Source,
+    )
+
+    query = (
+        select(
+            Extraction.id,
+            Extraction.extraction_type,
+            Extraction.confidence_tier,
+            Extraction.confidence_score,
+            Extraction.metadata_,
+            Source.jurisdiction_code,
+            DocumentFamily.short_cite,
+            NormalizedSourceRecord.section_path,
+        )
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+        .join(Source, DocumentFamily.source_id == Source.id)
+        .order_by(Source.jurisdiction_code, DocumentFamily.short_cite, Extraction.id)
+    )
+
+    rows = db.execute(query).all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "extraction_id", "jurisdiction", "law", "section",
+        "extraction_type", "confidence_tier", "confidence_score", "plain_summary",
+    ])
+    for ext_id, ext_type, tier, score, metadata, jurisdiction, law, section in rows:
+        plain = (metadata or {}).get("plain_summary", "")
+        if not plain:
+            continue
+        writer.writerow([
+            ext_id,
+            jurisdiction or "",
+            law or "",
+            section or "",
+            ext_type.value if hasattr(ext_type, "value") else str(ext_type),
+            tier.value if hasattr(tier, "value") else str(tier),
+            round(float(score), 4) if score else "",
+            plain,
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=extraction_summaries.csv"},
     )
 
 
