@@ -235,43 +235,64 @@ def _ensure_extraction_enums(db, _log=None) -> None:
 
 
 def _ensure_failed_attempts_table(db, _log=None) -> None:
-    """Create the failed_extraction_attempts table if it doesn't exist."""
+    """Create the failed_extraction_attempts table if it doesn't exist.
+
+    Also adds the run_id column if missing (migration y1z7a3b5c026).
+    """
     from sqlalchemy import inspect as sa_inspect
     from sqlalchemy import text
 
     bind = db.get_bind()
     inspector = sa_inspect(bind)
-    if inspector.has_table("failed_extraction_attempts"):
+    if not inspector.has_table("failed_extraction_attempts"):
+        if _log:
+            _log("Creating failed_extraction_attempts table...")
+        with bind.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS failed_extraction_attempts (
+                    id SERIAL PRIMARY KEY,
+                    source_record_id INTEGER NOT NULL REFERENCES normalized_source_records(id),
+                    agent_name VARCHAR(100) NOT NULL,
+                    error_type VARCHAR(50) NOT NULL,
+                    error_message TEXT NOT NULL,
+                    extraction_job_id INTEGER REFERENCES extraction_jobs(id),
+                    run_id INTEGER REFERENCES extraction_runs(id) ON DELETE SET NULL,
+                    retried BOOLEAN NOT NULL DEFAULT FALSE,
+                    retry_succeeded BOOLEAN,
+                    created_at TIMESTAMP DEFAULT now()
+                )
+            """))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_source "
+                "ON failed_extraction_attempts (source_record_id)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_retry "
+                "ON failed_extraction_attempts (retried, agent_name)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_run_id "
+                "ON failed_extraction_attempts (run_id)"
+            ))
+        if _log:
+            _log("Table created.")
         return
 
-    if _log:
-        _log("Creating failed_extraction_attempts table...")
-
-    with bind.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS failed_extraction_attempts (
-                id SERIAL PRIMARY KEY,
-                source_record_id INTEGER NOT NULL REFERENCES normalized_source_records(id),
-                agent_name VARCHAR(100) NOT NULL,
-                error_type VARCHAR(50) NOT NULL,
-                error_message TEXT NOT NULL,
-                extraction_job_id INTEGER REFERENCES extraction_jobs(id),
-                retried BOOLEAN NOT NULL DEFAULT FALSE,
-                retry_succeeded BOOLEAN,
-                created_at TIMESTAMP DEFAULT now()
-            )
-        """))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_failed_attempts_source "
-            "ON failed_extraction_attempts (source_record_id)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_failed_attempts_retry "
-            "ON failed_extraction_attempts (retried, agent_name)"
-        ))
-
-    if _log:
-        _log("Table created.")
+    # Table exists — ensure run_id column is present (added by migration y1z7a3b5c026)
+    existing_cols = {c["name"] for c in inspector.get_columns("failed_extraction_attempts")}
+    if "run_id" not in existing_cols:
+        with bind.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE failed_extraction_attempts "
+                "ADD COLUMN IF NOT EXISTS run_id INTEGER "
+                "REFERENCES extraction_runs(id) ON DELETE SET NULL"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_run_id "
+                "ON failed_extraction_attempts (run_id)"
+            ))
+        if _log:
+            _log("Added run_id column to failed_extraction_attempts.")
 
 
 def _ensure_pipeline_events_table(db, _log=None) -> None:
@@ -365,6 +386,7 @@ def _record_failed_attempt(
     error_type: str,
     error_message: str,
     extraction_job_id: int | None = None,
+    run_id: int | None = None,
 ) -> None:
     """Record a failed extraction attempt for later retry."""
     try:
@@ -374,6 +396,7 @@ def _record_failed_attempt(
             error_type=error_type,
             error_message=str(error_message)[:2000],
             extraction_job_id=extraction_job_id,
+            run_id=run_id,
         ))
         db.flush()
     except Exception as e:
@@ -1360,6 +1383,7 @@ def extract_single_record(
             _record_failed_attempt(
                 db, record.id, name, error_type, str(result),
                 extraction_job_id=extraction_job.id if extraction_job else None,
+                run_id=run_id,
             )
             if tracker is not None:
                 tracker.record_failure(
@@ -1562,6 +1586,7 @@ def extract_single_record(
                     _record_failed_attempt(
                         db, source_record.id, name, "db_error", str(e),
                         extraction_job_id=extraction_job.id if extraction_job else None,
+                        run_id=run_id,
                     )
                     if tracker is not None:
                         tracker.record_failure(
@@ -2224,7 +2249,7 @@ def run_extraction(
             )
         else:
             _log("No triaged-relevant passages found.")
-        archiver.finalize(db, summary)
+        archiver.finalize(db, summary, run_id=current_run_id)
         return summary
 
     _log(f"Found {len(records)} triaged-relevant passages to extract from")
@@ -2323,7 +2348,7 @@ def run_extraction(
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
                 _monitor.stop_run(cancelled=True)
-                archiver.finalize(db, summary)
+                archiver.finalize(db, summary, run_id=current_run_id)
                 return summary
 
             # Pause loop: sleep in short increments so cancel is still responsive.
@@ -2370,7 +2395,7 @@ def run_extraction(
                 _log(f"\n{cb}")
                 _monitor.record_circuit_breaker(str(cb))
                 _monitor.stop_run()
-                archiver.finalize(db, summary)
+                archiver.finalize(db, summary, run_id=current_run_id)
                 return summary
 
             except Exception as e:
@@ -2447,7 +2472,7 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     _monitor.stop_run()
-    archiver.finalize(db, summary)
+    archiver.finalize(db, summary, run_id=current_run_id)
 
     # Finalize the ExtractionRun record: mark as serving, write summary (Phase 1b)
     if current_run_id is not None:
@@ -2530,6 +2555,20 @@ def run_retry_failed(
     # Group by source_record_id so we build context once per passage
     from itertools import groupby
     from operator import attrgetter
+
+    # Attach retried extractions to the current serving ExtractionRun so they
+    # are grouped with the run they are completing rather than floating at run_id=NULL.
+    retry_run_id: int | None = None
+    try:
+        from src.db.models import ExtractionRun
+        _serving = db.scalars(
+            select(ExtractionRun).where(ExtractionRun.is_serving.is_(True))
+        ).first()
+        if _serving is not None:
+            retry_run_id = _serving.id
+            _log(f"Attaching retried extractions to serving run {retry_run_id}")
+    except Exception as _e:
+        logger.warning("retry_run_id_lookup_failed", error=str(_e))
 
     all_agents = _get_agents()
     archiver = RunArchiver.start("retry")
@@ -2624,7 +2663,7 @@ def run_retry_failed(
                         except Exception:
                             pass
 
-                        extraction = Extraction(
+                        extraction_kwargs: dict = dict(
                             source_record_id=record_id,
                             extraction_type=resolved_type,
                             payload=item,
@@ -2636,6 +2675,9 @@ def run_retry_failed(
                             model_id=result.model_id,
                             metadata_=extraction_meta,
                         )
+                        if _run_id_available and retry_run_id is not None:
+                            extraction_kwargs["run_id"] = retry_run_id
+                        extraction = Extraction(**extraction_kwargs)
                         db.add(extraction)
                         db.flush()
 
@@ -2676,7 +2718,7 @@ def run_retry_failed(
         f"\nRetry complete: {succeeded}/{retried} succeeded, "
         f"{failed_again} failed again"
     )
-    archiver.finalize(db, summary)
+    archiver.finalize(db, summary, run_id=retry_run_id)
     return summary
 
 
