@@ -5051,7 +5051,7 @@ def run_verification(
     Returns results as HTML for the dashboard.
     """
 
-    from src.ingestion.extractor import run_verification_pass
+    from src.ingestion.verification_runner import run_verification_pass
 
     if not _acquire_pipeline_lock():
         return HTMLResponse(
