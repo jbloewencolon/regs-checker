@@ -95,6 +95,7 @@ class RunArchiver:
         db: Session,
         summary: dict[str, Any],
         extraction_job_ids: list[int] | None = None,
+        run_id: int | None = None,
     ) -> Path:
         """Write run summary and export extractions to the run folder.
 
@@ -103,6 +104,8 @@ class RunArchiver:
             summary: The run summary dict from run_extraction().
             extraction_job_ids: Specific job IDs to export. If None, exports
                 all extractions created after self.started_at.
+            run_id: When provided, a named snapshot is written to
+                output/extraction_runs/run_{run_id}/ alongside the active folder.
 
         Returns:
             Path to the run folder.
@@ -116,6 +119,7 @@ class RunArchiver:
             "finished_at": finished_at.isoformat(),
             "duration_seconds": round((finished_at - self.started_at).total_seconds(), 1),
             "folder": str(self.run_dir),
+            "run_id": run_id,
             **summary,
         }
         summary_path = self.run_dir / "run_summary.json"
@@ -145,7 +149,28 @@ class RunArchiver:
             duration_seconds=run_meta["duration_seconds"],
         )
 
+        # 6. Write a named per-run snapshot so each run's output is preserved
+        #    even when the active folder is overwritten by later runs.
+        if run_id is not None:
+            self._write_run_snapshot(run_id, run_meta)
+
         return self.run_dir
+
+    def _write_run_snapshot(self, run_id: int, run_meta: dict[str, Any]) -> None:
+        """Copy active folder files into output/extraction_runs/run_{run_id}/."""
+        snapshot_dir = RUNS_DIR / f"run_{run_id}"
+        try:
+            snapshot_dir.mkdir(parents=True, exist_ok=True)
+            for src_file in self.run_dir.iterdir():
+                if src_file.is_file():
+                    shutil.copy2(src_file, snapshot_dir / src_file.name)
+            logger.info(
+                "run_archiver_snapshot_written",
+                snapshot_dir=str(snapshot_dir),
+                run_id=run_id,
+            )
+        except Exception as e:
+            logger.warning("run_archiver_snapshot_failed", run_id=run_id, error=str(e))
 
     def _export_extractions(
         self,

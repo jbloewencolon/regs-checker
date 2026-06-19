@@ -735,6 +735,7 @@ class FailedExtractionAttempt(Base):
     error_type = Column(String(50), nullable=False)  # "llm_error", "validation_error", "db_error"
     error_message = Column(Text, nullable=False)
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), nullable=True)
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     retried = Column(Boolean, default=False, nullable=False, index=True)
     retry_succeeded = Column(Boolean, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
