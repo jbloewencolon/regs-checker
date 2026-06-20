@@ -1029,6 +1029,10 @@ class ComplianceConcept(Base):
     amendment_status = Column(Text, nullable=True)       # human-readable event-log rollup
     as_of_date = Column(Date, nullable=True)             # date concepts were last grouped
 
+    # Actor role — derived from regulated_actor_family at grouping time.
+    # "government" / "regulated_entity" / "individual"
+    actor_role = Column(String(30), nullable=True)
+
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

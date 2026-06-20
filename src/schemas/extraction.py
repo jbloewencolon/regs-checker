@@ -128,6 +128,14 @@ class TimelineInfo(BaseModel):
     phase_in_period: str | None = None
     timeline_text: str | None = Field(default=None, description="Raw timeline language")
 
+    @field_validator("effective_date", "compliance_deadline", "sunset_date", mode="before")
+    @classmethod
+    def _normalize_date_field(cls, v: Any) -> Any:
+        if not isinstance(v, str):
+            return v
+        from src.core.date_normalizer import normalize_date
+        return normalize_date(v) or v
+
 
 class EnforcementInfo(BaseModel):
     """Enforcement mechanism for an obligation."""

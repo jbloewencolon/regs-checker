@@ -31,6 +31,7 @@ from typing import Any
 import structlog
 from sqlalchemy import select
 
+from src.core.penalty_normalizer import normalize_enforcing_body, normalize_penalty_type
 from src.core.vocab_loader import get_canonical_codes, normalize
 from src.db.models import (
     ComplianceConcept,
@@ -234,6 +235,27 @@ def _derive_amendment_status(db, dv: DocumentVersion) -> str:
     return ts_val or "unknown"
 
 
+_GOVERNMENT_ACTOR_CODES = {"regulator", "government_agency"}
+_INDIVIDUAL_ACTOR_CODES = {"individual"}
+
+
+def _classify_actor_role(canonical_actor: str | None) -> str | None:
+    """Map a canonical actor code to a three-value actor_role bucket.
+
+    Returns "government", "individual", or "regulated_entity" (the residual
+    bucket covering developer / deployer / provider / operator / controller /
+    processor / data_broker / compute_provider / distributor / regulated_entity).
+    Returns None when the actor is absent.
+    """
+    if not canonical_actor:
+        return None
+    if canonical_actor in _GOVERNMENT_ACTOR_CODES:
+        return "government"
+    if canonical_actor in _INDIVIDUAL_ACTOR_CODES:
+        return "individual"
+    return "regulated_entity"
+
+
 def _actor_family(raw: str | None, fallback: str | None = None) -> str | None:
     """Normalize an actor string to a canonical family, or None when empty."""
     val = (raw or fallback or "").strip()
@@ -357,8 +379,8 @@ def group_concepts_for_dv(
         if et == ExtractionType.enforcement:
             enforcement_refs.append({
                 "extraction_id": ext.id,
-                "penalty_type": payload.get("penalty_type"),
-                "enforcing_body": payload.get("enforcing_body"),
+                "penalty_type": normalize_penalty_type(payload.get("penalty_type")),
+                "enforcing_body": normalize_enforcing_body(payload.get("enforcing_body")),
             })
             enforcement_ids.append(ext.id)
             continue
@@ -397,8 +419,8 @@ def group_concepts_for_dv(
             if isinstance(emb, dict) and (emb.get("penalty_type") or emb.get("max_civil_penalty_usd")):
                 enforcement_refs.append({
                     "extraction_id": ext.id,
-                    "penalty_type": emb.get("penalty_type"),
-                    "enforcing_body": emb.get("enforcing_body"),
+                    "penalty_type": normalize_penalty_type(emb.get("penalty_type")),
+                    "enforcing_body": normalize_enforcing_body(emb.get("enforcing_body")),
                 })
 
         elif et == ExtractionType.compliance_mechanism:
@@ -537,6 +559,7 @@ def group_concepts_for_dv(
             law_effective_date=_law_effective_date,
             amendment_status=_amendment_status,
             as_of_date=_as_of_date,
+            actor_role=_classify_actor_role(actor),
         )
         db.add(concept)
         db.flush()  # obtain concept.id

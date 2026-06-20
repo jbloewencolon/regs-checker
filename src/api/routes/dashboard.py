@@ -5294,6 +5294,13 @@ def list_concepts(
         score = f"{concept.confidence_score:.2f}" if concept.confidence_score is not None else "—"
         ctype = html_escape(concept.concept_type or "—")
         actor = html_escape(concept.regulated_actor_family or concept.right_holder_family or "—")
+        _role = concept.actor_role or ""
+        _role_badge_map = {
+            "government": '<span style="background:#6c3483;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">gov</span>',
+            "individual": '<span style="background:#1a5276;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">ind</span>',
+            "regulated_entity": '<span style="background:#1e8449;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">biz</span>',
+        }
+        actor_role_badge = _role_badge_map.get(_role, "")
         title = html_escape((concept.title or "")[:80])
         cite = html_escape(short_cite or "")
         jur = html_escape(jur_code or "")
@@ -5328,7 +5335,7 @@ def list_concepts(
             f'<td title="{html_escape(law_cell_title)}">'
             f'<strong>{jur}</strong> {cite} {status_badge}</td>'
             f'<td style="font-size:11px;">{ctype}</td>'
-            f'<td>{actor}</td>'
+            f'<td>{actor}{actor_role_badge}</td>'
             f'<td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>'
             f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}{below_floor_badge}</td>'
             f'<td style="text-align:right;">{score}</td>'
@@ -5511,7 +5518,7 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
     writer.writerow([
         "concept_id", "jurisdiction", "law", "law_title",
         "law_status", "effective_date", "amendment_status", "as_of_date",
-        "concept_type", "regulated_actor_family", "right_holder_family",
+        "concept_type", "regulated_actor_family", "actor_role", "right_holder_family",
         "covered_system_type", "title", "summary",
         "trigger_condition", "required_action", "deadline",
         "confidence_score", "confidence_tier", "grounding_status",
@@ -5536,6 +5543,7 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
             concept.as_of_date.isoformat() if concept.as_of_date else "",
             concept.concept_type or "",
             concept.regulated_actor_family or "",
+            concept.actor_role or "",
             concept.right_holder_family or "",
             concept.covered_system_type or "",
             concept.title or "",
@@ -5622,6 +5630,7 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
                 "as_of_date": concept.as_of_date.isoformat() if concept.as_of_date else None,
                 "concept_type": concept.concept_type or "",
                 "regulated_actor_family": concept.regulated_actor_family or "",
+                "actor_role": concept.actor_role or "",
                 "right_holder_family": concept.right_holder_family or "",
                 "covered_system_type": concept.covered_system_type or "",
                 "title": concept.title or "",
