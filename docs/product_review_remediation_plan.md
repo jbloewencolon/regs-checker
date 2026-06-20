@@ -127,3 +127,32 @@ The table below maps every major review finding to current reality. This is the 
 - **Phase 4 is corpus quality** — important, but it improves a surface that Phases 0–3 have already made safe.
 
 The single most important takeaway: the system is closer to the review's target than the `test.csv` suggests. The fastest path to "safe to put in front of a business owner" is **Phase 0 wiring**, not a rebuild.
+
+---
+
+## Appendix — Validation against the current export (`test.csv`, profiled 2026-06-20)
+
+The most recent extraction archive was re-profiled directly. It is the **same corpus the review analyzed** — granular counts match exactly (e.g. 3,095 obligations with a null `penalty_type`; 448 with no enforcement object). Every headline claim reproduces against live output, with **one** correction (duplication).
+
+| Claim | Review | Measured | Holds? |
+|---|---|---|---|
+| Rows / columns | 15,543 / 12 | 15,543 / 12 | ✅ |
+| Tier C or D | 97.6% | **97.6%** (D 65.6%, C 32.0%, B 1.6%, A 0.8%) | ✅ |
+| Mean / median confidence | 0.34 / 0.24 | **0.337 / 0.240** (167 nulls) | ✅ |
+| 8B-model share | 34% | **34.2%** (`meta-llama-3.1-8b`; rest `gpt-oss-120b`) | ✅ |
+| `enforcement` / `actor_mapping` rows | 9 / 1 | **9 / 1** | ✅ |
+| `TMP-` citation rate | 48.3% | **48.3%** (150 distinct law ids) | ✅ |
+| States present / missing | 42 / 9 | **42 / 9** (missing AK DC IN MS NC NM OH WA WY) | ✅ |
+| `penalty_type` populated | ~26% | **26%** — 120 distinct free-text values (`civil penalty` 473, `civil` 169, …) | ✅ |
+| Obligation `timeline` empty | ~72% | **66%** fully empty (only 15% carry an `effective_date`) | ✅ (≈) |
+| `safe_harbor` populated | 1.0% | **1.0%** (50 of 4,811) | ✅ |
+| Government-subject obligations mixed in | flagged | **13%** (622 — `department` 186, `attorney_general` 107, …) | ✅ |
+| Evidence spans verified | 35.7% | **35.7%** (99.6% have a span; **0 carry a URL**) | ✅ |
+| Extraction dates | 15–16 Jun 2026 | **15–16 Jun 2026** | ✅ |
+| Exact-core duplication | 15.4% | **2.6%** under a strict (jurisdiction+type+payload-minus-metadata) exact match | ⚠️ **does not hold** |
+
+**Correction — §2.9 duplication.** Under a strict exact-core hash, duplication is **2.6%, not 15.4%**. The gap is almost certainly definitional: the review's looser "ignoring internal metadata" likely collapses cross-model *near*-duplicates whose normalized sub-fields differ slightly. **Action:** demote **Phase 4.2 (cross-model dedup)** in priority — it is a smaller problem than the review implies under exact matching; confirm the intended dedup definition before investing.
+
+**Currentness confirmed live (§3).** The corpus was extracted **15–16 June 2026 — a month after Colorado SB 205 was repealed-and-replaced (14 May 2026)** — and still contains **1,722 CO rows** encoding the repealed framework. This is not a hypothetical: the decisive finding is present in the data on the table. **Phases 0.2 and 1 are validated as the top priority.**
+
+**Net effect on the plan:** Phases 0–3 are confirmed and unchanged. Only Phase 4.2 is downgraded.
