@@ -193,19 +193,21 @@ class RunArchiver:
         )
 
         _common_cols = (
-            Extraction.id,
-            Extraction.extraction_type,
-            Extraction.confidence_score,
-            Extraction.confidence_tier,
-            Extraction.model_id,
-            Extraction.payload,
-            Extraction.evidence_spans,
-            Extraction.created_at,
-            NormalizedSourceRecord.section_path,
-            NormalizedSourceRecord.text_content,
-            Source.jurisdiction_code,
-            DocumentFamily.short_cite,
-            DocumentFamily.canonical_title,
+            Extraction.id,               # 0
+            Extraction.extraction_type,  # 1
+            Extraction.confidence_score, # 2
+            Extraction.confidence_tier,  # 3
+            Extraction.model_id,         # 4
+            Extraction.payload,          # 5
+            Extraction.evidence_spans,   # 6
+            Extraction.created_at,       # 7
+            NormalizedSourceRecord.section_path,   # 8
+            NormalizedSourceRecord.text_content,   # 9  (not written; kept for query consistency)
+            Source.jurisdiction_code,              # 10
+            DocumentFamily.short_cite,             # 11
+            DocumentFamily.canonical_title,        # 12
+            DocumentVersion.effective_date,        # 13
+            DocumentVersion.temporal_status,       # 14
         )
         _joins = (
             lambda q: q
@@ -225,12 +227,22 @@ class RunArchiver:
             "extraction_id", "jurisdiction", "law", "title", "section",
             "extraction_type", "confidence_score", "confidence_tier",
             "model_id", "payload_json", "evidence_spans_json", "created_at",
+            "effective_date", "law_status", "verified_span_count", "total_span_count",
         ]
 
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            f.write(
+                "# DISCLAIMER: Informational only — not legal advice. "
+                "Produced by an AI extraction pipeline; may be incomplete, outdated, or incorrect. "
+                "Laws change — always verify against current official text. "
+                "Consult a licensed attorney before relying on any regulatory content.\n"
+            )
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for row in rows:
+                spans = row[6] or []
+                verified = sum(1 for s in spans if isinstance(s, dict) and s.get("verified") is True)
+                ts = row[14]
                 writer.writerow({
                     "extraction_id": row[0],
                     "jurisdiction": row[10],
@@ -242,8 +254,12 @@ class RunArchiver:
                     "confidence_tier": row[3].value if hasattr(row[3], "value") else str(row[3]),
                     "model_id": row[4] or "",
                     "payload_json": json.dumps(row[5], default=str) if row[5] else "",
-                    "evidence_spans_json": json.dumps(row[6], default=str) if row[6] else "",
+                    "evidence_spans_json": json.dumps(spans, default=str),
                     "created_at": row[7].isoformat() if row[7] else "",
+                    "effective_date": row[13].isoformat() if row[13] else "",
+                    "law_status": ts.value if hasattr(ts, "value") else (str(ts) if ts else ""),
+                    "verified_span_count": verified,
+                    "total_span_count": len(spans),
                 })
 
         logger.info("run_archiver_exported_csv", path=str(csv_path), row_count=len(rows))
@@ -296,6 +312,10 @@ class RunArchiver:
                 "payload_json", "created_at",
             ]
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                f.write(
+                    "# DISCLAIMER: Informational only — not legal advice. "
+                    "AI-extracted; verify against current official statutory text.\n"
+                )
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 for row in rows:
@@ -388,10 +408,21 @@ class RunArchiver:
                 "payload_summary", "full_payload_json", "created_at",
             ]
 
+            _disclaimer = (
+                "# DISCLAIMER: Informational only — not legal advice. "
+                "AI-extracted; verify against current official statutory text.\n"
+            )
             with (
                 open(csv_path, "w", newline="", encoding="utf-8") as csv_f,
                 open(jsonl_path, "w", encoding="utf-8") as jsonl_f,
             ):
+                csv_f.write(_disclaimer)
+                jsonl_f.write(
+                    json.dumps({"_record_type": "disclaimer",
+                                "text": "Informational only — not legal advice. "
+                                        "AI-extracted; verify against current official statutory text."})
+                    + "\n"
+                )
                 writer = csv.DictWriter(csv_f, fieldnames=csv_fieldnames)
                 writer.writeheader()
 

@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     # Review UI
     review_items_per_page: int = 25
 
+    # Safety guardrails
+    # Minimum confidence tier allowed on user-facing / card-bound surfaces (A/B/C/D).
+    # Concepts or extractions below this tier must be flagged or withheld.
+    confidence_publish_min_tier: str = "C"
+
     # Orrick PDF Tracker
     orrick_pdf_path: str = "static/Orrick-US-AI-Law-Tracker.pdf"
 

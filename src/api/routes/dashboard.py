@@ -2243,6 +2243,10 @@ def export_low_confidence_extractions_csv(
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id",
@@ -2336,6 +2340,9 @@ def export_low_confidence_extractions_jsonl(
     rows = db.execute(query).all()
 
     def generate():
+        yield _json.dumps({"_record_type": "disclaimer",
+                           "text": "Informational only — not legal advice. "
+                                   "AI-extracted; verify against current official statutory text."}) + "\n"
         for ext, rec, dv in rows:
             doc_family = dv.family
             obj = {
@@ -5218,12 +5225,30 @@ def list_concepts(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Return filterable concepts table as HTML fragment."""
+    # Statuses that need a warning badge on the concept (data may be stale/void)
+    _WARN_STATUSES = {"repealed", "stayed", "vetoed", "dead", "withdrawn"}
+    _STATUS_BADGE = {
+        "repealed":       ('<span style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">REPEALED</span>', "var(--danger)"),
+        "stayed":         ('<span style="background:#e67e22;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">STAYED</span>', "var(--warning)"),
+        "vetoed":         ('<span style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">VETOED</span>', "var(--danger)"),
+        "dead":           ('<span style="background:#7f8c8d;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">DEAD</span>', "var(--text-muted)"),
+        "withdrawn":      ('<span style="background:#7f8c8d;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">WITHDRAWN</span>', "var(--text-muted)"),
+        "future_effective": ('<span style="background:#2980b9;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;">PENDING</span>', "var(--info)"),
+    }
+
+    from src.core.config import settings as _settings
+    _PUBLISH_TIERS = {"A", "B", "C", "D"}
+    _min_tier = _settings.confidence_publish_min_tier  # e.g. "C"
+    _below_floor = {"D"} if _min_tier == "C" else ({"C", "D"} if _min_tier == "B" else set())
+
     try:
         stmt = (
             select(
                 ComplianceConcept,
                 DocumentFamily.short_cite,
                 Source.jurisdiction_code,
+                DocumentVersion.temporal_status,
+                DocumentVersion.effective_date,
             )
             .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
             .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5254,14 +5279,13 @@ def list_concepts(
 
     grounding_colors = {
         "tracker_grounded": "var(--success)",
-        "iapp_grounded": "var(--info)",
         "tracker_conflict": "var(--danger)",
         "ungrounded": "var(--warning)",
     }
     tier_colors = {"A": "var(--success)", "B": "var(--info)", "C": "var(--warning)", "D": "var(--danger)"}
 
     table_rows = ""
-    for concept, short_cite, jur_code in rows:
+    for concept, short_cite, jur_code, temporal_status, effective_date in rows:
         rs = concept.review_status.value if hasattr(concept.review_status, "value") else str(concept.review_status)
         gs = concept.grounding_status or "ungrounded"
         gs_color = grounding_colors.get(gs, "var(--text-muted)")
@@ -5274,13 +5298,33 @@ def list_concepts(
         cite = html_escape(short_cite or "")
         jur = html_escape(jur_code or "")
 
+        # Currentness badge
+        ts_val = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
+        status_badge, row_tint = _STATUS_BADGE.get(ts_val, ("", ""))
+        eff_str = effective_date.isoformat() if effective_date else ""
+        if ts_val == "future_effective" and eff_str:
+            status_badge = (
+                f'<span style="background:#2980b9;color:#fff;padding:1px 5px;'
+                f'border-radius:3px;font-size:10px;">PENDING {eff_str}</span>'
+            )
+        row_style = f' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
+
+        # Below-publish-floor flag
+        below_floor_badge = ""
+        if tier in _below_floor:
+            below_floor_badge = (
+                '<span title="Below confidence publish threshold" '
+                'style="background:#555;color:#fff;padding:1px 4px;border-radius:3px;'
+                'font-size:9px;margin-left:3px;">below floor</span>'
+            )
+
         table_rows += (
-            f'<tr>'
-            f'<td><strong>{jur}</strong> {cite}</td>'
+            f'<tr{row_style}>'
+            f'<td><strong>{jur}</strong> {cite} {status_badge}</td>'
             f'<td style="font-size:11px;">{ctype}</td>'
             f'<td>{actor}</td>'
             f'<td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>'
-            f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}</td>'
+            f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}{below_floor_badge}</td>'
             f'<td style="text-align:right;">{score}</td>'
             f'<td style="text-align:center;">{concept.member_count}</td>'
             f'<td style="color:{gs_color};font-size:11px;">{gs}</td>'
@@ -5303,7 +5347,9 @@ def list_concepts(
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
         f'Showing {len(rows)} concepts (capped at 500). '
-        f'Use filters to narrow results.'
+        f'Use filters to narrow. '
+        f'<span style="color:var(--danger);">REPEALED/STAYED</span> rows are law-status flags; '
+        f'<em>below floor</em> = Tier D (below confidence publish threshold).'
         f'</div></div>'
     )
 
@@ -5438,6 +5484,8 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
             Source.jurisdiction_code,
             DocumentFamily.short_cite,
             DocumentFamily.canonical_title,
+            DocumentVersion.temporal_status,
+            DocumentVersion.effective_date,
         )
         .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
         .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5448,9 +5496,15 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text. "
+        "Consult a licensed attorney before relying on this data.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "concept_id", "jurisdiction", "law", "law_title",
+        "law_status", "effective_date",
         "concept_type", "regulated_actor_family", "right_holder_family",
         "covered_system_type", "title", "summary",
         "trigger_condition", "required_action", "deadline",
@@ -5460,9 +5514,12 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
         "source_extraction_ids_json", "tracker_ref_ids_json",
         "run_id", "created_at", "updated_at",
     ])
-    for concept, jurisdiction, law, law_title in rows:
+    for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
+        ts = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
         writer.writerow([
             concept.id, jurisdiction or "", law or "", law_title or "",
+            ts,
+            effective_date.isoformat() if effective_date else "",
             concept.concept_type or "",
             concept.regulated_actor_family or "",
             concept.right_holder_family or "",
@@ -5512,6 +5569,8 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
             Source.jurisdiction_code,
             DocumentFamily.short_cite,
             DocumentFamily.canonical_title,
+            DocumentVersion.temporal_status,
+            DocumentVersion.effective_date,
         )
         .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
         .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5521,13 +5580,26 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
 
     rows = db.execute(query).all()
 
+    _disclaimer_obj = _json.dumps({
+        "_record_type": "disclaimer",
+        "text": (
+            "Informational only — not legal advice. "
+            "AI-extracted; verify against current official statutory text. "
+            "Consult a licensed attorney before relying on this data."
+        ),
+    }) + "\n"
+
     def _generate():
-        for concept, jurisdiction, law, law_title in rows:
+        yield _disclaimer_obj
+        for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
+            ts = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
             obj = {
                 "concept_id": concept.id,
                 "jurisdiction": jurisdiction or "",
                 "law": law or "",
                 "law_title": law_title or "",
+                "law_status": ts,
+                "effective_date": effective_date.isoformat() if effective_date else None,
                 "concept_type": concept.concept_type or "",
                 "regulated_actor_family": concept.regulated_actor_family or "",
                 "right_holder_family": concept.right_holder_family or "",
@@ -5593,6 +5665,10 @@ def export_extraction_summaries_csv(db: Session = Depends(get_db)) -> StreamingR
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id", "jurisdiction", "law", "section",
