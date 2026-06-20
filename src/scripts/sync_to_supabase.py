@@ -56,6 +56,7 @@ SYNC_TABLES = [
     "normalized_source_records",
     "section_triage_results",
     "extraction_jobs",
+    "extraction_runs",              # must precede extractions (run_id FK)
     "extractions",
     "review_queue",
     "review_actions",
@@ -63,7 +64,7 @@ SYNC_TABLES = [
     "applicability_conditions",
     "api_keys",
     "export_jobs",
-    "bill_level_extractions",       # depends on document_versions
+    "bill_level_extractions",       # depends on document_versions + extraction_runs
     "failed_extraction_attempts",   # depends on normalized_source_records + extraction_jobs
 ]
 
@@ -76,12 +77,14 @@ SYNC_DESTINATION = "supabase"
 # column(s) named here so additive syncs skip duplicates without 409 errors.
 # Multi-column keys are comma-separated (e.g. "col_a,col_b").
 TABLE_CONFLICT_COLUMNS: dict[str, str] = {
-    # sha256_hash is the content-addressable identity; id can differ across reseeds
-    "raw_artifacts": "sha256_hash",
+    # raw_artifacts uses PK-based conflict (sha256_hash unique constraint was dropped
+    # by the content_blobs migration — uniqueness now lives on content_blobs.sha256_hash)
     # one passage per (document_version, ordinal) position
     "normalized_source_records": "document_version_id,ordinal",
     # one triage decision per source record
     "section_triage_results": "source_record_id",
+    # dedup index uq_extractions_dedup covers (source_record_id, extraction_type, payload_hash)
+    "extractions": "source_record_id,extraction_type,payload_hash",
     # one review queue entry per extraction
     "review_queue": "extraction_id",
     # one bill-level result per (law, agent)
