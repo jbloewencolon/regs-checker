@@ -409,6 +409,49 @@ def _detect_content_type(path: Path) -> str:
     return mapping.get(suffix, mimetypes.guess_type(str(path))[0] or "text/plain")
 
 
+# Minimum bytes for a file to be treated as real bill text.
+_MIN_SOURCE_BYTES = 500
+
+# Byte-string fragments that indicate a fetch captured a portal/JS page, not statute text.
+# Each entry is a bytes literal matched against the first 512 bytes of the file.
+_PORTAL_SIGNATURES: list[bytes] = [
+    b"Rocket NXT",                        # LexisNexis-style search portal
+    b"enable JavaScript",                 # JS-gated app shell
+    b"You need to enable JavaScript",
+    b"<html",                             # raw HTML (should never reach law_texts/)
+    b"<!DOCTYPE html",
+]
+
+
+def _check_source_quality(content: bytes, law_id: str) -> str | None:
+    """Return a human-readable failure reason, or None if content looks like bill text.
+
+    Checks run in priority order — first failure wins.
+    """
+    if len(content) < _MIN_SOURCE_BYTES:
+        return f"file too small ({len(content)} bytes < {_MIN_SOURCE_BYTES} minimum)"
+    head = content[:512]
+    for sig in _PORTAL_SIGNATURES:
+        if sig in head:
+            return f"portal/JS page detected (matched '{sig.decode(errors='replace')[:40]}')"
+    return None
+
+
+def _quarantine_file(source_path: Path, law_id: str, reason: str) -> None:
+    """Move a bad source file to law_texts_quarantine/ and leave a note."""
+    quarantine_dir = source_path.parent.parent / "law_texts_quarantine"
+    quarantine_dir.mkdir(exist_ok=True)
+    dest = quarantine_dir / source_path.name
+    if not dest.exists():
+        source_path.rename(dest)
+    note_path = quarantine_dir / "NEEDED_SOURCES.md"
+    if note_path.exists():
+        existing = note_path.read_text(encoding="utf-8")
+        if law_id not in existing:
+            with note_path.open("a", encoding="utf-8") as f:
+                f.write(f"| `{law_id}` | ⚠️ NEEDS SOURCE | Auto-quarantined: {reason} |\n")
+
+
 def ingest_local_files(
     db,
     limit: int | None = None,
@@ -489,6 +532,19 @@ def ingest_local_files(
             # Read file content
             content_bytes = local_file.read_bytes()
             content_type = _detect_content_type(local_file)
+
+            # Source quality gate: reject files that are clearly not bill text.
+            # Minimum size guards against empty/form-feed fetches; signature
+            # patterns catch JS-gated pages and search-portal landing pages.
+            _quality_failure = _check_source_quality(content_bytes, canonical_law_id)
+            if _quality_failure:
+                _log(f"  ⚠️  Source quality gate FAILED ({_quality_failure}) — quarantining {canonical_law_id}")
+                job.status = IngestionStatus.failed
+                job.error_message = f"Source quality gate: {_quality_failure}"
+                _quarantine_file(local_file, canonical_law_id, _quality_failure)
+                db.commit()
+                summary["failed"] += 1
+                continue
 
             # Mark fetch phase complete (local files are "fetched" instantly)
             job.fetch_started_at = datetime.utcnow()
