@@ -47,7 +47,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import update as sa_update
 
@@ -162,6 +162,7 @@ MIN_PASSAGE_LENGTH = 150
 _payload_hash_available: bool | None = None
 _token_columns_available: bool | None = None
 _run_id_available: bool | None = None
+_model_agreement_available: bool | None = None
 
 # Circuit breaker: abort extraction if this many consecutive agent calls fail.
 # Prevents silently skipping data when LM Studio/GPU is down.
@@ -1465,9 +1466,26 @@ def extract_single_record(
                                 record_id=source_record.id,
                                 extraction_type=resolved_type.value,
                             )
+                            if _model_agreement_available:
+                                db.execute(
+                                    text(
+                                        "UPDATE extractions "
+                                        "SET model_agreement_count = model_agreement_count + 1 "
+                                        "WHERE id = :eid"
+                                    ),
+                                    {"eid": existing_dup},
+                                )
                             continue
 
-                    evidence = item.get("evidence_spans", [])
+                    # Inject provenance into each evidence span so spans carry
+                    # the source URL and section path without extra joins.
+                    _src_url = ctx.get("primary_source_url")
+                    _sec_anchor = ctx.get("section_path")
+                    evidence = [
+                        {**s, "source_url": _src_url, "section_anchor": _sec_anchor}
+                        if isinstance(s, dict) else s
+                        for s in item.get("evidence_spans", [])
+                    ]
                     orrick_sim = validate_extraction_against_orrick(item, ctx)
                     confidence = compute_confidence(
                         schema_valid=True,
@@ -2142,7 +2160,7 @@ def run_extraction(
         logger.warning("extraction_run_create_skipped", reason=str(_e))
 
     # Check whether optional columns exist (migrations may not have run yet)
-    global _payload_hash_available, _token_columns_available, _run_id_available
+    global _payload_hash_available, _token_columns_available, _run_id_available, _model_agreement_available
     try:
         _existing_cols = {
             c["name"] for c in sa_inspect(db.bind).get_columns("extractions")
@@ -2150,10 +2168,12 @@ def run_extraction(
         _payload_hash_available = "payload_hash" in _existing_cols
         _token_columns_available = "duration_ms" in _existing_cols
         _run_id_available = "run_id" in _existing_cols
+        _model_agreement_available = "model_agreement_count" in _existing_cols
     except Exception:
         _payload_hash_available = False
         _token_columns_available = False
         _run_id_available = False
+        _model_agreement_available = False
 
     # Build attempt-state dedup table from ExtractionAttempt.
     #

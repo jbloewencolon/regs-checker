@@ -55,6 +55,16 @@
     {% block content %}{% endblock %}
   </main>
 
+  <footer style="background:var(--card-bg,#1a1a2e);border-top:1px solid var(--border,#333);
+                 padding:10px 0;margin-top:32px;">
+    <div class="container" style="font-size:11px;color:var(--text-muted,#888);text-align:center;">
+      <strong>Informational only &mdash; not legal advice.</strong>
+      This data is produced by an AI extraction pipeline and may be incomplete, outdated, or incorrect.
+      Laws change; always verify against the current official text.
+      Consult a licensed attorney before relying on any regulatory content.
+    </div>
+  </footer>
+
   <script>
     function copyToClipboard(elementId) {
       const el = document.getElementById(elementId);

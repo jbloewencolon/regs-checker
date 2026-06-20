@@ -206,3 +206,36 @@ def resolve_citation_to_record_id(
     if matched_path:
         return section_path_index[matched_path]
     return None
+
+
+# ---------------------------------------------------------------------------
+# TMP- placeholder ID detection (Phase 4.1)
+# ---------------------------------------------------------------------------
+
+_TMP_PREFIX = "TMP-"
+
+
+def is_tmp_id(canonical_id: str | None) -> bool:
+    """Return True when canonical_id is an unresolved placeholder (starts with TMP-)."""
+    return bool(canonical_id and canonical_id.startswith(_TMP_PREFIX))
+
+
+def resolve_tmp_to_bill(
+    canonical_id: str,
+    bill_number: str | None,
+    jurisdiction_code: str | None,
+) -> str | None:
+    """Derive a best-guess formal citation for a TMP- law ID.
+
+    When a law has a bill number and jurisdiction, construct a
+    jurisdiction-qualified citation ("CO SB 205") that can serve
+    as a human-readable placeholder while the canonical ID is pending.
+    Returns None when not enough information is available.
+    """
+    if not is_tmp_id(canonical_id):
+        return None
+    if bill_number and jurisdiction_code:
+        return f"{jurisdiction_code.upper()} {bill_number.strip()}"
+    if bill_number:
+        return bill_number.strip()
+    return None

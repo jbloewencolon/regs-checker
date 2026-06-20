@@ -387,6 +387,7 @@ class Extraction(Base):
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
+    model_agreement_count = Column(Integer, nullable=False, default=0, server_default="0")
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -1021,6 +1022,17 @@ class ComplianceConcept(Base):
         Enum(ConceptReviewStatus), nullable=False, default=ConceptReviewStatus.pending
     )
     member_count = Column(Integer, default=0, nullable=False)
+
+    # Currentness snapshot — denormalized from DocumentVersion at grouping time.
+    # Stored here so a card can answer "is this law still in force?" without a join.
+    law_status = Column(String(30), nullable=True)       # temporal_status value
+    law_effective_date = Column(Date, nullable=True)     # DocumentVersion.effective_date
+    amendment_status = Column(Text, nullable=True)       # human-readable event-log rollup
+    as_of_date = Column(Date, nullable=True)             # date concepts were last grouped
+
+    # Actor role — derived from regulated_actor_family at grouping time.
+    # "government" / "regulated_entity" / "individual"
+    actor_role = Column(String(30), nullable=True)
 
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

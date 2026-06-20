@@ -19,6 +19,8 @@ class EvidenceSpan(BaseModel):
     text: str = Field(description="Verbatim text from the source passage")
     char_start: int | None = Field(default=None, description="Start character offset in passage")
     char_end: int | None = Field(default=None, description="End character offset in passage")
+    source_url: str | None = Field(default=None, description="URL of the authoritative source document")
+    section_anchor: str | None = Field(default=None, description="Section path within the source document")
 
 
 class AbstentionResult(BaseModel):
@@ -128,6 +130,14 @@ class TimelineInfo(BaseModel):
     phase_in_period: str | None = None
     timeline_text: str | None = Field(default=None, description="Raw timeline language")
 
+    @field_validator("effective_date", "compliance_deadline", "sunset_date", mode="before")
+    @classmethod
+    def _normalize_date_field(cls, v: Any) -> Any:
+        if not isinstance(v, str):
+            return v
+        from src.core.date_normalizer import normalize_date
+        return normalize_date(v) or v
+
 
 class EnforcementInfo(BaseModel):
     """Enforcement mechanism for an obligation."""
@@ -166,6 +176,26 @@ class ObligationPayload(BaseModel):
         return sanitize_normalized_actor(v) if isinstance(v, str) else v
 
     modality: str = Field(default="", description="Must / shall / may / should / prohibited")
+
+    @field_validator("modality", mode="before")
+    @classmethod
+    def _normalize_modality(cls, v: Any) -> Any:
+        if not isinstance(v, str):
+            return v
+        _MODALITY_MAP = {
+            "must": "must", "shall": "shall", "required": "must",
+            "is required to": "must", "are required to": "must",
+            "may": "may", "is permitted": "may", "are permitted": "may",
+            "should": "should", "ought to": "should", "is recommended": "should",
+            "prohibited": "prohibited", "shall not": "shall_not",
+            "must not": "must_not", "may not": "may_not",
+            "is not permitted": "prohibited", "are not permitted": "prohibited",
+            "is prohibited": "prohibited", "are prohibited": "prohibited",
+            "cannot": "prohibited", "can not": "prohibited",
+            "is forbidden": "prohibited", "are forbidden": "prohibited",
+        }
+        return _MODALITY_MAP.get(v.strip().lower(), v)
+
     action: str = Field(default="", description="What the subject must do or refrain from doing")
     object_: str | None = Field(
         default=None, alias="object", description="What the action applies to"
@@ -327,6 +357,26 @@ class ThresholdExceptionPayload(BaseModel):
         description="Consequential decision sectors: healthcare, employment, "
         "credit, housing, insurance, criminal_justice, education, government",
     )
+
+    @field_validator("sector_applicability", mode="before")
+    @classmethod
+    def _normalize_sectors(cls, v: Any) -> Any:
+        if not isinstance(v, list):
+            return v
+        _SECTOR_MAP = {
+            "health care": "healthcare", "health-care": "healthcare",
+            "medical": "healthcare", "hospital": "healthcare",
+            "law enforcement": "criminal_justice", "policing": "criminal_justice",
+            "criminal justice": "criminal_justice", "public safety": "criminal_justice",
+            "lending": "credit", "financial services": "financial_services",
+            "banking": "financial_services", "fintech": "financial_services",
+            "higher education": "education", "schools": "education",
+            "university": "education", "k-12": "education",
+            "real estate": "housing", "rental": "housing",
+            "worker": "employment", "workplace": "employment", "labor": "employment",
+        }
+        return [_SECTOR_MAP.get(s.strip().lower(), s) for s in v if isinstance(s, str)]
+
     # Scope sub-type structured fields
     revenue_threshold_usd: int | None = Field(
         default=None,

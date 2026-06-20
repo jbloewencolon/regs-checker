@@ -27,7 +27,53 @@ Files marked NEEDS SOURCE still require correct bill text placed in output/law_t
 | `TMP-WA-OFWASHINGTONCS` | ⚠️ NEEDS SOURCE | WA CSAM amendment (2) — quarantine file had WY homepage |
 | `TMP-NY-PRICINGNEWYORK` | ⚠️ NEEDS SOURCE | NY Algorithmic Pricing Disclosure — quarantine file had CT statute |
 
+## Failed-fetch garbage (quarantined 2026-06-20)
+
+These files contained no usable bill text — either empty bytes, a JavaScript-disabled error,
+or a search-portal landing page.  Quarantine prevents them from re-entering the extraction
+pipeline until correct text is supplied.
+
+| canonical_law_id | Status | Quarantine reason |
+|---|---|---|
+| `TMP-NV-AIFORSCHOOLCOU` | ⚠️ NEEDS SOURCE | 8 bytes of form-feed chars — fetch returned empty |
+| `TMP-NV-AIGENERALAICHA` | ⚠️ NEEDS SOURCE | 8 bytes of form-feed chars — fetch returned empty |
+| `TMP-NV-FORMENTALANDBE` | ⚠️ NEEDS SOURCE | 8 bytes of form-feed chars — fetch returned empty |
+| `TMP-IN-AMENDMENTOFIND` | ⚠️ NEEDS SOURCE | 71 bytes — "You need to enable JavaScript" JS-gated page |
+| `TMP-TX-UNLAWFULDISTRI` | ⚠️ NEEDS SOURCE | 219 bytes — "Rocket NXT" search-portal landing page (no bill text) |
+| `TMP-WY-EXPLOITATIONOF` | ⚠️ NEEDS SOURCE | 219 bytes — same Rocket NXT portal page as TX-UNLAWFULDISTRI |
+| `TMP-WY-TOINTIMATEIMAG` | ⚠️ NEEDS SOURCE | 219 bytes — same Rocket NXT portal page as TX-UNLAWFULDISTRI |
+
+## Mislabeled cross-jurisdiction content (quarantined 2026-06-20)
+
+This file contained real bill text, but for the wrong jurisdiction/bill.
+
+| canonical_law_id | Status | Quarantine reason |
+|---|---|---|
+| `TMP-TX-OFTEXASCSAMLAW` | ⚠️ NEEDS SOURCE | File contained **West Virginia SB 198** text (23 KB) — identical to TMP-WV-AGAINSTCHASTIT. The correct TX SB 198 "Amendment of Texas CSAM Laws" text was never fetched. Any extractions attributed to this TX law were derived from WV statute. |
+
+## Same-bill duplicates requiring review (detected 2026-06-20)
+
+These law pairs share byte-identical source text — the same bill was ingested under two
+different TMP-IDs.  The files remain in law_texts/ but these pairs need an analyst to
+confirm whether they represent genuinely distinct law entries or should be merged/deduplicated.
+
+| TMP-ID (copy 1) | TMP-ID (copy 2) | Identified bill |
+|---|---|---|
+| `TMP-CO-PREVENTINGUNAU` | `TMP-CO-UNAUTHORIZEDSB` | Colorado SB 25-288 |
+| `TMP-KY-AIELECTIONEERI` | `TMP-KY-GOVERNMENTUSEO` | Kentucky 25RS SB 4 |
+| `TMP-KY-AMENDMENTTOINT` | `TMP-KY-TOCSAMLAWHB207` | Kentucky HB 207 |
+| `TMP-LA-DEEPFAKELAW14L` | `TMP-LA-LOUISIANADEEPF` | Louisiana deepfake law |
+| `TMP-NC-NORTHCAROLINAI` | `TMP-NC-OFNORTHCAROLIN` | North Carolina AI law |
+| `TMP-ND-DAKOTAHARASSME` | `TMP-ND-DAKOTASTALKING` | North Dakota stalking/harassment |
+| `TMP-PA-AMENDMENTOFPEN` | `TMP-PA-OFPENNSYLVANIA` | Pennsylvania amendment |
+| `TMP-UT-AIARTIFICIALIN` | `TMP-UT-INTELLIGENCECO` | Utah AI law |
+| `TMP-UT-APPLICATIONSRE` | `TMP-UT-ORUSERINPUTOFA` | Utah applications law |
+| `TMP-UT-ARTIFICIALPORN` | `TMP-UT-PORNOGRAPHICIM` | Utah AI pornography law |
+| `TMP-IL-AITHEWELLNESSA` | `TMP-IL-WELLNESSANDOVE` | Illinois wellness/oversight |
+| `TMP-CA-EMPLOYMENTANDS` | `TMP-CA-EMPLOYMENTREGU` | California employment regulation |
+
 ## Note on TN laws with TX bill content
 The quarantine files for TMP-TN-LIKENESSVOICEA (TX SB 1188) and TMP-TN-DECISIONTENNES (TX SB 2373)
 contain what may be legitimate Texas AI legislation that is not already in the database under a TX ID.
 Consider reviewing these TX bills and adding them as TX law entries if they are in scope.
+

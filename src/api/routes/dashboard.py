@@ -2243,6 +2243,10 @@ def export_low_confidence_extractions_csv(
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id",
@@ -2336,6 +2340,9 @@ def export_low_confidence_extractions_jsonl(
     rows = db.execute(query).all()
 
     def generate():
+        yield _json.dumps({"_record_type": "disclaimer",
+                           "text": "Informational only — not legal advice. "
+                                   "AI-extracted; verify against current official statutory text."}) + "\n"
         for ext, rec, dv in rows:
             doc_family = dv.family
             obj = {
@@ -5153,6 +5160,7 @@ def run_verification(
 def concepts_page(request: Request, db: Session = Depends(get_db)):
     """Compliance concept overview page."""
     from src.core.concept_review import concept_review_counts
+    from src.core.citation_normalizer import is_tmp_id
 
     try:
         counts = concept_review_counts(db)
@@ -5162,7 +5170,22 @@ def concepts_page(request: Request, db: Session = Depends(get_db)):
             "total": 0, "pending": 0, "flagged": 0, "approved": 0,
             "rejected": 0, "tracker_conflict": 0, "ungrounded": 0,
         }
-    return _render(request, "concepts.html", {"counts": counts})
+
+    # Count laws whose canonical_law_id is still a TMP- placeholder
+    tmp_law_count = 0
+    try:
+        families = db.scalars(select(DocumentFamily.metadata_)).all()
+        tmp_law_count = sum(
+            1 for m in families
+            if m and is_tmp_id((m.get("canonical_law_id") or ""))
+        )
+    except Exception:
+        db.rollback()
+
+    return _render(request, "concepts.html", {
+        "counts": counts,
+        "tmp_law_count": tmp_law_count,
+    })
 
 
 @router.post("/api/concepts/group", response_class=HTMLResponse)
@@ -5218,12 +5241,30 @@ def list_concepts(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """Return filterable concepts table as HTML fragment."""
+    # Statuses that need a warning badge on the concept (data may be stale/void)
+    _WARN_STATUSES = {"repealed", "stayed", "vetoed", "dead", "withdrawn"}
+    _STATUS_BADGE = {
+        "repealed":       ('<span style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">REPEALED</span>', "var(--danger)"),
+        "stayed":         ('<span style="background:#e67e22;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">STAYED</span>', "var(--warning)"),
+        "vetoed":         ('<span style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">VETOED</span>', "var(--danger)"),
+        "dead":           ('<span style="background:#7f8c8d;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">DEAD</span>', "var(--text-muted)"),
+        "withdrawn":      ('<span style="background:#7f8c8d;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:bold;">WITHDRAWN</span>', "var(--text-muted)"),
+        "future_effective": ('<span style="background:#2980b9;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;">PENDING</span>', "var(--info)"),
+    }
+
+    from src.core.config import settings as _settings
+    _PUBLISH_TIERS = {"A", "B", "C", "D"}
+    _min_tier = _settings.confidence_publish_min_tier  # e.g. "C"
+    _below_floor = {"D"} if _min_tier == "C" else ({"C", "D"} if _min_tier == "B" else set())
+
     try:
         stmt = (
             select(
                 ComplianceConcept,
                 DocumentFamily.short_cite,
                 Source.jurisdiction_code,
+                DocumentVersion.temporal_status,
+                DocumentVersion.effective_date,
             )
             .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
             .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5254,14 +5295,13 @@ def list_concepts(
 
     grounding_colors = {
         "tracker_grounded": "var(--success)",
-        "iapp_grounded": "var(--info)",
         "tracker_conflict": "var(--danger)",
         "ungrounded": "var(--warning)",
     }
     tier_colors = {"A": "var(--success)", "B": "var(--info)", "C": "var(--warning)", "D": "var(--danger)"}
 
     table_rows = ""
-    for concept, short_cite, jur_code in rows:
+    for concept, short_cite, jur_code, temporal_status, effective_date in rows:
         rs = concept.review_status.value if hasattr(concept.review_status, "value") else str(concept.review_status)
         gs = concept.grounding_status or "ungrounded"
         gs_color = grounding_colors.get(gs, "var(--text-muted)")
@@ -5270,17 +5310,50 @@ def list_concepts(
         score = f"{concept.confidence_score:.2f}" if concept.confidence_score is not None else "—"
         ctype = html_escape(concept.concept_type or "—")
         actor = html_escape(concept.regulated_actor_family or concept.right_holder_family or "—")
+        _role = concept.actor_role or ""
+        _role_badge_map = {
+            "government": '<span style="background:#6c3483;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">gov</span>',
+            "individual": '<span style="background:#1a5276;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">ind</span>',
+            "regulated_entity": '<span style="background:#1e8449;color:#fff;padding:1px 4px;border-radius:3px;font-size:9px;margin-left:3px;">biz</span>',
+        }
+        actor_role_badge = _role_badge_map.get(_role, "")
         title = html_escape((concept.title or "")[:80])
         cite = html_escape(short_cite or "")
         jur = html_escape(jur_code or "")
 
+        # Currentness badge
+        ts_val = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
+        status_badge, row_tint = _STATUS_BADGE.get(ts_val, ("", ""))
+        eff_str = effective_date.isoformat() if effective_date else ""
+        if ts_val == "future_effective" and eff_str:
+            status_badge = (
+                f'<span style="background:#2980b9;color:#fff;padding:1px 5px;'
+                f'border-radius:3px;font-size:10px;">PENDING {eff_str}</span>'
+            )
+        row_style = f' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
+
+        # Below-publish-floor flag
+        below_floor_badge = ""
+        if tier in _below_floor:
+            below_floor_badge = (
+                '<span title="Below confidence publish threshold" '
+                'style="background:#555;color:#fff;padding:1px 4px;border-radius:3px;'
+                'font-size:9px;margin-left:3px;">below floor</span>'
+            )
+
+        # Amendment status tooltip — use concept's own field if available.
+        amend_tip = html_escape(concept.amendment_status or "")
+        as_of = concept.as_of_date.isoformat() if concept.as_of_date else ""
+        law_cell_title = f"{amend_tip} (as of {as_of})" if amend_tip or as_of else ""
+
         table_rows += (
-            f'<tr>'
-            f'<td><strong>{jur}</strong> {cite}</td>'
+            f'<tr{row_style}>'
+            f'<td title="{html_escape(law_cell_title)}">'
+            f'<strong>{jur}</strong> {cite} {status_badge}</td>'
             f'<td style="font-size:11px;">{ctype}</td>'
-            f'<td>{actor}</td>'
+            f'<td>{actor}{actor_role_badge}</td>'
             f'<td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>'
-            f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}</td>'
+            f'<td style="text-align:center;color:{tier_color};font-weight:bold;">{tier}{below_floor_badge}</td>'
             f'<td style="text-align:right;">{score}</td>'
             f'<td style="text-align:center;">{concept.member_count}</td>'
             f'<td style="color:{gs_color};font-size:11px;">{gs}</td>'
@@ -5303,7 +5376,9 @@ def list_concepts(
         f'</table></div>'
         f'<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">'
         f'Showing {len(rows)} concepts (capped at 500). '
-        f'Use filters to narrow results.'
+        f'Use filters to narrow. '
+        f'<span style="color:var(--danger);">REPEALED/STAYED</span> rows are law-status flags; '
+        f'<em>below floor</em> = Tier D (below confidence publish threshold).'
         f'</div></div>'
     )
 
@@ -5438,6 +5513,8 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
             Source.jurisdiction_code,
             DocumentFamily.short_cite,
             DocumentFamily.canonical_title,
+            DocumentVersion.temporal_status,
+            DocumentVersion.effective_date,
         )
         .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
         .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5448,10 +5525,16 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text. "
+        "Consult a licensed attorney before relying on this data.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "concept_id", "jurisdiction", "law", "law_title",
-        "concept_type", "regulated_actor_family", "right_holder_family",
+        "law_status", "effective_date", "amendment_status", "as_of_date",
+        "concept_type", "regulated_actor_family", "actor_role", "right_holder_family",
         "covered_system_type", "title", "summary",
         "trigger_condition", "required_action", "deadline",
         "confidence_score", "confidence_tier", "grounding_status",
@@ -5460,11 +5543,23 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
         "source_extraction_ids_json", "tracker_ref_ids_json",
         "run_id", "created_at", "updated_at",
     ])
-    for concept, jurisdiction, law, law_title in rows:
+    for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
+        # Prefer concept's own denormalized fields (populated since Phase 1);
+        # fall back to the live JOIN value for concepts grouped before Phase 1.
+        ts = concept.law_status or (
+            temporal_status.value if hasattr(temporal_status, "value")
+            else (str(temporal_status) if temporal_status else "")
+        )
+        eff = concept.law_effective_date or effective_date
         writer.writerow([
             concept.id, jurisdiction or "", law or "", law_title or "",
+            ts,
+            eff.isoformat() if eff else "",
+            concept.amendment_status or "",
+            concept.as_of_date.isoformat() if concept.as_of_date else "",
             concept.concept_type or "",
             concept.regulated_actor_family or "",
+            concept.actor_role or "",
             concept.right_holder_family or "",
             concept.covered_system_type or "",
             concept.title or "",
@@ -5512,6 +5607,8 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
             Source.jurisdiction_code,
             DocumentFamily.short_cite,
             DocumentFamily.canonical_title,
+            DocumentVersion.temporal_status,
+            DocumentVersion.effective_date,
         )
         .join(DocumentVersion, ComplianceConcept.document_version_id == DocumentVersion.id)
         .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
@@ -5521,15 +5618,35 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
 
     rows = db.execute(query).all()
 
+    _disclaimer_obj = _json.dumps({
+        "_record_type": "disclaimer",
+        "text": (
+            "Informational only — not legal advice. "
+            "AI-extracted; verify against current official statutory text. "
+            "Consult a licensed attorney before relying on this data."
+        ),
+    }) + "\n"
+
     def _generate():
-        for concept, jurisdiction, law, law_title in rows:
+        yield _disclaimer_obj
+        for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
+            ts = concept.law_status or (
+                temporal_status.value if hasattr(temporal_status, "value")
+                else (str(temporal_status) if temporal_status else "")
+            )
+            eff = concept.law_effective_date or effective_date
             obj = {
                 "concept_id": concept.id,
                 "jurisdiction": jurisdiction or "",
                 "law": law or "",
                 "law_title": law_title or "",
+                "law_status": ts,
+                "effective_date": eff.isoformat() if eff else None,
+                "amendment_status": concept.amendment_status or None,
+                "as_of_date": concept.as_of_date.isoformat() if concept.as_of_date else None,
                 "concept_type": concept.concept_type or "",
                 "regulated_actor_family": concept.regulated_actor_family or "",
+                "actor_role": concept.actor_role or "",
                 "right_holder_family": concept.right_holder_family or "",
                 "covered_system_type": concept.covered_system_type or "",
                 "title": concept.title or "",
@@ -5593,6 +5710,10 @@ def export_extraction_summaries_csv(db: Session = Depends(get_db)) -> StreamingR
     rows = db.execute(query).all()
 
     buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text.\n"
+    )
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id", "jurisdiction", "law", "section",

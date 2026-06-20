@@ -16,21 +16,13 @@ from typing import Any
 
 import structlog
 
+from src.core.date_normalizer import _MONTH_MAP, normalize_date as _parse_date
+
 logger = structlog.get_logger()
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-_MONTH_MAP = {
-    "january": "01", "february": "02", "march": "03", "april": "04",
-    "may": "05", "june": "06", "july": "07", "august": "08",
-    "september": "09", "october": "10", "november": "11", "december": "12",
-    "jan": "01", "feb": "02", "mar": "03", "apr": "04",
-    "jun": "06", "jul": "07", "aug": "08",
-    "sep": "09", "oct": "10", "nov": "11", "dec": "12",
-}
-
 
 def _clean_digits(s: str) -> int | None:
     """Extract integer from a string like '$10,000' or '10000'."""
@@ -57,43 +49,6 @@ def _parse_dollar_amount(text: str) -> int | None:
             raw *= 1_000
         amounts.append(int(raw))
     return max(amounts) if amounts else None
-
-
-def _parse_date(text: str) -> str | None:
-    """Parse dates like 'January 1, 2026' or '2026' → ISO 8601 YYYY-MM-DD."""
-    # Full date: Month D, YYYY or Month YYYY
-    full = re.search(
-        r"\b(january|february|march|april|may|june|july|august|september|"
-        r"october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)"
-        r"\.?\s+(\d{1,2}),?\s+(20\d{2})\b",
-        text,
-        re.IGNORECASE,
-    )
-    if full:
-        month = _MONTH_MAP[full.group(1).lower().rstrip(".")]
-        day = full.group(2).zfill(2)
-        year = full.group(3)
-        return f"{year}-{month}-{day}"
-
-    # Month YYYY (no day)
-    month_year = re.search(
-        r"\b(january|february|march|april|may|june|july|august|september|"
-        r"october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)"
-        r"\.?\s+(20\d{2})\b",
-        text,
-        re.IGNORECASE,
-    )
-    if month_year:
-        month = _MONTH_MAP[month_year.group(1).lower().rstrip(".")]
-        year = month_year.group(2)
-        return f"{year}-{month}-01"
-
-    # Just a year
-    year_only = re.search(r"\b(20\d{2})\b", text)
-    if year_only:
-        return f"{year_only.group(1)}-01-01"
-
-    return None
 
 
 # ---------------------------------------------------------------------------

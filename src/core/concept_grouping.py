@@ -25,11 +25,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date as _date
 from typing import Any
 
 import structlog
 from sqlalchemy import select
 
+from src.core.penalty_normalizer import normalize_enforcing_body, normalize_penalty_type
 from src.core.vocab_loader import get_canonical_codes, normalize
 from src.db.models import (
     ComplianceConcept,
@@ -40,6 +42,8 @@ from src.db.models import (
     Extraction,
     ExtractionType,
     ExtractionVerificationStatus,
+    LegalEvent,
+    LegalEventType,
     NormalizedSourceRecord,
 )
 
@@ -154,6 +158,102 @@ class ConceptGroupingResult:
     concepts_created: int
     concepts_flagged: int
     anchors_grouped: int
+
+
+# Law statuses that should auto-flag every concept for analyst review.
+_WARNING_STATUSES = {"repealed", "stayed", "vetoed", "dead", "withdrawn"}
+
+
+def _derive_amendment_status(db, dv: DocumentVersion) -> str:
+    """Return a plain-English amendment-status string from the law's event log.
+
+    Reads the most recent LegalEvent rows for this DocumentVersion and derives
+    a human-readable summary suitable for display on a law card.  Falls back to
+    the DocumentVersion.temporal_status value when no events are recorded.
+    """
+    ts = dv.temporal_status
+    ts_val = ts.value if hasattr(ts, "value") else str(ts or "")
+
+    events = db.scalars(
+        select(LegalEvent)
+        .where(LegalEvent.document_version_id == dv.id)
+        .order_by(LegalEvent.event_date.desc())
+    ).all()
+
+    def _event_of(*types) -> LegalEvent | None:
+        return next((e for e in events if e.event_type in types), None)
+
+    def _date_str(e: LegalEvent | None) -> str:
+        if e and e.event_date:
+            return e.event_date.isoformat()
+        return ""
+
+    if ts_val == "repealed":
+        ev = _event_of(LegalEventType.repeal)
+        parts = ["repealed"]
+        if ev:
+            d = _date_str(ev)
+            if d:
+                parts.append(d)
+            if ev.description:
+                parts.append(f"— {ev.description}")
+        return " ".join(parts)
+
+    if ts_val == "stayed":
+        ev = _event_of(LegalEventType.stay)
+        parts = ["stayed — enforcement paused"]
+        if ev:
+            d = _date_str(ev)
+            if d:
+                parts.append(f"(as of {d})")
+            if ev.description:
+                parts.append(f"— {ev.description}")
+        return " ".join(parts)
+
+    if ts_val in ("vetoed", "dead", "withdrawn"):
+        ev = _event_of(LegalEventType.veto, LegalEventType.death, LegalEventType.withdrawal)
+        return f"{ts_val}{(' ' + _date_str(ev)) if ev and _date_str(ev) else ''}"
+
+    if ts_val == "future_effective":
+        eff = dv.effective_date
+        eff_str = eff.isoformat() if eff else "date TBD"
+        return f"pending — effective {eff_str}"
+
+    if ts_val in ("active", "enacted"):
+        amendments = [e for e in events if e.event_type == LegalEventType.amendment]
+        if amendments:
+            latest = amendments[0]
+            d = _date_str(latest)
+            desc = f" — {latest.description}" if latest.description else ""
+            return f"in force — amended {d}{desc}"
+        return "in force"
+
+    if ts_val in ("introduced", "pending", "passed_one_chamber"):
+        return f"{ts_val} — not yet enacted"
+
+    # Fall back to raw status value if none of the above matched
+    return ts_val or "unknown"
+
+
+_GOVERNMENT_ACTOR_CODES = {"regulator", "government_agency"}
+_INDIVIDUAL_ACTOR_CODES = {"individual"}
+
+
+def _classify_actor_role(canonical_actor: str | None) -> str | None:
+    """Map a canonical actor code to a three-value actor_role bucket.
+
+    Returns "government", "individual", or "regulated_entity" (the residual
+    bucket covering developer / deployer / provider / operator / controller /
+    processor / data_broker / compute_provider / distributor / regulated_entity).
+    Returns None when the actor is absent.
+    """
+    if not canonical_actor:
+        return None
+    if canonical_actor in _GOVERNMENT_ACTOR_CODES:
+        return "government"
+    if canonical_actor in _INDIVIDUAL_ACTOR_CODES:
+        return "individual"
+    return "regulated_entity"
 
 
 def _actor_family(raw: str | None, fallback: str | None = None) -> str | None:
@@ -279,8 +379,8 @@ def group_concepts_for_dv(
         if et == ExtractionType.enforcement:
             enforcement_refs.append({
                 "extraction_id": ext.id,
-                "penalty_type": payload.get("penalty_type"),
-                "enforcing_body": payload.get("enforcing_body"),
+                "penalty_type": normalize_penalty_type(payload.get("penalty_type")),
+                "enforcing_body": normalize_enforcing_body(payload.get("enforcing_body")),
             })
             enforcement_ids.append(ext.id)
             continue
@@ -319,8 +419,8 @@ def group_concepts_for_dv(
             if isinstance(emb, dict) and (emb.get("penalty_type") or emb.get("max_civil_penalty_usd")):
                 enforcement_refs.append({
                     "extraction_id": ext.id,
-                    "penalty_type": emb.get("penalty_type"),
-                    "enforcing_body": emb.get("enforcing_body"),
+                    "penalty_type": normalize_penalty_type(emb.get("penalty_type")),
+                    "enforcing_body": normalize_enforcing_body(emb.get("enforcing_body")),
                 })
 
         elif et == ExtractionType.compliance_mechanism:
@@ -391,6 +491,14 @@ def group_concepts_for_dv(
     ]
     has_tracker = bool(tracker_links_proto)
 
+    # Currentness snapshot — computed once for all concepts in this law.
+    _ts = dv.temporal_status
+    _law_status = _ts.value if hasattr(_ts, "value") else (str(_ts) if _ts else None)
+    _law_effective_date = dv.effective_date
+    _amendment_status = _derive_amendment_status(db, dv)
+    _as_of_date = _date.today()
+    _is_warning_status = _law_status in _WARNING_STATUSES
+
     concepts_created = 0
     concepts_flagged = 0
 
@@ -409,8 +517,8 @@ def group_concepts_for_dv(
         else:
             grounding = "ungrounded"
 
-        # Review status: flag conflicts and D-tier requirements for an analyst.
-        if bucket.has_conflict or bucket.has_d_tier or tier == "D":
+        # Review status: flag conflicts, D-tier, and warning-status laws for analyst review.
+        if bucket.has_conflict or bucket.has_d_tier or tier == "D" or _is_warning_status:
             review_status = ConceptReviewStatus.flagged
             concepts_flagged += 1
         else:
@@ -447,6 +555,11 @@ def group_concepts_for_dv(
             review_status=review_status,
             member_count=len(bucket.anchor_ids),
             run_id=run_id,
+            law_status=_law_status,
+            law_effective_date=_law_effective_date,
+            amendment_status=_amendment_status,
+            as_of_date=_as_of_date,
+            actor_role=_classify_actor_role(actor),
         )
         db.add(concept)
         db.flush()  # obtain concept.id
