@@ -5160,6 +5160,7 @@ def run_verification(
 def concepts_page(request: Request, db: Session = Depends(get_db)):
     """Compliance concept overview page."""
     from src.core.concept_review import concept_review_counts
+    from src.core.citation_normalizer import is_tmp_id
 
     try:
         counts = concept_review_counts(db)
@@ -5169,7 +5170,22 @@ def concepts_page(request: Request, db: Session = Depends(get_db)):
             "total": 0, "pending": 0, "flagged": 0, "approved": 0,
             "rejected": 0, "tracker_conflict": 0, "ungrounded": 0,
         }
-    return _render(request, "concepts.html", {"counts": counts})
+
+    # Count laws whose canonical_law_id is still a TMP- placeholder
+    tmp_law_count = 0
+    try:
+        families = db.scalars(select(DocumentFamily.metadata_)).all()
+        tmp_law_count = sum(
+            1 for m in families
+            if m and is_tmp_id((m.get("canonical_law_id") or ""))
+        )
+    except Exception:
+        db.rollback()
+
+    return _render(request, "concepts.html", {
+        "counts": counts,
+        "tmp_law_count": tmp_law_count,
+    })
 
 
 @router.post("/api/concepts/group", response_class=HTMLResponse)

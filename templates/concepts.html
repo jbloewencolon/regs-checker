@@ -45,6 +45,13 @@
       <div class="tracker-header" style="color:var(--success);">Approved</div>
       <div class="tracker-value" style="color:var(--success);">{{ counts.approved }}</div>
     </div>
+    {% if tmp_law_count %}
+    <div class="tracker-card" title="Laws whose canonical_law_id is still a TMP- placeholder — citations unresolved (Phase 4.1)">
+      <div class="tracker-header" style="color:var(--warning);">Unresolved Citations</div>
+      <div class="tracker-value" style="color:var(--warning);">{{ tmp_law_count }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">TMP- IDs pending resolution</div>
+    </div>
+    {% endif %}
   </div>
 </section>
 

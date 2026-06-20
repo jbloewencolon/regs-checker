@@ -387,6 +387,7 @@ class Extraction(Base):
     extraction_job_id = Column(Integer, ForeignKey("extraction_jobs.id"), index=True)
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
+    model_agreement_count = Column(Integer, nullable=False, default=0, server_default="0")
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
