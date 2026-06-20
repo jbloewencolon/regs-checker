@@ -5318,9 +5318,15 @@ def list_concepts(
                 'font-size:9px;margin-left:3px;">below floor</span>'
             )
 
+        # Amendment status tooltip — use concept's own field if available.
+        amend_tip = html_escape(concept.amendment_status or "")
+        as_of = concept.as_of_date.isoformat() if concept.as_of_date else ""
+        law_cell_title = f"{amend_tip} (as of {as_of})" if amend_tip or as_of else ""
+
         table_rows += (
             f'<tr{row_style}>'
-            f'<td><strong>{jur}</strong> {cite} {status_badge}</td>'
+            f'<td title="{html_escape(law_cell_title)}">'
+            f'<strong>{jur}</strong> {cite} {status_badge}</td>'
             f'<td style="font-size:11px;">{ctype}</td>'
             f'<td>{actor}</td>'
             f'<td title="{title}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</td>'
@@ -5504,7 +5510,7 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
     writer = csv.writer(buf)
     writer.writerow([
         "concept_id", "jurisdiction", "law", "law_title",
-        "law_status", "effective_date",
+        "law_status", "effective_date", "amendment_status", "as_of_date",
         "concept_type", "regulated_actor_family", "right_holder_family",
         "covered_system_type", "title", "summary",
         "trigger_condition", "required_action", "deadline",
@@ -5515,11 +5521,19 @@ def export_concepts_csv(db: Session = Depends(get_db)) -> StreamingResponse:
         "run_id", "created_at", "updated_at",
     ])
     for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
-        ts = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
+        # Prefer concept's own denormalized fields (populated since Phase 1);
+        # fall back to the live JOIN value for concepts grouped before Phase 1.
+        ts = concept.law_status or (
+            temporal_status.value if hasattr(temporal_status, "value")
+            else (str(temporal_status) if temporal_status else "")
+        )
+        eff = concept.law_effective_date or effective_date
         writer.writerow([
             concept.id, jurisdiction or "", law or "", law_title or "",
             ts,
-            effective_date.isoformat() if effective_date else "",
+            eff.isoformat() if eff else "",
+            concept.amendment_status or "",
+            concept.as_of_date.isoformat() if concept.as_of_date else "",
             concept.concept_type or "",
             concept.regulated_actor_family or "",
             concept.right_holder_family or "",
@@ -5592,14 +5606,20 @@ def export_concepts_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
     def _generate():
         yield _disclaimer_obj
         for concept, jurisdiction, law, law_title, temporal_status, effective_date in rows:
-            ts = temporal_status.value if hasattr(temporal_status, "value") else (str(temporal_status) if temporal_status else "")
+            ts = concept.law_status or (
+                temporal_status.value if hasattr(temporal_status, "value")
+                else (str(temporal_status) if temporal_status else "")
+            )
+            eff = concept.law_effective_date or effective_date
             obj = {
                 "concept_id": concept.id,
                 "jurisdiction": jurisdiction or "",
                 "law": law or "",
                 "law_title": law_title or "",
                 "law_status": ts,
-                "effective_date": effective_date.isoformat() if effective_date else None,
+                "effective_date": eff.isoformat() if eff else None,
+                "amendment_status": concept.amendment_status or None,
+                "as_of_date": concept.as_of_date.isoformat() if concept.as_of_date else None,
                 "concept_type": concept.concept_type or "",
                 "regulated_actor_family": concept.regulated_actor_family or "",
                 "right_holder_family": concept.right_holder_family or "",
