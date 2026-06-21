@@ -27,6 +27,7 @@ from pydantic import BaseModel, ValidationError
 from src.agents.prompt_loader import load_prompt_template, render_prompt
 from src.core.config import settings
 from src.core.llm_provider import get_extraction_provider
+from src.core.text_grounding import verify_evidence_spans as _grounding_verify
 from src.schemas.extraction import AbstentionResult, EvidenceSpan
 
 logger = structlog.get_logger()
@@ -896,85 +897,11 @@ class BaseExtractionAgent(ABC):
     ) -> list[dict]:
         """Verify evidence spans via string matching (Rec #3).
 
-        Confirms each evidence span text appears in the passage.
-        Applies Unicode normalization (smart quotes, dashes, non-breaking
-        spaces) followed by whitespace normalization, then falls back to
-        case-insensitive matching for minor casing differences, then to a
-        punctuation-insensitive match for models that re-punctuate quotes.
+        Delegates to src.core.text_grounding.verify_evidence_spans which
+        implements 4-tier matching: exact → case-insensitive → loose (≥15 chars)
+        → revisor-artifact-stripped loose (≥25 chars, Tier 4 added Phase 1).
         """
-        norm_passage = self._normalize_text(passage)
-        lower_passage = norm_passage.lower()
-        loose_passage, loose_passage_map = self._loose_normalize(norm_passage)
-        verified = []
-        for span_data in spans:
-            if not isinstance(span_data, dict) or not span_data.get("text"):
-                continue  # skip empty dicts and spans with missing/null text
-            try:
-                span = EvidenceSpan(**span_data)
-            except Exception:
-                continue
-            norm_span = self._normalize_text(span.text)
-
-            # Try exact match on whitespace-normalized text
-            if norm_span in norm_passage:
-                start = norm_passage.index(norm_span)
-                verified.append(
-                    {
-                        "field_name": span.field_name,
-                        "text": span.text,
-                        "char_start": start,
-                        "char_end": start + len(norm_span),
-                        "verified": True,
-                    }
-                )
-                continue
-
-            # Try case-insensitive match
-            if norm_span.lower() in lower_passage:
-                start = lower_passage.index(norm_span.lower())
-                verified.append(
-                    {
-                        "field_name": span.field_name,
-                        "text": span.text,
-                        "char_start": start,
-                        "char_end": start + len(norm_span),
-                        "verified": True,
-                    }
-                )
-                continue
-
-            # Try punctuation-insensitive ("loose") match. Only for spans long
-            # enough that a contiguous word match is meaningful (avoids spurious
-            # hits on a stray word or two).
-            loose_span, _ = self._loose_normalize(norm_span)
-            if len(loose_span) >= 15 and loose_span in loose_passage:
-                loose_start = loose_passage.index(loose_span)
-                loose_end = loose_start + len(loose_span) - 1
-                verified.append(
-                    {
-                        "field_name": span.field_name,
-                        "text": span.text,
-                        "char_start": loose_passage_map[loose_start],
-                        "char_end": loose_passage_map[loose_end] + 1,
-                        "verified": True,
-                    }
-                )
-                continue
-
-            logger.warning(
-                "evidence_span_not_found",
-                agent=self.agent_name,
-                field=span.field_name,
-                span_text=span.text[:80],
-            )
-            verified.append(
-                {
-                    "field_name": span.field_name,
-                    "text": span.text,
-                    "verified": False,
-                }
-            )
-        return verified
+        return _grounding_verify(spans, passage, agent_name=self.agent_name)
 
     def _prompt_hash(self, prompt: str) -> str:
         """Hash the prompt for reproducibility tracking."""
