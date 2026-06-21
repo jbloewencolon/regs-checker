@@ -2375,7 +2375,160 @@ def export_low_confidence_extractions_jsonl(
     )
 
 
-@router.post("/api/run/extract/reset")
+# ---------------------------------------------------------------------------
+# Phase 4 — Admitted extractions export (accepted set, separate from review queue)
+# ---------------------------------------------------------------------------
+
+@router.get("/api/admitted/export.csv")
+def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download the admitted extraction set as CSV.
+
+    Admitted = at least one verified evidence span, OR confidence tier A/B/C
+    (tracker-confirmed).  Excludes Tier-D extractions with zero verified spans
+    (those go to needs_review / the review queue).
+    """
+    import csv
+    import io
+    import json as _json
+
+    from src.core.admission import ADMITTED, compute_admission_status
+    from src.db.models import NormalizedSourceRecord
+
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .order_by(Extraction.confidence_tier, Extraction.confidence_score.desc())
+    )
+    rows = db.execute(query).all()
+
+    buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Informational only — not legal advice. "
+        "AI-extracted; verify against current official statutory text.\n"
+    )
+    writer = csv.writer(buf)
+    writer.writerow([
+        "extraction_id",
+        "admission_status",
+        "law_jurisdiction",
+        "law_title",
+        "extraction_type",
+        "confidence_score",
+        "confidence_tier",
+        "verified_spans",
+        "total_spans",
+        "passage_text",
+        "full_payload_json",
+        "created_at",
+    ])
+
+    for ext, rec, dv in rows:
+        status = compute_admission_status(ext.evidence_spans, ext.confidence_tier.value)
+        if status != ADMITTED:
+            continue
+
+        doc_family = dv.family
+        jurisdiction = (
+            doc_family.source.jurisdiction_code
+            if doc_family and doc_family.source else "Unknown"
+        )
+        spans = ext.evidence_spans or []
+        verified_count = sum(1 for s in spans if s.get("verified"))
+
+        writer.writerow([
+            ext.id,
+            status,
+            jurisdiction,
+            doc_family.canonical_title if doc_family else "",
+            ext.extraction_type.value,
+            f"{ext.confidence_score:.3f}",
+            ext.confidence_tier.value,
+            verified_count,
+            len(spans),
+            (rec.text_content or "")[:500],
+            _json.dumps(ext.payload, default=str),
+            ext.created_at.isoformat() if ext.created_at else "",
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=admitted_extractions.csv"},
+    )
+
+
+@router.get("/api/admitted/export.jsonl")
+def export_admitted_extractions_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
+    """Download the admitted extraction set as JSONL (one JSON object per line).
+
+    Same admission filter as the CSV endpoint.  Each line carries full context:
+    law metadata, passage text, evidence spans, and extraction payload.
+    """
+    import json as _json
+
+    from src.core.admission import ADMITTED, compute_admission_status
+    from src.db.models import NormalizedSourceRecord
+
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .order_by(Extraction.confidence_tier, Extraction.confidence_score.desc())
+    )
+    rows = db.execute(query).all()
+
+    def generate():
+        yield _json.dumps({
+            "_record_type": "disclaimer",
+            "text": (
+                "Informational only — not legal advice. "
+                "AI-extracted; verify against current official statutory text."
+            ),
+        }) + "\n"
+        for ext, rec, dv in rows:
+            status = compute_admission_status(ext.evidence_spans, ext.confidence_tier.value)
+            if status != ADMITTED:
+                continue
+            doc_family = dv.family
+            spans = ext.evidence_spans or []
+            obj = {
+                "extraction": {
+                    "id": ext.id,
+                    "type": ext.extraction_type.value,
+                    "confidence_score": float(ext.confidence_score),
+                    "confidence_tier": ext.confidence_tier.value,
+                    "admission_status": status,
+                    "verified_spans": sum(1 for s in spans if s.get("verified")),
+                    "total_spans": len(spans),
+                    "review_status": ext.review_status.value,
+                    "created_at": ext.created_at.isoformat() if ext.created_at else None,
+                    "payload": ext.payload,
+                },
+                "law": {
+                    "jurisdiction": (
+                        doc_family.source.jurisdiction_code
+                        if doc_family and doc_family.source else "Unknown"
+                    ),
+                    "title": doc_family.canonical_title if doc_family else "",
+                    "bill_number": dv.bill_number,
+                    "session_year": dv.session_year,
+                },
+                "passage": {
+                    "source_record_id": rec.id,
+                    "section_path": rec.section_path,
+                    "text": rec.text_content,
+                },
+                "evidence_spans": spans,
+            }
+            yield _json.dumps(obj, default=str) + "\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=admitted_extractions.jsonl"},
+    )
 def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     """Clear all extractions and extraction jobs so passages can be re-extracted.
 

@@ -595,6 +595,38 @@ Bug check (BUG-7/BUG-8 fixed), lint cleanup (RR2c partial), CI hard gate, repo
 cleanup, Phase 4a confirmed, Phase 4b completed. All on `claude/brave-lamport-d9zgjx`
 — **pending merge to main**. **Full breakdown: `completed_tasks.md` (2026-06-10 entry).**
 
+## Engineering Session (2026-06-21) — Extraction validation pipeline improvements (Phases 1–4)
+
+**Branch**: `claude/brave-lamport-d9zgjx`
+**Scope**: Four phases from extraction validation report; all committed and pushed.
+
+### Phase 1 — Artifact-aware span grounding ✅
+- **`src/core/text_grounding.py`** (new): Standalone `verify_evidence_spans()` with 4-tier matching. Tier 4 strips PDF revisor artifacts (margin line-numbers `N.NN`, hyphenated line-breaks, `SECTIONA1` glyphs) before loose-match pass. Floor ≥ 25 chars.
+- **`src/agents/base.py`**: `_verify_evidence_spans` delegates to `text_grounding.verify_evidence_spans`; private `_normalize_*` methods retained.
+- **`src/scripts/reground_spans.py`** (new): Idempotent script — re-verifies stored spans against passage text, updates `evidence_spans` in DB (no LLM). Use `--dry-run` first.
+
+### Phase 2 — Source quality gate ✅
+- **`src/ingestion/local_ingest.py`**: Added `_STATUTORY_STRUCTURE_MARKERS` (AN ACT, SECTION, §, WHEREAS, Chapter…) and `_compute_fulltext_status()` returning `ok` / `too_short` / `capture_failed` / `no_statutory_structure`. `_check_source_quality()` now rejects files lacking statutory markers in first 4 KB. Status stamped into `IngestionJob.metadata_["fulltext_status"]`.
+
+### Phase 3 — Duplicate canonical detection ✅
+- **`src/core/citation_normalizer.py`**: Added `find_duplicate_canonicals()`, `_pick_preferred()`, `_preference_reason()`, `_normalize_bill_number()`. Groups canonical IDs by (jurisdiction, normalized bill_number) to surface pairs like `US-TX-HB149` + `TMP-TX-AITEXASRESPONS`.
+- **`src/scripts/consolidate_duplicates.py`** (new): Reports duplicate pairs; with `--apply` re-points `document_versions.family_id` to the preferred family and removes the empty duplicate.
+
+### Phase 4 — Grounding-based admission gate ✅
+- **`src/core/admission.py`** (new): `compute_admission_status(evidence_spans, confidence_tier)` → `admitted` / `needs_review` / `excluded`. Admitted when ≥1 span `verified=True` OR tier A/B/C (tracker-confirmed). `needs_review` when zero verified + Tier D.
+- **`src/scripts/compute_admissions.py`** (new): Stamps `metadata_["admission_status"]` on every extraction; idempotent. Run after `reground_spans.py`.
+- **`src/api/routes/dashboard.py`**: Two new endpoints:
+  - `GET /api/admitted/export.csv` — admitted extraction set as CSV
+  - `GET /api/admitted/export.jsonl` — admitted extraction set as JSONL (one object/line with full context)
+
+**Pending operator steps:**
+1. `python -m src.scripts.reground_spans --dry-run` then `python -m src.scripts.reground_spans`
+2. `python -m src.scripts.compute_admissions --dry-run` then apply
+3. Check `/dashboard/api/admitted/export.jsonl` for accepted-set export
+4. `python -m src.scripts.consolidate_duplicates` for duplicate canonical report
+
+---
+
 ## Engineering Session (2026-06-15) — NVIDIA backend extraction hardening — COMPLETED ✓
 
 First full-corpus run on the **NVIDIA cloud backend** (gpt-oss-120b for clause/bill

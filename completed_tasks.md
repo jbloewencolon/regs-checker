@@ -1,5 +1,29 @@
 # Regs Checker — Completed Tasks
 
+## Recently Completed (2026-06-21) — Extraction Validation Pipeline Improvements (Phases 1–4)
+
+**Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
+**Scope**: Four phases from the extraction validation report: artifact-aware grounding, source quality gate, duplicate canonical detection, grounding-based admission gate.
+
+### Phase 1 — Artifact-aware span grounding (DONE)
+- `src/core/text_grounding.py` (new): 4-tier `verify_evidence_spans()` — exact → case-insensitive → loose (≥15 chars) → revisor-artifact-stripped loose (≥25 chars, Tier 4). `strip_revisor_artifacts()` removes PDF margin numbers (`N.NN`), hyphenated line-breaks, `SECTIONA1` glyphs.
+- `src/agents/base.py`: `_verify_evidence_spans` now delegates to `text_grounding.verify_evidence_spans`; old 3-tier body removed.
+- `src/scripts/reground_spans.py` (new): Idempotent re-grounding — re-runs span verification against stored `NormalizedSourceRecord.text_content`, updates `evidence_spans` in DB. `--dry-run` shows impact without writing.
+
+### Phase 2 — Source quality gate (DONE)
+- `src/ingestion/local_ingest.py`: `_STATUTORY_STRUCTURE_MARKERS` (13 byte patterns); `_compute_fulltext_status()` returns `ok` / `too_short` / `capture_failed` / `no_statutory_structure`; `_check_source_quality()` rejects missing-structure files; `fulltext_status` written to `IngestionJob.metadata_`.
+
+### Phase 3 — Duplicate canonical detection (DONE)
+- `src/core/citation_normalizer.py`: `find_duplicate_canonicals()`, `_pick_preferred()`, `_preference_reason()`, `_normalize_bill_number()`.
+- `src/scripts/consolidate_duplicates.py` (new): detect and optionally merge duplicate family rows. `--apply` re-points document_versions FK and removes empty duplicate family.
+
+### Phase 4 — Grounding-based admission gate (DONE)
+- `src/core/admission.py` (new): `compute_admission_status()` and `admission_summary()`. Policy: admitted when ≥1 `verified=True` span OR tier A/B/C; `needs_review` when tier D + zero verified.
+- `src/scripts/compute_admissions.py` (new): stamps `metadata_["admission_status"]` on all extractions; idempotent.
+- `src/api/routes/dashboard.py`: `GET /api/admitted/export.csv` + `GET /api/admitted/export.jsonl` — accepted-set exports distinct from the pending-review queue dumps.
+
+---
+
 ## Recently Completed (2026-06-10) — Bug Check, Cleanup & Phase 4a/4b
 
 **Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
