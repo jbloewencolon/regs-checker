@@ -239,3 +239,99 @@ def resolve_tmp_to_bill(
     if bill_number:
         return bill_number.strip()
     return None
+
+
+# ---------------------------------------------------------------------------
+# Duplicate canonical detection (Phase 3)
+# ---------------------------------------------------------------------------
+
+_BILL_NORM = re.compile(r"[\s\-\.]")
+_BILL_STRIP_PREFIX = re.compile(r"^(?:H\.?B\.?|S\.?B\.?|H\.?R\.?|S\.?R\.?|HB|SB|HR|SR)\s*", re.I)
+
+
+def _normalize_bill_number(bill_number: str) -> str:
+    """Normalize a bill number for comparison (e.g. 'HB 149' → 'hb149')."""
+    return _BILL_NORM.sub("", bill_number).lower().strip()
+
+
+def find_duplicate_canonicals(
+    records: list[dict],
+) -> list[dict]:
+    """Identify canonical IDs that likely refer to the same law.
+
+    Each record in ``records`` should be a dict with:
+        canonical_id   (str)  — e.g. "US-TX-HB149" or "TMP-TX-AITEXASRESPONS"
+        jurisdiction   (str)  — two-letter state/territory code
+        bill_number    (str | None) — e.g. "HB 149"
+        title          (str | None) — canonical title for disambiguation
+        has_text       (bool) — True when the document version has ingested text
+        extraction_count (int) — number of extractions against this canonical
+
+    Returns a list of duplicate-group dicts, each with:
+        jurisdiction      (str)
+        bill_number_norm  (str) — normalized bill number used for grouping
+        preferred_id      (str) — canonical ID to keep
+        duplicate_ids     (list[str]) — canonical IDs to redirect → preferred_id
+        reason            (str) — human-readable explanation of the preference
+    """
+    from collections import defaultdict
+
+    # Group by (jurisdiction, normalized_bill_number) — only when bill_number known
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for rec in records:
+        jur = (rec.get("jurisdiction") or "").upper().strip()
+        bn = rec.get("bill_number") or ""
+        if not jur or not bn:
+            continue
+        key = (jur, _normalize_bill_number(bn))
+        groups[key].append(rec)
+
+    duplicates: list[dict] = []
+    for (jur, bn_norm), group in groups.items():
+        if len(group) < 2:
+            continue
+
+        preferred = _pick_preferred(group)
+        dups = [r["canonical_id"] for r in group if r["canonical_id"] != preferred["canonical_id"]]
+        reason = _preference_reason(preferred, group)
+
+        duplicates.append({
+            "jurisdiction": jur,
+            "bill_number_norm": bn_norm,
+            "preferred_id": preferred["canonical_id"],
+            "duplicate_ids": dups,
+            "reason": reason,
+            "group": group,
+        })
+
+    return duplicates
+
+
+def _pick_preferred(group: list[dict]) -> dict:
+    """Choose the canonical record to keep from a duplicate group.
+
+    Preference order (highest wins):
+      1. Has ingested text + most extractions
+      2. Has ingested text (even with no extractions)
+      3. Formal canonical ID (non-TMP) with any content
+      4. Least-recently-created (older seed is more likely the primary record)
+    """
+    def _score(rec: dict) -> tuple:
+        has_text = bool(rec.get("has_text"))
+        is_tmp = is_tmp_id(rec.get("canonical_id", ""))
+        count = rec.get("extraction_count", 0) or 0
+        return (has_text, not is_tmp, count)
+
+    return max(group, key=_score)
+
+
+def _preference_reason(preferred: dict, group: list[dict]) -> str:
+    """Build a human-readable reason string for the preference decision."""
+    cid = preferred["canonical_id"]
+    has_text = preferred.get("has_text")
+    count = preferred.get("extraction_count", 0)
+    others = [r["canonical_id"] for r in group if r["canonical_id"] != cid]
+    return (
+        f"preferred={cid!r} (has_text={has_text}, extractions={count}); "
+        f"duplicates={others}"
+    )

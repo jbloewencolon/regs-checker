@@ -422,18 +422,60 @@ _PORTAL_SIGNATURES: list[bytes] = [
     b"<!DOCTYPE html",
 ]
 
+# At least one of these byte patterns must appear in the first 4 KB for the file
+# to be accepted as real statutory/bill text.  WHEREAS covers executive orders;
+# § covers regulation-style documents that skip "SECTION" headers.
+_STATUTORY_STRUCTURE_MARKERS: list[bytes] = [
+    b"AN ACT",
+    b"Be it enacted",
+    b"BE IT ENACTED",
+    b"SECTION ",
+    b"Section ",
+    b"WHEREAS",
+    b"\xc2\xa7",   # UTF-8 §
+    b"\xa7",       # Latin-1 §
+    b"CHAPTER ",
+    b"Chapter ",
+    b"Subd.",      # MN/other subdivision style
+]
+
+
+def _compute_fulltext_status(content: bytes) -> str:
+    """Classify source content fulltext quality for downstream reporting.
+
+    Returns one of:
+      ok                    — passes all checks
+      too_short             — below minimum byte threshold
+      capture_failed        — portal / JS-gated page detected
+      no_statutory_structure — no recognizable bill/statute markers found
+    """
+    if len(content) < _MIN_SOURCE_BYTES:
+        return "too_short"
+    head = content[:512]
+    for sig in _PORTAL_SIGNATURES:
+        if sig in head:
+            return "capture_failed"
+    structural_sample = content[:4096]
+    if any(marker in structural_sample for marker in _STATUTORY_STRUCTURE_MARKERS):
+        return "ok"
+    return "no_statutory_structure"
+
 
 def _check_source_quality(content: bytes, law_id: str) -> str | None:
     """Return a human-readable failure reason, or None if content looks like bill text.
 
     Checks run in priority order — first failure wins.
     """
-    if len(content) < _MIN_SOURCE_BYTES:
+    status = _compute_fulltext_status(content)
+    if status == "too_short":
         return f"file too small ({len(content)} bytes < {_MIN_SOURCE_BYTES} minimum)"
-    head = content[:512]
-    for sig in _PORTAL_SIGNATURES:
-        if sig in head:
-            return f"portal/JS page detected (matched '{sig.decode(errors='replace')[:40]}')"
+    if status == "capture_failed":
+        head = content[:512]
+        for sig in _PORTAL_SIGNATURES:
+            if sig in head:
+                return f"portal/JS page detected (matched '{sig.decode(errors='replace')[:40]}')"
+    if status == "no_statutory_structure":
+        return "no statutory structure found (missing AN ACT / SECTION / § markers in first 4 KB)"
     return None
 
 
@@ -534,8 +576,13 @@ def ingest_local_files(
             content_type = _detect_content_type(local_file)
 
             # Source quality gate: reject files that are clearly not bill text.
-            # Minimum size guards against empty/form-feed fetches; signature
-            # patterns catch JS-gated pages and search-portal landing pages.
+            # _compute_fulltext_status determines the sub-class of failure;
+            # _check_source_quality maps it to a human-readable reason string.
+            fulltext_status = _compute_fulltext_status(content_bytes)
+            meta = dict(job.metadata_ or {})
+            meta["fulltext_status"] = fulltext_status
+            job.metadata_ = meta
+
             _quality_failure = _check_source_quality(content_bytes, canonical_law_id)
             if _quality_failure:
                 _log(f"  ⚠️  Source quality gate FAILED ({_quality_failure}) — quarantining {canonical_law_id}")

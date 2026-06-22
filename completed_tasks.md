@@ -1,5 +1,50 @@
 # Regs Checker — Completed Tasks
 
+## Analysis (2026-06-22) — Downstream Consumer Handoff Review + Architectural Plans
+
+**Branch**: `claude/brave-lamport-d9zgjx`
+**Scope**: Review of four Policy Navigator documents (EXTRACTION_ONTOLOGY, REGS_CHECKER_HANDOFF, REGS_CHECKER_INTEGRATION_PLAN, PIPELINE_INVENTORY); grounded answers to all open questions; two new architectural plans added to tasks.md.
+
+### Findings (read-only, no code changes)
+
+**DI-1 — `canonical_key` root cause confirmed:** `document_families.id` is a plain autoincrement surrogate with no unique natural-key constraint. `local_ingest.py:200-206` already upserts on `metadata_['canonical_law_id']` (so routine re-ingest preserves IDs), but a DB wipe/re-seed resets the sequence → wholesale ID churn as the consumer observed. Fix: promote `canonical_law_id` to a first-class `canonical_key` column with UNIQUE constraint, backfill, and surface it in `get_extractions_page`. Value already exists in `fact_laws.csv` header (`canonical_law_id` column); ~80% of rows are `TMP-*` placeholders.
+
+**DI-2 — Family 114 SC/TX mismatch:** Confirmed structural gap — no seed-time URL-vs-jurisdiction check exists. `src/core/jurisdiction_check.py` catches text-level jurisdiction mismatches at extraction time but not at URL ingest time. Correct the CSV row; add seed-time guard.
+
+**DI-3 — URL wrappers:** `local_ingest.py:303` stores `primary_source_url` verbatim. Values like `https://r.jina.ai/http://legiscan.com/...` and `infobytes.orrick.com/...` originate from tracker CSV columns and `law_fulltext_report.csv`. No normalization exists.
+
+**DI-4 — `ambiguity` type vs. `interpretation_risks`:** Ambiguity agent archived at `src/ingestion/_archived/ambiguity_agent.py`. Findings now embedded as `interpretation_risks` on `ObligationPayload` and `RightsProtectionPayload` (`src/schemas/extraction.py:238-241, 504-509`). Consumer's snapshot handler (`EXTRACTION_ONTOLOGY §2a`) still treats `ambiguity` as a live top-level type — will go silently empty as legacy rows age out.
+
+**DI-5 — RLS:** 11 tables have RLS disabled on the RC Supabase project. Confirmed from consumer's report (not directly inspectable from repo).
+
+**Per-agent refactor plan:** Mapped the full agent/extraction architecture. Key finding: `agent_name` is not a column on `extractions` — only `extraction_type` is stored, and agent identity must be reverse-inferred from `AGENT_EXTRACTION_TYPES` at `extractor.py:587`. `ExtractionAttempt.agent_name` exists as a sibling table. Plan for Phases A–E added to tasks.md.
+
+---
+
+## Recently Completed (2026-06-21) — Extraction Validation Pipeline Improvements (Phases 1–4)
+
+**Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
+**Scope**: Four phases from the extraction validation report: artifact-aware grounding, source quality gate, duplicate canonical detection, grounding-based admission gate.
+
+### Phase 1 — Artifact-aware span grounding (DONE)
+- `src/core/text_grounding.py` (new): 4-tier `verify_evidence_spans()` — exact → case-insensitive → loose (≥15 chars) → revisor-artifact-stripped loose (≥25 chars, Tier 4). `strip_revisor_artifacts()` removes PDF margin numbers (`N.NN`), hyphenated line-breaks, `SECTIONA1` glyphs.
+- `src/agents/base.py`: `_verify_evidence_spans` now delegates to `text_grounding.verify_evidence_spans`; old 3-tier body removed.
+- `src/scripts/reground_spans.py` (new): Idempotent re-grounding — re-runs span verification against stored `NormalizedSourceRecord.text_content`, updates `evidence_spans` in DB. `--dry-run` shows impact without writing.
+
+### Phase 2 — Source quality gate (DONE)
+- `src/ingestion/local_ingest.py`: `_STATUTORY_STRUCTURE_MARKERS` (13 byte patterns); `_compute_fulltext_status()` returns `ok` / `too_short` / `capture_failed` / `no_statutory_structure`; `_check_source_quality()` rejects missing-structure files; `fulltext_status` written to `IngestionJob.metadata_`.
+
+### Phase 3 — Duplicate canonical detection (DONE)
+- `src/core/citation_normalizer.py`: `find_duplicate_canonicals()`, `_pick_preferred()`, `_preference_reason()`, `_normalize_bill_number()`.
+- `src/scripts/consolidate_duplicates.py` (new): detect and optionally merge duplicate family rows. `--apply` re-points document_versions FK and removes empty duplicate family.
+
+### Phase 4 — Grounding-based admission gate (DONE)
+- `src/core/admission.py` (new): `compute_admission_status()` and `admission_summary()`. Policy: admitted when ≥1 `verified=True` span OR tier A/B/C; `needs_review` when tier D + zero verified.
+- `src/scripts/compute_admissions.py` (new): stamps `metadata_["admission_status"]` on all extractions; idempotent.
+- `src/api/routes/dashboard.py`: `GET /api/admitted/export.csv` + `GET /api/admitted/export.jsonl` — accepted-set exports distinct from the pending-review queue dumps.
+
+---
+
 ## Recently Completed (2026-06-10) — Bug Check, Cleanup & Phase 4a/4b
 
 **Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
