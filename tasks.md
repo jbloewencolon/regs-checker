@@ -283,8 +283,102 @@ Law-card data model, applicability product, API, productionization — resume on
 ### Pending decisions
 - **TN quarantine files contain TX bill content** — TX SB 1188, SB 2373, SB 815, SB 20, SB 1621 may be legitimate TX AI laws. Decide whether to add as new TX entries in `fact_laws.csv`.
 - **`business` actor code (122 mentions)** — PENDING_LKA ruling to ungate Phase 3d→3f.
+- **Per-agent CSV outputs (Phase B, see below)** — Decide whether per-agent export lands as a query param on existing routes (`?agent=obligation`) or as a dedicated bundler script (`export_by_agent.py`). Both are compatible; query-param is lower-effort and immediately usable in the dashboard.
+- **Selective sync by agent (Phase C, see below)** — Decide: when `--agents` filter is active, should the cursor be per-agent (full isolation, slightly more state) or shared (simpler, but risks skipping deferred agents on future runs)? Recommended: per-agent cursor keyed `table+agent_name`.
+
+---
+
+## Integration Durability — Downstream Consumer (Policy Navigator) Requests (2026-06-22)
+
+> **Background:** The Policy Navigator team reported that RC `document_families.id` was
+> wholesale-reassigned after a refresh, corrupting their bridge mapping (8/8 sampled families
+> now resolve to different laws). They want a stable `canonical_key` surfaced in
+> `get_extractions_page`. Four additional data-quality items were flagged.
+> **See handoff response drafted below for the full answer to send them.**
+
+### DI-1 — Promote `canonical_law_id` to a first-class stable `canonical_key` column *(blocking durability — do first)*
+**Why:** `canonical_law_id` already exists in `document_families.metadata_['canonical_law_id']`
+and drives the upsert logic in `local_ingest.py`. But it has no UNIQUE constraint, is not
+indexed as a column, and is not surfaced in `get_extractions_page`. Promoting it makes the
+bridge durable across any DB wipe or re-seed.
+
+**Tasks:**
+- Alembic migration: add `canonical_key VARCHAR(200) UNIQUE NOT NULL` to `document_families`; backfill from `metadata_->>'canonical_law_id'`.
+- `src/ingestion/local_ingest.py`: switch the upsert lookup from the JSONB query (`metadata_["canonical_law_id"].astext == ...`) to the new column for performance + enforceability.
+- Supabase migration (on `wjxlimjpaijdogyrqtxc`): alter `document_families` + update `get_extractions_page` RPC to return `canonical_key`, `jurisdiction_code`, `bill_number` alongside `family_id`. After deploy: `NOTIFY pgrst, 'reload schema';`.
+- Add `canonical_key` to the `sync_extractions.py` payload so it flows to `synced_extractions` and the consumer can join on it.
+
+**Acceptance:** Consumer can join `law_document_bridge` on `canonical_key` instead of `family_id`; `family_id` may still be included but is no longer the only join key. Bridge survives a DB wipe as long as `canonical_law_id` values in `fact_laws.csv` don't change.
+
+### DI-2 — Fix family 114: SC law pointing at TX source URL
+- Correct the `fact_laws.csv` row for South Carolina Real Estate AI Responsibility Law — replace the TX `capitol.texas.gov` URL with the correct SC legislature URL.
+- 372 extractions against this family are currently un-mappable by the consumer; correct URL lets the bridge rebuild succeed.
+- Longer-term: add a **seed-time** URL-vs-jurisdiction guard to `local_ingest.py` (domain of `primary_source_url` must match `jurisdiction_code`; warn/block on mismatch). `src/core/jurisdiction_check.py` already does text-level checks at extraction time; extend to URL at seed time.
+
+### DI-3 — Strip jina.ai / Orrick URL wrappers
+- `local_ingest.py` currently stores `primary_source_url` verbatim (no normalization). Values like `https://r.jina.ai/http://legiscan.com/...` and `infobytes.orrick.com/...` reduce the consumer's exact-URL match rate.
+- Add a `_normalize_source_url(url: str) -> str` helper: strip `https://r.jina.ai/` prefix to recover the canonical URL. Orrick PDF mirrors have no programmatic fix — flag for manual curation.
+- Estimated impact: consumer currently matches ~105/232 families on URL; stripping jina wrappers recovers a material fraction.
+
+### DI-4 — Retire `ambiguity` extraction type in downstream docs
+- The `ExtractionType.ambiguity` enum value still exists for legacy row compat but the ambiguity agent is archived (`src/ingestion/_archived/ambiguity_agent.py`). No new ambiguity rows are produced.
+- Findings now live as `interpretation_risks` embedded on `ObligationPayload` and `RightsProtectionPayload` (`src/schemas/extraction.py:238-241, 504-509`).
+- **Action for them:** migrate their snapshot handler from a top-level `ambiguity` type to reading `payload.interpretation_risks` on obligation/rights rows.
+- **Action for us:** document this in the RPC / payload adapter so it's visible to any future consumer.
+
+### DI-5 — Enable RLS on 11 exposed Supabase tables
+- Tables currently readable/writable by anon key: `extraction_runs`, `vocab_review_queue`, `verification_run_summaries`, `extraction_verification_status`, `compliance_concepts`, `concept_extraction_links`, `concept_tracker_links`, `extraction_attempts`, `content_blobs`, `pipeline_events`, `sync_cursors`.
+- Enable RLS + add read-only policies for the service role; block anon writes. Must add policies in the same migration as enabling RLS (enabling without policies blocks all access including service-role reads).
+- Low urgency if the RC Supabase is internal-only, but worth doing before any broader access.
 - **Eval set (ANALYSIS-1)** — 100-row lawyer-verified sample. Name a responsible person; gates Phase 4 + the trust bar.
 - **Sync to Policy Navigator** — all extraction types or approved-only?
+
+---
+
+## Per-Agent Output, Selective Sync & Re-Run Refactor (2026-06-22)
+
+> **Goal:** Make `agent_name` a first-class dimension so each agent's findings can be
+> exported separately, synced selectively, re-run in isolation, and measured for accuracy.
+> **Prerequisite:** DI-1 (canonical_key) is independent; this refactor is independent of DI
+> but shares the same branch.
+
+### Phase A — First-class `agent_name` column *(keystone — do first)*
+- Alembic migration: add indexed `agent_name VARCHAR(100)` column to `extractions` table (nullable for legacy rows).
+- Write `agent_name` at creation time in `extractor.py` — the agent object is in scope when the Extraction row is built.
+- Backfill existing rows from the deterministic reverse map `extraction_type → agent_name` (already implied by `AGENT_EXTRACTION_TYPES` at `extractor.py:587`); cross-check against `ExtractionAttempt.agent_name` where present.
+- Verify `bill_level_extractions` already stores agent identity (it does via `agent_name` column); no change needed there.
+
+### Phase B — Per-agent CSV/JSONL outputs
+- Add `?agent=<name>` query param to the existing streaming export endpoints in `dashboard.py` (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Filter is a `WHERE agent_name IN (...)` on the Extraction join.
+- Add `export_by_agent.py` script: iterates all agent names, writes `output/exports/<run_date>/<agent>.csv` per agent plus a combined `all_agents.csv`. Enables offline accuracy comparison across agents.
+
+### Phase C — Selective sync by agent
+- Add `--agents <name,...>` / `--exclude-agents <name,...>` flags to `sync_to_supabase.py` (Leg 1) and `sync_extractions.py` (Leg 2). Default = all agents (no behavior change).
+- When an agent filter is active, use a **per-agent cursor** keyed on `(table, agent_name)` in `sync_cursors` — prevents a global cursor from silently skipping agents that were deferred to a later sync run.
+
+### Phase D — Re-run individual agents
+- New `src/scripts/rerun_agent.py --agent <name> [--law <canonical_law_id>] [--repurge]`.
+  - Without `--repurge`: idempotent (attempt-state dedup skips already-succeeded passages).
+  - With `--repurge`: deletes only `agent_name = <name>` extraction rows for targeted passages before re-running — scoped purge, not global wipe.
+  - Reuses existing `extract_single_record(db, passage, agents={<name>: instance})` internal API.
+- Enables "re-run obligation agent only" without touching the other 5 clause-level agents.
+
+### Phase E — Per-agent accuracy metrics *(the tuning payoff)*
+- `src/scripts/metrics_by_agent.py`: for each agent, compute and print:
+  - Grounding rate (spans with `verified=True` / total spans)
+  - Admission rate (`admitted` / total extractions)
+  - Abstention rate (abstained passages / passages attempted)
+  - Tier A/B/C/D distribution
+  - Average confidence score
+- Small dashboard panel or CLI report: "preemption grounds at 40%, obligation at 85% → tune preemption prompt".
+
+### Phase A–E sequencing
+1. **A** (the column) — unblocks B–E; must land first.
+2. **B + D** — ship together, high immediate value, no inter-dependency.
+3. **C** — has the cursor footgun risk; test with a single agent before rolling out.
+4. **E** — run after first per-agent CSV round-trip to see the baseline accuracy numbers.
+
+---
 
 ### Merge backlog
 - `claude/onboard-government-project-3bq7i` (Phase 7M) and `claude/onboard-government-project-PyyB9` (Phase 8) — review and merge after extraction validates on main.

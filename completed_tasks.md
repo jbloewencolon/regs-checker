@@ -1,5 +1,26 @@
 # Regs Checker — Completed Tasks
 
+## Analysis (2026-06-22) — Downstream Consumer Handoff Review + Architectural Plans
+
+**Branch**: `claude/brave-lamport-d9zgjx`
+**Scope**: Review of four Policy Navigator documents (EXTRACTION_ONTOLOGY, REGS_CHECKER_HANDOFF, REGS_CHECKER_INTEGRATION_PLAN, PIPELINE_INVENTORY); grounded answers to all open questions; two new architectural plans added to tasks.md.
+
+### Findings (read-only, no code changes)
+
+**DI-1 — `canonical_key` root cause confirmed:** `document_families.id` is a plain autoincrement surrogate with no unique natural-key constraint. `local_ingest.py:200-206` already upserts on `metadata_['canonical_law_id']` (so routine re-ingest preserves IDs), but a DB wipe/re-seed resets the sequence → wholesale ID churn as the consumer observed. Fix: promote `canonical_law_id` to a first-class `canonical_key` column with UNIQUE constraint, backfill, and surface it in `get_extractions_page`. Value already exists in `fact_laws.csv` header (`canonical_law_id` column); ~80% of rows are `TMP-*` placeholders.
+
+**DI-2 — Family 114 SC/TX mismatch:** Confirmed structural gap — no seed-time URL-vs-jurisdiction check exists. `src/core/jurisdiction_check.py` catches text-level jurisdiction mismatches at extraction time but not at URL ingest time. Correct the CSV row; add seed-time guard.
+
+**DI-3 — URL wrappers:** `local_ingest.py:303` stores `primary_source_url` verbatim. Values like `https://r.jina.ai/http://legiscan.com/...` and `infobytes.orrick.com/...` originate from tracker CSV columns and `law_fulltext_report.csv`. No normalization exists.
+
+**DI-4 — `ambiguity` type vs. `interpretation_risks`:** Ambiguity agent archived at `src/ingestion/_archived/ambiguity_agent.py`. Findings now embedded as `interpretation_risks` on `ObligationPayload` and `RightsProtectionPayload` (`src/schemas/extraction.py:238-241, 504-509`). Consumer's snapshot handler (`EXTRACTION_ONTOLOGY §2a`) still treats `ambiguity` as a live top-level type — will go silently empty as legacy rows age out.
+
+**DI-5 — RLS:** 11 tables have RLS disabled on the RC Supabase project. Confirmed from consumer's report (not directly inspectable from repo).
+
+**Per-agent refactor plan:** Mapped the full agent/extraction architecture. Key finding: `agent_name` is not a column on `extractions` — only `extraction_type` is stored, and agent identity must be reverse-inferred from `AGENT_EXTRACTION_TYPES` at `extractor.py:587`. `ExtractionAttempt.agent_name` exists as a sibling table. Plan for Phases A–E added to tasks.md.
+
+---
+
 ## Recently Completed (2026-06-21) — Extraction Validation Pipeline Improvements (Phases 1–4)
 
 **Branch**: `claude/brave-lamport-d9zgjx` (pending merge to main)
