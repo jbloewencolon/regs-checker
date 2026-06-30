@@ -17,8 +17,8 @@
 - Always verify DB connection before writing migration/sync code
 
 ## LLM
-- All extraction uses **local models** via LM Studio (http://localhost:1234)
-- Default model: `google/gemma-4-26b-a4b` on AMD Radeon AI PRO R9700
+- **Primary**: NVIDIA hosted API (`integrate.api.nvidia.com`) — `openai/gpt-oss-120b` for heavy agents, `meta/llama-3.1-8b-instruct` for triage/definition_actor/preemption. Requires `NVIDIA_API_KEY` in `.env`.
+- **Fallback**: LM Studio (local, http://localhost:1234) with `google/gemma-4-26b-a4b` — switch via `"provider": "local"` in `config/agent_models.json`.
 - No Anthropic API — the AnthropicProvider has been archived
 
 ## Code Changes

@@ -19,7 +19,7 @@
 > `GROUP BY agent_name` before Phase 1a.** Plan §3.
 
 ### Phase 1 — Foundation: trustworthy, measurable, non-destructive runs (now)
-- ✅ Model pin — `CLAUDE.md` → `google/gemma-4-26b-a4b`; 6+3 agents.
+- ✅ Model pin — NVIDIA primary: `openai/gpt-oss-120b` (heavy agents) + `meta/llama-3.1-8b-instruct` (triage/definition_actor/preemption); local Gemma fallback retained in `config/agent_models.json`. 6+3 agents.
 - ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)* **Operator query: `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name;`**
 - ✅ **1b** — run versioning: `ExtractionRun` model + Alembic migration `m9j5k1l3h814` + nullable `run_id` FK on `extractions`/`bill_level_extractions` + run creation/finalization in `run_extraction()`. Purge kept for now; query-filter refactor deferred to when serving-run queries land. *(SDPA, BE, DevOps)*
 - ✅ **1c** — **metric schema** (C-2 fix): `TokenUsageSummary` extended with `clause_level_*`/`bill_level_*` token buckets, `abstention_count`, `error_count`, `extraction_item_count`, `llm_call_count`; `run_summary.json` now emits named counters with `scope` annotation; `agent_stats.json` emits matching `scope`/`scope_note`. All call sites updated. Tests updated + passing. *(BE)*
@@ -275,8 +275,8 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ### Operator actions (need live machine + DB)
 - **Run `alembic upgrade head`** — migration `l8i4j0k2g713` adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table.
-- **Selective triage reset** — Re-triage ~19 passages that failed with `finish_reason=length` (Gemma token exhaustion, now fixed). Triage page → Reset Failed → re-run triage.
-- **Run Extract All (Step 3)** — unblocks everything: bill_level_extractions, Phase 1.H, concept grouping, confidence recompute, taxonomy Phases 1–2. Model: `google/gemma-4-26b-a4b`, 6 passage agents + 3 bill-level agents. 16 quarantined laws will be skipped (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
+- **Selective triage reset** — Re-triage any passages that failed with `finish_reason=length`. Triage page → Reset Failed → re-run triage.
+- **Run Extract All (Step 3)** — unblocks everything: bill_level_extractions, Phase 1.H, concept grouping, confidence recompute, taxonomy Phases 1–2. Provider: NVIDIA (`openai/gpt-oss-120b` + `meta/llama-3.1-8b-instruct`), 6 passage agents + 3 bill-level agents. 16 quarantined laws will be skipped (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
 - **After extraction:** Run `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name` (1a check), then Verify step, then `python -m src.scripts.group_concepts`, then sync (Steps 5→6).
 - **Obtain correct source text for 16 quarantined laws** — Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
 
