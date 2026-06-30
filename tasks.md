@@ -297,18 +297,12 @@ Law-card data model, applicability product, API, productionization — resume on
 > **See handoff response drafted below for the full answer to send them.**
 
 ### DI-1 — Promote `canonical_law_id` to a first-class stable `canonical_key` column *(blocking durability — do first)*
-**Why:** `canonical_law_id` already exists in `document_families.metadata_['canonical_law_id']`
-and drives the upsert logic in `local_ingest.py`. But it has no UNIQUE constraint, is not
-indexed as a column, and is not surfaced in `get_extractions_page`. Promoting it makes the
-bridge durable across any DB wipe or re-seed.
-
-**Tasks:**
-- Alembic migration: add `canonical_key VARCHAR(200) UNIQUE NOT NULL` to `document_families`; backfill from `metadata_->>'canonical_law_id'`.
-- `src/ingestion/local_ingest.py`: switch the upsert lookup from the JSONB query (`metadata_["canonical_law_id"].astext == ...`) to the new column for performance + enforceability.
+✅ **Local code complete** (migration `a3b9c5d7e028` + ORM + `local_ingest.py`). Remaining operator steps:
+- `alembic upgrade head` on operator machine (migration `a3b9c5d7e028`).
 - Supabase migration (on `wjxlimjpaijdogyrqtxc`): alter `document_families` + update `get_extractions_page` RPC to return `canonical_key`, `jurisdiction_code`, `bill_number` alongside `family_id`. After deploy: `NOTIFY pgrst, 'reload schema';`.
 - Add `canonical_key` to the `sync_extractions.py` payload so it flows to `synced_extractions` and the consumer can join on it.
 
-**Acceptance:** Consumer can join `law_document_bridge` on `canonical_key` instead of `family_id`; `family_id` may still be included but is no longer the only join key. Bridge survives a DB wipe as long as `canonical_law_id` values in `fact_laws.csv` don't change.
+**Acceptance:** Consumer can join `law_document_bridge` on `canonical_key` instead of `family_id`; bridge survives a DB wipe as long as `canonical_law_id` values in `fact_laws.csv` don't change.
 
 ### DI-2 — Fix family 114: SC law pointing at TX source URL
 - Correct the `fact_laws.csv` row for South Carolina Real Estate AI Responsibility Law — replace the TX `capitol.texas.gov` URL with the correct SC legislature URL.
@@ -316,9 +310,7 @@ bridge durable across any DB wipe or re-seed.
 - Longer-term: add a **seed-time** URL-vs-jurisdiction guard to `local_ingest.py` (domain of `primary_source_url` must match `jurisdiction_code`; warn/block on mismatch). `src/core/jurisdiction_check.py` already does text-level checks at extraction time; extend to URL at seed time.
 
 ### DI-3 — Strip jina.ai / Orrick URL wrappers
-- `local_ingest.py` currently stores `primary_source_url` verbatim (no normalization). Values like `https://r.jina.ai/http://legiscan.com/...` and `infobytes.orrick.com/...` reduce the consumer's exact-URL match rate.
-- Add a `_normalize_source_url(url: str) -> str` helper: strip `https://r.jina.ai/` prefix to recover the canonical URL. Orrick PDF mirrors have no programmatic fix — flag for manual curation.
-- Estimated impact: consumer currently matches ~105/232 families on URL; stripping jina wrappers recovers a material fraction.
+✅ **Done** — `_normalize_source_url()` added to `local_ingest.py`; strips `https://r.jina.ai/` prefix at seed time. Orrick PDF mirrors have no programmatic fix — flagged for manual curation. Takes effect on next `seed-local` run.
 
 ### DI-4 — Retire `ambiguity` extraction type in downstream docs
 - The `ExtractionType.ambiguity` enum value still exists for legacy row compat but the ambiguity agent is archived (`src/ingestion/_archived/ambiguity_agent.py`). No new ambiguity rows are produced.
@@ -343,14 +335,10 @@ bridge durable across any DB wipe or re-seed.
 > but shares the same branch.
 
 ### Phase A — First-class `agent_name` column *(keystone — do first)*
-- Alembic migration: add indexed `agent_name VARCHAR(100)` column to `extractions` table (nullable for legacy rows).
-- Write `agent_name` at creation time in `extractor.py` — the agent object is in scope when the Extraction row is built.
-- Backfill existing rows from the deterministic reverse map `extraction_type → agent_name` (already implied by `AGENT_EXTRACTION_TYPES` at `extractor.py:587`); cross-check against `ExtractionAttempt.agent_name` where present.
-- Verify `bill_level_extractions` already stores agent identity (it does via `agent_name` column); no change needed there.
+✅ **Done** — migration `a3b9c5d7e028` adds `agent_name VARCHAR(100)` to `extractions`; backfills from type→agent map + ExtractionAttempt cross-check; all three Extraction creation sites in `extractor.py` now write `agent_name`. Operator: run `alembic upgrade head`.
 
 ### Phase B — Per-agent CSV/JSONL outputs
-- Add `?agent=<name>` query param to the existing streaming export endpoints in `dashboard.py` (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Filter is a `WHERE agent_name IN (...)` on the Extraction join.
-- Add `export_by_agent.py` script: iterates all agent names, writes `output/exports/<run_date>/<agent>.csv` per agent plus a combined `all_agents.csv`. Enables offline accuracy comparison across agents.
+✅ **Done** — `?agent=<name>` (comma-separated) added to all three dashboard export endpoints (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Exports now include `agent_name` and `canonical_key` columns. `src/scripts/export_by_agent.py` writes one CSV per agent + `all_agents.csv` to `output/exports/<date>/`. Supports `--agents`, `--include-needs-review`, `--dry-run`.
 
 ### Phase C — Selective sync by agent
 - Add `--agents <name,...>` / `--exclude-agents <name,...>` flags to `sync_to_supabase.py` (Leg 1) and `sync_extractions.py` (Leg 2). Default = all agents (no behavior change).

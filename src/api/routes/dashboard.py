@@ -2210,11 +2210,14 @@ def export_failed_extractions_csv(db: Session = Depends(get_db)) -> StreamingRes
 def export_low_confidence_extractions_csv(
     db: Session = Depends(get_db),
     tier: str | None = None,
+    agent: str | None = None,
 ) -> StreamingResponse:
     """Download low-confidence extractions (Tier C and/or D) as CSV for LLM review.
 
     Query params:
       - tier: filter by 'C', 'D', or 'C,D' (default: both)
+      - agent: comma-separated agent name(s) to filter (e.g. 'obligation' or
+               'obligation,threshold_exception'). Default: all agents.
     """
     import csv
     import io
@@ -2231,6 +2234,8 @@ def export_low_confidence_extractions_csv(
     else:
         tiers_to_export = [ConfidenceTier.C, ConfidenceTier.D]
 
+    agent_names = [a.strip() for a in agent.split(",")] if agent else []
+
     # Fetch extractions with full context
     query = (
         select(Extraction, NormalizedSourceRecord, DocumentVersion)
@@ -2239,9 +2244,15 @@ def export_low_confidence_extractions_csv(
         .where(Extraction.confidence_tier.in_(tiers_to_export))
         .order_by(Extraction.confidence_score.asc(), Extraction.created_at.desc())
     )
+    if agent_names:
+        query = query.where(Extraction.agent_name.in_(agent_names))
 
     rows = db.execute(query).all()
 
+    filename = (
+        f"low_confidence_{'_'.join(agent_names)}.csv" if agent_names
+        else "low_confidence_extractions.csv"
+    )
     buf = io.StringIO()
     buf.write(
         "# DISCLAIMER: Informational only — not legal advice. "
@@ -2250,6 +2261,7 @@ def export_low_confidence_extractions_csv(
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id",
+        "agent_name",
         "law_jurisdiction",
         "law_title",
         "extraction_type",
@@ -2279,6 +2291,7 @@ def export_low_confidence_extractions_csv(
 
         writer.writerow([
             ext.id,
+            ext.agent_name or "",
             jurisdiction,
             doc_family.canonical_title if doc_family else "",
             ext.extraction_type.value,
@@ -2296,7 +2309,7 @@ def export_low_confidence_extractions_csv(
     return StreamingResponse(
         iter([buf.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=low_confidence_extractions.csv"},
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
@@ -2380,12 +2393,18 @@ def export_low_confidence_extractions_jsonl(
 # ---------------------------------------------------------------------------
 
 @router.get("/api/admitted/export.csv")
-def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingResponse:
+def export_admitted_extractions_csv(
+    db: Session = Depends(get_db),
+    agent: str | None = None,
+) -> StreamingResponse:
     """Download the admitted extraction set as CSV.
 
     Admitted = at least one verified evidence span, OR confidence tier A/B/C
     (tracker-confirmed).  Excludes Tier-D extractions with zero verified spans
     (those go to needs_review / the review queue).
+
+    Query params:
+      - agent: comma-separated agent name(s) (e.g. 'obligation'). Default: all agents.
     """
     import csv
     import io
@@ -2394,13 +2413,20 @@ def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingR
     from src.core.admission import ADMITTED, compute_admission_status
     from src.db.models import NormalizedSourceRecord
 
+    agent_names = [a.strip() for a in agent.split(",")] if agent else []
     query = (
         select(Extraction, NormalizedSourceRecord, DocumentVersion)
         .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
         .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
         .order_by(Extraction.confidence_tier, Extraction.confidence_score.desc())
     )
+    if agent_names:
+        query = query.where(Extraction.agent_name.in_(agent_names))
     rows = db.execute(query).all()
+    filename = (
+        f"admitted_{'_'.join(agent_names)}.csv" if agent_names
+        else "admitted_extractions.csv"
+    )
 
     buf = io.StringIO()
     buf.write(
@@ -2410,9 +2436,11 @@ def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingR
     writer = csv.writer(buf)
     writer.writerow([
         "extraction_id",
+        "agent_name",
         "admission_status",
         "law_jurisdiction",
         "law_title",
+        "canonical_key",
         "extraction_type",
         "confidence_score",
         "confidence_tier",
@@ -2438,9 +2466,11 @@ def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingR
 
         writer.writerow([
             ext.id,
+            ext.agent_name or "",
             status,
             jurisdiction,
             doc_family.canonical_title if doc_family else "",
+            doc_family.canonical_key if doc_family else "",
             ext.extraction_type.value,
             f"{ext.confidence_score:.3f}",
             ext.confidence_tier.value,
@@ -2455,29 +2485,42 @@ def export_admitted_extractions_csv(db: Session = Depends(get_db)) -> StreamingR
     return StreamingResponse(
         iter([buf.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=admitted_extractions.csv"},
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
 @router.get("/api/admitted/export.jsonl")
-def export_admitted_extractions_jsonl(db: Session = Depends(get_db)) -> StreamingResponse:
+def export_admitted_extractions_jsonl(
+    db: Session = Depends(get_db),
+    agent: str | None = None,
+) -> StreamingResponse:
     """Download the admitted extraction set as JSONL (one JSON object per line).
 
     Same admission filter as the CSV endpoint.  Each line carries full context:
     law metadata, passage text, evidence spans, and extraction payload.
+
+    Query params:
+      - agent: comma-separated agent name(s) (e.g. 'obligation'). Default: all agents.
     """
     import json as _json
 
     from src.core.admission import ADMITTED, compute_admission_status
     from src.db.models import NormalizedSourceRecord
 
+    agent_names = [a.strip() for a in agent.split(",")] if agent else []
     query = (
         select(Extraction, NormalizedSourceRecord, DocumentVersion)
         .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
         .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
         .order_by(Extraction.confidence_tier, Extraction.confidence_score.desc())
     )
+    if agent_names:
+        query = query.where(Extraction.agent_name.in_(agent_names))
     rows = db.execute(query).all()
+    out_filename = (
+        f"admitted_{'_'.join(agent_names)}.jsonl" if agent_names
+        else "admitted_extractions.jsonl"
+    )
 
     def generate():
         yield _json.dumps({
@@ -2496,6 +2539,7 @@ def export_admitted_extractions_jsonl(db: Session = Depends(get_db)) -> Streamin
             obj = {
                 "extraction": {
                     "id": ext.id,
+                    "agent_name": ext.agent_name,
                     "type": ext.extraction_type.value,
                     "confidence_score": float(ext.confidence_score),
                     "confidence_tier": ext.confidence_tier.value,
@@ -2512,6 +2556,7 @@ def export_admitted_extractions_jsonl(db: Session = Depends(get_db)) -> Streamin
                         if doc_family and doc_family.source else "Unknown"
                     ),
                     "title": doc_family.canonical_title if doc_family else "",
+                    "canonical_key": doc_family.canonical_key if doc_family else None,
                     "bill_number": dv.bill_number,
                     "session_year": dv.session_year,
                 },
@@ -2527,7 +2572,7 @@ def export_admitted_extractions_jsonl(db: Session = Depends(get_db)) -> Streamin
     return StreamingResponse(
         generate(),
         media_type="application/x-ndjson",
-        headers={"Content-Disposition": "attachment; filename=admitted_extractions.jsonl"},
+        headers={"Content-Disposition": f"attachment; filename={out_filename}"},
     )
 def reset_extractions(db: Session = Depends(get_db)) -> HTMLResponse:
     """Clear all extractions and extraction jobs so passages can be re-extracted.
