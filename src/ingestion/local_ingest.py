@@ -119,6 +119,22 @@ def _temporal_status_from_csv(status_id: str) -> TemporalStatus:
 # Regulatory category derivation
 # ---------------------------------------------------------------------------
 
+def _normalize_source_url(url: str) -> str:
+    """Strip known wrapper prefixes so primary_source_url holds the canonical URL.
+
+    Removes the Jina AI proxy prefix (``https://r.jina.ai/<url>``), which is
+    stored verbatim in some tracker exports and breaks consumers doing exact-URL
+    matching against .gov sources.  Orrick PDF mirrors have no programmatic fix
+    and are left unchanged for manual curation.
+    """
+    if not url:
+        return url
+    jina_prefix = "https://r.jina.ai/"
+    if url.startswith(jina_prefix):
+        url = url[len(jina_prefix):]
+    return url
+
+
 def _derive_regulatory_category(ai_scope_summary: str, title: str) -> str:
     """Map ai_scope_summary / title text to a human-readable regulatory category.
 
@@ -197,13 +213,22 @@ def seed_from_csv(
             stats["errors"] += 1
             continue
 
-        # Check if family already exists (by canonical_law_id in metadata)
+        # Check if family already exists (by canonical_key column — DI-1).
+        # Falls back to the JSONB path for rows seeded before the migration.
         existing = (
+            db.query(DocumentFamily)
+            .filter(DocumentFamily.canonical_key == canonical_law_id)
+            .first()
+        ) or (
             db.query(DocumentFamily)
             .filter(DocumentFamily.metadata_["canonical_law_id"].astext == canonical_law_id)
             .first()
         )
         if existing:
+            # Back-fill canonical_key if this family was seeded before migration (DI-1).
+            if existing.canonical_key is None:
+                existing.canonical_key = canonical_law_id
+                db.flush()
             # Self-heal: a partial reset can delete ingestion_jobs while leaving
             # the family + version behind (FK-blocked deletes on the parent rows).
             # Without a job, neither "Parse Documents" nor ingest will ever touch
@@ -268,9 +293,11 @@ def seed_from_csv(
             db.add(source)
             db.flush()
 
-        # Resolve source URL from fulltext report
+        # Resolve source URL from fulltext report; strip known proxy wrappers (DI-3).
         report_entry = fulltext_report.get(canonical_law_id, {})
-        source_url = report_entry.get("url", row.get("source_url", ""))
+        source_url = _normalize_source_url(
+            report_entry.get("url", row.get("source_url", ""))
+        )
 
         title = row.get("title", "").strip()
         bill_number = row.get("bill_number", "").strip()
@@ -297,6 +324,7 @@ def seed_from_csv(
 
         family = DocumentFamily(
             source_id=source.id,
+            canonical_key=canonical_law_id,
             canonical_title=canonical_title,
             short_cite=bill_number or canonical_law_id,
             subject_area="artificial_intelligence",

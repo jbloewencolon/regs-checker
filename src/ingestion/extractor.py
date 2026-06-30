@@ -1520,6 +1520,7 @@ def extract_single_record(
                     extraction_kwargs: dict[str, Any] = dict(
                         source_record_id=source_record.id,
                         extraction_type=resolved_type,
+                        agent_name=name,
                         payload=item,
                         evidence_spans=evidence,
                         confidence_score=confidence.total_score,
@@ -2677,6 +2678,7 @@ def run_retry_failed(
                         extraction_kwargs: dict = dict(
                             source_record_id=record_id,
                             extraction_type=resolved_type,
+                            agent_name=agent_name,
                             payload=item,
                             evidence_spans=evidence,
                             confidence_score=confidence.total_score,
@@ -3075,6 +3077,7 @@ def run_recovery_extraction(
                             extraction = Extraction(
                                 source_record_id=record.id,
                                 extraction_type=resolved_type,
+                                agent_name=agent_name,
                                 payload=item,
                                 evidence_spans=evidence,
                                 confidence_score=confidence.total_score,
