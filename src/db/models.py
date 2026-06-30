@@ -191,6 +191,7 @@ class DocumentFamily(Base):
     canonical_title = Column(Text, nullable=False)
     short_cite = Column(String(200))
     subject_area = Column(String(200))
+    canonical_key = Column(String(200), nullable=True, index=True)  # stable join key (DI-1)
     primary_source_url = Column(Text)  # Direct .gov / legislature link to bill text
     orrick_reference_url = Column(Text)  # Orrick AI Law Center reference page
     iapp_reference_url = Column(Text)  # IAPP US AI Legislation Tracker PDF
@@ -388,6 +389,7 @@ class Extraction(Base):
     run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
     payload_hash = Column(String(64), nullable=True, index=True)  # SHA-256 of normalized payload
     model_agreement_count = Column(Integer, nullable=False, default=0, server_default="0")
+    agent_name = Column(String(100), nullable=True, index=True)  # producing agent (Phase A)
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

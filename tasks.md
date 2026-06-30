@@ -19,7 +19,7 @@
 > `GROUP BY agent_name` before Phase 1a.** Plan §3.
 
 ### Phase 1 — Foundation: trustworthy, measurable, non-destructive runs (now)
-- ✅ Model pin — `CLAUDE.md` → `google/gemma-4-26b-a4b`; 6+3 agents.
+- ✅ Model pin — NVIDIA primary: `openai/gpt-oss-120b` (heavy agents) + `meta/llama-3.1-8b-instruct` (triage/definition_actor/preemption); local Gemma fallback retained in `config/agent_models.json`. 6+3 agents.
 - ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)* **Operator query: `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name;`**
 - ✅ **1b** — run versioning: `ExtractionRun` model + Alembic migration `m9j5k1l3h814` + nullable `run_id` FK on `extractions`/`bill_level_extractions` + run creation/finalization in `run_extraction()`. Purge kept for now; query-filter refactor deferred to when serving-run queries land. *(SDPA, BE, DevOps)*
 - ✅ **1c** — **metric schema** (C-2 fix): `TokenUsageSummary` extended with `clause_level_*`/`bill_level_*` token buckets, `abstention_count`, `error_count`, `extraction_item_count`, `llm_call_count`; `run_summary.json` now emits named counters with `scope` annotation; `agent_stats.json` emits matching `scope`/`scope_note`. All call sites updated. Tests updated + passing. *(BE)*
@@ -275,8 +275,8 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ### Operator actions (need live machine + DB)
 - **Run `alembic upgrade head`** — migration `l8i4j0k2g713` adds `duration_ms`, `input_tokens`, `output_tokens` to `extractions` table.
-- **Selective triage reset** — Re-triage ~19 passages that failed with `finish_reason=length` (Gemma token exhaustion, now fixed). Triage page → Reset Failed → re-run triage.
-- **Run Extract All (Step 3)** — unblocks everything: bill_level_extractions, Phase 1.H, concept grouping, confidence recompute, taxonomy Phases 1–2. Model: `google/gemma-4-26b-a4b`, 6 passage agents + 3 bill-level agents. 16 quarantined laws will be skipped (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
+- **Selective triage reset** — Re-triage any passages that failed with `finish_reason=length`. Triage page → Reset Failed → re-run triage.
+- **Run Extract All (Step 3)** — unblocks everything: bill_level_extractions, Phase 1.H, concept grouping, confidence recompute, taxonomy Phases 1–2. Provider: NVIDIA (`openai/gpt-oss-120b` + `meta/llama-3.1-8b-instruct`), 6 passage agents + 3 bill-level agents. 16 quarantined laws will be skipped (see `output/law_texts_quarantine/NEEDED_SOURCES.md`).
 - **After extraction:** Run `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name` (1a check), then Verify step, then `python -m src.scripts.group_concepts`, then sync (Steps 5→6).
 - **Obtain correct source text for 16 quarantined laws** — Place correct bill text in `output/law_texts/<canonical_law_id>.txt`.
 
@@ -297,18 +297,12 @@ Law-card data model, applicability product, API, productionization — resume on
 > **See handoff response drafted below for the full answer to send them.**
 
 ### DI-1 — Promote `canonical_law_id` to a first-class stable `canonical_key` column *(blocking durability — do first)*
-**Why:** `canonical_law_id` already exists in `document_families.metadata_['canonical_law_id']`
-and drives the upsert logic in `local_ingest.py`. But it has no UNIQUE constraint, is not
-indexed as a column, and is not surfaced in `get_extractions_page`. Promoting it makes the
-bridge durable across any DB wipe or re-seed.
-
-**Tasks:**
-- Alembic migration: add `canonical_key VARCHAR(200) UNIQUE NOT NULL` to `document_families`; backfill from `metadata_->>'canonical_law_id'`.
-- `src/ingestion/local_ingest.py`: switch the upsert lookup from the JSONB query (`metadata_["canonical_law_id"].astext == ...`) to the new column for performance + enforceability.
+✅ **Local code complete** (migration `a3b9c5d7e028` + ORM + `local_ingest.py`). Remaining operator steps:
+- `alembic upgrade head` on operator machine (migration `a3b9c5d7e028`).
 - Supabase migration (on `wjxlimjpaijdogyrqtxc`): alter `document_families` + update `get_extractions_page` RPC to return `canonical_key`, `jurisdiction_code`, `bill_number` alongside `family_id`. After deploy: `NOTIFY pgrst, 'reload schema';`.
 - Add `canonical_key` to the `sync_extractions.py` payload so it flows to `synced_extractions` and the consumer can join on it.
 
-**Acceptance:** Consumer can join `law_document_bridge` on `canonical_key` instead of `family_id`; `family_id` may still be included but is no longer the only join key. Bridge survives a DB wipe as long as `canonical_law_id` values in `fact_laws.csv` don't change.
+**Acceptance:** Consumer can join `law_document_bridge` on `canonical_key` instead of `family_id`; bridge survives a DB wipe as long as `canonical_law_id` values in `fact_laws.csv` don't change.
 
 ### DI-2 — Fix family 114: SC law pointing at TX source URL
 - Correct the `fact_laws.csv` row for South Carolina Real Estate AI Responsibility Law — replace the TX `capitol.texas.gov` URL with the correct SC legislature URL.
@@ -316,9 +310,7 @@ bridge durable across any DB wipe or re-seed.
 - Longer-term: add a **seed-time** URL-vs-jurisdiction guard to `local_ingest.py` (domain of `primary_source_url` must match `jurisdiction_code`; warn/block on mismatch). `src/core/jurisdiction_check.py` already does text-level checks at extraction time; extend to URL at seed time.
 
 ### DI-3 — Strip jina.ai / Orrick URL wrappers
-- `local_ingest.py` currently stores `primary_source_url` verbatim (no normalization). Values like `https://r.jina.ai/http://legiscan.com/...` and `infobytes.orrick.com/...` reduce the consumer's exact-URL match rate.
-- Add a `_normalize_source_url(url: str) -> str` helper: strip `https://r.jina.ai/` prefix to recover the canonical URL. Orrick PDF mirrors have no programmatic fix — flag for manual curation.
-- Estimated impact: consumer currently matches ~105/232 families on URL; stripping jina wrappers recovers a material fraction.
+✅ **Done** — `_normalize_source_url()` added to `local_ingest.py`; strips `https://r.jina.ai/` prefix at seed time. Orrick PDF mirrors have no programmatic fix — flagged for manual curation. Takes effect on next `seed-local` run.
 
 ### DI-4 — Retire `ambiguity` extraction type in downstream docs
 - The `ExtractionType.ambiguity` enum value still exists for legacy row compat but the ambiguity agent is archived (`src/ingestion/_archived/ambiguity_agent.py`). No new ambiguity rows are produced.
@@ -343,14 +335,10 @@ bridge durable across any DB wipe or re-seed.
 > but shares the same branch.
 
 ### Phase A — First-class `agent_name` column *(keystone — do first)*
-- Alembic migration: add indexed `agent_name VARCHAR(100)` column to `extractions` table (nullable for legacy rows).
-- Write `agent_name` at creation time in `extractor.py` — the agent object is in scope when the Extraction row is built.
-- Backfill existing rows from the deterministic reverse map `extraction_type → agent_name` (already implied by `AGENT_EXTRACTION_TYPES` at `extractor.py:587`); cross-check against `ExtractionAttempt.agent_name` where present.
-- Verify `bill_level_extractions` already stores agent identity (it does via `agent_name` column); no change needed there.
+✅ **Done** — migration `a3b9c5d7e028` adds `agent_name VARCHAR(100)` to `extractions`; backfills from type→agent map + ExtractionAttempt cross-check; all three Extraction creation sites in `extractor.py` now write `agent_name`. Operator: run `alembic upgrade head`.
 
 ### Phase B — Per-agent CSV/JSONL outputs
-- Add `?agent=<name>` query param to the existing streaming export endpoints in `dashboard.py` (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Filter is a `WHERE agent_name IN (...)` on the Extraction join.
-- Add `export_by_agent.py` script: iterates all agent names, writes `output/exports/<run_date>/<agent>.csv` per agent plus a combined `all_agents.csv`. Enables offline accuracy comparison across agents.
+✅ **Done** — `?agent=<name>` (comma-separated) added to all three dashboard export endpoints (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Exports now include `agent_name` and `canonical_key` columns. `src/scripts/export_by_agent.py` writes one CSV per agent + `all_agents.csv` to `output/exports/<date>/`. Supports `--agents`, `--include-needs-review`, `--dry-run`.
 
 ### Phase C — Selective sync by agent
 - Add `--agents <name,...>` / `--exclude-agents <name,...>` flags to `sync_to_supabase.py` (Leg 1) and `sync_extractions.py` (Leg 2). Default = all agents (no behavior change).

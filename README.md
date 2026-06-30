@@ -9,8 +9,10 @@ AI-powered regulatory obligation extraction and compliance serving platform. Ing
 | Laws in CSV | 232 |
 | Passage-level agents | 6 (obligation, definition_actor, threshold_exception, rights_protection, compliance_mechanism, preemption) |
 | Bill-level agents | 3 (enforcement, applicability, compliance_timeline) |
-| Default extraction model | `google/gemma-4-26b-a4b` (all agents) |
-| LLM runtime | LM Studio (local, http://localhost:1234) |
+| Primary extraction model | `openai/gpt-oss-120b` via NVIDIA API (clause + bill-level agents) |
+| Secondary extraction model | `meta/llama-3.1-8b-instruct` via NVIDIA API (triage, definition_actor, preemption) |
+| LLM runtime | NVIDIA hosted API (`integrate.api.nvidia.com`) — requires `NVIDIA_API_KEY` |
+| Fallback runtime | LM Studio (local, http://localhost:1234) — `provider: local` in `agent_models.json` |
 | Local database | Docker Postgres on port 5434 |
 | Dashboard | http://localhost:8000/dashboard |
 
@@ -138,7 +140,7 @@ src/
     orrick_validation.py  # Token Jaccard similarity vs Orrick metadata
     summary_generator.py  # Abstraction presentation layer (deterministic templates)
     run_archiver.py       # Active session folder; archives on reset
-    llm_provider.py       # LocalLLMProvider (LM Studio / vLLM / llama.cpp); Gemma support
+    llm_provider.py       # LocalLLMProvider + NvidiaLLMProvider; provider selected by agent_models.json
     payload_adapter.py    # Regs Checker → Policy Navigator payload format adapter
     config.py             # Settings (env vars, model config)
     bill_context.py       # Per-bill definitions + scope + enforcement context injection
@@ -189,7 +191,9 @@ All 6 agents run against each AI-relevant passage via signal-based routing. Rout
 | `compliance_mechanism` | Audits, bias testing, red teaming, NIST, reporting, data retention |
 | `preemption` | Federal preemption signals, Commerce Clause tensions, cross-law references |
 
-All agents use `google/gemma-4-26b-a4b` with token doubling enabled (Gemma's thinking blocks consume half the output budget).
+**NVIDIA provider (active):** Heavy agents (`obligation`, `threshold_exception`, `compliance_mechanism`, `rights_protection`, bill-level agents) use `openai/gpt-oss-120b`. Lighter agents (`triage`, `definition_actor`, `preemption`) use `meta/llama-3.1-8b-instruct`. Configure via `config/agent_models.json` → `"provider": "nvidia"`.
+
+**Local fallback:** Switching `"provider"` to `"local"` routes all agents through LM Studio at `http://localhost:1234`. Local config defaults to `google/gemma-4-26b-a4b`.
 
 **Bill enforcement context:** The obligation agent receives a curated `BILL ENFORCEMENT & PENALTIES` context block assembled from enforcement-pattern sections of the same bill, enabling cross-section penalty attribution.
 
@@ -218,16 +222,16 @@ Bill-level extractions upsert on `(document_version_id, agent_name)` — re-runs
 
 ## Confidence Scoring
 
-Each extraction receives a confidence score (0.0–1.0) and tier (A/B/C/D) from 6 components:
+Each extraction receives a confidence score (0.0–1.0) and tier (A/B/C/D). Active weighted signals:
 
 | Component | Weight | Notes |
 |---|---|---|
-| Schema validity | 10% | Pydantic v2 validation pass/fail |
-| Evidence grounding | 20% | Proportion of evidence spans verified by string match; broad-span penalty |
-| Completeness | 10% | Proportion of optional fields populated; section reference quality sub-signal |
-| Source quality | 5% | Parse quality score from ingestion |
-| **Orrick alignment** | **30%** | Token Jaccard similarity vs Orrick key_requirements + enforcement |
-| Cross-validation | 25% | Post-extraction accuracy score (redistributed if not yet run) |
+| **Orrick alignment** | **50%** | Token Jaccard similarity vs Orrick key_requirements + enforcement |
+| **Evidence grounding** | **35%** | Proportion of evidence spans verified by 4-tier string match; broad-span penalty |
+| Citation quality | 15% | Section reference specificity (subsection > § > generic) |
+| Cross-validation | +10% (phases in) | Second-LLM CV score; scales base weights by 0.90 when present |
+
+Diagnostic-only (not in weighted total): schema validity, completeness, source quality, source_grounding_score, tracker_alignment_score, schema_completeness_score.
 
 **Orrick Gate:** If no Orrick data exists for the law, the extraction is automatically **Tier D** regardless of other scores. Use `--mode enrich-orrick` to generate Orrick summaries for IAPP-only laws and break this gate.
 
@@ -250,15 +254,30 @@ Extraction payloads contain deterministic data (booleans, integers, verbatim quo
 
 ## LLM Provider
 
-All extraction uses local models via the OpenAI-compatible API (LM Studio, vLLM, llama.cpp, Ollama).
+Two providers are supported, selected by `"provider"` in `config/agent_models.json`:
 
-Key behaviors in `LocalLLMProvider`:
-- **Token doubling** for reasoning models (Gemma, DeepSeek-R1, Qwen3): sends `max_tokens × 2` to reserve half for `<think>` blocks.
+### NVIDIA (active — `"provider": "nvidia"`)
+
+Routes calls to `integrate.api.nvidia.com` via `NvidiaLLMProvider`. Requires `NVIDIA_API_KEY` in `.env`.
+
+Key behaviors:
+- **Per-agent model routing**: `openai/gpt-oss-120b` for complex agents; `meta/llama-3.1-8b-instruct` for lighter agents.
+- **reasoning_effort coercion**: NVIDIA accepts `low`/`medium`/`high` only — `off`/`none`/`disabled` are coerced to `low` automatically.
+- **Transport-error retry**: `httpx.TransportError` (RemoteProtocolError, ReadTimeout, ConnectError) retried with exponential backoff (1/2/4/8/16 s, 5 attempts).
+- **429 rate-limit retry**: same backoff on quota exhaustion.
+- **Think-block stripping**: removes `<think>...</think>` reasoning traces from output before JSON parsing (gpt-oss emits these).
+- **Bare-array normalization**: top-level JSON arrays (from llama-3.1-8b) normalized to `{"extractions": [...]}` envelope.
+
+### Local fallback (`"provider": "local"`)
+
+Routes calls to LM Studio (or any OpenAI-compatible local server) at `REGS_LOCAL_LLM_URL` (default `http://localhost:1234`). Local config defaults to `google/gemma-4-26b-a4b`.
+
+Key behaviors:
+- **Token doubling** for reasoning models (Gemma, DeepSeek-R1, Qwen3, gpt-oss): sends `max_tokens × 2` to reserve half for `<think>` blocks.
 - **Adaptive retry** on token exhaustion (`stop_reason="length"`): doubles budget up to `local_extraction_max_tokens` cap.
 - **reasoning_effort caching**: caches models that reject the parameter (HTTP 400) so subsequent calls skip it.
 - **Channel-thought recovery**: if Gemma emits `<|channel>thought` tokens that LM Studio can't parse (HTTP 400), extracts the JSON from the error body after the `<channel|>` marker.
-- **Loop detection**: detects repetitive output and truncates at the third repetition; returns `stop_reason="loop"` (does not escalate token budget on retry).
-- **Think-block stripping**: removes `<think>...</think>` and unclosed `<think>...` from output before JSON parsing.
+- **Loop detection**: detects repetitive output and truncates at the third repetition; returns `stop_reason="loop"`.
 
 Per-agent model, token budget, and temperature are configured in `config/agent_models.json` and hot-reloadable via the `/dashboard/models` page.
 
@@ -299,9 +318,11 @@ The `v_state_ai_regulation_matrix` view in Policy Navigator assembles all of the
 | Variable | Purpose |
 |---|---|
 | `REGS_DATABASE_URL` | Local Docker Postgres (`postgresql://regs:regs@127.0.0.1:5434/regs_checker`) |
-| `REGS_LOCAL_LLM_URL` | Local LLM endpoint (default: `http://localhost:1234`) |
-| `REGS_LOCAL_LLM_MODEL` | Default model for discovery tasks |
-| `REGS_LOCAL_EXTRACTION_MODEL` | Base model for extraction tasks (overridden per-agent by `agent_models.json`) |
+| `NVIDIA_API_KEY` | API key for `integrate.api.nvidia.com` (required when `provider=nvidia`) |
+| `REGS_EXTRACTION_PROVIDER` | `nvidia` (default) or `local` — selects provider at startup |
+| `REGS_LOCAL_LLM_URL` | Local LLM endpoint for the `local` provider (default: `http://localhost:1234`) |
+| `REGS_LOCAL_LLM_MODEL` | Default model for discovery tasks (local provider only) |
+| `REGS_LOCAL_EXTRACTION_MODEL` | Base model for extraction tasks when using the local provider |
 | `REGS_SUPABASE_URL` | Regs Checker Supabase connection string |
 | `REGS_POLICY_NAVIGATOR_URL` | Policy Navigator Supabase connection string |
 | `REGS_API_PORT` | Dashboard port (default: `8000`) |
@@ -317,7 +338,7 @@ See `SETUP.md` for the full `.env` template.
 - **Lossless extraction, lossy presentation:** The pipeline extracts strict booleans/integers/quotes. Plain-English summaries are generated separately and never feed back into downstream systems.
 - **Recall over precision for agent selection:** Signal-based routing skips clearly-irrelevant agents; falls back to all agents when uncertain. False positives (abstentions) are cheap. False negatives (missed obligations) are not acceptable for audit-grade work.
 - **Product-table population:** Bill-level agents produce one structured record per law mapped directly to product tables (`law_enforcement_details`, `law_triggering_thresholds`, `law_obligation_flags`), enabling compliance decision support without cross-section reasoning at passage level.
-- **Local-first inference:** All LLM calls use local models via the OpenAI-compatible API. No cloud API keys required for extraction.
+- **Provider-switchable inference:** Extraction runs against either the NVIDIA hosted API (`gpt-oss-120b` + `llama-3.1-8b`) or a local OpenAI-compatible server (LM Studio/Ollama). Provider is set in `agent_models.json`; switching requires no code changes.
 
 ## Documentation
 
