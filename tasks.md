@@ -338,18 +338,20 @@ Law-card data model, applicability product, API, productionization — resume on
 ✅ **Done** — migration `a3b9c5d7e028` adds `agent_name VARCHAR(100)` to `extractions`; backfills from type→agent map + ExtractionAttempt cross-check; all three Extraction creation sites in `extractor.py` now write `agent_name`. Operator: run `alembic upgrade head`.
 
 ### Phase B — Per-agent CSV/JSONL outputs
-✅ **Done** — `?agent=<name>` (comma-separated) added to all three dashboard export endpoints (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Exports now include `agent_name` and `canonical_key` columns. `src/scripts/export_by_agent.py` writes one CSV per agent + `all_agents.csv` to `output/exports/<date>/`. Supports `--agents`, `--include-needs-review`, `--dry-run`.
+✅ **Done** — `?agent=<name>` (comma-separated) added to all three dashboard export endpoints (`/api/admitted/export.csv`, `/api/admitted/export.jsonl`, `/api/low-confidence/export.csv`). Exports now include `agent_name` and `canonical_key` columns. `src/scripts/export_by_agent.py` writes one CSV per agent + `all_agents.csv` to `output/exports/<date>/`. Supports `--agents`, `--include-needs-review`, `--dry-run`. (Fixed a broken `get_session` import in this script that didn't exist in `db/engine.py` — now uses `create_engine(settings.database_url)` + `Session`, matching the other operator scripts.)
+- **Also done** — the pipeline itself now auto-emits per-agent CSVs every run, not just on-demand: `RunArchiver._export_by_agent()` writes `output/extraction_runs/active/by_agent/<agent>.csv` (one file per producing agent, full DB state, same as `extractions.csv`) at the end of every `finalize()` call. `_write_run_snapshot()` switched from a flat-file copy loop to `shutil.copytree(dirs_exist_ok=True)` so the `by_agent/` subfolder is preserved in per-run snapshots (`output/extraction_runs/run_<id>/`) too.
 
 ### Phase C — Selective sync by agent
 - Add `--agents <name,...>` / `--exclude-agents <name,...>` flags to `sync_to_supabase.py` (Leg 1) and `sync_extractions.py` (Leg 2). Default = all agents (no behavior change).
 - When an agent filter is active, use a **per-agent cursor** keyed on `(table, agent_name)` in `sync_cursors` — prevents a global cursor from silently skipping agents that were deferred to a later sync run.
 
 ### Phase D — Re-run individual agents
-- New `src/scripts/rerun_agent.py --agent <name> [--law <canonical_law_id>] [--repurge]`.
-  - Without `--repurge`: idempotent (attempt-state dedup skips already-succeeded passages).
-  - With `--repurge`: deletes only `agent_name = <name>` extraction rows for targeted passages before re-running — scoped purge, not global wipe.
-  - Reuses existing `extract_single_record(db, passage, agents={<name>: instance})` internal API.
-- Enables "re-run obligation agent only" without touching the other 5 clause-level agents.
+✅ **Done** — `src/scripts/rerun_agent.py --agent <name> [--law <canonical_key>] [--repurge] [--dry-run] [--limit N] [--force]`.
+- Without `--repurge`: idempotent (attempt-state dedup skips already-succeeded passages) — reuses `extract_single_record(db, passage, agents={<name>: instance})` verbatim for full parity with the main pipeline's routing/scoring.
+- With `--repurge`: `scoped_purge_agent()` deletes only `agent_name = <name>` extraction rows (+ FK dependents: ReviewAction/ReviewQueueItem/ObligationDependency/ApplicabilityCondition) and clears that agent's `ExtractionAttempt`/`FailedExtractionAttempt` dedup state — scoped, not a global wipe. `--dry-run` previews delete counts first.
+- Rejects bill-level agent names (those already upsert in place via the normal Extract step) and refuses to run if an `extraction_runs` row is `status='running'` unless `--force` is passed (avoids racing a concurrent full run).
+- Bill-level agents (enforcement/applicability/compliance_timeline) don't need this — they already upsert on `(document_version_id, agent_name)`.
+- 6 tests in `test_rerun_agent.py` covering agent classification and CLI validation paths.
 
 ### Phase E — Per-agent accuracy metrics *(the tuning payoff)*
 - `src/scripts/metrics_by_agent.py`: for each agent, compute and print:
