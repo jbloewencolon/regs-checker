@@ -201,6 +201,20 @@ class DocumentFamily(Base):
     source = relationship("Source", back_populates="document_families")
     versions = relationship("DocumentVersion", back_populates="family")
 
+    __table_args__ = (
+        # P1-6: mirrors the migration-enforced uq_document_families_canonical_key
+        # (a3b9c5d7e028_di1_canonical_key_agent_name.py), which this model was
+        # previously missing — the DB has enforced this since DI-1, but the ORM
+        # declaration didn't reflect it, risking a future autogenerate diff that
+        # proposes dropping the real constraint.
+        Index(
+            "uq_document_families_canonical_key",
+            "canonical_key",
+            unique=True,
+            postgresql_where=text("canonical_key IS NOT NULL"),
+        ),
+    )
+
 
 # ---------------------------------------------------------------------------
 # 3. Document Versions
@@ -407,6 +421,9 @@ class Extraction(Base):
             "source_record_id", "extraction_type", "payload_hash",
             unique=True,
         ),
+        # P1-6: dashboard/review queue's dominant filter pattern
+        # (review_status + confidence_tier) had no supporting composite index.
+        Index("ix_extractions_review_status_confidence_tier", "review_status", "confidence_tier"),
     )
 
 
