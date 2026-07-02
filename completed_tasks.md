@@ -1,5 +1,75 @@
 # Regs Checker — Completed Tasks
 
+## Remediation Plan Phase 2 (2026-07-02) — Review-Binding Data Path: Complete
+
+**Branch**: `claude/audit-ai-law-pipeline-f7alql` (pushed, 6 files modified, 430+ lines added)
+**Scope**: All seven P2 items from `docs/remediation_plan.md` Phase 2: publish gate, purge, invariant, de-ratchet, penalty-unit safety, update propagation, matview refresh wiring. Two product decisions confirmed mid-implementation; five pre-existing bugs found and fixed.
+
+### P2-1: Filter the product leg (publish gate)
+- `sync_extractions.py`/`rollup_matrix.py`: gate on `review_status IN ('approved', 'verified') AND confidence_tier IN (eligible)`. 
+- **Design change discovered mid-execution**: Policy Navigator has its own independent post-sync review workflow that overwrites the same column, never writes 'approved'. Confirmed with product owner: RC approval is the baseline gate; PN's review is a backup veto only, never required.
+- Fixed a pre-existing bug caught by end-to-end testing: eligibility filter was in reporting/dry-run queries but missing from the actual fetch query driving inserts, meaning the core gate wasn't wired.
+
+### P2-2: Purge unapproved/ineligible rows from Policy Navigator
+- **Product decision confirmed**: 100% of 13,488 rows in `synced_extractions` were `pending` (zero `extraction_reviews` existed — PN's review workflow never used). Purge acceptable given data was universally stale, with forward expectation that P2-1 gate governs all future syncs.
+- Backed up all 5 affected tables before purging; truncated 4 matrix detail tables (fully computed, no source rows left).
+- Fixed a security gap: backup tables inherited PN's default-privilege auto-grants to `anon`/`authenticated`; narrowed via explicit REVOKE as defense in depth.
+
+### P2-3: DB-enforced invariant (design change)
+- Initially designed as a raw `CHECK (review_status = 'approved')` constraint, but this would break PN's trigger's own legitimate writes of 'rejected'/'flagged'.
+- Implemented as `rollup_eligible_extractions` view instead — matching PN's existing `public_extractions`/`verified_extractions` pattern — enforcing the gate for rollups while allowing PN's workflow.
+
+### P2-4/P2-5: De-ratchet rollups + penalty-unit safety
+- All three merge-aggregating rollup functions now do plain `EXCLUDED.col` overwrites instead of `GREATEST`/`LEAST`/`COALESCE`/`OR` merges, letting corrections flow downward.
+- Added `contributing_extraction_count`, `derived_from_tier_floor` to track provenance.
+- Fixed pre-existing `rollup_conflicts()` syntax bug: `:ctype::conflict_type` parsed as literal colon by SQLAlchemy text() — changed to `CAST(... AS type)`.
+- `max_civil_penalty_usd` remains `MAX()` (full fix blocked on `bill_level_extractions` sync) but `penalty_notes` carries caveat when multiple differently-worded mentions contributed.
+
+### P2-6: Update-propagation leg (the update watermark)
+- Added `sync_updates()` function implementing an `updated_at`-watermark leg that the id-cursor leg can never reach again.
+- Reuses existing `sync_cursors` table with new `policy_navigator_updates` destination.
+- Refreshes content fields only (payload, evidence_spans, confidence_score/tier, section text); deliberately never touches `review_status`/consensus — those become PN's domain once a row exists.
+- **Five pre-existing bugs found during implementation** via end-to-end testing:
+  1. `section_path`/`passage_text` should be `section_reference`/`source_text_excerpt`
+  2. `source_created_at` should be `system_a_created_at`
+  3. `model_id` column didn't exist at all (added via migration)
+  4. These three meant the direct INSERT path had likely never succeeded against live PN; the 13,488 purged rows came from RPC functions instead.
+
+### P2-7: Materialized-view refresh wiring + /health status
+- **Live drift discovered and fixed**: Regs Checker Supabase had the same "migration claims it, DB doesn't have it" pattern found repeatedly in this audit.
+  - `served_matrix_cells` matview: missing
+  - `refresh_served_views()` function: didn't exist
+  - `trg_refresh_on_review` trigger: didn't exist
+  - Both obligation matviews had wrong (non-unique, differently-named) indexes instead of the unique indexes required for `REFRESH CONCURRENTLY`.
+- Added `view_refresh_log` table (Postgres doesn't natively track matview refresh time) written by `refresh_served_views()` on every trigger fire.
+- Exposed as `views_last_refreshed` in `/health` — `served_matrix_cells` intentionally never advances there, honestly reflecting that its "scheduled job" refresh was never implemented (documented gap, out of scope).
+- Pinned `refresh_served_views()`'s `search_path` and revoked `PUBLIC` `EXECUTE`, matching the P1-4 `rls_auto_enable()` precedent.
+
+### All changes verified
+- All 871 local unit tests pass.
+- Changes verified against scratch Postgres before live application.
+- Live trigger re-tested end-to-end on Supabase after each change.
+- Advisor scan re-run: only expected INFO-level "RLS enabled, no policy" findings remain (function_search_path_mutable WARN gone).
+
+### Live migrations applied (in order)
+1. `p2_4_rollup_provenance_columns` — added provenance columns
+2. `p2_2_backup_before_purge` — created backup tables
+3. `p2_2_execute_purge` — deleted rows, truncated matrix tables
+4. `p2_3_rollup_eligible_extractions_view` — created gate view
+5. `p2_2_lock_down_new_backup_objects` — narrowed RLS auto-grants
+6. `p2_6_add_model_id_column` — added missing column
+7. `p2_7_catchup_materialized_view_refresh_trigger` — added missing matview/function/trigger
+8. `p2_7_add_missing_matview_unique_indexes` — added two unique indexes
+9. `p2_7_view_refresh_log` — created freshness tracking table
+10. `p2_7_pin_refresh_fn_search_path` — pinned search_path, revoked PUBLIC EXECUTE
+
+### Documentation
+- `docs/phase2_completion_log.md` created with full detail, product decisions, bug list, and verification methodology.
+- `docs/remediation_plan.md` Phase 2 section updated with status markers and revision notes.
+- `docs/phase0_completion_log.md` and `docs/phase1_completion_log.md` already exist from prior sessions.
+
+---
+
 ## Analysis (2026-06-22) — Downstream Consumer Handoff Review + Architectural Plans
 
 **Branch**: `claude/brave-lamport-d9zgjx`

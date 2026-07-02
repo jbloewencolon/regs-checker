@@ -26,6 +26,51 @@ jobs:
       - name: Run unit tests
         run: pytest tests/unit/ -q --tb=short
 
+  migrations:
+    name: Alembic migrations (fresh DB)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: regs_checker_ci
+          POSTGRES_USER: regs
+          POSTGRES_PASSWORD: regs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U regs -d regs_checker_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      REGS_DATABASE_URL: postgresql://regs:regs@localhost:5432/regs_checker_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: alembic upgrade head (fresh database)
+        run: python -m alembic upgrade head
+
+      - name: alembic downgrade -1 && upgrade head (reversibility of newest migration)
+        run: |
+          python -m alembic downgrade -1
+          python -m alembic upgrade head
+
+      - name: alembic upgrade head (idempotent re-run)
+        run: python -m alembic upgrade head
+
   lint:
     name: Ruff lint
     runs-on: ubuntu-latest

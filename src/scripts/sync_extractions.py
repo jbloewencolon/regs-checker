@@ -15,12 +15,22 @@ Key design decisions:
   - sync_to_supabase.py is NOT replaced — it handles local Docker →
     Regs Checker Supabase. This script handles the next leg:
     Regs Checker Supabase → Policy Navigator Supabase.
+  - Publish gate (P2-1): only extractions with review_status='approved' and
+    confidence_tier at or above REGS_CONFIDENCE_PUBLISH_MIN_TIER are eligible
+    to sync at all — unapproved or below-floor extractions never reach the
+    product database.
+  - Two-leg sync (P2-1 + P2-6): sync_extractions() discovers brand-new
+    extractions via the id cursor. sync_updates() (run right after, in the
+    same CLI invocation) separately re-checks recently-changed rows by
+    updated_at, so a review decision or confidence recompute on a
+    previously-synced-or-skipped extraction still reaches Policy Navigator
+    even though the id cursor never looks backward.
 
 Usage:
-    # Dry run — show what would be synced:
+    # Dry run — show what would be synced/updated:
     python -m src.scripts.sync_extractions --dry-run
 
-    # Sync extractions:
+    # Sync new extractions + propagate updates:
     python -m src.scripts.sync_extractions
 
     # Explicit URLs (overrides env vars):
@@ -44,8 +54,24 @@ from datetime import UTC, datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from src.core.config import settings
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
+
+# P2-1: only extractions that have cleared human review, at or above the
+# configured publish tier, may reach the product database. Mirrors
+# src/api/routes/v1.py::_tiers_at_or_above so both surfaces agree on what
+# "eligible" means.
+_TIER_ORDER = ["A", "B", "C", "D"]
+
+
+def _eligible_tiers(min_tier: str) -> list[str]:
+    """Return confidence tiers at or above min_tier (best=A first)."""
+    min_tier = (min_tier or "C").upper()
+    if min_tier not in _TIER_ORDER:
+        return list(_TIER_ORDER)
+    idx = _TIER_ORDER.index(min_tier)
+    return _TIER_ORDER[: idx + 1]
 
 
 def _load_bridge(target_session) -> dict[int, int]:
@@ -122,15 +148,27 @@ def sync_extractions(
         cursor = _get_cursor(target_session)
         print(f"Cursor: syncing extractions with id > {cursor}")
 
+        # P2-1: only approved extractions at or above the publish tier are
+        # eligible to reach the product database. Applied consistently across
+        # every count/fetch query below so dry-run reporting matches what a
+        # live sync actually inserts.
+        eligible_tiers = _eligible_tiers(settings.confidence_publish_min_tier)
+        print(f"Publish filter: review_status='approved' AND confidence_tier IN {eligible_tiers}")
+
         # Step 3: Count pending extractions in source
         source_pending = source_session.execute(
             text(
-                "SELECT COUNT(*) FROM extractions WHERE id > :cursor"
+                """
+                SELECT COUNT(*) FROM extractions
+                WHERE id > :cursor
+                  AND review_status = 'approved'
+                  AND confidence_tier::text = ANY(:tiers)
+                """
             ),
-            {"cursor": cursor},
+            {"cursor": cursor, "tiers": eligible_tiers},
         ).scalar()
 
-        print(f"Source: {source_pending} extractions pending sync")
+        print(f"Source: {source_pending} approved, tier-eligible extractions pending sync")
 
         if source_pending == 0:
             print("Nothing to sync — already up to date.")
@@ -152,10 +190,12 @@ def sync_extractions(
                     JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                     JOIN document_versions dv ON nsr.document_version_id = dv.id
                     WHERE e.id > :cursor
+                    AND e.review_status = 'approved'
+                    AND e.confidence_tier::text = ANY(:tiers)
                     AND dv.family_id IN :family_ids
                     """
                 ),
-                {"cursor": cursor, "family_ids": tuple(bridge.keys())},
+                {"cursor": cursor, "tiers": eligible_tiers, "family_ids": tuple(bridge.keys())},
             ).scalar()
             print(f"\n  With bridge mapping:    {bridged}")
             print(f"  Without bridge mapping: {source_pending - bridged}")
@@ -172,6 +212,17 @@ def sync_extractions(
         synced = 0
         skipped_no_bridge = 0
         max_id = cursor
+
+        # Design note: this id-cursor leg's job is discovering NEW extractions.
+        # It intentionally does not try to be "skip-proof" — the cursor is a
+        # MAX(id) watermark, so once a higher id has synced, a lower id that
+        # was ineligible at the time (still pending review) would otherwise be
+        # unreachable via `WHERE id > cursor` even after a reviewer later
+        # approves it. That case is the explicit job of the separate
+        # updated_at-based leg (see sync_updates(), P2-6) run right after this
+        # one — it re-checks by change time, not id position, so it always
+        # catches an extraction whose review_status/tier changed after the
+        # fact regardless of where its id sits relative to the cursor.
 
         # Fetch extractions joined with their document_family_id
         rows = source_session.execute(
@@ -194,10 +245,12 @@ def sync_extractions(
                 JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                 JOIN document_versions dv ON nsr.document_version_id = dv.id
                 WHERE e.id > :cursor
+                  AND e.review_status = 'approved'
+                  AND e.confidence_tier::text = ANY(:tiers)
                 ORDER BY e.id
                 """
             ),
-            {"cursor": cursor},
+            {"cursor": cursor, "tiers": eligible_tiers},
         ).mappings().all()
 
         # Build insert batches
@@ -239,9 +292,19 @@ def sync_extractions(
                 "confidence_tier": row["confidence_tier"],
                 "review_status": row["review_status"],
                 "model_id": row["model_id"],
-                "section_path": row["section_path"],
-                "passage_text": row["passage_text"],
-                "source_created_at": row["created_at"],
+                # P2-6 bugfix (pre-existing, unrelated to the P2-1 filter change):
+                # _insert_batch() builds the INSERT column list directly from these
+                # dict keys, but synced_extractions' real columns are
+                # section_reference/source_text_excerpt, not section_path/
+                # passage_text — this INSERT has likely never actually succeeded;
+                # the rows previously in the table came from the bulk_sync_extractions/
+                # sync_from_rc_chunk RPCs (see docs/phase0_completion_log.md), not
+                # this path.
+                "section_reference": row["section_path"],
+                "source_text_excerpt": row["passage_text"],
+                # Same bug class: the real column is system_a_created_at, not
+                # source_created_at.
+                "system_a_created_at": row["created_at"],
                 "synced_at": datetime.now(UTC),
             })
 
@@ -301,6 +364,201 @@ def _insert_batch(session, batch: list[dict]) -> None:
     )
 
 
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+def sync_updates(
+    source_url: str,
+    target_url: str,
+    dry_run: bool = False,
+) -> dict:
+    """P2-6: propagate changes on already-scanned extractions, by change time.
+
+    sync_extractions() discovers brand-new rows via a MAX(id) cursor, which
+    by construction never looks backward — once a higher id has synced, a
+    lower id that was ineligible at the time (still pending review) becomes
+    unreachable to that leg even after a reviewer later approves it. This
+    leg closes that gap by re-checking rows whose `updated_at` has advanced
+    past a durable watermark, tracked in Regs Checker's own `sync_cursors`
+    table (table_name='extractions', destination='policy_navigator_updates')
+    — the same RR6e mechanism sync_to_supabase.py already uses for its own
+    leg. Unlike the id cursor, this watermark is safe to advance past a
+    still-ineligible row: if that row changes again later, Extraction.updated_at's
+    onupdate=func.now() guarantees a fresh timestamp that exceeds the
+    watermark, so it will naturally be re-checked on a future run.
+
+    Design decision (matches the product's "RC leads, PN backs up" model —
+    see rollup_matrix.py): once a row has been published to Policy Navigator,
+    this leg refreshes its CONTENT (payload, evidence_spans, confidence_score,
+    confidence_tier, section_reference, source_text_excerpt) on every RC-side
+    change, but
+    never touches review_status/consensus_status or any of PN's own review
+    columns — those are Policy Navigator's domain once a row exists there.
+    A row is only removed from consideration by PN's own review workflow
+    (flagging/rejecting), never automatically un-published by a later RC-side
+    status change. A row that isn't yet eligible and doesn't yet exist in
+    Policy Navigator is skipped, same as the id-cursor leg.
+    """
+    source_engine = create_engine(source_url)
+    target_engine = create_engine(target_url)
+    source_session = sessionmaker(bind=source_engine)()
+    target_session = sessionmaker(bind=target_engine)()
+
+    try:
+        bridge = _load_bridge(target_session)
+        eligible_tiers = _eligible_tiers(settings.confidence_publish_min_tier)
+
+        watermark_row = source_session.execute(
+            text(
+                "SELECT last_synced_at FROM sync_cursors "
+                "WHERE table_name = 'extractions' AND destination = 'policy_navigator_updates'"
+            )
+        ).first()
+        watermark = watermark_row[0] if watermark_row and watermark_row[0] else _EPOCH
+
+        rows = source_session.execute(
+            text(
+                """
+                SELECT
+                    e.id AS extraction_id,
+                    e.extraction_type,
+                    e.payload,
+                    e.evidence_spans,
+                    e.confidence_score,
+                    e.confidence_tier,
+                    e.review_status,
+                    e.model_id,
+                    e.updated_at,
+                    dv.family_id AS doc_family_id,
+                    nsr.section_path,
+                    nsr.text_content AS passage_text
+                FROM extractions e
+                JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
+                JOIN document_versions dv ON nsr.document_version_id = dv.id
+                WHERE e.updated_at > :watermark
+                ORDER BY e.updated_at
+                """
+            ),
+            {"watermark": watermark},
+        ).mappings().all()
+
+        print(f"Update-propagation: {len(rows)} extraction(s) changed since {watermark}")
+
+        if not rows:
+            return {
+                "updates_checked": 0, "updates_applied": 0,
+                "updates_skipped_ineligible": 0, "updates_skipped_no_bridge": 0,
+                "watermark_start": watermark, "watermark_end": watermark,
+            }
+
+        applied = 0
+        skipped_ineligible = 0
+        skipped_no_bridge = 0
+        max_updated_at = watermark
+
+        for row in rows:
+            max_updated_at = max(max_updated_at, row["updated_at"])
+
+            is_eligible = (
+                row["review_status"] == "approved"
+                and row["confidence_tier"] in eligible_tiers
+            )
+            if not is_eligible:
+                skipped_ineligible += 1
+                continue
+
+            law_id = bridge.get(row["doc_family_id"])
+            if law_id is None:
+                skipped_no_bridge += 1
+                continue
+
+            if is_excluded(law_id):
+                continue
+
+            if dry_run:
+                applied += 1
+                continue
+
+            raw_payload = row["payload"]
+            if isinstance(raw_payload, str):
+                raw_payload = json.loads(raw_payload)
+            adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+
+            target_session.execute(
+                text("""
+                    INSERT INTO synced_extractions (
+                        system_a_extraction_id, law_id, extraction_type, payload,
+                        evidence_spans, confidence_score, confidence_tier, review_status,
+                        model_id, section_reference, source_text_excerpt, system_a_created_at, synced_at
+                    ) VALUES (
+                        :eid, :law_id, :etype, :payload,
+                        :spans, :score, :tier, :status,
+                        :model, :section, :passage, :updated_at, :synced_at
+                    )
+                    ON CONFLICT (system_a_extraction_id) DO UPDATE SET
+                        payload = EXCLUDED.payload,
+                        evidence_spans = EXCLUDED.evidence_spans,
+                        confidence_score = EXCLUDED.confidence_score,
+                        confidence_tier = EXCLUDED.confidence_tier,
+                        section_reference = EXCLUDED.section_reference,
+                        source_text_excerpt = EXCLUDED.source_text_excerpt,
+                        synced_at = EXCLUDED.synced_at
+                """),
+                {
+                    "eid": row["extraction_id"],
+                    "law_id": law_id,
+                    "etype": row["extraction_type"],
+                    "payload": _serialize_value(adapted_payload),
+                    "spans": _serialize_value(row["evidence_spans"]),
+                    "score": row["confidence_score"],
+                    "tier": row["confidence_tier"],
+                    "status": row["review_status"],
+                    "model": row["model_id"],
+                    "section": row["section_path"],
+                    "passage": row["passage_text"],
+                    "updated_at": row["updated_at"],
+                    "synced_at": datetime.now(UTC),
+                },
+            )
+            applied += 1
+
+        if not dry_run:
+            target_session.commit()
+            source_session.execute(
+                text(
+                    """
+                    INSERT INTO sync_cursors
+                        (table_name, destination, last_synced_at, rows_synced, updated_at)
+                    VALUES ('extractions', 'policy_navigator_updates', :watermark, :rows, now())
+                    ON CONFLICT (table_name, destination) DO UPDATE SET
+                        last_synced_at = EXCLUDED.last_synced_at,
+                        rows_synced = sync_cursors.rows_synced + EXCLUDED.rows_synced,
+                        updated_at = now()
+                    """
+                ),
+                {"watermark": max_updated_at, "rows": applied},
+            )
+            source_session.commit()
+
+        print(
+            f"Update-propagation: {applied} applied, {skipped_ineligible} not yet eligible, "
+            f"{skipped_no_bridge} no bridge mapping"
+        )
+
+        return {
+            "updates_checked": len(rows),
+            "updates_applied": applied,
+            "updates_skipped_ineligible": skipped_ineligible,
+            "updates_skipped_no_bridge": skipped_no_bridge,
+            "watermark_start": watermark,
+            "watermark_end": max_updated_at,
+        }
+
+    finally:
+        source_session.close()
+        target_session.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Sync extractions: Regs Checker → Policy Navigator"
@@ -325,6 +583,11 @@ def main():
         type=int,
         default=500,
         help="Rows per INSERT batch (default: 500)",
+    )
+    parser.add_argument(
+        "--skip-updates",
+        action="store_true",
+        help="Run only the new-extraction leg; skip the P2-6 update-propagation leg",
     )
     args = parser.parse_args()
 
@@ -363,6 +626,17 @@ def main():
     print(f"Synced:              {summary['synced']}")
     print(f"Skipped (no bridge): {summary['skipped_no_bridge']}")
     print(f"Cursor:              {summary['cursor_start']} → {summary['cursor_end']}")
+
+    if not args.skip_updates:
+        print(f"\n{'=' * 60}")
+        print("Update-propagation leg (P2-6)...\n")
+        update_summary = sync_updates(source_url, target_url, dry_run=args.dry_run)
+        print(f"\n{'=' * 60}")
+        print(f"Updates checked:           {update_summary['updates_checked']}")
+        print(f"Updates applied:           {update_summary['updates_applied']}")
+        print(f"Skipped (not eligible):    {update_summary['updates_skipped_ineligible']}")
+        print(f"Skipped (no bridge):       {update_summary['updates_skipped_no_bridge']}")
+        print(f"Watermark:                 {update_summary['watermark_start']} → {update_summary['watermark_end']}")
 
 
 if __name__ == "__main__":

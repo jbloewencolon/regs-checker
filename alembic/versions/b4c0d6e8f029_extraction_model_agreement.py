@@ -8,7 +8,12 @@ agreed with the stored extraction so the signal can weight future confidence
 recomputes.
 
 Revision ID: b4c0d6e8f029
-Revises: a3b9c5d7e028
+Revises: b4c0d6e8f030
+
+P1-1: down_revision updated from a3b9c5d7e028 to b4c0d6e8f030 — the
+concept_actor_role migration was re-keyed off that ID to resolve a
+revision collision (see b4c0d6e8f030_concept_actor_role.py). This
+migration's own content is unchanged.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "b4c0d6e8f029"
-down_revision = "a3b9c5d7e028"
+down_revision = "b4c0d6e8f030"
 branch_labels = None
 depends_on = None
 

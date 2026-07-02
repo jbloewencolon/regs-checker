@@ -57,7 +57,11 @@ class Settings(BaseSettings):
     triage_recall_sample_rate: float = 0.05
 
     # FastAPI
-    api_host: str = "0.0.0.0"
+    # Default to loopback — the dashboard has no authentication, so binding
+    # to all interfaces by default would expose it on any network the host
+    # is attached to. Override explicitly (e.g. behind a reverse proxy with
+    # its own auth) via REGS_API_HOST.
+    api_host: str = "127.0.0.1"
     api_port: int = 8000
 
     # Review UI
