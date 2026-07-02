@@ -49,8 +49,21 @@ After adding the `2cf4e0a680ea_extractions_review_confidence_index.py` migration
 - `document_families.canonical_key` unique partial index: **already existed** at the database level (DI-1 created it) — the actual gap was that `src/db/models.py`'s SQLAlchemy declaration only had `index=True` (a plain index), not reflecting the unique constraint. Left undeclared, a future `alembic revision --autogenerate` run would likely have proposed *dropping* the real unique index to match the model. Fixed by adding an explicit `Index(..., unique=True, postgresql_where=...)` to `DocumentFamily.__table_args__` matching the migration exactly.
 - `extractions(review_status, confidence_tier)` composite index: genuinely missing. Added as migration `2cf4e0a680ea` and mirrored in `Extraction.__table_args__`. Verified both the migration (fresh scratch Postgres) and the ORM declaration (`Extraction.__table__.indexes`, `DocumentFamily.__table__.indexes` both load without error and list the expected index names) before applying live.
 
+## P1-4 — RLS baseline codified into a migration
+
+Added `25cffe678fbc_rls_baseline_and_public_grant_revoke.py`, which enables RLS on every table, revokes `PUBLIC`/`anon`/`authenticated` grants (the `anon`/`authenticated` statements are wrapped in `pg_roles` existence checks so they're no-ops on non-Supabase Postgres), and installs the `rls_auto_enable` event-trigger backstop — codifying what Phase 0 applied ad hoc directly to Supabase.
+
+**This migration runs on every database in the fleet — local Docker, CI, and Supabase — not just Supabase**, so it had to be proven safe on plain Postgres before being trusted anywhere. Verified against three scratch scenarios before applying live:
+
+1. **Plain Postgres, no `anon`/`authenticated` roles** (simulates local Docker / CI): `alembic upgrade head` succeeds; the owning role (`regs`, matching `docker-compose.yml`'s `POSTGRES_USER`) can still insert/select without any restriction post-migration, since RLS `ENABLE` (not `FORCE`) never restricts the table owner; a fresh `CREATE TABLE` after the migration gets RLS auto-enabled by the event trigger, confirming the backstop actually fires.
+2. **Postgres with `anon`/`authenticated` pre-created** (simulates Supabase): `alembic upgrade head` succeeds; `has_schema_privilege` confirms both roles lose schema `USAGE` while the owning role keeps it.
+3. Both scenarios: `downgrade -1 && upgrade head` and a second idempotent `upgrade head` both exit 0.
+
+**Caught a self-introduced regression during this verification, not after:** `CREATE FUNCTION` grants `EXECUTE` to `PUBLIC` by default in Postgres. Creating the new `rls_auto_enable()` function therefore re-opened exactly the class of gap Phase 0 had just closed — the live advisor scan (re-run after applying to Supabase) showed 2 new WARNs (`anon`/`authenticated` could call `rls_auto_enable()` via `/rest/v1/rpc/`). Fixed by adding `REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC` immediately after creating it, in both the live database and the migration file, then re-ran all three scratch scenarios plus the live advisor scan to confirm the fix and that nothing else regressed. Final live state: **0 ERROR, 0 WARN** on `wjxlimjpaijdogyrqtxc`.
+
+Applied live to Regs Checker Supabase (`p1_4_rls_baseline_and_event_trigger_backstop` + the follow-up `p1_4_fix_rls_auto_enable_execute_grant`); `alembic_version` updated to `25cffe678fbc`.
+
 ## What remains in Phase 1
 
-- **P1-3** (delete `_ensure_*` raw-SQL hacks): blocked until local Docker Postgres receives the same reconciliation sweep as Supabase did here — deleting `_ensure_failed_attempts_table()` before that would break `alembic upgrade head` against local Docker if it has any equivalent drift.
-- **P1-4** (codify P0-2/P0-3's RLS/grant changes into an actual migration): not started. The live RLS/grant lockdown from Phase 0 exists only as ad-hoc `apply_migration` calls against Supabase (see `phase0_completion_log.md`), not as a versioned migration a fresh database would receive.
+- **P1-3** (delete `_ensure_*` raw-SQL hacks): the only remaining item, blocked until local Docker Postgres receives the same reconciliation sweep as Supabase did here — deleting `_ensure_failed_attempts_table()` before that would break `alembic upgrade head` against local Docker if it has any equivalent drift.
 - **P1-5 local Docker half**: not started, no access this session.
