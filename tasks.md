@@ -75,6 +75,23 @@ Law-card data model, applicability product, API, productionization — resume on
 
 ---
 
+## Remediation Plan — Security & Data-Quality Audit (Phases 0–2)
+
+> **Phase 2 (Review-Binding Data Path) — ✅ COMPLETE (2026-07-02)**
+>
+> All P2-1 through P2-7 completed and pushed to `claude/audit-ai-law-pipeline-f7alql`.
+> Includes the production-readiness audit (Phase 0, P0-1 through P0-6) and the
+> migrations & schema-truth work (Phase 1, P1-1 through P1-6). Full detail in
+> `docs/phase0_completion_log.md`, `docs/phase1_completion_log.md`,
+> `docs/phase2_completion_log.md`, and `docs/remediation_plan.md`.
+>
+> Summary: P2 gates the sync path on human review (RC approval + PN's own backup veto),
+> purged the pre-existing 13,488-row stale table, de-ratcheted rollup aggregations,
+> wired the update-propagation leg, fixed live drift on matview refresh + indexes,
+> and added view freshness tracking to `/health`. Two product decisions confirmed
+> mid-implementation; five pre-existing bugs fixed (column-name mismatches, missing
+> eligibility filters, cast syntax, live schema drift, missing security hardening).
+
 ## Remediation Plan — Engineering Review Findings (RR)
 
 > Synthesis of two independent reviews: the **agent-engineering review**
