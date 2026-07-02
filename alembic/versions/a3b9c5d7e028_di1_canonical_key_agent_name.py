@@ -10,6 +10,11 @@ reversing through the extraction_type → agent_name map.
 
 Revision ID: a3b9c5d7e028
 Revises: z2a8b4c6d027
+
+P1-1: this ID previously collided with another migration (concept_actor_role,
+also declared as a3b9c5d7e028), which broke `alembic upgrade head` on any
+fresh database. This file's revision ID is unchanged; the other migration was
+re-keyed to b4c0d6e8f030 and now chains after this one instead.
 """
 
 from __future__ import annotations
