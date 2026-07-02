@@ -129,6 +129,9 @@ class RunArchiver:
         # 2. Export extractions created during this run
         extractions_path = self._export_extractions(db, extraction_job_ids)
 
+        # 2b. Export one CSV per producing agent, alongside the combined CSV
+        self._export_by_agent(db)
+
         # 3. Export bill-level extractions (applicability, enforcement, timeline)
         self._export_bill_level_extractions(db)
 
@@ -157,13 +160,12 @@ class RunArchiver:
         return self.run_dir
 
     def _write_run_snapshot(self, run_id: int, run_meta: dict[str, Any]) -> None:
-        """Copy active folder files into output/extraction_runs/run_{run_id}/."""
+        """Copy active folder contents (files + subfolders) into
+        output/extraction_runs/run_{run_id}/.
+        """
         snapshot_dir = RUNS_DIR / f"run_{run_id}"
         try:
-            snapshot_dir.mkdir(parents=True, exist_ok=True)
-            for src_file in self.run_dir.iterdir():
-                if src_file.is_file():
-                    shutil.copy2(src_file, snapshot_dir / src_file.name)
+            shutil.copytree(self.run_dir, snapshot_dir, dirs_exist_ok=True)
             logger.info(
                 "run_archiver_snapshot_written",
                 snapshot_dir=str(snapshot_dir),
@@ -264,6 +266,120 @@ class RunArchiver:
 
         logger.info("run_archiver_exported_csv", path=str(csv_path), row_count=len(rows))
         return csv_path
+
+    def _export_by_agent(self, db: Session) -> Path | None:
+        """Export one CSV per producing agent into <run_dir>/by_agent/<agent>.csv.
+
+        Reuses the same full-DB-state query as _export_extractions but adds
+        agent_name and splits output by it. Legacy rows without agent_name
+        (extracted before the Phase A migration) are written to
+        by_agent/_unattributed.csv rather than silently dropped.
+        """
+        from src.db.models import (
+            DocumentFamily,
+            DocumentVersion,
+            Extraction,
+            NormalizedSourceRecord,
+            Source,
+        )
+
+        _cols = (
+            Extraction.id,               # 0
+            Extraction.agent_name,       # 1
+            Extraction.extraction_type,  # 2
+            Extraction.confidence_score, # 3
+            Extraction.confidence_tier,  # 4
+            Extraction.model_id,         # 5
+            Extraction.payload,          # 6
+            Extraction.evidence_spans,   # 7
+            Extraction.created_at,       # 8
+            NormalizedSourceRecord.section_path,   # 9
+            Source.jurisdiction_code,              # 10
+            DocumentFamily.short_cite,              # 11
+            DocumentFamily.canonical_title,        # 12
+            DocumentFamily.canonical_key,           # 13
+        )
+        query = (
+            select(*_cols)
+            .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+            .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+            .join(DocumentFamily, DocumentVersion.family_id == DocumentFamily.id)
+            .join(Source, DocumentFamily.source_id == Source.id)
+            .order_by(Extraction.agent_name, Source.jurisdiction_code, Extraction.id)
+        )
+
+        try:
+            rows = db.execute(query).all()
+        except Exception as e:
+            # agent_name column may not exist yet if the migration hasn't run
+            logger.warning("run_archiver_by_agent_export_skipped", error=str(e))
+            return None
+
+        if not rows:
+            return None
+
+        by_agent_dir = self.run_dir / "by_agent"
+        by_agent_dir.mkdir(exist_ok=True)
+
+        fieldnames = [
+            "extraction_id", "agent_name", "jurisdiction", "law", "title",
+            "canonical_key", "section", "extraction_type",
+            "confidence_score", "confidence_tier", "model_id",
+            "verified_span_count", "total_span_count",
+            "payload_json", "evidence_spans_json", "created_at",
+        ]
+        disclaimer = (
+            "# DISCLAIMER: Informational only — not legal advice. "
+            "Produced by an AI extraction pipeline; may be incomplete, outdated, or incorrect. "
+            "Laws change — always verify against current official text. "
+            "Consult a licensed attorney before relying on any regulatory content.\n"
+        )
+
+        grouped: dict[str, list] = {}
+        for row in rows:
+            grouped.setdefault(row[1] or "_unattributed", []).append(row)
+
+        written = 0
+        for agent_name, agent_rows in grouped.items():
+            csv_path = by_agent_dir / f"{agent_name}.csv"
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                f.write(disclaimer)
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in agent_rows:
+                    spans = row[7] or []
+                    verified = sum(
+                        1 for s in spans if isinstance(s, dict) and s.get("verified") is True
+                    )
+                    ext_type_val = row[2].value if hasattr(row[2], "value") else str(row[2])
+                    tier_val = row[4].value if hasattr(row[4], "value") else str(row[4])
+                    writer.writerow({
+                        "extraction_id": row[0],
+                        "agent_name": row[1] or "",
+                        "jurisdiction": row[10],
+                        "law": row[11],
+                        "title": row[12],
+                        "canonical_key": row[13] or "",
+                        "section": row[9],
+                        "extraction_type": ext_type_val,
+                        "confidence_score": round(float(row[3]), 4) if row[3] else "",
+                        "confidence_tier": tier_val,
+                        "model_id": row[5] or "",
+                        "verified_span_count": verified,
+                        "total_span_count": len(spans),
+                        "payload_json": json.dumps(row[6], default=str) if row[6] else "",
+                        "evidence_spans_json": json.dumps(spans, default=str),
+                        "created_at": row[8].isoformat() if row[8] else "",
+                    })
+            written += 1
+
+        logger.info(
+            "run_archiver_exported_by_agent",
+            path=str(by_agent_dir),
+            agent_count=written,
+            row_count=len(rows),
+        )
+        return by_agent_dir
 
     def _export_bill_level_extractions(self, db: Session) -> Path | None:
         """Export bill-level extractions (applicability, enforcement, timeline) to CSV.

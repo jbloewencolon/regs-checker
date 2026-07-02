@@ -22,15 +22,15 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys
 from datetime import date
 from pathlib import Path
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
 from src.core.admission import ADMITTED, NEEDS_REVIEW, compute_admission_status
-from src.db.engine import get_session
+from src.core.config import settings
 from src.db.models import DocumentVersion, Extraction, NormalizedSourceRecord
 
 logger = structlog.get_logger()
@@ -138,7 +138,8 @@ def main() -> None:
     agent_names = [a.strip() for a in args.agents.split(",") if a.strip()] or _ALL_AGENTS
     out_dir = Path("output") / "exports" / str(date.today())
 
-    with get_session(db_url=args.db_url or None) as db:
+    engine = create_engine(args.db_url or settings.database_url)
+    with Session(engine) as db:
         all_rows = _fetch_rows(db, agent_names, args.include_needs_review)
 
     by_agent: dict[str, list[dict]] = {}
