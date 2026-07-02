@@ -15,16 +15,20 @@ Key design decisions:
   - sync_to_supabase.py is NOT replaced — it handles local Docker →
     Regs Checker Supabase. This script handles the next leg:
     Regs Checker Supabase → Policy Navigator Supabase.
-  - Publish gate (P2-1): only extractions with review_status='approved' and
-    confidence_tier at or above REGS_CONFIDENCE_PUBLISH_MIN_TIER are eligible
-    to sync at all — unapproved or below-floor extractions never reach the
-    product database.
-  - Two-leg sync (P2-1 + P2-6): sync_extractions() discovers brand-new
-    extractions via the id cursor. sync_updates() (run right after, in the
-    same CLI invocation) separately re-checks recently-changed rows by
-    updated_at, so a review decision or confidence recompute on a
-    previously-synced-or-skipped extraction still reaches Policy Navigator
-    even though the id cursor never looks backward.
+  - Publish gate (P3-1, supersedes P2-1): only confidence_tier at or above
+    REGS_CONFIDENCE_PUBLISH_MIN_TIER is required to sync — below-floor (D)
+    extractions never reach the product database. review_status is no
+    longer a publish precondition (Phase 2's approved-only gate was
+    deliberately removed in Phase 3 — see docs/phase3_completion_log.md);
+    review_status still travels with each synced row for visibility, and
+    Policy Navigator's own post-sync review workflow still applies once a
+    row exists there.
+  - Two-leg sync (P2-6, tier-only as of P3-3): sync_extractions() discovers
+    brand-new extractions via the id cursor. sync_updates() (run right
+    after, in the same CLI invocation) separately re-checks recently-changed
+    rows by updated_at, so a confidence recompute on a previously-synced-or-
+    skipped extraction still reaches Policy Navigator even though the id
+    cursor never looks backward.
 
 Usage:
     # Dry run — show what would be synced/updated:
@@ -58,10 +62,10 @@ from src.core.config import settings
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
 
-# P2-1: only extractions that have cleared human review, at or above the
-# configured publish tier, may reach the product database. Mirrors
-# src/api/routes/v1.py::_tiers_at_or_above so both surfaces agree on what
-# "eligible" means.
+# P3-1 (supersedes P2-1's review_status='approved' requirement): only
+# confidence tier at or above the configured publish floor determines
+# sync eligibility now. Mirrors src/api/routes/v1.py::_tiers_at_or_above
+# so both surfaces agree on what "eligible" means.
 _TIER_ORDER = ["A", "B", "C", "D"]
 
 
@@ -148,12 +152,14 @@ def sync_extractions(
         cursor = _get_cursor(target_session)
         print(f"Cursor: syncing extractions with id > {cursor}")
 
-        # P2-1: only approved extractions at or above the publish tier are
-        # eligible to reach the product database. Applied consistently across
-        # every count/fetch query below so dry-run reporting matches what a
-        # live sync actually inserts.
+        # P3-1: confidence tier at or above the publish floor is the sole
+        # sync eligibility check now — review_status is no longer required
+        # (Phase 2's approved-only gate was deliberately removed; see
+        # docs/phase3_completion_log.md). Applied consistently across every
+        # count/fetch query below so dry-run reporting matches what a live
+        # sync actually inserts.
         eligible_tiers = _eligible_tiers(settings.confidence_publish_min_tier)
-        print(f"Publish filter: review_status='approved' AND confidence_tier IN {eligible_tiers}")
+        print(f"Publish filter: confidence_tier IN {eligible_tiers}")
 
         # Step 3: Count pending extractions in source
         source_pending = source_session.execute(
@@ -161,14 +167,13 @@ def sync_extractions(
                 """
                 SELECT COUNT(*) FROM extractions
                 WHERE id > :cursor
-                  AND review_status = 'approved'
                   AND confidence_tier::text = ANY(:tiers)
                 """
             ),
             {"cursor": cursor, "tiers": eligible_tiers},
         ).scalar()
 
-        print(f"Source: {source_pending} approved, tier-eligible extractions pending sync")
+        print(f"Source: {source_pending} tier-eligible extractions pending sync")
 
         if source_pending == 0:
             print("Nothing to sync — already up to date.")
@@ -190,7 +195,6 @@ def sync_extractions(
                     JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                     JOIN document_versions dv ON nsr.document_version_id = dv.id
                     WHERE e.id > :cursor
-                    AND e.review_status = 'approved'
                     AND e.confidence_tier::text = ANY(:tiers)
                     AND dv.family_id IN :family_ids
                     """
@@ -216,13 +220,13 @@ def sync_extractions(
         # Design note: this id-cursor leg's job is discovering NEW extractions.
         # It intentionally does not try to be "skip-proof" — the cursor is a
         # MAX(id) watermark, so once a higher id has synced, a lower id that
-        # was ineligible at the time (still pending review) would otherwise be
-        # unreachable via `WHERE id > cursor` even after a reviewer later
-        # approves it. That case is the explicit job of the separate
-        # updated_at-based leg (see sync_updates(), P2-6) run right after this
-        # one — it re-checks by change time, not id position, so it always
-        # catches an extraction whose review_status/tier changed after the
-        # fact regardless of where its id sits relative to the cursor.
+        # was ineligible at the time (below the tier floor) would otherwise be
+        # unreachable via `WHERE id > cursor` even after a later confidence
+        # recompute raises its tier. That case is the explicit job of the
+        # separate updated_at-based leg (see sync_updates(), P2-6/P3-3) run
+        # right after this one — it re-checks by change time, not id position,
+        # so it always catches an extraction whose tier changed after the fact
+        # regardless of where its id sits relative to the cursor.
 
         # Fetch extractions joined with their document_family_id
         rows = source_session.execute(
@@ -245,7 +249,6 @@ def sync_extractions(
                 JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                 JOIN document_versions dv ON nsr.document_version_id = dv.id
                 WHERE e.id > :cursor
-                  AND e.review_status = 'approved'
                   AND e.confidence_tier::text = ANY(:tiers)
                 ORDER BY e.id
                 """
@@ -372,32 +375,31 @@ def sync_updates(
     target_url: str,
     dry_run: bool = False,
 ) -> dict:
-    """P2-6: propagate changes on already-scanned extractions, by change time.
+    """P2-6, tier-only as of P3-3: propagate changes on already-scanned extractions, by change time.
 
     sync_extractions() discovers brand-new rows via a MAX(id) cursor, which
     by construction never looks backward — once a higher id has synced, a
-    lower id that was ineligible at the time (still pending review) becomes
-    unreachable to that leg even after a reviewer later approves it. This
-    leg closes that gap by re-checking rows whose `updated_at` has advanced
-    past a durable watermark, tracked in Regs Checker's own `sync_cursors`
-    table (table_name='extractions', destination='policy_navigator_updates')
-    — the same RR6e mechanism sync_to_supabase.py already uses for its own
-    leg. Unlike the id cursor, this watermark is safe to advance past a
-    still-ineligible row: if that row changes again later, Extraction.updated_at's
-    onupdate=func.now() guarantees a fresh timestamp that exceeds the
-    watermark, so it will naturally be re-checked on a future run.
+    lower id that was below the tier floor at the time becomes unreachable
+    to that leg even after a later confidence recompute raises its tier.
+    This leg closes that gap by re-checking rows whose `updated_at` has
+    advanced past a durable watermark, tracked in Regs Checker's own
+    `sync_cursors` table (table_name='extractions',
+    destination='policy_navigator_updates') — the same RR6e mechanism
+    sync_to_supabase.py already uses for its own leg. Unlike the id cursor,
+    this watermark is safe to advance past a still-ineligible row: if that
+    row changes again later, Extraction.updated_at's onupdate=func.now()
+    guarantees a fresh timestamp that exceeds the watermark, so it will
+    naturally be re-checked on a future run.
 
-    Design decision (matches the product's "RC leads, PN backs up" model —
-    see rollup_matrix.py): once a row has been published to Policy Navigator,
-    this leg refreshes its CONTENT (payload, evidence_spans, confidence_score,
+    Design decision: once a row has been published to Policy Navigator, this
+    leg refreshes its CONTENT (payload, evidence_spans, confidence_score,
     confidence_tier, section_reference, source_text_excerpt) on every RC-side
-    change, but
-    never touches review_status/consensus_status or any of PN's own review
-    columns — those are Policy Navigator's domain once a row exists there.
-    A row is only removed from consideration by PN's own review workflow
-    (flagging/rejecting), never automatically un-published by a later RC-side
-    status change. A row that isn't yet eligible and doesn't yet exist in
-    Policy Navigator is skipped, same as the id-cursor leg.
+    change, but never touches review_status/consensus_status or any of PN's
+    own review columns — those are Policy Navigator's domain once a row
+    exists there (its post-sync review workflow can still flag/reject
+    independently of RC's review_status). A row that isn't yet eligible
+    (tier D) and doesn't yet exist in Policy Navigator is skipped, same as
+    the id-cursor leg.
     """
     source_engine = create_engine(source_url)
     target_engine = create_engine(target_url)
@@ -459,10 +461,7 @@ def sync_updates(
         for row in rows:
             max_updated_at = max(max_updated_at, row["updated_at"])
 
-            is_eligible = (
-                row["review_status"] == "approved"
-                and row["confidence_tier"] in eligible_tiers
-            )
+            is_eligible = row["confidence_tier"] in eligible_tiers
             if not is_eligible:
                 skipped_ineligible += 1
                 continue
