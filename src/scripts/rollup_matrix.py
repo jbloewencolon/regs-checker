@@ -8,14 +8,15 @@ Aggregates per-passage synced_extractions into per-law summary rows in:
 
 Run after sync_extractions.py to populate the matrix view.
 
-P2-1: every query here filters to review_status IN ('approved', 'verified')
-(see _ELIGIBLE_REVIEW_STATUSES below for why 'approved' alone is wrong once
-Policy Navigator's own review workflow is in the picture) and confidence_tier
-at or above the publish floor. This is defense in depth —
-synced_extractions should only ever contain eligible rows once P2-2 (purge)
-and P2-3 (CHECK constraint) have landed, but this script must not silently
-re-aggregate a legacy unapproved row that predates that cleanup, or a row
-that was eligible under a since-lowered floor.
+P2-1 / P2-3: every query here reads from the rollup_eligible_extractions
+view (not the raw synced_extractions table) and additionally filters on
+confidence_tier at or above the publish floor. The view encodes
+review_status IN ('approved', 'verified') — see its definition
+(migration p2_3_rollup_eligible_extractions_view) for why 'approved' alone
+is wrong once Policy Navigator's own post-sync review workflow is in the
+picture, and why this is a view rather than a CHECK constraint. The tier
+filter stays in Python because it's a runtime-configurable floor
+(--min-tier), not a fixed rule a view can encode.
 
 P2-4: rollups are recomputed from scratch and REPLACE the target row on
 every run (plain overwrite in the ON CONFLICT clause) rather than merging
@@ -61,23 +62,12 @@ from src.core.vocab_loader import get_canonical_codes, normalize
 # legacy rows or a floor value that has since changed, not the primary enforcement point.
 _TIER_ORDER = ["A", "B", "C", "D"]
 
-# Policy Navigator has its own independent, post-sync review workflow
-# (extraction_reviews + the fn_update_extraction_consensus trigger) that
-# overwrites this same review_status column to one of
-# pending/flagged/verified/rejected the moment a PN reviewer votes — it never
-# writes 'approved', which is exclusively Regs Checker's vocabulary, set once
-# at sync time by sync_extractions.py and never touched by this table's own
-# rows afterward unless PN review activity occurs.
-#
-# Product decision: RC approval is the baseline gate (a row must have been
-# RC-approved to sync at all); PN's own review is a backup veto layer, not a
-# required blessing. So a row is rollup-eligible if it is either still at its
-# RC-approved sync-time value ('approved', meaning no PN reviewer has acted
-# on it yet) or has been positively confirmed by PN's own reviewers
-# ('verified'). 'pending'/'needs_revision' (legacy pre-P2-1 rows that were
-# never RC-approved) and 'rejected'/'flagged' (an active veto, by either
-# side) are excluded.
-_ELIGIBLE_REVIEW_STATUSES = ("approved", "verified")
+# Eligibility (review_status IN ('approved', 'verified')) is enforced by the
+# rollup_eligible_extractions DB view, not here — see the module docstring
+# and migration p2_3_rollup_eligible_extractions_view for the full rationale
+# (Policy Navigator's own post-sync review workflow overwrites review_status
+# to pending/flagged/verified/rejected via a trigger, so 'approved' alone
+# would wrongly exclude PN-verified rows).
 
 
 def _eligible_tiers(min_tier: str) -> list[str]:
@@ -128,12 +118,11 @@ def rollup_enforcement(session, min_tier: str) -> dict:
     rows = session.execute(
         text("""
             SELECT law_id, id as extraction_id, payload
-            FROM synced_extractions
+            FROM rollup_eligible_extractions
             WHERE extraction_type IN ('obligation', 'enforcement')
-              AND review_status = ANY(:statuses)
               AND confidence_tier::text = ANY(:tiers)
         """),
-        {"tiers": eligible_tiers, "statuses": list(_ELIGIBLE_REVIEW_STATUSES)},
+        {"tiers": eligible_tiers},
     ).mappings().all()
 
     by_law: dict[int, dict] = {}
@@ -232,12 +221,11 @@ def rollup_obligation_flags(session, min_tier: str) -> dict:
     rows = session.execute(
         text("""
             SELECT law_id, id as extraction_id, payload
-            FROM synced_extractions
+            FROM rollup_eligible_extractions
             WHERE extraction_type = 'compliance_mechanism'
-              AND review_status = ANY(:statuses)
               AND confidence_tier::text = ANY(:tiers)
         """),
-        {"tiers": eligible_tiers, "statuses": list(_ELIGIBLE_REVIEW_STATUSES)},
+        {"tiers": eligible_tiers},
     ).mappings().all()
 
     by_law: dict[int, dict] = {}
@@ -341,12 +329,11 @@ def rollup_thresholds(session, min_tier: str) -> dict:
     rows = session.execute(
         text("""
             SELECT law_id, id as extraction_id, payload
-            FROM synced_extractions
+            FROM rollup_eligible_extractions
             WHERE extraction_type IN ('threshold', 'exception')
-              AND review_status = ANY(:statuses)
               AND confidence_tier::text = ANY(:tiers)
         """),
-        {"tiers": eligible_tiers, "statuses": list(_ELIGIBLE_REVIEW_STATUSES)},
+        {"tiers": eligible_tiers},
     ).mappings().all()
 
     by_law: dict[int, dict] = {}
@@ -435,12 +422,11 @@ def rollup_conflicts(session, min_tier: str) -> dict:
     rows = session.execute(
         text("""
             SELECT law_id, id as extraction_id, payload, evidence_spans
-            FROM synced_extractions
+            FROM rollup_eligible_extractions
             WHERE extraction_type = 'preemption_signal'
-              AND review_status = ANY(:statuses)
               AND confidence_tier::text = ANY(:tiers)
         """),
-        {"tiers": eligible_tiers, "statuses": list(_ELIGIBLE_REVIEW_STATUSES)},
+        {"tiers": eligible_tiers},
     ).mappings().all()
 
     # Get existing extraction IDs to avoid duplicates

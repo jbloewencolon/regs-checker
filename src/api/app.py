@@ -15,12 +15,13 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from starlette.templating import Jinja2Templates
 
 from src.api.middleware.auth import verify_api_key
 from src.api.routes import dashboard, internal, v1
 from src.core.config import settings
+from src.db.engine import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +132,18 @@ app.include_router(
 
 @app.get("/health")
 async def health_check() -> dict:
-    return {"status": "healthy", "version": settings.app_version}
+    health: dict = {"status": "healthy", "version": settings.app_version}
+
+    db = SessionLocal()
+    try:
+        rows = db.execute(text("SELECT view_name, refreshed_at FROM view_refresh_log")).all()
+        health["views_last_refreshed"] = {
+            row.view_name: row.refreshed_at.isoformat() for row in rows
+        }
+    except Exception:
+        logger.exception("Failed to read view_refresh_log for /health")
+        health["views_last_refreshed"] = None
+    finally:
+        db.close()
+
+    return health

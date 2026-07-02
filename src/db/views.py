@@ -107,6 +107,21 @@ GROUP BY
 WITH DATA;
 """
 
+# Tracks the last successful refresh of each served view so /health can report
+# freshness without Postgres's own catalogs (which don't record matview refresh time).
+VIEW_REFRESH_LOG_TABLE = """
+CREATE TABLE IF NOT EXISTS view_refresh_log (
+    view_name TEXT PRIMARY KEY,
+    refreshed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO view_refresh_log (view_name, refreshed_at) VALUES
+    ('current_active_obligations', now()),
+    ('served_obligations', now()),
+    ('served_matrix_cells', now())
+ON CONFLICT (view_name) DO NOTHING;
+"""
+
 # Trigger function to refresh materialized views when reviews are completed
 REFRESH_TRIGGER_FUNCTION = """
 CREATE OR REPLACE FUNCTION refresh_served_views()
@@ -115,9 +130,17 @@ BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY served_obligations;
     REFRESH MATERIALIZED VIEW CONCURRENTLY current_active_obligations;
     -- Matrix cells refresh is heavier; do it less frequently via scheduled job
+    -- (not yet implemented — see phase2_completion_log.md P2-7 known gap).
+    INSERT INTO view_refresh_log (view_name, refreshed_at) VALUES
+        ('served_obligations', now()),
+        ('current_active_obligations', now())
+    ON CONFLICT (view_name) DO UPDATE SET refreshed_at = EXCLUDED.refreshed_at;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_catalog;
+
+REVOKE EXECUTE ON FUNCTION public.refresh_served_views() FROM PUBLIC;
 """
 
 REFRESH_TRIGGER = """
@@ -164,6 +187,7 @@ ALL_VIEW_DEFINITIONS = [
     CURRENT_ACTIVE_OBLIGATIONS_VIEW,
     SERVED_OBLIGATIONS_VIEW,
     SERVED_MATRIX_CELLS_VIEW,
+    VIEW_REFRESH_LOG_TABLE,
     REFRESH_TRIGGER_FUNCTION,
     REFRESH_TRIGGER,
 ]
