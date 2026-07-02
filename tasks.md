@@ -92,6 +92,62 @@ Law-card data model, applicability product, API, productionization — resume on
 > mid-implementation; five pre-existing bugs fixed (column-name mismatches, missing
 > eligibility filters, cast syntax, live schema drift, missing security hardening).
 
+## Remediation Plan — Phase 3: Confidence-Only Publish Gate (2026-07-02)
+
+> **Status: ⏳ planned, not started.** Product decision confirmed 2026-07-02: the sync
+> pipeline should publish extractions to Policy Navigator based on **confidence tier
+> alone (A/B/C, never D)** — the `review_status='approved'` requirement built in Phase 2
+> (P2-1/P2-3) is being **removed**, not tightened. This is a deliberate reversal of the
+> P2 review gate, applied consistently to both `sync_extractions.py` and
+> `rollup_matrix.py`. Tracked as tasks #21–#27.
+>
+> **Open risk to flag before/while implementing:** removing `review_status` entirely
+> (not narrowing to an allow-list) means extractions RC has explicitly marked
+> `rejected` or `flagged` will sync to Policy Navigator too, as long as tier is A/B/C —
+> tier and review are orthogonal signals. If that's not intended, P3-1 should filter
+> to `review_status != 'rejected'` rather than dropping the column check entirely.
+> Confirm before P3-1 ships.
+
+- ⏳ **P3-1** — `sync_extractions.py`: drop `review_status = 'approved'` from all three
+  queries in `sync_extractions()` (pending count, dry-run bridged count, main fetch).
+  Keep the existing `confidence_tier::text = ANY(:tiers)` filter — `_eligible_tiers()`
+  already excludes D by default (`confidence_publish_min_tier = "C"` in
+  `src/core/config.py`). Update the module docstring (currently documents the P2-1
+  approved-only gate) and inline comments.
+- ⏳ **P3-2** — Policy Navigator live migration: `CREATE OR REPLACE VIEW
+  rollup_eligible_extractions` to drop its `review_status IN ('approved','verified')`
+  condition (added in P2-3, migration `p2_3_rollup_eligible_extractions_view`) so it
+  becomes a pass-through of `synced_extractions` (or is retired in favor of querying
+  `synced_extractions` directly — decide during implementation). Tier filtering
+  continues to live in Python in `rollup_matrix.py`, unchanged. Verify against a
+  scratch Postgres schema before applying live, per the P2 pattern.
+- ⏳ **P3-3** — `sync_updates()` in `sync_extractions.py`: change `is_eligible` from
+  `review_status == 'approved' and tier in eligible_tiers` to tier-only. Update the
+  function's docstring, which currently documents the "RC leads, PN backs up" review-
+  gated design from P2-6.
+- ⏳ **P3-4** — Dashboard: new panel/route for **Tier-D extractions** (permanently
+  ineligible under the tier-only gate) so analysts have a queue of what still needs
+  re-extraction or prompt/model tuning to reach C+. Mirror the existing
+  `/api/low-confidence/export.csv` pattern in `src/api/routes/dashboard.py`.
+- ⏳ **P3-5** — Dashboard: new **audit panel** listing `synced_extractions` rows in
+  Policy Navigator whose `review_status` is not `approved`/`verified` — i.e., rows now
+  live in the product without RC human sign-off. This is the visibility backstop for
+  removing the P2 review gate; without it there's no way to see what shipped
+  unreviewed.
+- ⏳ **P3-6** — Tests: prove pending/flagged/rejected-status extractions at tier A/B/C
+  now sync (regression against the old P2-1 behavior), and tier-D never syncs
+  regardless of review_status. Cover both `sync_extractions()` and `sync_updates()`.
+- ⏳ **P3-7** — `docs/phase3_completion_log.md` (new) + a forward-pointing addendum on
+  `docs/remediation_plan.md`'s Phase 2 section noting the gate was relaxed in Phase 3.
+  Apply the live PN migration via `apply_migration`, re-run the Supabase advisor scan.
+
+**Sequencing:** P3-1 and P3-3 (code) can land together first since they're pure RC-side
+sync logic. P3-2 (live PN view) should follow, verified on scratch Postgres first — it's
+the one live-database change in this phase. P3-4/P3-5 (dashboard) are independent and
+can land in parallel with P3-2. P3-6/P3-7 close out the phase.
+
+---
+
 ## Remediation Plan — Engineering Review Findings (RR)
 
 > Synthesis of two independent reviews: the **agent-engineering review**
