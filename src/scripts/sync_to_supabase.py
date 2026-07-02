@@ -62,8 +62,11 @@ SYNC_TABLES = [
     "review_actions",
     "obligation_dependencies",
     "applicability_conditions",
-    "api_keys",
-    "export_jobs",
+    # NOTE (P0-4): api_keys and export_jobs are intentionally excluded.
+    # api_keys holds /v1/ product API credentials (hashed, but still
+    # authentication material) — it has no reason to exist on the pipeline
+    # mirror project and widens the blast radius of that project's exposure.
+    # export_jobs is local-only export tracking with no downstream consumer.
     "bill_level_extractions",       # depends on document_versions + extraction_runs
     "failed_extraction_attempts",   # depends on normalized_source_records + extraction_jobs
 ]
