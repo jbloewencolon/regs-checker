@@ -15,12 +15,22 @@ Key design decisions:
   - sync_to_supabase.py is NOT replaced — it handles local Docker →
     Regs Checker Supabase. This script handles the next leg:
     Regs Checker Supabase → Policy Navigator Supabase.
+  - Publish gate (P2-1): only extractions with review_status='approved' and
+    confidence_tier at or above REGS_CONFIDENCE_PUBLISH_MIN_TIER are eligible
+    to sync at all — unapproved or below-floor extractions never reach the
+    product database.
+  - Two-leg sync (P2-1 + P2-6): sync_extractions() discovers brand-new
+    extractions via the id cursor. sync_updates() (run right after, in the
+    same CLI invocation) separately re-checks recently-changed rows by
+    updated_at, so a review decision or confidence recompute on a
+    previously-synced-or-skipped extraction still reaches Policy Navigator
+    even though the id cursor never looks backward.
 
 Usage:
-    # Dry run — show what would be synced:
+    # Dry run — show what would be synced/updated:
     python -m src.scripts.sync_extractions --dry-run
 
-    # Sync extractions:
+    # Sync new extractions + propagate updates:
     python -m src.scripts.sync_extractions
 
     # Explicit URLs (overrides env vars):
@@ -44,8 +54,24 @@ from datetime import UTC, datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from src.core.config import settings
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
+
+# P2-1: only extractions that have cleared human review, at or above the
+# configured publish tier, may reach the product database. Mirrors
+# src/api/routes/v1.py::_tiers_at_or_above so both surfaces agree on what
+# "eligible" means.
+_TIER_ORDER = ["A", "B", "C", "D"]
+
+
+def _eligible_tiers(min_tier: str) -> list[str]:
+    """Return confidence tiers at or above min_tier (best=A first)."""
+    min_tier = (min_tier or "C").upper()
+    if min_tier not in _TIER_ORDER:
+        return list(_TIER_ORDER)
+    idx = _TIER_ORDER.index(min_tier)
+    return _TIER_ORDER[: idx + 1]
 
 
 def _load_bridge(target_session) -> dict[int, int]:
@@ -122,15 +148,27 @@ def sync_extractions(
         cursor = _get_cursor(target_session)
         print(f"Cursor: syncing extractions with id > {cursor}")
 
+        # P2-1: only approved extractions at or above the publish tier are
+        # eligible to reach the product database. Applied consistently across
+        # every count/fetch query below so dry-run reporting matches what a
+        # live sync actually inserts.
+        eligible_tiers = _eligible_tiers(settings.confidence_publish_min_tier)
+        print(f"Publish filter: review_status='approved' AND confidence_tier IN {eligible_tiers}")
+
         # Step 3: Count pending extractions in source
         source_pending = source_session.execute(
             text(
-                "SELECT COUNT(*) FROM extractions WHERE id > :cursor"
+                """
+                SELECT COUNT(*) FROM extractions
+                WHERE id > :cursor
+                  AND review_status = 'approved'
+                  AND confidence_tier::text = ANY(:tiers)
+                """
             ),
-            {"cursor": cursor},
+            {"cursor": cursor, "tiers": eligible_tiers},
         ).scalar()
 
-        print(f"Source: {source_pending} extractions pending sync")
+        print(f"Source: {source_pending} approved, tier-eligible extractions pending sync")
 
         if source_pending == 0:
             print("Nothing to sync — already up to date.")
@@ -152,10 +190,12 @@ def sync_extractions(
                     JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                     JOIN document_versions dv ON nsr.document_version_id = dv.id
                     WHERE e.id > :cursor
+                    AND e.review_status = 'approved'
+                    AND e.confidence_tier::text = ANY(:tiers)
                     AND dv.family_id IN :family_ids
                     """
                 ),
-                {"cursor": cursor, "family_ids": tuple(bridge.keys())},
+                {"cursor": cursor, "tiers": eligible_tiers, "family_ids": tuple(bridge.keys())},
             ).scalar()
             print(f"\n  With bridge mapping:    {bridged}")
             print(f"  Without bridge mapping: {source_pending - bridged}")
@@ -172,6 +212,17 @@ def sync_extractions(
         synced = 0
         skipped_no_bridge = 0
         max_id = cursor
+
+        # Design note: this id-cursor leg's job is discovering NEW extractions.
+        # It intentionally does not try to be "skip-proof" — the cursor is a
+        # MAX(id) watermark, so once a higher id has synced, a lower id that
+        # was ineligible at the time (still pending review) would otherwise be
+        # unreachable via `WHERE id > cursor` even after a reviewer later
+        # approves it. That case is the explicit job of the separate
+        # updated_at-based leg (see sync_updates(), P2-6) run right after this
+        # one — it re-checks by change time, not id position, so it always
+        # catches an extraction whose review_status/tier changed after the
+        # fact regardless of where its id sits relative to the cursor.
 
         # Fetch extractions joined with their document_family_id
         rows = source_session.execute(
