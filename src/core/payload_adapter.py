@@ -50,12 +50,14 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
     """Adapt obligation payload: flatten nested timeline and enforcement objects.
 
     Regs Checker format:
-        {subject, modality, action, timeline: {effective_date, ...}, enforcement: {...}}
+        {subject, modality, action, timeline: {effective_date, ...}, enforcement: {...},
+         obligation_family: <code>}
 
     Policy Navigator expected format:
         {subject, subject_normalized, modality, action, condition, jurisdiction,
-         timeline, enforcement}
-    where timeline and enforcement are string summaries.
+         timeline, enforcement, obligation_family}
+    where timeline and enforcement are string summaries, and obligation_family is
+    the canonical code for the obligation type (documentation, registration, etc.).
     """
     result: dict[str, Any] = {
         "subject": payload.get("subject"),
@@ -66,6 +68,7 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         "jurisdiction": payload.get("jurisdiction"),
         "timeline": None,
         "enforcement": None,
+        "obligation_family": payload.get("obligation_family"),
     }
 
     # Flatten timeline object into a string summary

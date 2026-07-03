@@ -61,6 +61,7 @@ from sqlalchemy.orm import sessionmaker
 from src.core.config import settings
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
+from src.core.vocab_loader import get_canonical_codes
 
 # P3-1 (supersedes P2-1's review_status='approved' requirement): only
 # confidence tier at or above the configured publish floor determines
@@ -76,6 +77,37 @@ def _eligible_tiers(min_tier: str) -> list[str]:
         return list(_TIER_ORDER)
     idx = _TIER_ORDER.index(min_tier)
     return _TIER_ORDER[: idx + 1]
+
+
+def _extract_canonical_actor_code(payload: dict[str, any]) -> str | None:
+    """Extract canonical actor code from normalized subject field in payload.
+
+    For obligation payloads, maps subject_normalized to the canonical actor
+    code (developer, provider, deployer, etc.). Returns None if not an obligation
+    or if subject_normalized is not present.
+    """
+    subject_normalized = payload.get("subject_normalized")
+    if not subject_normalized:
+        return None
+
+    # Load the actor canonical codes and aliases
+    try:
+        canonical_codes = get_canonical_codes("actor")
+        if subject_normalized in canonical_codes:
+            return subject_normalized
+    except Exception:
+        # If vocab loading fails, gracefully skip enrichment
+        pass
+
+    return None
+
+
+def _extract_obligation_family(payload: dict[str, any]) -> str | None:
+    """Extract obligation family code from payload if present.
+
+    Returns the obligation_family field from the payload, or None if not found.
+    """
+    return payload.get("obligation_family")
 
 
 def _load_bridge(target_session) -> dict[int, int]:
@@ -228,7 +260,7 @@ def sync_extractions(
         # so it always catches an extraction whose tier changed after the fact
         # regardless of where its id sits relative to the cursor.
 
-        # Fetch extractions joined with their document_family_id
+        # Fetch extractions joined with their document_family_id and canonical_key
         rows = source_session.execute(
             text(
                 """
@@ -243,6 +275,7 @@ def sync_extractions(
                     e.model_id,
                     e.created_at,
                     dv.family_id AS doc_family_id,
+                    dv.canonical_key,
                     nsr.section_path,
                     nsr.text_content AS passage_text
                 FROM extractions e
@@ -285,6 +318,10 @@ def sync_extractions(
                 row["extraction_type"], raw_payload or {}
             )
 
+            # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
+            canonical_actor_code = _extract_canonical_actor_code(raw_payload)
+            obligation_family = _extract_obligation_family(raw_payload)
+
             insert_batch.append({
                 "system_a_extraction_id": extraction_id,
                 "law_id": law_id,
@@ -309,6 +346,11 @@ def sync_extractions(
                 # source_created_at.
                 "system_a_created_at": row["created_at"],
                 "synced_at": datetime.now(UTC),
+                # DI-1: Stable join key for Policy Navigator (pre-reload enrichment)
+                "canonical_key": row["canonical_key"],
+                # P3 pre-reload enrichment: actor code and obligation classification
+                "canonical_actor_code": canonical_actor_code,
+                "obligation_family": obligation_family,
             })
 
             max_id = max(max_id, extraction_id)
@@ -432,6 +474,7 @@ def sync_updates(
                     e.model_id,
                     e.updated_at,
                     dv.family_id AS doc_family_id,
+                    dv.canonical_key,
                     nsr.section_path,
                     nsr.text_content AS passage_text
                 FROM extractions e
@@ -483,16 +526,22 @@ def sync_updates(
                 raw_payload = json.loads(raw_payload)
             adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
 
+            # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
+            canonical_actor_code = _extract_canonical_actor_code(raw_payload)
+            obligation_family = _extract_obligation_family(raw_payload)
+
             target_session.execute(
                 text("""
                     INSERT INTO synced_extractions (
                         system_a_extraction_id, law_id, extraction_type, payload,
                         evidence_spans, confidence_score, confidence_tier, review_status,
-                        model_id, section_reference, source_text_excerpt, system_a_created_at, synced_at
+                        model_id, section_reference, source_text_excerpt, system_a_created_at, synced_at,
+                        canonical_key, canonical_actor_code, obligation_family
                     ) VALUES (
                         :eid, :law_id, :etype, :payload,
                         :spans, :score, :tier, :status,
-                        :model, :section, :passage, :updated_at, :synced_at
+                        :model, :section, :passage, :updated_at, :synced_at,
+                        :ckey, :actor_code, :obl_family
                     )
                     ON CONFLICT (system_a_extraction_id) DO UPDATE SET
                         payload = EXCLUDED.payload,
@@ -501,7 +550,10 @@ def sync_updates(
                         confidence_tier = EXCLUDED.confidence_tier,
                         section_reference = EXCLUDED.section_reference,
                         source_text_excerpt = EXCLUDED.source_text_excerpt,
-                        synced_at = EXCLUDED.synced_at
+                        synced_at = EXCLUDED.synced_at,
+                        canonical_key = EXCLUDED.canonical_key,
+                        canonical_actor_code = EXCLUDED.canonical_actor_code,
+                        obligation_family = EXCLUDED.obligation_family
                 """),
                 {
                     "eid": row["extraction_id"],
@@ -517,6 +569,9 @@ def sync_updates(
                     "passage": row["passage_text"],
                     "updated_at": row["updated_at"],
                     "synced_at": datetime.now(UTC),
+                    "ckey": row["canonical_key"],
+                    "actor_code": canonical_actor_code,
+                    "obl_family": obligation_family,
                 },
             )
             applied += 1
