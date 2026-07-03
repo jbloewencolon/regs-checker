@@ -12,7 +12,11 @@ This catches:
     implicitly creates a compliance boundary)
   - Multiple obligations in a single sentence where only one was captured
 
-Uses a different model than the primary agents to provide diversity.
+Model is config-driven via agent_models.json["gap_detection"] (EA0-5) so it
+resolves correctly under both the nvidia and local providers. Note: the
+current default does NOT provide genuine model-lineage diversity from the
+primary extraction agents (same family, different size) — see EA4-1 in
+tasks.md for the planned fix.
 Returns new extraction candidates, not modifications to existing ones.
 """
 
@@ -189,6 +193,12 @@ EXISTING EXTRACTIONS ({len(existing_extractions)} found):
         if context.get("jurisdiction"):
             prompt += f"\nJURISDICTION: {context['jurisdiction']}"
 
+    # Model is config-driven (EA0-5) via agent_models.json["gap_detection"] —
+    # see cross_validation.py for the rationale (hardcoded override broke
+    # under the local provider and bypassed the Models page).
+    from src.core.model_config import get_config
+    cfg = get_config().get("gap_detection")
+
     provider = get_extraction_provider()
     system_prompt = GAP_DETECTION_SYSTEM_PROMPT + (
         "\n\nReturn only raw JSON with no markdown formatting, "
@@ -199,7 +209,9 @@ EXISTING EXTRACTIONS ({len(existing_extractions)} found):
         response = provider.call(
             system_prompt=system_prompt,
             user_prompt=prompt,
-            model_override="openai/gpt-oss-20b",
+            max_tokens=cfg.max_tokens,
+            temperature=cfg.temperature,
+            model_override=cfg.model or None,
         )
         raw_output = response.text
         usage = response.usage

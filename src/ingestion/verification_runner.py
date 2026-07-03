@@ -24,6 +24,7 @@ from src.db.models import (
     Extraction,
     ExtractionVerificationStatus,
     NormalizedSourceRecord,
+    ReviewQueueItem,
     SectionTriageResult,
     TriageDecision,
     VerificationRunSummary,
@@ -189,6 +190,40 @@ def _recompute_confidence_with_cv(
     extraction.metadata_ = updated_meta
 
     return tier_changed
+
+
+def _sync_review_priority(
+    db,
+    extraction_id: int,
+    tier: str,
+    issues: list[dict] | None = None,
+) -> None:
+    """Update ReviewQueueItem.priority after verification changes an extraction's tier.
+
+    EA0-3: priority was previously set once at extraction time
+    (``_confidence_to_priority(tier)`` in extractor.py) and never revisited —
+    an extraction demoted from A to D by cross-validation kept its original
+    low-urgency queue position. This re-derives priority from the current
+    tier and additionally forces max urgency when CV reported a critical or
+    high-severity issue, even if the tier recompute didn't cross a tier
+    boundary. Priority only escalates here — it never lowers a value another
+    signal may have set higher.
+    """
+    from src.ingestion.extractor import _confidence_to_priority
+
+    item = db.scalars(
+        select(ReviewQueueItem).where(ReviewQueueItem.extraction_id == extraction_id)
+    ).first()
+    if item is None:
+        return
+
+    target = _confidence_to_priority(tier)
+    if issues:
+        if any((issue or {}).get("severity") in ("critical", "high") for issue in issues):
+            target = max(target, 3)
+
+    if target > (item.priority or 0):
+        item.priority = target
 
 
 def _run_iapp_alignment_for_dv(
@@ -499,6 +534,10 @@ def run_verification_pass(
                         grounding_status=_grounding_status_from_breakdown(breakdown),
                     )
                     db.add(evs)
+
+                    _sync_review_priority(
+                        db, ext_id, tier_after, issues=r.get("issues", []),
+                    )
 
             cv_avg = cv_accuracy_sum / cv_passages if cv_passages > 0 else 1.0
             fail_note = f", {cv_failed} FAILED" if cv_failed else ""

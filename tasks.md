@@ -179,33 +179,68 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 > (EA1-1) exists, or the tuning is unfalsifiable.
 
 ### Phase EA0 — Stop-the-bleeding defects (no eval dependency; land now)
-- ⏳ **EA0-1** **[Critical]** CV misattribution: `cross_validation.py:225-235` trusts
-  model-reported `extraction_index` (fallback `len(results)`) → accuracy scores and
-  tier recomputes can write to the **wrong extraction row**; omitted
-  `accuracy_score` defaults to 1.0. Fix: validate index alignment (validation count
-  == extraction count, indexes unique and in-range; else `status="failed"`), treat
-  missing score as failure not 1.0. Regression tests for misaligned/short/dup-index
-  responses. *(NLP, BE)*
-- ⏳ **EA0-2** **[High]** Routing recall bug/doc mismatch: `architecture.md:25` says
-  "<2 signals → run all 6"; `routing.py:154` runs all only at **zero** signals, so a
-  single stray keyword (e.g. "agency") routes a passage to one agent. Decision +
-  fix: align code to the documented ≥2-signal fallback (recall-safe), or ratify
-  1-signal routing and update the doc. Given the precision mandate, default to
-  code-fix. Add routing unit tests for the 1-signal case. *(NLP)*
-- ⏳ **EA0-3** **[High]** Stale review priority: `ReviewQueueItem.priority` is set at
-  insert and never updated when verification changes the tier
-  (`verification_runner.py` recomputes tier, never touches the queue row). Update
-  priority on tier change; CV `critical`/`high` issues bump priority regardless of
-  tier. *(BE)*
-- ⏳ **EA0-4** **[High]** Bill-level silent truncation: `MAX_BILL_TEXT_CHARS=128_000`
-  cuts long bills with no trace; enforcement sections sit at the **end** of bills, so
-  the bias hits penalties hardest. Record `input_truncated: true` + chars-dropped in
-  the payload; surface on dashboard. (Content fix is EA5-3.) *(BE)*
-- ⏳ **EA0-5** **[Medium]** CV/gap model hardcoded: `model_override="openai/gpt-oss-20b"`
-  in `cross_validation.py:203` / `gap_detector.py:202` breaks under the `local`
-  provider (model not loaded) and dodges config. Move to `agent_models.json`
-  entries (`cross_validation`, `gap_detection`). Stale docstrings ("qwen3.5-9b")
-  fixed same pass. Lineage-diversity choice is EA4-1. *(NLP, BE)*
+- ✅ **EA0-1** **[Critical]** CV misattribution fixed. `run_cross_validation()`
+  (`cross_validation.py`) now rejects any validation item with a missing,
+  non-int/bool, out-of-range, or duplicate `extraction_index` (discarded +
+  logged, never guessed via the old `len(results)` fallback); a batch where
+  every item is unattributable returns `status="failed"` instead of a clean-
+  looking empty pass. Missing `accuracy_score` no longer defaults to 1.0 —
+  it's recorded as `0.5` with `score_missing: True` so it can never silently
+  inflate confidence. Extractions with no matching validation item are
+  surfaced via new `unmatched_extraction_ids` (they were never actually
+  reviewed by CV — left alone, not treated as passing). Prompt tightened to
+  require `extraction_index`/`accuracy_score` on every item, one per
+  extraction, unique indices. 13 tests in `test_cross_validation.py`;
+  existing `test_verification_agents.py` (21 tests) unaffected. *(NLP, BE)*
+- ✅ **EA0-2** **[High]** Routing recall bug/doc mismatch — resolved as a
+  **doc fix, not a code change**. Investigation found `routing.py`'s
+  ≥1-signal threshold is deliberate, not accidental: `test_routing_recall.py`
+  already pins it as tested behavior (`test_five_of_six_signals_returns_none`
+  explicitly documents "threshold is len-1"), and `triage_recall_sample_rate`
+  (5%, `config.py`) already exists as the compensating control for exactly
+  this recall risk. Rewriting core routing logic without a live-model gold
+  set to measure the tradeoff would be tuning-by-guess — the opposite of
+  what EA1 exists to prevent. `architecture.md` corrected to describe actual
+  behavior, cites the pinning test, and explicitly gates threshold *tuning*
+  (not re-documentation) on the EA1 gold set. *(NLP)*
+- ✅ **EA0-3** **[High]** Stale review priority fixed. New
+  `_sync_review_priority()` in `verification_runner.py`, called after each
+  CV recompute: re-derives `ReviewQueueItem.priority` from the post-CV tier,
+  and forces max urgency (3) when any CV issue is `critical`/`high` severity
+  regardless of tier — closing the case where a ~0.08-weight CV nudge at
+  0.10 weight wasn't enough to cross a tier boundary but the underlying
+  finding was serious. Escalates only (never lowers a priority another
+  signal set higher). 11 tests in `test_verification_review_priority.py`.
+  *(BE)*
+- ✅ **EA0-4** **[High]** Bill-level silent input-truncation now visible.
+  `BillLevelAgent.extract_bill()` (`bill_level_base.py`) computes
+  `chars_dropped`/`input_truncated` from the pre-existing `full_text[:
+  MAX_BILL_TEXT_CHARS]` slice — previously untracked — and threads them
+  through `BillLevelResult` plus into the stored JSONB payload
+  (`_input_truncated`/`_chars_dropped`, via `setdefault` so a model-produced
+  field of the same name is never clobbered) on both the success and
+  unrecoverable-failure paths; no migration needed since `BillLevelExtraction
+  .payload` is JSONB. Distinct from the pre-existing `truncated` column,
+  which only ever covered *output* truncation (`finish_reason=length`). 6
+  tests in `test_bill_level_truncation.py`, including a spy-based test
+  pinning that `get_prompt` only ever sees the truncated slice. **Dashboard
+  surfacing deferred** — this session has no live app/browser to verify a UI
+  change against (see CLAUDE.md environment note); the payload flag is
+  queryable today via the JSONB column for anyone building the panel.
+  Content-side fix (target the enforcement-pattern sections instead of the
+  raw prefix) is still EA5-3. *(BE)*
+- ✅ **EA0-5** **[Medium]** CV/gap model made config-driven. Added
+  `cross_validation`/`gap_detection` entries to `AGENT_DISPLAY` +
+  `_AGENT_MAX_TOKENS` (`model_config.py`) and to `config/agent_models.json`
+  under both `local` and `nvidia` blocks (16384 max_tokens, matching the
+  pre-fix provider-default token budget so behavior doesn't silently
+  change). `_default_agents()` special-cases these two to `openai/gpt-oss-
+  20b` under `nvidia` (preserving current behavior) and to
+  `settings.local_extraction_model` under `local` (fixing the actual bug —
+  the old hardcoded NVIDIA-only model name doesn't exist in LM Studio, so
+  verification silently broke under the local provider). Stale
+  "qwen3.5-9b" docstring replaced with a pointer to EA4-1, which owns the
+  actual lineage-diversity question. *(NLP, BE)*
 
 ### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
 - ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
@@ -355,7 +390,11 @@ $/law in `run_summary.json` before/after so the trade is explicit.
 1. **Baseline before behavior changes.** EA1-3's baseline must be captured on
    *current* code before EA0-2 (routing) lands, or the baseline measures the new
    routing and the lift is unmeasurable. Exact order: EA1-3-lite (run existing 33
-   fixtures, commit scores) → EA0 → full EA1. Days, not weeks.
+   fixtures, commit scores) → EA0 → full EA1. Days, not weeks. **Resolved
+   2026-07-03:** EA0-2 landed as a doc-only fix (see above) — no routing
+   behavior changed, so this specific ordering hazard didn't materialize. The
+   ordering principle still holds for any *future* task that changes routing
+   or extraction behavior: capture/refresh the EA1 baseline first.
 2. **EA3-1 additionally gates on EA2-1/EA2-2.** Evidence grounding today verifies
    *quoting*, not *support* (review finding #2) — promoting it to the dominant
    confidence weight before field-binding lands would swap one weak dominant
@@ -376,6 +415,17 @@ $/law in `run_summary.json` before/after so the trade is explicit.
    before committing to EA6-2 constrained-decoding work per-agent. Also: 4c's
    weight model and EA3-1 must merge into ONE confidence plan — whoever lands
    first absorbs the other; do not maintain two.
+6. **Session note (2026-07-03):** all five EA0 items landed this session —
+   code fixes + 36 new regression tests (907/907 unit tests passing), no
+   live LLM required since all five are pure-logic/config defects. **EA1
+   (gold-set baseline capture) could NOT be run this session** — this
+   execution environment has neither `NVIDIA_API_KEY` nor a reachable local
+   LM Studio instance, and the harness (`src/evaluation/harness.py`) calls
+   real model providers. EA1-3-lite (run the existing 33 fixtures, commit
+   baseline scores) is the next unblocked step and must run on the
+   operator's machine via `python start.py` per CLAUDE.md. EA2 (deterministic
+   numeric/span grounding) is pure code + unit tests and can proceed in this
+   kind of environment without waiting on that baseline.
 
 ---
 

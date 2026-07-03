@@ -44,7 +44,16 @@ MAX_BILL_TEXT_CHARS = 128_000
 
 @dataclass
 class BillLevelResult:
-    """Result from a single bill-level agent run."""
+    """Result from a single bill-level agent run.
+
+    ``truncated`` reflects OUTPUT truncation only (the model hit
+    finish_reason=length). ``input_truncated``/``chars_dropped`` (EA0-4)
+    reflect the separate, previously-silent failure mode where the bill text
+    itself exceeded MAX_BILL_TEXT_CHARS and was cut before the prompt was
+    ever built — enforcement sections conventionally sit at the end of state
+    bills, so this truncation biases against exactly the fields
+    (enforcing_body, max_civil_penalty_usd, etc.) an auditor most needs.
+    """
 
     payload: dict[str, Any]
     model_id: str
@@ -52,6 +61,8 @@ class BillLevelResult:
     output_tokens: int
     raw_output: str
     truncated: bool = False
+    input_truncated: bool = False
+    chars_dropped: int = 0
 
 
 class BillLevelAgent(ABC):
@@ -116,9 +127,20 @@ class BillLevelAgent(ABC):
         Retries up to max_retries on parse failure.  Returns a BillLevelResult
         with payload={} and truncated=True on unrecoverable failure.
         """
+        chars_dropped = max(0, len(full_text) - MAX_BILL_TEXT_CHARS)
+        input_truncated = chars_dropped > 0
         text = full_text[:MAX_BILL_TEXT_CHARS]
         prompt = self.get_prompt(text, context or {})
         last_error: Exception | None = None
+
+        if input_truncated:
+            logger.warning(
+                "bill_level_input_truncated",
+                agent=self.agent_name,
+                full_text_chars=len(full_text),
+                budget_chars=MAX_BILL_TEXT_CHARS,
+                chars_dropped=chars_dropped,
+            )
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -126,12 +148,20 @@ class BillLevelAgent(ABC):
                     prompt, attempt
                 )
                 payload = self.parse_response(raw)
+                if input_truncated:
+                    # Surface in the JSONB payload (no migration needed) so
+                    # the dashboard/review UI and downstream sync can see it
+                    # without a schema change. Never silently overwrite a
+                    # field the model itself produced.
+                    payload.setdefault("_input_truncated", True)
+                    payload.setdefault("_chars_dropped", chars_dropped)
                 logger.info(
                     "bill_level_extraction_complete",
                     agent=self.agent_name,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     truncated=truncated,
+                    input_truncated=input_truncated,
                     payload_keys=list(payload.keys()),
                 )
                 return BillLevelResult(
@@ -141,6 +171,8 @@ class BillLevelAgent(ABC):
                     output_tokens=output_tokens,
                     raw_output=raw,
                     truncated=truncated,
+                    input_truncated=input_truncated,
+                    chars_dropped=chars_dropped,
                 )
             except Exception as e:
                 last_error = e
@@ -156,13 +188,19 @@ class BillLevelAgent(ABC):
             agent=self.agent_name,
             error=str(last_error)[:300],
         )
+        failure_payload: dict[str, Any] = {"_error": str(last_error)}
+        if input_truncated:
+            failure_payload["_input_truncated"] = True
+            failure_payload["_chars_dropped"] = chars_dropped
         return BillLevelResult(
-            payload={"_error": str(last_error)},
+            payload=failure_payload,
             model_id="",
             input_tokens=0,
             output_tokens=0,
             raw_output="",
             truncated=False,
+            input_truncated=input_truncated,
+            chars_dropped=chars_dropped,
         )
 
     # ------------------------------------------------------------------

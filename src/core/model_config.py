@@ -72,6 +72,14 @@ AGENT_DISPLAY: dict[str, dict[str, str]] = {
         "label": "Compliance Timeline (bill)",
         "description": "Bill-level synthesis of effective dates and deadlines",
     },
+    "cross_validation": {
+        "label": "Cross-Validation (verify)",
+        "description": "Post-extraction accuracy review of existing extractions against source",
+    },
+    "gap_detection": {
+        "label": "Gap Detection (verify)",
+        "description": "Post-extraction search for obligations the primary agents missed",
+    },
 }
 
 # Per-agent output-token budgets.  Pre-emptively generous so reasoning models
@@ -89,6 +97,10 @@ _AGENT_MAX_TOKENS: dict[str, int] = {
     "enforcement_agent":         3072,
     "applicability_agent":       4096,
     "compliance_timeline_agent": 4096,
+    # Preserves pre-EA0-5 behavior: these two agents previously called the
+    # provider with no max_tokens override, which defaults to 16384.
+    "cross_validation":         16384,
+    "gap_detection":            16384,
 }
 
 
@@ -218,13 +230,24 @@ class ModelConfigStore:
         but only produce a single JSON object per extraction.  NVIDIA defaults
         to a single model uniformly (gpt-oss-120b); operators tier it per-agent
         from the Models page.
+
+        cross_validation/gap_detection (EA0-5) default to gpt-oss-20b on NVIDIA
+        — preserving the pre-config-driven hardcoded value used for verification
+        — but fall back to the local extraction model under the local provider,
+        since LM Studio only holds one model in VRAM at a time and gpt-oss-20b
+        is not a local model name. True model-lineage diversity for
+        verification is a separate, measured change (EA4-1), not this default.
         """
         agents: dict[str, AgentModelConfig] = {}
         for name in AGENT_DISPLAY:
             max_tok = _AGENT_MAX_TOKENS.get(name, 2048)
             temp = 0.0 if name == "triage" else settings.extraction_temperature
             if provider == "nvidia":
-                model = settings.nvidia_extraction_model
+                model = (
+                    "openai/gpt-oss-20b"
+                    if name in ("cross_validation", "gap_detection")
+                    else settings.nvidia_extraction_model
+                )
                 agents[name] = AgentModelConfig(
                     model=model,
                     max_tokens=max_tok,
