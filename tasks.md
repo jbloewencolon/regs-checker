@@ -351,6 +351,32 @@ EA6 last, each item gated on the EA1 regression gate. Cost note: EA4-1/EA4-5 rai
 per-law token spend — acceptable per the precision mandate, but capture actual
 $/law in `run_summary.json` before/after so the trade is explicit.
 
+**Step-back amendments (self-review, same day):**
+1. **Baseline before behavior changes.** EA1-3's baseline must be captured on
+   *current* code before EA0-2 (routing) lands, or the baseline measures the new
+   routing and the lift is unmeasurable. Exact order: EA1-3-lite (run existing 33
+   fixtures, commit scores) → EA0 → full EA1. Days, not weeks.
+2. **EA3-1 additionally gates on EA2-1/EA2-2.** Evidence grounding today verifies
+   *quoting*, not *support* (review finding #2) — promoting it to the dominant
+   confidence weight before field-binding lands would swap one weak dominant
+   signal for another. EA2 is a hard prerequisite for EA3-1, not a parallel track.
+3. **Review-queue capacity budget.** EA0-3, EA4-2, EA4-3, and EA5-2 all *add*
+   review volume; with a single reviewer an unbounded queue is a fake safety net.
+   Each queue-feeding task must state expected items/run; cap total inflow (e.g.
+   top-N by severity per run) and track queue age on the dashboard.
+4. **Right-size EA1-1 to solo capacity.** 12–15 laws double-annotated is
+   team-scale. Floor: 8–10 laws, single annotation + strong-model adjudication on
+   disagreement candidates, prioritizing the agents that feed the PN matrix
+   (obligation, threshold_exception, enforcement_agent, applicability_agent).
+   Expand only if EA1-3 variance shows the set is too small to detect regressions.
+5. **Consolidation spike (unscheduled, flag only):** the 6-clause-agent split is a
+   small-local-model legacy; with 120b-class models + 131k context, a single
+   section-level pass with unified schema + strong verifier might cut error
+   surface and cost more than EA0–EA6 combined. Two-day spike on the EA1 gold set
+   before committing to EA6-2 constrained-decoding work per-agent. Also: 4c's
+   weight model and EA3-1 must merge into ONE confidence plan — whoever lands
+   first absorbs the other; do not maintain two.
+
 ---
 
 ## Remediation Plan — Engineering Review Findings (RR)
