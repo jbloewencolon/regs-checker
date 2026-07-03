@@ -148,6 +148,211 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 
 ---
 
+## Extraction Accuracy Plan (EA) — Legal-Defensibility Review Findings (2026-07-03)
+
+> Source: full-stack extraction-architecture review (prompts, agents, confidence,
+> verification, citation handling, eval harness). Goal: **hyper-accurate, auditable
+> legal data** — precision, traceability, and defensibility over speed/cost.
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Severity in **[ ]**.
+>
+> **⚠️ Cross-plan contradiction #1 (decide before EA3):** EA3 proposes an
+> **evidence-first** confidence model (tracker alignment demoted to corroboration,
+> ≤0.20 combined; Tier-D hard gate replaced by an `uncorroborated` flag). This
+> conflicts with the ratified trust bar (*"trustworthy = matches Orrick/IAPP"*,
+> Run-1 plan header) **and** with the planned 4c weights (Orrick 30 + IAPP 20 =
+> still tracker-dominant). Both models can't ship. Product owner must pick:
+> (a) tracker-first = tier measures corroboration, new/uncovered laws are
+> permanently down-tiered; (b) evidence-first = tier measures grounding quality,
+> trackers flag disagreement. EA3 is written for (b); if (a) wins, EA3-1 shrinks
+> to "fix the citation-format reward" only.
+>
+> **⚠️ Cross-plan contradiction #2 (sequencing hazard):** Remediation Phase 3
+> makes confidence tier the **only** publish gate to Policy Navigator. Until EA0/EA3
+> land, tier is inflated by topic-overlap Jaccard and rewards well-*formatted*
+> fabricated citations (`_score_section_reference`) — i.e. P3 would ship data gated
+> by a known-flawed signal. **Land EA0 + EA3 before or with P3**, or interim-gate
+> P3 on `evidence_grounding >= threshold` in addition to tier.
+>
+> **Coupling note:** EA1 (eval substrate) gates every scoring/prompt change
+> (EA3, EA4-4, EA6). EA0 and EA2 are bug-class fixes that need only unit tests
+> and can land immediately. Do not tune weights (EA3-1) before the gold set
+> (EA1-1) exists, or the tuning is unfalsifiable.
+
+### Phase EA0 — Stop-the-bleeding defects (no eval dependency; land now)
+- ⏳ **EA0-1** **[Critical]** CV misattribution: `cross_validation.py:225-235` trusts
+  model-reported `extraction_index` (fallback `len(results)`) → accuracy scores and
+  tier recomputes can write to the **wrong extraction row**; omitted
+  `accuracy_score` defaults to 1.0. Fix: validate index alignment (validation count
+  == extraction count, indexes unique and in-range; else `status="failed"`), treat
+  missing score as failure not 1.0. Regression tests for misaligned/short/dup-index
+  responses. *(NLP, BE)*
+- ⏳ **EA0-2** **[High]** Routing recall bug/doc mismatch: `architecture.md:25` says
+  "<2 signals → run all 6"; `routing.py:154` runs all only at **zero** signals, so a
+  single stray keyword (e.g. "agency") routes a passage to one agent. Decision +
+  fix: align code to the documented ≥2-signal fallback (recall-safe), or ratify
+  1-signal routing and update the doc. Given the precision mandate, default to
+  code-fix. Add routing unit tests for the 1-signal case. *(NLP)*
+- ⏳ **EA0-3** **[High]** Stale review priority: `ReviewQueueItem.priority` is set at
+  insert and never updated when verification changes the tier
+  (`verification_runner.py` recomputes tier, never touches the queue row). Update
+  priority on tier change; CV `critical`/`high` issues bump priority regardless of
+  tier. *(BE)*
+- ⏳ **EA0-4** **[High]** Bill-level silent truncation: `MAX_BILL_TEXT_CHARS=128_000`
+  cuts long bills with no trace; enforcement sections sit at the **end** of bills, so
+  the bias hits penalties hardest. Record `input_truncated: true` + chars-dropped in
+  the payload; surface on dashboard. (Content fix is EA5-3.) *(BE)*
+- ⏳ **EA0-5** **[Medium]** CV/gap model hardcoded: `model_override="openai/gpt-oss-20b"`
+  in `cross_validation.py:203` / `gap_detector.py:202` breaks under the `local`
+  provider (model not loaded) and dodges config. Move to `agent_models.json`
+  entries (`cross_validation`, `gap_detection`). Stale docstrings ("qwen3.5-9b")
+  fixed same pass. Lineage-diversity choice is EA4-1. *(NLP, BE)*
+
+### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
+- ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
+  vetoed) → stratified set of **12–15 laws**: ≥2 OCR-quality PDFs, ≥1
+  amendment-markup (engrossed) bill, ≥1 deepfake/likeness law, ≥1 tracker-silent
+  law, per-agent expected extractions for **all 6 clause agents**. Annotation by
+  RPR with double-annotation on 20% for agreement measurement. *(RPR, NLP)*
+- ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
+  obligation/definition_actor/threshold_exception — rights_protection,
+  compliance_mechanism, preemption + all 3 bill-level agents have **zero**
+  ground-truth eval. Add bill-level eval mode (whole-bill fixture → expected
+  `law_enforcement_details`/thresholds/timeline fields). *(NLP, BE)*
+- ⏳ **EA1-3** **[High]** Baseline + regression gate: run harness on current prompts/
+  models, commit per-agent per-field P/R/F1 baseline artifact; every prompt/model/
+  weight PR reruns and diffs against baseline. Numerics scored exact-match;
+  text fields scored by span overlap. *(NLP, DevOps)*
+- ⏳ **EA1-4** **[High]** Amendment-markup corpus audit: parser has **no**
+  strikethrough/insertion handling — extracting obligations from stricken text is
+  a live severe-failure risk. Audit `output/law_sources/` for engrossed-style
+  bills; report count + examples. (Fix gated as EA2-4.) *(NLP)*
+
+### Phase EA2 — Grounding: bind evidence to fields (bug-class; parallel with EA1)
+- ⏳ **EA2-1** **[Critical]** Deterministic numeric cross-check: typed numerics
+  (`max_civil_penalty_usd`, `cure_period_days`, `retention_period_months`,
+  `incident_reporting_hours`, `employee_threshold`, `revenue_threshold_usd`,
+  `consumer_data_threshold`, `compute_flops`, `assessment_frequency_months`) are
+  LLM-derived integers with unit conversion and **no rule-based check**. New
+  `src/core/numeric_grounding.py`: regex-extract numbers/durations/money from the
+  field's verified evidence span, normalize units, compare to payload value;
+  mismatch → `numeric_grounding: failed` flag + review bump. Applies to clause
+  AND bill-level payloads. *(NLP, BE)*
+- ⏳ **EA2-2** **[High]** Span provenance: record `match_tier` (1–4) on every
+  verified span and store `char_start/char_end` valid against the **canonical raw
+  passage** (today offsets index tier-dependent normalized strings — audit-UI
+  highlighting is wrong). Fix at write time in `text_grounding.py`;
+  `reground_spans.py` becomes the backfill. Tier-3/4 (loose) matches get a
+  `loose_match` flag visible in review. *(NLP, BE)*
+- ⏳ **EA2-3** **[High]** Truncation/repair honesty: payloads salvaged by
+  `_repair_truncated_json` or flagged `truncated=True` currently enter the queue
+  as normal rows (metadata-only flag). Cap tier at C + force review for
+  truncated/heavily-repaired outputs. *(NLP)*
+- 🔒 **EA2-4** **[High]** Parser strikethrough handling (gated on EA1-4 audit):
+  strip stricken text / retain inserted text for engrossed bills before
+  segmentation; add parse-quality flag `amendment_markup_detected`. *(NLP, BE)*
+
+### Phase EA3 — Confidence model v4 (gated on EA1 baseline + contradiction #1 ruling)
+- 🔒 **EA3-1** **[Critical]** Evidence-first rebalance: demote Orrick+IAPP combined
+  to ≤0.20 corroboration signal; evidence grounding dominant; replace Orrick
+  Tier-D hard gate with `uncorroborated` flag (distinct axis, not a tier). Kill
+  the Jaccard→1.0 saturation at 0.25 and the 0.3 floor-for-any-data
+  (`confidence.py:199-205`). Validate on EA1 gold set: tier assignments must
+  correlate with annotated correctness better than v3 weights before serving.
+  *(NLP, product owner sign-off)*
+- 🔒 **EA3-2** **[Critical]** Citation credit must require resolution: `_score_
+  section_reference` rewards citation **format** (fabricated "§ 6-1-1703(2)(b)"
+  scores 1.0). Make citation weight contingent on `citation_verifier` match;
+  tighten verifier — remove number-only substring match
+  (`citation_verifier.py:146-151`, "§ 3" currently verifies against "Section 13"),
+  exact/subsection-prefix only, persist match method per citation. *(NLP, BE)*
+- ⏳ **EA3-3** **[High]** Stop extracting known facts: inject `jurisdiction` and
+  default `section_reference` deterministically from ingestion metadata /
+  `section_path`; model may refine subsection detail but a fabricated ref that
+  contradicts `section_path` is rejected. Removes a hallucination surface that
+  EA3-2's scorer currently *rewards*. *(NLP)*
+- 🔒 **EA3-4** **[High]** CV findings get teeth: confirmed `critical` CV issue →
+  hard tier cap (C) instead of a ~0.08 nudge at 0.10 weight. *(NLP)*
+- 🔒 **EA3-5** **[High]** Recompute + backfill: re-tier all extractions under v4,
+  persist before/after (reuse `ExtractionVerificationStatus` pattern), coordinate
+  with P3 publish gate so PN doesn't serve mixed-model tiers. *(BE, DevOps)*
+
+### Phase EA4 — Verification independence & recall recovery
+- ⏳ **EA4-1** **[High]** Real model diversity: CV/gap currently run gpt-oss-20b
+  auditing gpt-oss-120b — same lineage (correlated blind spots), smaller model
+  auditing larger (inverted). Route verification to a different-lineage model ≥
+  extractor capability (Llama-70B-class or better on NVIDIA); config via EA0-5.
+  Measure CV catch-rate on seeded-error fixtures before/after. *(NLP)*
+- ⏳ **EA4-2** **[High]** Gap candidates become actionable: today they land in
+  `VerificationRunSummary.gap_candidates` JSONB and die. High/medium-confidence
+  candidates spawn targeted re-extraction (route the named agent to that passage)
+  → new extraction rows enter the normal confidence + review path; verbatim
+  `evidence_text` string-verified before accepting a candidate. *(NLP, BE)*
+- ⏳ **EA4-3** **[High]** Triage discard audit: `not_relevant` and `quality_fail`
+  passages are terminal — invisible to extraction, CV, and gap detection. Sample
+  5–10% into a human audit queue (mirror `triage_recall_sample_rate=0.05`
+  pattern); `quality_fail` routes to re-OCR/manual list, never silent drop.
+  Track measured triage FN rate as a standing metric. *(NLP, RPR)*
+- 🔒 **EA4-4** **[High]** Model reassignment (gated on EA1 baseline to prove the
+  lift): `definition_actor` — anchors the whole bill's terminology — runs
+  llama-3.1-8b at temp 0.2/top_p 0.7 (sampling on, weakest model);
+  `preemption` — hardest legal reasoning — also 8B at 1536 tokens. Move both to
+  gpt-oss-120b, temp 0. *(NLP)*
+- 🔒 **EA4-5** **[Medium]** Dual-model agreement on matrix numerics only: second
+  independent model extracts the typed numeric/boolean fields; deterministic
+  field diff; disagreement → review. Reuses `model_agreement_count` (which today
+  is incremented by same-model duplicate emissions — agreement-washing; rename or
+  split the counter). Scope-limited to numerics to bound cost. *(NLP, BE)*
+
+### Phase EA5 — Bill-level hardening & reconciliation
+- ⏳ **EA5-1** **[High]** Bill-level evidence: require a verbatim quote per
+  populated field in bill-level payloads; run quotes through
+  `verify_evidence_spans` against the bill text; unverified quote → field flagged.
+  Today `law_enforcement_details` (the most product-visible data) ships with one
+  unverified ≤300-char quote and no confidence scoring. *(NLP)*
+- ⏳ **EA5-2** **[High]** Reconciliation as verification: `enforcement_normalizer`
+  merges clause-level + bill-level + trackers by precedence but never **flags
+  disagreement**. Emit `enforcement_conflict` review items when sources disagree
+  on penalty/PRoA/cure-period (the redundancy already exists; exploit it).
+  *(NLP, BE)*
+- ⏳ **EA5-3** **[Medium]** Enforcement-agent input targeting: feed
+  enforcement-pattern sections from `bill_context.py` (+ bill tail) instead of the
+  raw 128k-char prefix, closing the end-of-bill truncation bias (EA0-4 flags it;
+  this fixes it). *(NLP)*
+- ⏳ **EA5-4** **[Medium]** Penalty-range structure: "if a range is given, use the
+  maximum" collapses legally distinct tiers (negligent vs willful). Add optional
+  `penalty_tiers` array {condition, amount_usd}; keep max for the matrix column.
+  *(NLP, RPR)*
+
+### Phase EA6 — Prompt & schema legal-nuance fixes (gated on EA1 regression gate)
+- 🔒 **EA6-1** **[High]** Implied rights defensibility: `rights_protection.yml:77`
+  manufactures rights from obligations ("notice obligation implies notice right") —
+  a contested legal inference stored at equal status with textual rights. Add
+  `derivation: textual | implied_from_obligation` to `RightsProtectionPayload`;
+  implied rows visibly badged in review + product. *(RPR ruling, NLP)*
+- 🔒 **EA6-2** **[Medium]** Constrained decoding: NVIDIA NIM structured outputs
+  (JSON schema) for clause agents; shrinks the 5-strategy `_repair_json` surface
+  (repair chain retained as fallback for local provider). *(NLP, BE)*
+- 🔒 **EA6-3** **[Low]** Dedupe `interpretation_risks` across obligation/rights
+  agents on the same passage (same term+risk_type). *(BE)*
+- 🔒 **EA6-4** **[Low]** CV prompt trim: stop re-serializing evidence_spans +
+  metadata into the CV payload dump (CV already has the passage). Token savings
+  with zero signal loss. *(NLP)*
+- 🔒 **EA6-5** **[Medium]** Date parse status: `TimelineInfo` validator silently
+  passes unparseable dates through (`normalize_date(v) or v`) → ISO and free text
+  mixed in one column. Store raw + normalized + `date_parse_status`; unparsed
+  dates excluded from deadline computations. *(BE)*
+
+**Sequencing:** EA0 (all) + EA2-1/2-2/2-3 first — pure defect fixes, unit-testable,
+no gating. EA1 starts immediately in parallel (annotation is the long pole; RPR
+capacity is the constraint). EA3 blocks on EA1-3 baseline **and** the contradiction
+#1 product ruling — do not let P3 (tier-only publish) ship before EA3 or without an
+interim evidence-grounding gate. EA4-1/4-2/4-3 after EA0-5. EA5 parallel with EA4.
+EA6 last, each item gated on the EA1 regression gate. Cost note: EA4-1/EA4-5 raise
+per-law token spend — acceptable per the precision mandate, but capture actual
+$/law in `run_summary.json` before/after so the trade is explicit.
+
+---
+
 ## Remediation Plan — Engineering Review Findings (RR)
 
 > Synthesis of two independent reviews: the **agent-engineering review**
