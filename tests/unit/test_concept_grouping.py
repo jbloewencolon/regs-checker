@@ -13,6 +13,7 @@ from src.core.concept_grouping import (
     _actor_family,
     _classify_obligation_family,
     _dedup_join,
+    _is_iso_date,
     _tier_for_score,
     reload_alias_cache,
 )
@@ -127,6 +128,43 @@ class TestDedupJoin:
 
     def test_respects_limit(self):
         assert _dedup_join(["a", "b", "c", "d", "e", "f"], limit=3) == "a | b | c"
+
+
+# ---------------------------------------------------------------------------
+# _is_iso_date — EA6-5: deadline computations must exclude unparsed dates
+# ---------------------------------------------------------------------------
+
+
+class TestIsIsoDate:
+    def test_genuine_iso_date_is_true(self):
+        assert _is_iso_date("2026-01-01") is True
+
+    def test_iso_date_with_surrounding_whitespace_is_true(self):
+        assert _is_iso_date("  2026-01-01  ") is True
+
+    def test_free_text_passthrough_is_false(self):
+        # This is exactly what TimelineInfo stores when normalize_date()
+        # fails — the raw model text, unchanged.
+        assert _is_iso_date("the first day of the next legislative session") is False
+
+    def test_year_only_is_false(self):
+        # normalize_date() itself would have expanded a bare year to
+        # YYYY-01-01; a bare year reaching here means it was never parsed.
+        assert _is_iso_date("2026") is False
+
+    def test_none_is_false(self):
+        assert _is_iso_date(None) is False
+
+    def test_empty_string_is_false(self):
+        assert _is_iso_date("") is False
+
+    def test_non_string_is_false(self):
+        assert _is_iso_date(2026) is False
+        assert _is_iso_date(["2026-01-01"]) is False
+
+    def test_malformed_iso_like_string_is_false(self):
+        assert _is_iso_date("2026-1-1") is False
+        assert _is_iso_date("26-01-01") is False
 
     def test_strips_whitespace(self):
         assert _dedup_join(["  a  ", "a"]) == "a"

@@ -23,6 +23,7 @@ the law and no member is in conflict; ungrounded when neither tracker has data.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date as _date
@@ -264,6 +265,25 @@ def _actor_family(raw: str | None, fallback: str | None = None) -> str | None:
     return normalize("actor", val)
 
 
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _is_iso_date(value: Any) -> bool:
+    """True only for a genuine YYYY-MM-DD string.
+
+    EA6-5: TimelineInfo's date fields fall back to the model's raw (often
+    free-text) input when normalize_date() can't parse it — "the first day
+    of the next legislative session" and "2026-01-01" were previously
+    indistinguishable once stored. bucket.deadlines feeds a lexicographic
+    sort (earliest-deadline-first below); mixing ISO strings with arbitrary
+    text there produces a sort order that only looks meaningful. Checking
+    the format directly (rather than trusting a stored date_parse_status
+    key) also covers extractions written before that field existed, with no
+    backfill required.
+    """
+    return isinstance(value, str) and bool(_ISO_DATE_RE.match(value.strip()))
+
+
 def _grounding_for_extraction(
     db, extraction_id: int
 ) -> str | None:
@@ -413,7 +433,8 @@ def group_concepts_for_dv(
             timeline = payload.get("timeline") or {}
             deadline = None
             if isinstance(timeline, dict):
-                deadline = timeline.get("effective_date") or timeline.get("compliance_date")
+                candidate = timeline.get("effective_date") or timeline.get("compliance_date")
+                deadline = candidate if _is_iso_date(candidate) else None
             # Embedded enforcement → law-wide enforcement ref
             emb = payload.get("enforcement")
             if isinstance(emb, dict) and (emb.get("penalty_type") or emb.get("max_civil_penalty_usd")):

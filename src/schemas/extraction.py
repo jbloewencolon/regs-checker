@@ -7,9 +7,10 @@ validated via string matching against the source passage (Recommendation #3).
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class EvidenceSpan(BaseModel):
@@ -121,6 +122,11 @@ class ConsentRequirement(BaseModel):
     )
 
 
+# EA6-5: fields TimelineInfo attempts to normalize to ISO-8601.
+_TIMELINE_DATE_FIELDS = ("effective_date", "compliance_deadline", "sunset_date")
+_ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
 class TimelineInfo(BaseModel):
     """Timeline associated with an obligation."""
 
@@ -129,6 +135,16 @@ class TimelineInfo(BaseModel):
     sunset_date: str | None = None
     phase_in_period: str | None = None
     timeline_text: str | None = Field(default=None, description="Raw timeline language")
+    date_parse_status: dict[str, str] = Field(
+        default_factory=dict,
+        description="Per-field parse outcome for effective_date/compliance_deadline/"
+        "sunset_date: 'parsed' when normalize_date() produced ISO-8601, 'unparsed' "
+        "when the raw model text was passed through unchanged because it couldn't be "
+        "parsed. A field absent from this dict was never populated (null/empty) — "
+        "distinct from being populated but unparseable. Downstream date arithmetic "
+        "(e.g. earliest-deadline sorting) must skip 'unparsed' fields rather than "
+        "treat free text as if it were ISO-8601.",
+    )
 
     @field_validator("effective_date", "compliance_deadline", "sunset_date", mode="before")
     @classmethod
@@ -137,6 +153,17 @@ class TimelineInfo(BaseModel):
             return v
         from src.core.date_normalizer import normalize_date
         return normalize_date(v) or v
+
+    @model_validator(mode="after")
+    def _set_date_parse_status(self) -> TimelineInfo:
+        status: dict[str, str] = {}
+        for field_name in _TIMELINE_DATE_FIELDS:
+            value = getattr(self, field_name)
+            if not value or not value.strip():
+                continue
+            status[field_name] = "parsed" if _ISO_DATE_PATTERN.match(value.strip()) else "unparsed"
+        self.date_parse_status = status
+        return self
 
 
 class EnforcementInfo(BaseModel):

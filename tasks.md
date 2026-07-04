@@ -605,10 +605,43 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 - 🔒 **EA6-4** **[Low]** CV prompt trim: stop re-serializing evidence_spans +
   metadata into the CV payload dump (CV already has the passage). Token savings
   with zero signal loss. *(NLP)*
-- 🔒 **EA6-5** **[Medium]** Date parse status: `TimelineInfo` validator silently
-  passes unparseable dates through (`normalize_date(v) or v`) → ISO and free text
-  mixed in one column. Store raw + normalized + `date_parse_status`; unparsed
-  dates excluded from deadline computations. *(BE)*
+- ✅ **EA6-5** **[Medium]** Date parse status landed — pure deterministic
+  post-processing, no prompt touched (like EA6-3, this was never actually
+  gated on EA1 despite living under the EA6 heading). New
+  `TimelineInfo.date_parse_status: dict[str, str]`
+  (`src/schemas/extraction.py`) — a `model_validator(mode="after")`
+  classifies each populated date field (`effective_date`,
+  `compliance_deadline`, `sunset_date`) as `"parsed"` (matches
+  `YYYY-MM-DD`, meaning `normalize_date()` succeeded) or `"unparsed"`
+  (raw model text passed through unchanged); a field the model never
+  populated is simply absent from the dict, distinct from "populated but
+  unparseable". Scoping note: the raw text itself was never actually
+  *lost* before this fix — `normalize_date(v) or v` already preserved it
+  verbatim in the field on failure — so no separate raw-text field was
+  added; the missing piece was purely the status marker distinguishing
+  the two cases, which is what "store raw + normalized" cashes out to
+  here. **"Unparsed dates excluded from deadline computations"**: found
+  and fixed the one real computation site —
+  `src/core/concept_grouping.py`'s obligation-bucket builder collects a
+  `deadline` value into `bucket.deadlines` (used later for
+  `sorted(bucket.deadlines)[0]`, an earliest-deadline lexicographic sort
+  that's only meaningful for genuine ISO strings) — previously took
+  whatever `timeline.get("effective_date")` held, ISO or free text,
+  unfiltered. New `_is_iso_date()` checks the `YYYY-MM-DD` format
+  directly (rather than trusting a stored `date_parse_status` key) so it
+  correctly excludes bad data from **both** newly-written and
+  already-existing extractions with no backfill required. 17 new tests:
+  9 in `test_timeline_date_parse_status.py`, 8 in
+  `test_concept_grouping.py::TestIsIsoDate`. **Found but out of scope,
+  not fixed:** that same line reads
+  `timeline.get("effective_date") or timeline.get("compliance_date")` —
+  the schema field is named `compliance_deadline`, not `compliance_date`,
+  so the second alternative is dead code and `compliance_deadline` values
+  never reach `bucket.deadlines` at all today. Real, but a distinct bug
+  from the one EA6-5 named (wrong field name entirely omitted vs. free
+  text incorrectly trusted) — flagged here rather than silently bundled
+  in, since fixing it changes what data flows into a concept's deadline
+  and deserves its own look rather than a drive-by edit. *(BE)*
 
 **Sequencing:** EA0 (all) + EA2-1/2-2/2-3 first — pure defect fixes, unit-testable,
 no gating. EA1 starts immediately in parallel (annotation is the long pole; RPR
@@ -699,6 +732,37 @@ $/law in `run_summary.json` before/after so the trade is explicit.
    and baseline capture) remain the actual long pole and still require the
    operator's own machine (`python start.py`) per CLAUDE.md — nothing in
    this sandbox can substitute for a real model call.
+8. **Session note (2026-07-04, continued):** all five remaining
+   unblocked-without-live-LLM items landed the same day, in the order
+   listed above — EA5-2, EA5-3, EA5-4, EA6-3, EA6-5, five commits
+   (`c08397b`, `22ec59a`, `934322c`, `7a30ec3`, plus this plan update).
+   57 new tests, 1068/1068 passing. Two items (EA6-3, EA6-5) turned out
+   to have been mis-filed under the EA6 "gated on EA1" heading — both are
+   pure deterministic post-processing with no prompt involved, and the
+   session note above already knew this and listed them as unblocked;
+   the tasks.md entries now say so explicitly rather than leaving the 🔒
+   marker's implication uncorrected. Each item surfaced at least one
+   scope-boundary worth recording rather than silently expanding past:
+   EA5-2's `enforcement_normalizer` turned out to have zero callers
+   anywhere (the plan assumed it was already wired into a live
+   reconciliation step); EA5-4's prompt-side change is flagged as
+   unvalidated for extraction *quality* pending EA1 and RPR sign-off,
+   only the deterministic parsing half is claimed as solid; EA6-5 found
+   a second, distinct bug in the same line it fixed
+   (`compliance_date` vs. the schema's actual `compliance_deadline`)
+   and flagged it rather than bundling an unrequested fix into the
+   commit. **Phase EA5 is now fully landed (4/4). EA6-3 and EA6-5 are
+   done; EA6-1/6-2/6-4 remain genuinely gated on the EA1 regression
+   gate** (EA6-1 needs an RPR ruling on the `derivation` field's default
+   framing, EA6-2 is a structured-decoding infra change, EA6-4 trims an
+   existing signal from a live prompt — all three are real prompt/schema
+   risk, not the false-gate pattern EA6-3/6-5 turned out to be). What's
+   left everywhere in the EA plan now requires either the operator's own
+   machine (EA1's gold-set annotation and baseline capture) or a product/
+   RPR decision this sandbox can't make (contradiction #1 in the header
+   above, EA3's confidence-model ruling, EA5-4's RPR sign-off). No further
+   items are known to be safely actionable here without one of those two
+   unblocks.
 
 ---
 
