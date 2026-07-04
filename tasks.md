@@ -868,12 +868,19 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   separate confirmation — untracking going forward is the low-risk action;
   history rewriting is not. *(operator: secure storage step; explicit
   confirmation before any history rewrite)*
-- ⏳ **RC1-2** **[Low]** Untrack `output/law_texts_quarantine/` (30 files,
-  confirmed git-tracked, confirmed quarantine/known-garbage source text per
-  `architecture.md`). Lower stakes than RC1-1 — no security content, just
-  noise. `git rm --cached` + add to `.gitignore`; confirm local ingest
-  still runs and doesn't re-glob the quarantine path first. Reversible via
-  `git revert`. *(safe to execute directly once confirmed)*
+- ✅ **RC1-2** **[Low]** Executed (2026-07-04). All 30 files untracked via
+  `git rm --cached` (working-tree copies untouched — nothing deleted from
+  disk) and `output/law_texts_quarantine/` added to `.gitignore`.
+  Pre-checked the ingest path: `local_ingest.py` only *writes* to the
+  quarantine dir (`_quarantine_file()` moves bad files in and appends to
+  `NEEDED_SOURCES.md`); ingestion reads exclusively from
+  `output/law_texts/` / `output/law_sources/`, so nothing re-globs the
+  quarantine path. Note: `NEEDED_SOURCES.md` (the operator-facing "these
+  laws need replacement sources" ledger) was untracked along with the
+  rest — it still exists locally and regenerates at runtime, but if it
+  should stay version-controlled, re-add it with
+  `git add -f output/law_texts_quarantine/NEEDED_SOURCES.md`. Reversible
+  via `git revert`. *(done)*
 
 ### Phase RC2 — Broken-feature decisions (product input needed)
 - ⏳ **RC2-1** **[Medium]** `compare_models` broken endpoint — confirmed
@@ -887,10 +894,13 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   scoped feature, not a cleanup task — would reuse `harness.py`'s
   precision/recall machinery rather than the archived ad-hoc comparator).
   *(product decision)*
-- ⏳ **RC2-2** **[Low]** Delete `prompts/ambiguity.yml` (confirmed dead —
-  see verification note). Keep the `ExtractionType.ambiguity` enum value
-  read-only per `architecture.md`'s existing documented decision — this is
-  about the unused prompt file only, not the DB enum.
+- ✅ **RC2-2** **[Low]** Executed (2026-07-04). `prompts/ambiguity.yml`
+  deleted. Re-verified before deleting: after RC3-3 removed
+  `ambiguity_agent.py`, the only remaining `load_prompt_template()` callers
+  are `base.py` (loads by live `agent_name` — none is "ambiguity") and
+  `dependency_builder.py` (loads "dependency_graph" — the RC2-3 do-not-touch
+  file). `ExtractionType.ambiguity` DB enum untouched, per the existing
+  read-only decision. *(done)*
 - ✅ **RC2-3** **[Info]** `prompts/dependency_graph.yml` — confirmed live,
   explicitly marked **do not touch**. No action; recorded here so it isn't
   re-flagged by a future pass.
@@ -910,20 +920,28 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   docs/*.md confirmed superseded into `archive/docs/`, following the
   existing `archive/README.md` table pattern exactly (retired file → why →
   what superseded it). Gated on RC0-1's classification pass.
-- ✅ **RC3-3** **[Medium]** `src/ingestion/_archived/` retirement — fully
-  scoped by the per-file import scan above. Plan: (1) move
-  `pdf_tracker.py` and `iapp_pdf_tracker.py` to
-  `src/ingestion/legacy/` (matching the existing
-  `src/ingestion/legacy/iapp_scraper.py` convention — `_archived` implies
-  "safe to delete", `legacy` already means "old but still used" in this
-  codebase); (2) update the 5 confirmed call sites
-  (`dashboard.py:1113`, `dashboard.py:4668`, `seed_pipeline.py:254`,
-  `seed_pipeline.py:279`, `status_checker.py:277`) to the new import path;
-  (3) delete the 5 confirmed-zero-import files (`ambiguity_agent.py`,
-  `connector.py`, `discovery.py`, `verification.py`, `web_search.py`) and
-  the now-empty `src/ingestion/_archived/` directory. Every step here is
-  independently verified (not "likely safe" — actually checked), so this
-  is a good candidate to execute directly rather than just plan. *(BE)*
+- ✅ **RC3-3** **[Medium]** Executed (2026-07-04) exactly as scoped:
+  `pdf_tracker.py` and `iapp_pdf_tracker.py` moved to
+  `src/ingestion/legacy/` (the codebase's existing old-but-still-used
+  convention), all 5 call sites updated and re-verified importable from
+  the new path, the 5 zero-import files + package `__init__.py` deleted,
+  directory removed. Two things the scoping pass hadn't caught, found
+  during execution: **(1)** the moved `pdf_tracker.py` carried an unused
+  `xml.etree.ElementTree` import (F401) that was invisible while the file
+  sat inside CI's lint-exclude but would have **failed the hard E9,F gate**
+  the moment it moved — removed as part of the move; **(2)** separately,
+  the hard gate was *already red* on 4 pre-existing errors in live code
+  (unused imports in `base.py`/`orrick_facts_parser.py`/
+  `reground_spans.py`, an F541 in `dashboard.py`) — verified against the
+  pre-branch baseline via a temp worktree that all 4 pre-date this
+  branch's work, fixed in their own commit so CI is green. Follow-on:
+  `ci.yml`'s two `--exclude` flags dropped (`src/_archived` never existed
+  under `src/`; `src/ingestion/_archived` is now gone — both were no-ops),
+  and `CLAUDE.md`/`architecture.md`/`test_orrick_scraper.py` updated to
+  stop pointing at the deleted directory. Moved-file docstrings now state
+  their legacy-but-load-bearing status and who imports them. 1068/1068
+  tests passing; exact new CI gate command verified passing on the full
+  tree. *(done)*
 
 ### Phase RC4 — High-risk, environment-gated (explicitly blocked here)
 - 🔒 **RC4-1** **[High]** Retire the `_ensure_extraction_enums` /
@@ -953,6 +971,20 @@ and RC3-3 are verified-safe enough to execute directly once acknowledged —
 everything else in RC1/RC2/RC3 needs one external input (secure storage
 destination, product decision, or a coordinated multi-file path update) before
 acting, and RC4 needs live DB/ops access this session doesn't have at all.
+
+**Execution note (2026-07-04):** RC1-2, RC2-2, and RC3-3 executed this
+session (details on each item above), plus an unplanned fix for 4
+pre-existing CI hard-gate lint failures discovered while verifying RC3-3's
+lint-exclude removal. **Still open, with their blockers:** RC0-1/RC0-2
+(need operator/product classification of docs and one-off scripts), RC1-1
+(needs the operator to copy `backups/*.sql` to storage outside this repo
+first; untracking is ready to run the moment that's confirmed), RC2-1
+(product decision: delete the broken compare-models button vs. rewrite the
+feature against the current architecture), RC3-1 (`static/` source-data
+split — coordinated multi-file path update, one PR, ready to execute on
+request), RC3-2 (gated on RC0-1's classification), RC4-1/4-2 (live DB
+schema sweep), RC4-3 (ops confirmation no external Dagster deployment
+exists).
 
 ---
 

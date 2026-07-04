@@ -49,3 +49,7 @@ desktop.ini
 
 # Personal (not project documentation) — keep local, do not publish
 docs/resume_blurbs.md
+
+# Quarantined (known-garbage) source texts — local working state, not repo
+# content (RC1-2). local_ingest.py auto-moves bad files here at runtime.
+output/law_texts_quarantine/
