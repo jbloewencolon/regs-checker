@@ -579,8 +579,29 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 - 🔒 **EA6-2** **[Medium]** Constrained decoding: NVIDIA NIM structured outputs
   (JSON schema) for clause agents; shrinks the 5-strategy `_repair_json` surface
   (repair chain retained as fallback for local provider). *(NLP, BE)*
-- 🔒 **EA6-3** **[Low]** Dedupe `interpretation_risks` across obligation/rights
-  agents on the same passage (same term+risk_type). *(BE)*
+- ✅ **EA6-3** **[Low]** Dedupe landed (`src/ingestion/extractor.py`) — was
+  never actually gated on EA1 (it's pure deterministic post-processing on
+  already-validated payloads, no prompt touched; the session note already
+  flagged this, listing it in the "unblocked without live LLM access"
+  bucket rather than the EA6 gate). New `_dedupe_interpretation_risks()`
+  runs once per passage in `extract_single_record()`, right after both
+  agents' results are collected but **before** they're persisted as
+  separate `Extraction` rows — mutates `result.extractions` in place so a
+  merged passage (multiple `source_records`) doesn't re-derive the same
+  duplicate once per source_record. Keys on
+  `(term.strip().lower(), risk_type)`; keeps the first occurrence in a
+  **fixed agent-precedence order** (`obligation` before
+  `rights_protection`), not thread-completion order — `agent_results` is
+  populated via `as_completed()`, so without a fixed order the same
+  passage could dedupe differently on different runs. Same term flagged
+  under a genuinely different `risk_type` is intentionally NOT deduped
+  (e.g. "promptly" as both `vague_term` and `temporal_ambiguity` are two
+  distinct findings). Incidental but correct side effect: since the `seen`
+  set is shared across one passage rather than reset per extraction item,
+  two obligations from the *same* agent citing the same ambiguous term
+  also collapse to one finding — the plan's wording named cross-agent
+  specifically, but the same duplication logic applies within an agent
+  too. 12 new tests in `test_interpretation_risk_dedup.py`. *(BE)*
 - 🔒 **EA6-4** **[Low]** CV prompt trim: stop re-serializing evidence_spans +
   metadata into the CV payload dump (CV already has the passage). Token savings
   with zero signal loss. *(NLP)*

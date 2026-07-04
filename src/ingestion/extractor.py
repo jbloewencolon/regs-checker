@@ -1244,6 +1244,55 @@ def _group_agents_by_model(
     return list(groups.values())
 
 
+# EA6-3: obligation and rights_protection each populate interpretation_risks
+# inline during their own primary extraction pass (the retired standalone
+# AmbiguityAgent's replacement) — neither agent sees the other's output, so
+# both independently flagging the same ambiguous term on the same passage
+# (e.g. both notice "reasonable" is a vague_term) is common, not a bug in
+# either agent. Fixed precedence order (not thread-completion order, which
+# `agent_results` is populated in via as_completed()) so the same passage
+# dedupes the same way on every run.
+_INTERPRETATION_RISK_AGENTS = ("obligation", "rights_protection")
+
+
+def _dedupe_interpretation_risks(
+    agent_results: list[tuple[str, str, int, ExtractionResult | Exception, int]],
+) -> None:
+    """Cross-agent, in-place dedup of interpretation_risks for one passage.
+
+    Mutates each affected item's `interpretation_risks` list directly on the
+    ExtractionResult objects in `agent_results`, before the persistence loop
+    below turns them into Extraction rows — a passage merged across multiple
+    source_records would otherwise re-derive (and re-count) the same
+    duplicate for every source_record if this ran later per-row instead.
+    """
+    by_name = {
+        name: result
+        for name, _content_hash, _attempt_id, result, _duration_ms in agent_results
+        if name in _INTERPRETATION_RISK_AGENTS
+    }
+    if len(by_name) < 2:
+        return  # need both agents present on this passage for a cross-agent dup
+
+    seen: set[tuple[str, str]] = set()
+    for agent_name in _INTERPRETATION_RISK_AGENTS:
+        result = by_name.get(agent_name)
+        if result is None or isinstance(result, Exception):
+            continue
+        for item in result.extractions:
+            risks = item.get("interpretation_risks")
+            if not risks:
+                continue
+            deduped = []
+            for risk in risks:
+                key = (str(risk.get("term", "")).strip().lower(), risk.get("risk_type"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                deduped.append(risk)
+            item["interpretation_risks"] = deduped
+
+
 def extract_single_record(
     db,
     passage: MergedPassage,
@@ -1384,6 +1433,8 @@ def extract_single_record(
                 agent_name, content_hash, attempt_id = futures[future]
                 name, result, duration_ms = future.result()
                 agent_results.append((name, content_hash, attempt_id, result, duration_ms))
+
+    _dedupe_interpretation_risks(agent_results)
 
     # Process results (back on main thread for DB writes)
     for name, content_hash, attempt_id, result, duration_ms in agent_results:
