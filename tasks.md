@@ -516,6 +516,196 @@ $/law in `run_summary.json` before/after so the trade is explicit.
 
 ---
 
+## Repository Cleanup Plan (RC) — from 2026-07-03 audit report
+
+> Source: external cleanup-audit report (backups, archived code, docs sprawl,
+> static/data mixing). The report itself flags most findings as needing
+> verification ("likely safe but needs verification", "unknown / requires
+> human confirmation") — before turning it into a plan, every specific,
+> checkable claim was verified against the actual repo (import scans, git
+> tracking status, CI config, template nav links, secret grep). Findings
+> below are marked **confirmed** (verified this session), **corrected**
+> (audit was imprecise or stale), or **unverifiable here** (needs live DB,
+> external storage, or ops/deployment access this session doesn't have).
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Severity in **[ ]**.
+
+### Verification corrections to the source report (read before acting on it)
+- **`src/ingestion/_archived/` is not one bucket.** Individually import-scanned
+  all 8 files: **5 are confirmed zero-import dead code**
+  (`ambiguity_agent.py`, `connector.py`, `discovery.py`, `verification.py`,
+  `web_search.py` — none imported from any live, non-archived path). **2 are
+  confirmed load-bearing**: `pdf_tracker.py` (imported by
+  `dashboard.py:1113`, `seed_pipeline.py:254,279`) and `iapp_pdf_tracker.py`
+  (imported by `dashboard.py:4668`, `status_checker.py:277`). The audit's
+  "treat each module as live until proven otherwise" was the right caution
+  but left the actual per-file disposition undone — RC3-3 below does it.
+- **`compare_models` is confirmed broken, not just suspicious.**
+  `dashboard.py:4385` (`/dashboard/api/run/compare-models`, wired to a live
+  HTMX button in `templates/analytics.html:99`) imports
+  `src.evaluation.compare_models`, which does not exist —
+  `src/evaluation/` only contains `harness.py`. The only `compare_models.py`
+  is in `_archived/`, and it is **itself doubly broken**: it imports
+  `AnthropicProvider` (fully removed per `llm_provider.py`'s own docstring —
+  "The Anthropic API provider has been archived") and `AmbiguityAgent`
+  (only exists in `src/ingestion/_archived/ambiguity_agent.py`, itself
+  zero-import dead code). Restoring it is not a cleanup action, it's a
+  from-scratch rewrite against the current 9-agent NVIDIA/local
+  architecture — see RC2-1.
+- **`prompts/dependency_graph.yml` is confirmed live**, not a deletion
+  candidate — loaded by `dependency_builder.py:250`
+  (`load_prompt_template("dependency_graph")`), called from
+  `extractor.py`'s `run_dependency_graph`. The audit hedged correctly here
+  ("weak-medium... dynamic/manual runs possible"); do not delete.
+  `prompts/ambiguity.yml` by contrast is confirmed dead (no live agent has
+  `agent_name = "ambiguity"`) — safe to remove.
+- **`archive/` already has an index** (`archive/README.md`) mapping every
+  retired doc/handoff to why it was retired and what superseded it — the
+  audit's "heavy historical duplication... need an index" applies to the
+  *active* `docs/` directory (18 files, no README), not `archive/`, which
+  is already in good shape and a good model to copy.
+- **Backups are schema-only, not data dumps** — grepped both `.sql` files
+  for `INSERT INTO`/`COPY` (0 matches each). Still a real infra-detail leak
+  (full table/RLS/grant structure, including an `api_keys` table with a
+  `key_hash` column), just a smaller blast radius than a row-data leak.
+  Both files are confirmed `git ls-files`-tracked, as is
+  `output/law_texts_quarantine/` (30 tracked files). Neither path is in
+  `.gitignore` today.
+- **`static/` tracker files are confirmed live ingestion inputs**, not
+  orphaned assets — referenced by `dashboard.py`, `seed_pipeline.py`,
+  `iapp_alignment.py`, and `config.py`. Genuinely mis-located (mixed into a
+  directory whose other job is serving web assets via the FastAPI static
+  mount), not dead.
+- **CI lint gate confirmed exactly as described**: `ci.yml` hard-gates only
+  `--select E9,F` (excluding both `_archived` dirs); full `ruff check` runs
+  with `|| true` (advisory, cannot fail the build).
+- **All 7 dashboard templates confirmed live** — each is linked from
+  `layout.html`'s nav bar to a real route. No template deletion candidates.
+
+### Phase RC0 — Documentation and labeling (zero code risk; do first)
+- ⏳ **RC0-1** **[Low]** `docs/README.md` index for the *active* `docs/`
+  directory (18 files): cross-reference against what `tasks.md` already
+  cites as current (`run1_unified_plan.md`, `remediation_plan.md`,
+  `phase2_completion_log.md`, `engineering_strategy_v3.md`,
+  `NORMALIZATION_VOCABULARY_RATIFICATION_PLAN.md` are confirmed current
+  from existing `tasks.md` cross-refs); classify the rest
+  (`pipeline_rebuild_plan.md`, `taxonomy_dev_plan.md`,
+  `product_review_remediation_plan.md`, `production_readiness_review.md`,
+  `code_update_strategy_eng.md`, `actor_taxonomy_analysis.md`,
+  `output_taxonomy_explained.md`, `vocab_harvest_spec_eng.md`,
+  `data_dictionary.md/.pdf`, `missing_laws_ingest_queue.csv`,
+  `phase0/1_completion_log.md`) as current/superseded. Mirror
+  `archive/README.md`'s table format — don't invent a new convention.
+  *(product/tech lead input needed on ambiguous ones)*
+- ⏳ **RC0-2** **[Low]** Label one-off scripts with an owner-facing status
+  comment (`# STATUS: active runbook` / `one-time, completed <date>` /
+  `archive candidate`): `scripts/fix_csv_titles.py`,
+  `scripts/fix_mismatched_sources.py`, `scripts/reset_pipeline.py`,
+  `scripts/debug_pdf_tables.py`, `scripts/apply_pending_migrations.sql`.
+  Static analysis can't tell one-time-completed from still-needed for these
+  — needs the operator who ran them. *(operator input needed)*
+
+### Phase RC1 — Safe removals (git-tracking changes; needs a retention decision)
+- ⏳ **RC1-1** **[Medium — security-adjacent]** Untrack `backups/*.sql`
+  (2 files, confirmed schema-only, confirmed git-tracked). **Blocked on a
+  step this session cannot perform**: copying the files to private/secure
+  storage first requires a destination outside this sandbox — the operator
+  must do that copy. Once confirmed safe to lose from the working tree,
+  `git rm --cached backups/*.sql` + add `backups/` to `.gitignore` removes
+  them going forward. **Note the distinction**: this does NOT purge git
+  *history* — the files remain retrievable from prior commits. A full
+  history purge (`git filter-repo` / BFG) is a separate, much more
+  destructive decision this plan does not recommend without explicit,
+  separate confirmation — untracking going forward is the low-risk action;
+  history rewriting is not. *(operator: secure storage step; explicit
+  confirmation before any history rewrite)*
+- ⏳ **RC1-2** **[Low]** Untrack `output/law_texts_quarantine/` (30 files,
+  confirmed git-tracked, confirmed quarantine/known-garbage source text per
+  `architecture.md`). Lower stakes than RC1-1 — no security content, just
+  noise. `git rm --cached` + add to `.gitignore`; confirm local ingest
+  still runs and doesn't re-glob the quarantine path first. Reversible via
+  `git revert`. *(safe to execute directly once confirmed)*
+
+### Phase RC2 — Broken-feature decisions (product input needed)
+- ⏳ **RC2-1** **[Medium]** `compare_models` broken endpoint — confirmed
+  live, user-facing, and broken (see verification note above). Two options,
+  need a product call: **(a)** remove the button in `analytics.html:99`
+  and the route in `dashboard.py:4382-4386` (low-risk, reversible, matches
+  "prefer deleting broken feature entry points over restoring dead code"
+  from the source report); **(b)** treat "compare local models against
+  each other" as a live feature request and rewrite it fresh against the
+  current NVIDIA/local 9-agent architecture + `EvaluationHarness` (a real
+  scoped feature, not a cleanup task — would reuse `harness.py`'s
+  precision/recall machinery rather than the archived ad-hoc comparator).
+  *(product decision)*
+- ⏳ **RC2-2** **[Low]** Delete `prompts/ambiguity.yml` (confirmed dead —
+  see verification note). Keep the `ExtractionType.ambiguity` enum value
+  read-only per `architecture.md`'s existing documented decision — this is
+  about the unused prompt file only, not the DB enum.
+- ✅ **RC2-3** **[Info]** `prompts/dependency_graph.yml` — confirmed live,
+  explicitly marked **do not touch**. No action; recorded here so it isn't
+  re-flagged by a future pass.
+
+### Phase RC3 — Consolidation (scoped multi-file changes)
+- ⏳ **RC3-1** **[Medium]** Split `static/`'s source-data files
+  (`ai_law_tracker.csv`, `ai_law_tracker_QA_report.md`,
+  `IAPP_Legislation_tracker.pdf`, `iapp_law_tracker.csv`,
+  `iapp_law_tracker_QA.md`, `Orrick-US-AI-Law-Tracker.pdf`) from the actual
+  web asset (`static/css/style.css`) into a `data/trackers/` (or similar)
+  directory. Requires updating every path reference atomically —
+  `dashboard.py`, `seed_pipeline.py`, `iapp_alignment.py`, `config.py` (path
+  constants likely live here) — plus a local-ingest smoke test confirming
+  paths still resolve. Do not do speculatively; one PR, all references
+  updated together. *(BE)*
+- ⏳ **RC3-2** **[Low]** Build `docs/README.md` (RC0-1) then move any
+  docs/*.md confirmed superseded into `archive/docs/`, following the
+  existing `archive/README.md` table pattern exactly (retired file → why →
+  what superseded it). Gated on RC0-1's classification pass.
+- ✅ **RC3-3** **[Medium]** `src/ingestion/_archived/` retirement — fully
+  scoped by the per-file import scan above. Plan: (1) move
+  `pdf_tracker.py` and `iapp_pdf_tracker.py` to
+  `src/ingestion/legacy/` (matching the existing
+  `src/ingestion/legacy/iapp_scraper.py` convention — `_archived` implies
+  "safe to delete", `legacy` already means "old but still used" in this
+  codebase); (2) update the 5 confirmed call sites
+  (`dashboard.py:1113`, `dashboard.py:4668`, `seed_pipeline.py:254`,
+  `seed_pipeline.py:279`, `status_checker.py:277`) to the new import path;
+  (3) delete the 5 confirmed-zero-import files (`ambiguity_agent.py`,
+  `connector.py`, `discovery.py`, `verification.py`, `web_search.py`) and
+  the now-empty `src/ingestion/_archived/` directory. Every step here is
+  independently verified (not "likely safe" — actually checked), so this
+  is a good candidate to execute directly rather than just plan. *(BE)*
+
+### Phase RC4 — High-risk, environment-gated (explicitly blocked here)
+- 🔒 **RC4-1** **[High]** Retire the `_ensure_extraction_enums` /
+  `_ensure_failed_attempts_table` / `_ensure_pipeline_events_table` /
+  `_ensure_triage_table` raw-SQL fallback helpers in `extractor.py`
+  (confirmed still called at every `run_extraction`/`run_retry_failed`
+  entrypoint). **Blocked**: requires a live schema-drift sweep across the
+  local Docker Postgres and both Supabase projects, which needs DB
+  connectivity this sandboxed session does not have. Do not touch without
+  that sweep — these helpers exist specifically because Alembic migrations
+  may not have run on every target DB. *(operator, live DB access)*
+- 🔒 **RC4-2** **[High]** Retire `scripts/apply_pending_migrations.sql`.
+  Same blocker as RC4-1 — needs Alembic-vs-live-schema reconciliation
+  across local Docker + Regs Checker Supabase + Policy Navigator Supabase
+  before it's safe to remove the manual fallback. *(operator, live DB
+  access)*
+- ⏳ **RC4-3** **[Low, but has a blind spot]** `_archived/dagster_pipelines/`
+  — confirmed zero references anywhere in the live repo (`src/`,
+  `scripts/`, `.github/`, `docker/`). Static analysis cannot see a
+  cron/scheduler configured outside the repo (e.g. a hosted Dagster
+  deployment pointing at this code) — needs an explicit "no such deployment
+  exists" confirmation from whoever owns infrastructure, not just a clean
+  grep. *(ops confirmation needed, then safe to delete)*
+
+**Sequencing:** RC0 first (no risk, clarifies everything downstream). RC1-2
+and RC3-3 are verified-safe enough to execute directly once acknowledged —
+everything else in RC1/RC2/RC3 needs one external input (secure storage
+destination, product decision, or a coordinated multi-file path update) before
+acting, and RC4 needs live DB/ops access this session doesn't have at all.
+
+---
+
 ## Remediation Plan — Engineering Review Findings (RR)
 
 > Synthesis of two independent reviews: the **agent-engineering review**
