@@ -297,10 +297,27 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   highlighting is wrong). Fix at write time in `text_grounding.py`;
   `reground_spans.py` becomes the backfill. Tier-3/4 (loose) matches get a
   `loose_match` flag visible in review. *(NLP, BE)*
-- ⏳ **EA2-3** **[High]** Truncation/repair honesty: payloads salvaged by
-  `_repair_truncated_json` or flagged `truncated=True` currently enter the queue
-  as normal rows (metadata-only flag). Cap tier at C + force review for
-  truncated/heavily-repaired outputs. *(NLP)*
+- ✅ **EA2-3** **[High]** Truncation/repair honesty landed. New
+  `was_repaired` field on `ExtractionResult` (`base.py`): `extract()` now
+  compares the fence/think-block-stripped output against `_repair_json`'s
+  output (both `.strip()`-normalized to avoid a whitespace-only false
+  positive) — any actual repair (control-char strip, trailing-comma
+  removal, truncated-JSON salvage, stringified-array unwrap, etc.) sets it
+  True. New `cap_at_tier_c()` in `confidence.py`: when `result.truncated`
+  OR `result.was_repaired`, caps an A/B-tier score+tier down into C's band
+  (score and tier kept mutually consistent — never shows a high score next
+  to a demoted tier); C/D extractions are left unchanged (never improved).
+  Wired into all three extraction insertion sites in `extractor.py`.
+  **"Force review" implemented as a max-urgency (3) `ReviewQueueItem`
+  priority bump, not a publish-block** — Tier C alone is still
+  auto-publish-eligible under the P3 confidence-only sync gate, so capping
+  the tier alone wouldn't guarantee a human look; the priority bump is
+  what actually surfaces it. `extraction_meta` now also records
+  `was_repaired`/`truncated` explicitly (previously only `truncated`, and
+  only when true). 15 new tests: 7 in `test_confidence.py::TestCapAtTierC`,
+  8 in new `test_was_repaired_flag.py` (exercises the real `extract()` path
+  end-to-end with `_call_llm` mocked, not just the static repair helper).
+  *(NLP)*
 - 🔒 **EA2-4** **[High]** Parser strikethrough handling (gated on EA1-4 audit):
   strip stricken text / retain inserted text for engrossed bills before
   segmentation; add parse-quality flag `amendment_markup_detected`. *(NLP, BE)*

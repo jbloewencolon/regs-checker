@@ -59,7 +59,7 @@ from src.agents.preemption import PreemptionAgent
 from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
-from src.core.confidence import compute_confidence
+from src.core.confidence import cap_at_tier_c, compute_confidence
 from src.core.config import settings
 from src.core.jurisdiction_check import (
     validate_extraction_jurisdiction,
@@ -1523,10 +1523,20 @@ def extract_single_record(
                         passage_text=passage.text,
                         iapp_has_data=_iapp_has_data_for_ctx(ctx),
                     )
+                    # EA2-3: a truncated or heavily-repaired raw response may
+                    # be missing content regardless of how well the fields it
+                    # DID produce score — cap the tier so that defect can't
+                    # be hidden behind an otherwise-good confidence score.
+                    if result.truncated or result.was_repaired:
+                        confidence.total_score, confidence.tier = cap_at_tier_c(
+                            confidence.total_score, confidence.tier,
+                        )
 
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.was_repaired:
+                        extraction_meta["was_repaired"] = True
                     if result.model_reasoning:
                         extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
                     extraction_meta["confidence_breakdown"] = {
@@ -1584,7 +1594,12 @@ def extract_single_record(
                     db.flush()
 
                     review_priority = _confidence_to_priority(confidence.tier)
-                    if numeric_mismatch:
+                    if numeric_mismatch or result.truncated or result.was_repaired:
+                        # Tier-C alone is still auto-publish-eligible under the
+                        # confidence-only sync gate (P3) — force max-urgency
+                        # review so a truncated/repaired/numerically-mismatched
+                        # extraction actually gets a human look, not just a
+                        # lower (but still passable) tier.
                         review_priority = max(review_priority, 3)
                     db.add(ReviewQueueItem(
                         extraction_id=extraction.id,
@@ -2692,9 +2707,17 @@ def run_retry_failed(
                             passage_text=record.text_content,
                             iapp_has_data=_iapp_has_data_for_ctx(ctx),
                         )
+                        if result.truncated or result.was_repaired:
+                            confidence.total_score, confidence.tier = cap_at_tier_c(
+                                confidence.total_score, confidence.tier,
+                            )
 
                         ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
                         extraction_meta: dict = {}
+                        if result.truncated:
+                            extraction_meta["truncated"] = True
+                        if result.was_repaired:
+                            extraction_meta["was_repaired"] = True
                         extraction_meta["confidence_breakdown"] = {
                             "schema_validity": confidence.schema_validity,
                             "evidence_grounding": confidence.evidence_grounding,
@@ -2739,7 +2762,7 @@ def run_retry_failed(
                         db.flush()
 
                         review_priority = _confidence_to_priority(confidence.tier)
-                        if numeric_mismatch:
+                        if numeric_mismatch or result.truncated or result.was_repaired:
                             review_priority = max(review_priority, 3)
                         db.add(ReviewQueueItem(
                             extraction_id=extraction.id,
@@ -3120,8 +3143,16 @@ def run_recovery_extraction(
                                 passage_text=passage.text,
                                 iapp_has_data=_iapp_has_data_for_ctx(ctx),
                             )
+                            if result.truncated or result.was_repaired:
+                                confidence.total_score, confidence.tier = cap_at_tier_c(
+                                    confidence.total_score, confidence.tier,
+                                )
 
                             recovery_meta: dict = {}
+                            if result.truncated:
+                                recovery_meta["truncated"] = True
+                            if result.was_repaired:
+                                recovery_meta["was_repaired"] = True
                             numeric_mismatch = _apply_numeric_grounding(
                                 item, evidence, recovery_meta,
                             )
@@ -3145,7 +3176,7 @@ def run_recovery_extraction(
                             db.flush()
 
                             review_priority = _confidence_to_priority(confidence.tier)
-                            if numeric_mismatch:
+                            if numeric_mismatch or result.truncated or result.was_repaired:
                                 review_priority = max(review_priority, 3)
                             db.add(ReviewQueueItem(
                                 extraction_id=extraction.id,

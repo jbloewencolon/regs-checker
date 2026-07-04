@@ -379,6 +379,31 @@ def _score_to_tier(score: float) -> str:
         return "D"
 
 
+_TIER_RANK = {"A": 0, "B": 1, "C": 2, "D": 3}
+
+
+def cap_at_tier_c(total_score: float, tier: str) -> tuple[float, str]:
+    """Cap a confidence score/tier pair to Tier C or below (EA2-3).
+
+    Used when a structural defect in the LLM's raw output — truncation
+    (finish_reason=length) or heavy JSON repair (the response didn't parse
+    as-is and had to be salvaged) — means the extraction can't be trusted at
+    face value regardless of how well its individual fields score. A
+    truncated obligation may be missing a condition or exception that would
+    materially change its meaning; a heavily-repaired payload may have lost
+    content during salvage.
+
+    Extractions already at C or D are returned unchanged (this never
+    improves a tier). The score is clamped alongside the tier so the two
+    never contradict each other in the review UI (score=0.92 next to
+    tier="C" would look like a bug, not a deliberate cap).
+    """
+    if _TIER_RANK.get(tier, 1) >= _TIER_RANK["C"]:
+        return total_score, tier
+    capped_score = min(total_score, TIER_B_THRESHOLD - 0.0001)
+    return round(capped_score, 4), _score_to_tier(capped_score)
+
+
 def _score_section_reference(section_ref: str | None) -> float:
     """Score the specificity of a section reference on a 0.0–1.0 scale.
 

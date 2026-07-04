@@ -180,6 +180,7 @@ class ExtractionResult:
     template_version: str | None
     truncated: bool = False  # True when finish_reason=length (output cut off)
     model_reasoning: str | None = None  # Chain-of-thought from <think> blocks
+    was_repaired: bool = False  # True when _repair_json had to change output to parse (EA2-3)
 
 
 class BaseExtractionAgent(ABC):
@@ -336,7 +337,16 @@ class BaseExtractionAgent(ABC):
                 cleaned = self._strip_code_fences(raw_output)
                 model_reasoning = self._extract_think_blocks(cleaned)
                 cleaned = self._strip_think_blocks(cleaned)
+                # EA2-3: capture whether _repair_json actually had to change
+                # something (control chars, trailing commas, truncated-JSON
+                # salvage, stringified-object unwrap, etc.) versus the output
+                # already being valid JSON. A repaired payload may be missing
+                # content the truncation/malformation clipped, even though it
+                # now parses cleanly — that's a structural defect the
+                # downstream tier should reflect, not just a debug flag.
+                pre_repair = cleaned.strip()
                 cleaned = self._repair_json(cleaned)
+                was_repaired = cleaned.strip() != pre_repair
                 parsed = json.loads(cleaned)
 
                 # Some models emit a bare top-level array of extraction objects
@@ -359,6 +369,7 @@ class BaseExtractionAgent(ABC):
                         template_version=template_version,
                         truncated=was_truncated,
                         model_reasoning=model_reasoning,
+                        was_repaired=was_repaired,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -443,6 +454,7 @@ class BaseExtractionAgent(ABC):
                     template_version=template_version,
                     truncated=was_truncated,
                     model_reasoning=model_reasoning,
+                    was_repaired=was_repaired,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
