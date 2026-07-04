@@ -257,10 +257,36 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   models, commit per-agent per-field P/R/F1 baseline artifact; every prompt/model/
   weight PR reruns and diffs against baseline. Numerics scored exact-match;
   text fields scored by span overlap. *(NLP, DevOps)*
-- ⏳ **EA1-4** **[High]** Amendment-markup corpus audit: parser has **no**
-  strikethrough/insertion handling — extracting obligations from stricken text is
-  a live severe-failure risk. Audit `output/law_sources/` for engrossed-style
-  bills; report count + examples. (Fix gated as EA2-4.) *(NLP)*
+- ✅ **EA1-4** **[High]** Amendment-markup corpus audit — **confirmed live, not
+  theoretical**, across 236 source files / 211 ingested (`output/law_sources/`,
+  `output/law_texts/`). Two distinct encodings found, requiring separate
+  detection: **(1) HTML strikethrough/underline styling** — 3 confirmed
+  real cases after eliminating false positives (generic link-hover CSS in
+  IL/MO, an audio-player "Listen Live" underline in RI, CCPA "deletion
+  request" prose in CA misidentified as drafting markup by a naive keyword
+  scan). The smoking-gun case: **2025 Wisconsin Act 69**
+  (`TMP-WI-ESTATEADVERTIS.html`) flattens via `BeautifulSoup.get_text()` to
+  `"...client , principal firm, or firm , without..."` — `", principal
+  firm,"` and the trailing `","` are struck (no-longer-law) fragments sitting
+  inline with zero distinguishing signal, immediately followed by a genuinely
+  new underlined sentence (itself not effective until 2027-01-01 per the
+  Act's own effective-date section) with no "newly added" marker either.
+  FL (`TMP-FL-FLORIDAACTRELA.html`, `amendmentInsertedText`/
+  `amendmentDeletedText` classes) and NY (`TMP-NY-NYCAIEMPLOYMEN.html`,
+  inline `text-decoration: underline`) are insertion-only variants of the
+  same defect class (lower risk — no stale-law contamination — but the new
+  text still carries no "not yet settled" flag). **(2) Literal bracket
+  deletion convention** — confirmed in `TMP-KY-AMENDMENTTOINT.txt` (PDF
+  source; Kentucky prints deletions as literal `[bracketed]` text, e.g.
+  `[deviant]`, `[beastiality]` — survives `pdftotext` since it's plain
+  characters, not styling) and `TMP-NJ-RULESPERTAININ.txt` (NJ Register
+  regulatory notice, 22 bracket markers in one document, e.g. `[SINGLE
+  FAMILY] SINGLE-FAMILY`). This is the more dangerous encoding for PDF-heavy
+  corpora because **pure visual strikethrough in a PDF (no literal
+  brackets) is undetectable by any text-based heuristic** — would need
+  font/color-run PDF parsing, out of scope here; the 4 PDFs matching
+  `*AMENDMENT*` in filename with zero bracket hits (AZ, ND, OK) could not be
+  ruled out on this basis. *(NLP)*
 
 ### Phase EA2 — Grounding: bind evidence to fields (bug-class; parallel with EA1)
 - ✅ **EA2-1** **[Critical]** Deterministic numeric cross-check — **clause-level
@@ -348,9 +374,49 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   8 in new `test_was_repaired_flag.py` (exercises the real `extract()` path
   end-to-end with `_call_llm` mocked, not just the static repair helper).
   *(NLP)*
-- 🔒 **EA2-4** **[High]** Parser strikethrough handling (gated on EA1-4 audit):
-  strip stricken text / retain inserted text for engrossed bills before
-  segmentation; add parse-quality flag `amendment_markup_detected`. *(NLP, BE)*
+- ✅ **EA2-4** **[High]** Parser strikethrough handling landed
+  (`src/ingestion/parser.py`), scoped directly off the EA1-4 findings above.
+  New `_strip_struck_content()` walks the BeautifulSoup tree **before**
+  `get_text()` runs (the actual bug — `get_text()` cannot distinguish
+  struck from live text after the fact) and `.decompose()`s only
+  unambiguous deletion markup: tag name `strike`/`del`/`s`, or inline
+  `style="text-decoration: line-through"` (never a `class=` name heuristic
+  alone — too easy to false-positive-delete real statutory text). Verified
+  against the actual Wisconsin Act 69 file from the audit:
+  `"...client , principal firm, or firm , without..."` → `"principal firm"`
+  now absent from the parsed passage, while the genuinely new
+  `"...out-of-state broker..."` sentence (underline-marked, correctly
+  *not* struck) is retained. Insertion markup (`<ins>`, `text-decoration:
+  underline`) is detected but deliberately left untouched — `get_text()`
+  already includes it correctly, it just wasn't flagged before. New
+  `amendment_markup_detected` (+ `bracket_markers_count` /
+  `struck_chars_removed` when applicable) written to
+  `NormalizedSourceRecord.metadata_` for every affected passage — HTML-path
+  detection is document-level (segmentation runs on already-flattened text
+  with no DOM correspondence, so every passage from a flagged document
+  gets the flag; reporting coarse-but-honest over fabricating a
+  passage-level offset, same precedent as EA2-2's Tier 3/4 scope
+  decision). Separately, a `_BRACKET_DELETION_PATTERN` regex
+  (`\[[A-Za-z][^\[\]]{1,60}\}`, min-count 2 per passage) catches the
+  KY/NJ literal-bracket convention uniformly across HTML/PDF/plaintext —
+  **informational only, never auto-stripped**, since ordinary numeric
+  citations (`[42 U.S.C. § 2000e-8]`) are also bracketed and a false-
+  positive strip there would delete real law; requiring an alpha first
+  character after `[` already excludes the numeric-leading citation
+  pattern in practice. `_parse_html`'s return type changed from
+  `list[tuple]` to `(list[tuple], html_markup_info | None)` — the one
+  caller (`parse_and_normalize`) and the internal PDF-guard branch were
+  both updated; `_parse_pdf`/`_parse_plaintext` signatures untouched. 24
+  new tests in `test_parser_amendment_markup.py` (style-detection,
+  strip-in-place behavior, end-to-end `_parse_html` including a clean-bill
+  regression case and the mixed strike+underline Wisconsin-shaped case,
+  bracket-pattern precision including the numeric-citation exclusion).
+  **Not covered**: visual-only strikethrough inside a PDF with no literal
+  bracket convention (e.g. AZ/ND/OK `*AMENDMENT*`-named PDFs, 0 bracket
+  hits) — undetectable without font/color-run PDF parsing, out of scope;
+  `extract_text_sample()` (the lightweight classification-only HTML
+  sampler) intentionally left unchanged since its output never reaches the
+  extraction pipeline. *(NLP, BE)*
 
 ### Phase EA3 — Confidence model v4 (gated on EA1 baseline + contradiction #1 ruling)
 - 🔒 **EA3-1** **[Critical]** Evidence-first rebalance: demote Orrick+IAPP combined
@@ -513,6 +579,29 @@ $/law in `run_summary.json` before/after so the trade is explicit.
    prompt trim) touches the actual prompt sent to the model — per the same
    discipline applied to EA0-2, a prompt change without EA1 measurement is
    tuning-by-guess, not a safe pure-code fix, despite looking like one.
+7. **Session note (2026-07-04):** EA1-4 (corpus audit) and EA2-4 (the parser
+   fix it gated) both landed this session. The audit read the actual source
+   files rather than estimating prevalence, per the note above: 236 source
+   files / 211 ingested, 2 markup encodings confirmed live (HTML strike/
+   underline styling — 3 real cases after discarding false positives;
+   literal-bracket deletion convention — 2 real cases, one in a PDF), with
+   one concrete smoking-gun example (2025 Wisconsin Act 69) showing a
+   struck, no-longer-law fragment and a not-yet-effective inserted sentence
+   both reading as plain current text pre-fix. EA2-4 fixed the HTML case
+   at the DOM level (before `get_text()` flattens it — the only point
+   where struck vs. live text is still distinguishable) and added an
+   informational bracket-heuristic for the PDF/plaintext case; visual-only
+   strikethrough inside a PDF with no literal brackets remains genuinely
+   undetectable without font/color-run PDF parsing (flagged as out of
+   scope, not silently dropped). 24 new tests, 1011/1011 passing. Both
+   items were pure code/text-processing work, no live LLM needed — same
+   pattern as EA0/EA2-1/2-2/2-3. **Phase EA2 is now fully landed (4/4).**
+   Remaining unblocked-without-live-LLM work for next session, in priority
+   order: EA5-2, EA5-3, EA5-4, EA6-3, EA6-5 (list unchanged from the prior
+   session note — still not started). EA1-1/1-2/1-3 (gold-set annotation
+   and baseline capture) remain the actual long pole and still require the
+   operator's own machine (`python start.py`) per CLAUDE.md — nothing in
+   this sandbox can substitute for a real model call.
 
 ---
 

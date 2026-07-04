@@ -31,6 +31,77 @@ _LEGAL_MARKERS = re.compile(
     re.I,
 )
 
+# EA2-4: engrossed/amendment bills mark deleted (no-longer-law) text with
+# strikethrough and inserted (new) text with underline. BeautifulSoup's
+# get_text() has no notion of this — it silently includes struck text in the
+# extracted passage stream, so a repealed clause reads as if it were still
+# binding law. Confirmed live in this corpus, e.g. 2025 Wisconsin Act 69
+# (TMP-WI-ESTATEADVERTIS.html): the flattened text read "...client ,
+# principal firm, or firm , without..." where ", principal firm," and the
+# trailing "," are struck fragments with zero distinguishing signal once
+# stripped of styling. Only unambiguous tag/style-level signals trigger
+# removal (never a class-name heuristic alone) to avoid deleting real
+# statutory text on a false positive.
+_STRIKE_TAG_NAMES = ("strike", "del", "s")
+
+# Some states (e.g. Kentucky bill PDFs, NJ Register regulatory notices) print
+# deleted text wrapped in literal brackets instead of using strikethrough
+# styling — this survives pdftotext/plaintext extraction as plain characters.
+# Ordinary statutory citations are also bracketed but virtually always start
+# with a digit ("[42 U.S.C. § 2000e-8]"), so requiring an alpha first
+# character cuts most false positives; a single incidental match is also not
+# enough signal (real deletion runs cluster several to a passage), hence the
+# minimum count below.
+_BRACKET_DELETION_PATTERN = re.compile(r"\[[A-Za-z][^\[\]]{1,60}\]")
+_BRACKET_AMENDMENT_MIN_COUNT = 2
+
+
+def _is_line_through_style(style: str) -> bool:
+    normalized = style.replace(" ", "").lower()
+    return "text-decoration:line-through" in normalized
+
+
+def _is_underline_style(style: str) -> bool:
+    normalized = style.replace(" ", "").lower()
+    return "text-decoration:underline" in normalized
+
+
+def _strip_struck_content(content_el) -> dict:
+    """Remove unambiguously-marked deleted text from a parsed HTML tree in place.
+
+    Mutates `content_el`. Returns document-level markup stats used to set
+    `amendment_markup_detected` on every passage parsed from this document —
+    coarse (document-, not passage-level) because passage segmentation
+    happens on already-flattened text with no DOM correspondence, but honest:
+    it only reports what was actually found, never a guessed offset.
+    """
+    struck_chars_removed = 0
+    struck_found = False
+
+    for tag in content_el.find_all(_STRIKE_TAG_NAMES):
+        struck_chars_removed += len(tag.get_text())
+        struck_found = True
+        tag.decompose()
+
+    for tag in content_el.find_all(style=True):
+        if _is_line_through_style(tag.get("style", "")):
+            struck_chars_removed += len(tag.get_text())
+            struck_found = True
+            tag.decompose()
+
+    inserted_found = bool(content_el.find_all("ins"))
+    if not inserted_found:
+        for tag in content_el.find_all(style=True):
+            if _is_underline_style(tag.get("style", "")):
+                inserted_found = True
+                break
+
+    return {
+        "struck_found": struck_found,
+        "inserted_found": inserted_found,
+        "struck_chars_removed": struck_chars_removed,
+    }
+
 
 def _compute_parse_quality(text: str) -> float:
     """Estimate parse quality for a passage on a 0.0–1.0 scale.
@@ -78,11 +149,17 @@ def parse_and_normalize(
       - included_section_ids: list of all section markers merged into this passage
       - parse_quality_score: 0.0–1.0 quality estimate for the raw text
       - requires_manual_review: True when quality is below the accept threshold
+      - amendment_markup_detected: True when this passage (or, for HTML
+        sources, its parent document) shows engrossed/amendment-bill markup
+        (EA2-4) — struck/inserted HTML styling, or a cluster of bracket-style
+        deletion markers. Informational; nothing is auto-published or
+        blocked on this flag.
     """
     content = content_bytes if content_bytes is not None else _fetch_content_from_s3(artifact.s3_key)
 
+    html_markup_info: dict | None = None
     if artifact.content_type in ("text/html", "application/xhtml+xml"):
-        passages = _parse_html(content)
+        passages, html_markup_info = _parse_html(content)
     elif artifact.content_type in ("application/pdf",):
         passages = _parse_pdf(content)
     elif artifact.content_type in ("text/plain",):
@@ -102,6 +179,7 @@ def parse_and_normalize(
 
         text_hash = hashlib.sha256(text.encode()).hexdigest()
         parse_quality = _compute_parse_quality(text)
+        bracket_markers = len(_BRACKET_DELETION_PATTERN.findall(text))
 
         meta: dict = {
             "included_section_ids": included_section_ids,
@@ -109,6 +187,18 @@ def parse_and_normalize(
         }
         if parse_quality < _PARSE_QUALITY_REVIEW_THRESHOLD:
             meta["requires_manual_review"] = True
+
+        markup_detected = bracket_markers >= _BRACKET_AMENDMENT_MIN_COUNT
+        if html_markup_info and (
+            html_markup_info["struck_found"] or html_markup_info["inserted_found"]
+        ):
+            markup_detected = True
+        if markup_detected:
+            meta["amendment_markup_detected"] = True
+            if bracket_markers >= _BRACKET_AMENDMENT_MIN_COUNT:
+                meta["bracket_markers_count"] = bracket_markers
+            if html_markup_info and html_markup_info["struck_chars_removed"]:
+                meta["struck_chars_removed"] = html_markup_info["struck_chars_removed"]
 
         record = NormalizedSourceRecord(
             document_version_id=job.document_version_id,
@@ -138,14 +228,17 @@ def _make_soup(content: bytes) -> BeautifulSoup:
     return BeautifulSoup(content, "lxml")
 
 
-def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
+def _parse_html(content: bytes) -> tuple[list[tuple[str, str, int, int]], dict | None]:
     """Parse HTML legislative text into passages.
 
-    Returns list of (section_path, text, char_start, char_end).
+    Returns (passages, html_markup_info) where passages is a list of
+    (section_path, text, char_start, char_end) and html_markup_info is the
+    document-level dict from `_strip_struck_content` (None for the PDF-guard
+    branch, which delegates to `_parse_pdf`).
     """
     # Guard: some .html files are actually PDFs (wrong extension)
     if content.lstrip()[:10].startswith(b"%PDF"):
-        return _parse_pdf(content)
+        return _parse_pdf(content), None
 
     soup = _make_soup(content)
 
@@ -182,6 +275,11 @@ def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
         # Fallback: use the entire body
         content_el = soup.find("body") or soup
 
+    # EA2-4: remove struck (deleted, no-longer-law) text before flattening —
+    # must happen before get_text(), which has no concept of strikethrough
+    # and would otherwise silently include it in the passage stream.
+    markup_info = _strip_struck_content(content_el)
+
     # Extract text with double-newline separators so each block element
     # creates a paragraph break.
     full_text = content_el.get_text(separator="\n\n", strip=True)
@@ -204,7 +302,7 @@ def _parse_html(content: bytes) -> list[tuple[str, str, int, int]]:
             full_text = full_text[m.start():]
             break
 
-    return _segment_text(full_text)
+    return _segment_text(full_text), markup_info
 
 
 def _parse_plaintext(content: bytes) -> list[tuple[str, str, int, int]]:
