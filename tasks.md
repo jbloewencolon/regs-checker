@@ -540,10 +540,35 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   is confirmed absent from the final prompt (the truncation-bias case),
   while markers in the enforcement excerpt and the tail are both present.
   *(NLP)*
-- ⏳ **EA5-4** **[Medium]** Penalty-range structure: "if a range is given, use the
-  maximum" collapses legally distinct tiers (negligent vs willful). Add optional
-  `penalty_tiers` array {condition, amount_usd}; keep max for the matrix column.
-  *(NLP, RPR)*
+- ✅ **EA5-4** **[Medium]** Penalty-tier structure landed
+  (`src/agents/enforcement_agent.py`), with an honest limit on what "landed"
+  means here. New optional `penalty_tiers` field —
+  `[{"condition": str, "amount_usd": int}, ...]` — requested only when the
+  bill states different amounts for different conditions (negligent vs.
+  willful, first vs. subsequent violation, etc.); the prompt explicitly
+  forbids wrapping a single flat penalty in a one-item array, to avoid
+  manufacturing false tier structure. `_coerce_penalty_tiers()` drops
+  malformed entries (missing condition, unparseable amount) defensively
+  rather than failing the whole extraction, matching the existing int/bool
+  coercion style in this file. `max_civil_penalty_usd` — the flattened
+  matrix column — now **self-heals** from the tiers: if the model leaves
+  it null or reports it inconsistently lower than its own highest tier,
+  it's corrected upward (never lowered), making "keep max for the matrix
+  column" an enforced invariant rather than just a prompt instruction the
+  model might not follow. Purely additive and backward-safe: a law where
+  the model never populates `penalty_tiers` behaves byte-for-byte like
+  before (field defaults to `None`, `max_civil_penalty_usd` untouched). 11
+  new tests in `test_bill_level_agents.py::TestEnforcementAgentPenaltyTiers`
+  cover the coercion and self-heal logic exhaustively — but that's the
+  deterministic *parsing* half only. **What's unvalidated:** whether the
+  model reliably populates `penalty_tiers` *accurately* against real bills
+  (correct tier boundaries, no hallucinated conditions) has no ground
+  truth to check against without EA1's gold set, and the "negligent vs.
+  willful" tier-condition framing itself hasn't had RPR (legal reviewer)
+  sign-off — this file's original role tag was `(NLP, RPR)`, and no RPR
+  role exists in this sandboxed session. Treat the schema/self-heal as
+  solid; treat model-side extraction quality of tier data as an open
+  question for EA1. *(NLP; RPR sign-off still outstanding)*
 
 ### Phase EA6 — Prompt & schema legal-nuance fixes (gated on EA1 regression gate)
 - 🔒 **EA6-1** **[High]** Implied rights defensibility: `rights_protection.yml:77`
