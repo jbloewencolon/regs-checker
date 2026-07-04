@@ -1110,7 +1110,7 @@ def run_csv_discovery(db: Session = Depends(get_db)) -> HTMLResponse:
             '<div class="result-panel info">A pipeline operation is already running. Please wait.</div>'
         )
     try:
-        from src.ingestion._archived.pdf_tracker import seed_from_tracker
+        from src.ingestion.legacy.pdf_tracker import seed_from_tracker
 
         records = _tracker_csv_to_records()
         if not records:
@@ -4665,7 +4665,7 @@ def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
         # Load IAPP records
         iapp_records = []
         try:
-            from src.ingestion._archived.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+            from src.ingestion.legacy.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
             if IAPP_PDF_PATH.exists():
                 iapp_records = parse_iapp_pdf()
         except Exception:
@@ -5528,7 +5528,7 @@ def list_concepts(
                 f'<span style="background:#2980b9;color:#fff;padding:1px 5px;'
                 f'border-radius:3px;font-size:10px;">PENDING {eff_str}</span>'
             )
-        row_style = f' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
+        row_style = ' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
 
         # Below-publish-floor flag
         below_floor_badge = ""

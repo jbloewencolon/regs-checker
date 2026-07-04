@@ -1,5 +1,9 @@
 """IAPP US State AI Legislation Tracker PDF parser.
 
+Legacy (moved here from src/ingestion/_archived/ in RC3-3): superseded as
+the primary ingestion path by local_ingest.py, but still load-bearing —
+imported by dashboard.py (IAPP alignment endpoint) and status_checker.py.
+
 Replaces the web scraper (iapp_scraper.py) with a local PDF-based approach.
 The IAPP tracker PDF should be placed at: static/IAPP_Legislation_tracker.pdf
 

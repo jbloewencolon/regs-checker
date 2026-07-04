@@ -88,7 +88,7 @@ jobs:
         run: pip install "ruff>=0.2.0"
 
       - name: Lint - hard gate (undefined names, syntax errors)
-        run: ruff check src/ --exclude src/_archived --exclude src/ingestion/_archived --select E9,F
+        run: ruff check src/ --select E9,F
 
       - name: Lint - advisory (full ruleset, informational only)
-        run: ruff check src/ --exclude src/_archived --exclude src/ingestion/_archived || true
+        run: ruff check src/ || true

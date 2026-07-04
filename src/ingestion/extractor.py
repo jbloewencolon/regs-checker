@@ -59,7 +59,7 @@ from src.agents.preemption import PreemptionAgent
 from src.agents.rights_protection import RightsProtectionAgent
 from src.agents.threshold_exception import ThresholdExceptionAgent
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
-from src.core.confidence import compute_confidence
+from src.core.confidence import cap_at_tier_c, compute_confidence
 from src.core.config import settings
 from src.core.jurisdiction_check import (
     validate_extraction_jurisdiction,
@@ -935,6 +935,32 @@ def _confidence_to_priority(tier: str) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}.get(tier, 1)
 
 
+def _apply_numeric_grounding(item: dict, evidence: list[dict], extraction_meta: dict) -> bool:
+    """Run EA2-1 deterministic numeric-field cross-check; returns True on any mismatch.
+
+    Evidence-span verification only confirms a quoted STRING appears in the
+    passage; it never checked whether a field's typed NUMBER (penalty
+    amount, cure period, retention window, etc.) actually matches what the
+    evidence text says. This attaches the per-field grounding result to
+    extraction_meta["numeric_grounding"] (informational — does not change
+    confidence_score, which is EA3 territory) and returns whether the
+    extraction should be treated as high-priority for review.
+    """
+    from src.core.numeric_grounding import check_numeric_grounding, has_numeric_mismatch
+
+    numeric_results = check_numeric_grounding(item, evidence)
+    if numeric_results:
+        extraction_meta["numeric_grounding"] = {
+            field: {
+                "status": r.status,
+                "payload_value": r.payload_value,
+                "candidates_found": r.candidates_found,
+            }
+            for field, r in numeric_results.items()
+        }
+    return has_numeric_mismatch(numeric_results)
+
+
 def _build_context(
     db,
     record: NormalizedSourceRecord,
@@ -1218,6 +1244,55 @@ def _group_agents_by_model(
     return list(groups.values())
 
 
+# EA6-3: obligation and rights_protection each populate interpretation_risks
+# inline during their own primary extraction pass (the retired standalone
+# AmbiguityAgent's replacement) — neither agent sees the other's output, so
+# both independently flagging the same ambiguous term on the same passage
+# (e.g. both notice "reasonable" is a vague_term) is common, not a bug in
+# either agent. Fixed precedence order (not thread-completion order, which
+# `agent_results` is populated in via as_completed()) so the same passage
+# dedupes the same way on every run.
+_INTERPRETATION_RISK_AGENTS = ("obligation", "rights_protection")
+
+
+def _dedupe_interpretation_risks(
+    agent_results: list[tuple[str, str, int, ExtractionResult | Exception, int]],
+) -> None:
+    """Cross-agent, in-place dedup of interpretation_risks for one passage.
+
+    Mutates each affected item's `interpretation_risks` list directly on the
+    ExtractionResult objects in `agent_results`, before the persistence loop
+    below turns them into Extraction rows — a passage merged across multiple
+    source_records would otherwise re-derive (and re-count) the same
+    duplicate for every source_record if this ran later per-row instead.
+    """
+    by_name = {
+        name: result
+        for name, _content_hash, _attempt_id, result, _duration_ms in agent_results
+        if name in _INTERPRETATION_RISK_AGENTS
+    }
+    if len(by_name) < 2:
+        return  # need both agents present on this passage for a cross-agent dup
+
+    seen: set[tuple[str, str]] = set()
+    for agent_name in _INTERPRETATION_RISK_AGENTS:
+        result = by_name.get(agent_name)
+        if result is None or isinstance(result, Exception):
+            continue
+        for item in result.extractions:
+            risks = item.get("interpretation_risks")
+            if not risks:
+                continue
+            deduped = []
+            for risk in risks:
+                key = (str(risk.get("term", "")).strip().lower(), risk.get("risk_type"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                deduped.append(risk)
+            item["interpretation_risks"] = deduped
+
+
 def extract_single_record(
     db,
     passage: MergedPassage,
@@ -1359,6 +1434,8 @@ def extract_single_record(
                 name, result, duration_ms = future.result()
                 agent_results.append((name, content_hash, attempt_id, result, duration_ms))
 
+    _dedupe_interpretation_risks(agent_results)
+
     # Process results (back on main thread for DB writes)
     for name, content_hash, attempt_id, result, duration_ms in agent_results:
         if isinstance(result, Exception):
@@ -1497,10 +1574,20 @@ def extract_single_record(
                         passage_text=passage.text,
                         iapp_has_data=_iapp_has_data_for_ctx(ctx),
                     )
+                    # EA2-3: a truncated or heavily-repaired raw response may
+                    # be missing content regardless of how well the fields it
+                    # DID produce score — cap the tier so that defect can't
+                    # be hidden behind an otherwise-good confidence score.
+                    if result.truncated or result.was_repaired:
+                        confidence.total_score, confidence.tier = cap_at_tier_c(
+                            confidence.total_score, confidence.tier,
+                        )
 
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.was_repaired:
+                        extraction_meta["was_repaired"] = True
                     if result.model_reasoning:
                         extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
                     extraction_meta["confidence_breakdown"] = {
@@ -1515,6 +1602,9 @@ def extract_single_record(
                         "tracker_alignment_score": confidence.tracker_alignment_score,
                         "schema_completeness_score": confidence.schema_completeness_score,
                     }
+                    numeric_mismatch = _apply_numeric_grounding(
+                        item, evidence, extraction_meta,
+                    )
 
                     # Generate plain-English summary from the verified payload
                     try:
@@ -1554,9 +1644,17 @@ def extract_single_record(
                     db.add(extraction)
                     db.flush()
 
+                    review_priority = _confidence_to_priority(confidence.tier)
+                    if numeric_mismatch or result.truncated or result.was_repaired:
+                        # Tier-C alone is still auto-publish-eligible under the
+                        # confidence-only sync gate (P3) — force max-urgency
+                        # review so a truncated/repaired/numerically-mismatched
+                        # extraction actually gets a human look, not just a
+                        # lower (but still passable) tier.
+                        review_priority = max(review_priority, 3)
                     db.add(ReviewQueueItem(
                         extraction_id=extraction.id,
-                        priority=_confidence_to_priority(confidence.tier),
+                        priority=review_priority,
                         status=ReviewStatus.pending,
                     ))
                     extractions_created += 1
@@ -2660,9 +2758,17 @@ def run_retry_failed(
                             passage_text=record.text_content,
                             iapp_has_data=_iapp_has_data_for_ctx(ctx),
                         )
+                        if result.truncated or result.was_repaired:
+                            confidence.total_score, confidence.tier = cap_at_tier_c(
+                                confidence.total_score, confidence.tier,
+                            )
 
                         ext_type_str = resolved_type.value if hasattr(resolved_type, "value") else str(resolved_type)
                         extraction_meta: dict = {}
+                        if result.truncated:
+                            extraction_meta["truncated"] = True
+                        if result.was_repaired:
+                            extraction_meta["was_repaired"] = True
                         extraction_meta["confidence_breakdown"] = {
                             "schema_validity": confidence.schema_validity,
                             "evidence_grounding": confidence.evidence_grounding,
@@ -2675,6 +2781,9 @@ def run_retry_failed(
                             "tracker_alignment_score": confidence.tracker_alignment_score,
                             "schema_completeness_score": confidence.schema_completeness_score,
                         }
+                        numeric_mismatch = _apply_numeric_grounding(
+                            item, evidence, extraction_meta,
+                        )
                         extraction_meta["retried_from"] = attempt.id
                         try:
                             from src.core.summary_generator import generate_summary
@@ -2703,9 +2812,12 @@ def run_retry_failed(
                         db.add(extraction)
                         db.flush()
 
+                        review_priority = _confidence_to_priority(confidence.tier)
+                        if numeric_mismatch or result.truncated or result.was_repaired:
+                            review_priority = max(review_priority, 3)
                         db.add(ReviewQueueItem(
                             extraction_id=extraction.id,
-                            priority=_confidence_to_priority(confidence.tier),
+                            priority=review_priority,
                             status=ReviewStatus.pending,
                         ))
                         sp.commit()
@@ -3082,6 +3194,19 @@ def run_recovery_extraction(
                                 passage_text=passage.text,
                                 iapp_has_data=_iapp_has_data_for_ctx(ctx),
                             )
+                            if result.truncated or result.was_repaired:
+                                confidence.total_score, confidence.tier = cap_at_tier_c(
+                                    confidence.total_score, confidence.tier,
+                                )
+
+                            recovery_meta: dict = {}
+                            if result.truncated:
+                                recovery_meta["truncated"] = True
+                            if result.was_repaired:
+                                recovery_meta["was_repaired"] = True
+                            numeric_mismatch = _apply_numeric_grounding(
+                                item, evidence, recovery_meta,
+                            )
 
                             extraction = Extraction(
                                 source_record_id=record.id,
@@ -3096,13 +3221,17 @@ def run_recovery_extraction(
                                 prompt_hash=result.prompt_hash,
                                 template_version=result.template_version,
                                 model_id=result.model_id,
+                                metadata_=recovery_meta if recovery_meta else {},
                             )
                             db.add(extraction)
                             db.flush()
 
+                            review_priority = _confidence_to_priority(confidence.tier)
+                            if numeric_mismatch or result.truncated or result.was_repaired:
+                                review_priority = max(review_priority, 3)
                             db.add(ReviewQueueItem(
                                 extraction_id=extraction.id,
-                                priority=_confidence_to_priority(confidence.tier),
+                                priority=review_priority,
                                 status=ReviewStatus.pending,
                             ))
                             total_extractions += 1

@@ -25,7 +25,7 @@
 - After editing large files (especially `extractor.py`), verify imports are intact
 - Do not add unrequested features — only implement what was asked
 - The extraction pipeline has **6 clause-level agents** (obligation, definition_actor, threshold_exception, rights_protection, compliance_mechanism, preemption) + **3 bill-level agents** (applicability_agent, enforcement_agent, compliance_timeline_agent). The ambiguity agent is retired — findings are embedded as `interpretation_risks` on obligation/rights payloads.
-- Archived code lives in `_archived/` and `src/ingestion/_archived/`
+- Archived code lives in `_archived/` (repo root). `src/ingestion/_archived/` was retired (RC3-3): its two still-used modules (`pdf_tracker.py`, `iapp_pdf_tracker.py`) moved to `src/ingestion/legacy/`; the rest was deleted (retrievable from git history)
 
 ## Project Structure
 - `data/` — CSV law metadata (fact_laws.csv, dim tables)

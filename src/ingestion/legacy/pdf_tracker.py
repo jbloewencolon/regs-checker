@@ -1,5 +1,9 @@
 """Orrick PDF parser and law seeder — replaces the web scraper.
 
+Legacy (moved here from src/ingestion/_archived/ in RC3-3): superseded as
+the primary ingestion path by local_ingest.py, but still load-bearing —
+imported by dashboard.py (tracker re-seed endpoint) and seed_pipeline.py.
+
 Parses the Orrick "U.S. AI Law Tracker" PDF (downloaded manually since
 Orrick blocks bot scraping) to extract structured law records.
 
@@ -23,7 +27,6 @@ import re
 import subprocess
 from datetime import date, datetime
 from pathlib import Path
-from xml.etree import ElementTree
 
 import structlog
 

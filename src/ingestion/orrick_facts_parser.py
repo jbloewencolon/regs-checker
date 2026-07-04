@@ -16,7 +16,7 @@ from typing import Any
 
 import structlog
 
-from src.core.date_normalizer import _MONTH_MAP, normalize_date as _parse_date
+from src.core.date_normalizer import normalize_date as _parse_date
 
 logger = structlog.get_logger()
 

@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 from src.core.confidence import (
     ConfidenceBreakdown,
+    cap_at_tier_c,
     compute_confidence,
     TIER_A_THRESHOLD,
     TIER_B_THRESHOLD,
@@ -477,3 +478,48 @@ class TestIAPPAlignmentScore:
         with_iapp = compute_confidence(**self._base_kwargs(), iapp_alignment_score=1.0)
         assert without.total_score == with_iapp.total_score
         assert without.tier == with_iapp.tier
+
+
+class TestCapAtTierC:
+    """EA2-3: truncated/heavily-repaired raw output caps the tier at C so a
+    structural defect (possible lost content) can't hide behind an
+    otherwise-good confidence score.
+    """
+
+    def test_tier_a_is_capped_to_c(self):
+        score, tier = cap_at_tier_c(0.95, "A")
+        assert tier == "C"
+        assert score < TIER_B_THRESHOLD
+
+    def test_tier_b_is_capped_to_c(self):
+        score, tier = cap_at_tier_c(0.75, "B")
+        assert tier == "C"
+        assert score < TIER_B_THRESHOLD
+
+    def test_tier_c_is_unchanged(self):
+        score, tier = cap_at_tier_c(0.55, "C")
+        assert tier == "C"
+        assert score == 0.55
+
+    def test_tier_d_is_unchanged(self):
+        # A D-tier extraction is already worse than the cap — never improve it.
+        score, tier = cap_at_tier_c(0.10, "D")
+        assert tier == "D"
+        assert score == 0.10
+
+    def test_capped_score_and_tier_stay_consistent(self):
+        # The returned score must actually map to the returned tier — no
+        # score=0.9-next-to-tier="C" inconsistency in the review UI.
+        from src.core.confidence import _score_to_tier
+        score, tier = cap_at_tier_c(0.99, "A")
+        assert _score_to_tier(score) == tier
+
+    def test_capped_score_never_reaches_tier_b_threshold(self):
+        score, _ = cap_at_tier_c(1.0, "A")
+        assert score < TIER_B_THRESHOLD
+
+    def test_capped_score_stays_at_or_above_tier_c_threshold(self):
+        # Capping should land inside tier C's own band, not fall through to D.
+        score, tier = cap_at_tier_c(0.99, "A")
+        assert tier == "C"
+        assert score >= TIER_C_THRESHOLD

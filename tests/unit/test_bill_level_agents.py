@@ -106,6 +106,112 @@ class TestEnforcementAgentParseResponse:
         assert result["max_civil_penalty_usd"] == 500
 
 
+class TestEnforcementAgentPenaltyTiers:
+    """EA5-4: 'if a range is given, use the maximum' collapses legally
+    distinct tiers (negligent vs. willful, first vs. subsequent violation).
+    penalty_tiers preserves the structure; max_civil_penalty_usd keeps
+    serving as the flattened matrix column."""
+
+    @pytest.fixture(autouse=True)
+    def agent(self):
+        from src.agents.enforcement_agent import EnforcementAgent
+        self.agent = _make_agent(EnforcementAgent)
+
+    def test_missing_penalty_tiers_key_is_none(self):
+        raw = json.dumps({"max_civil_penalty_usd": 10000})
+        assert self.agent.parse_response(raw)["penalty_tiers"] is None
+
+    def test_null_penalty_tiers_stays_none(self):
+        raw = json.dumps({"max_civil_penalty_usd": 10000, "penalty_tiers": None})
+        assert self.agent.parse_response(raw)["penalty_tiers"] is None
+
+    def test_two_tier_structure_preserved(self):
+        raw = json.dumps({
+            "max_civil_penalty_usd": 7500,
+            "penalty_tiers": [
+                {"condition": "negligent violation", "amount_usd": 2500},
+                {"condition": "intentional violation", "amount_usd": 7500},
+            ],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["penalty_tiers"] == [
+            {"condition": "negligent violation", "amount_usd": 2500},
+            {"condition": "intentional violation", "amount_usd": 7500},
+        ]
+
+    def test_max_civil_penalty_self_heals_from_tiers_when_null(self):
+        raw = json.dumps({
+            "max_civil_penalty_usd": None,
+            "penalty_tiers": [
+                {"condition": "first violation", "amount_usd": 2500},
+                {"condition": "subsequent violation", "amount_usd": 7500},
+            ],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["max_civil_penalty_usd"] == 7500
+
+    def test_max_civil_penalty_self_heals_when_inconsistently_low(self):
+        # Model reported the matrix column but got it wrong relative to its
+        # own tiers — correct upward, never down.
+        raw = json.dumps({
+            "max_civil_penalty_usd": 2500,
+            "penalty_tiers": [
+                {"condition": "negligent violation", "amount_usd": 2500},
+                {"condition": "willful violation", "amount_usd": 7500},
+            ],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["max_civil_penalty_usd"] == 7500
+
+    def test_max_civil_penalty_not_lowered_when_already_higher(self):
+        raw = json.dumps({
+            "max_civil_penalty_usd": 50000,
+            "penalty_tiers": [{"condition": "per violation", "amount_usd": 7500}],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["max_civil_penalty_usd"] == 50000
+
+    def test_tier_with_string_amount_coerced(self):
+        raw = json.dumps({
+            "penalty_tiers": [{"condition": "willful violation", "amount_usd": "$7,500"}],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["penalty_tiers"] == [{"condition": "willful violation", "amount_usd": 7500}]
+
+    def test_tier_missing_condition_dropped(self):
+        raw = json.dumps({
+            "penalty_tiers": [
+                {"amount_usd": 7500},
+                {"condition": "willful violation", "amount_usd": 2500},
+            ],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["penalty_tiers"] == [{"condition": "willful violation", "amount_usd": 2500}]
+
+    def test_tier_with_unparseable_amount_dropped(self):
+        raw = json.dumps({
+            "penalty_tiers": [{"condition": "willful violation", "amount_usd": "not specified"}],
+        })
+        result = self.agent.parse_response(raw)
+        assert result["penalty_tiers"] is None
+
+    def test_all_tiers_malformed_yields_none_not_empty_list(self):
+        raw = json.dumps({"penalty_tiers": [{"foo": "bar"}, "not a dict"]})
+        assert self.agent.parse_response(raw)["penalty_tiers"] is None
+
+    def test_penalty_tiers_not_a_list_becomes_none(self):
+        raw = json.dumps({"penalty_tiers": "negligent: $2,500, willful: $7,500"})
+        assert self.agent.parse_response(raw)["penalty_tiers"] is None
+
+    def test_single_flat_penalty_no_tiers_untouched(self):
+        # No penalty_tiers at all — max_civil_penalty_usd is used exactly as
+        # the model reported it, matching pre-EA5-4 behavior.
+        raw = json.dumps({"max_civil_penalty_usd": 10000})
+        result = self.agent.parse_response(raw)
+        assert result["max_civil_penalty_usd"] == 10000
+        assert result["penalty_tiers"] is None
+
+
 # ---------------------------------------------------------------------------
 # ApplicabilityAgent
 # ---------------------------------------------------------------------------

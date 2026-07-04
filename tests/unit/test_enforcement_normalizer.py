@@ -125,3 +125,88 @@ class TestNormalizeEnforcement:
         )
         assert rec["enforcing_body"] == "IAPP Body"
         assert rec["_provenance"]["enforcing_body"] == "iapp"
+
+
+class TestEnforcementConflicts:
+    """EA5-2: precedence already picks a winner per field, but silently —
+    the losing source's disagreement was invisible. These fields matter
+    most for legal defensibility: a stated penalty, whether a private right
+    of action exists, and the cure period."""
+
+    def test_no_conflict_when_sources_agree(self):
+        rec = normalize_enforcement(
+            bill_level={"max_civil_penalty_usd": 10000},
+            orrick_facts={"max_civil_penalty_usd": 10000},
+        )
+        assert rec["_has_enforcement_conflict"] is False
+        assert rec["_enforcement_conflicts"] == {}
+
+    def test_no_conflict_when_only_one_source_reports(self):
+        rec = normalize_enforcement(bill_level={"max_civil_penalty_usd": 10000})
+        assert rec["_has_enforcement_conflict"] is False
+
+    def test_conflict_on_penalty_amount(self):
+        rec = normalize_enforcement(
+            bill_level={"max_civil_penalty_usd": 10000},
+            orrick_facts={"max_civil_penalty_usd": 25000},
+        )
+        assert rec["_has_enforcement_conflict"] is True
+        conflict = rec["_enforcement_conflicts"]["max_civil_penalty_usd"]
+        assert conflict["selected_value"] == 25000
+        assert conflict["selected_source"] == "orrick"
+        assert {"source": "orrick", "value": 25000} in conflict["contributions"]
+        assert {"source": "bill_level", "value": 10000} in conflict["contributions"]
+
+    def test_conflict_on_private_right_of_action_boolean_disagreement(self):
+        # This is exactly the pre-existing `test_boolean_false_is_preserved`
+        # scenario: precedence still correctly picks Orrick's False, but now
+        # the disagreement itself is surfaced rather than silently resolved.
+        rec = normalize_enforcement(
+            orrick_facts={"private_right_of_action": False},
+            obligation_enforcements=[{"private_right_of_action": True}],
+        )
+        assert rec["private_right_of_action"] is False
+        assert rec["_has_enforcement_conflict"] is True
+        conflict = rec["_enforcement_conflicts"]["private_right_of_action"]
+        assert conflict["selected_value"] is False
+        assert conflict["selected_source"] == "orrick"
+        assert {"source": "orrick", "value": False} in conflict["contributions"]
+        assert {"source": "obligation", "value": True} in conflict["contributions"]
+
+    def test_conflict_on_cure_period(self):
+        rec = normalize_enforcement(
+            bill_level={"cure_period_days": 30},
+            obligation_enforcements=[{"cure_period_days": 60}],
+        )
+        conflict = rec["_enforcement_conflicts"]["cure_period_days"]
+        assert conflict["selected_value"] == 30
+        assert conflict["selected_source"] == "bill_level"
+
+    def test_enforcing_body_disagreement_not_flagged(self):
+        # enforcing_body / penalty_per / enforcement_text are intentionally
+        # out of scope — free-text/name fields differ cosmetically across
+        # sources far more often than substantively, and flooding review
+        # with those would erode trust in the signal.
+        rec = normalize_enforcement(
+            bill_level={"enforcing_body": "Department of Commerce"},
+            orrick_facts={"enforcing_body": "Attorney General"},
+        )
+        assert rec["_has_enforcement_conflict"] is False
+        assert "enforcing_body" not in rec["_enforcement_conflicts"]
+
+    def test_three_way_conflict_lists_all_contributions(self):
+        rec = normalize_enforcement(
+            bill_level={"max_civil_penalty_usd": 10000},
+            obligation_enforcements=[{"max_civil_penalty_usd": 5000}],
+            orrick_facts={"max_civil_penalty_usd": 25000},
+        )
+        conflict = rec["_enforcement_conflicts"]["max_civil_penalty_usd"]
+        assert len(conflict["contributions"]) == 3
+        assert conflict["selected_value"] == 25000
+
+    def test_empty_string_does_not_count_as_a_conflicting_value(self):
+        rec = normalize_enforcement(
+            bill_level={"private_right_of_action": True},
+            orrick_facts={"private_right_of_action": ""},
+        )
+        assert rec["_has_enforcement_conflict"] is False

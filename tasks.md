@@ -148,6 +148,846 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 
 ---
 
+## Extraction Accuracy Plan (EA) — Legal-Defensibility Review Findings (2026-07-03)
+
+> Source: full-stack extraction-architecture review (prompts, agents, confidence,
+> verification, citation handling, eval harness). Goal: **hyper-accurate, auditable
+> legal data** — precision, traceability, and defensibility over speed/cost.
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Severity in **[ ]**.
+>
+> **⚠️ Cross-plan contradiction #1 (decide before EA3):** EA3 proposes an
+> **evidence-first** confidence model (tracker alignment demoted to corroboration,
+> ≤0.20 combined; Tier-D hard gate replaced by an `uncorroborated` flag). This
+> conflicts with the ratified trust bar (*"trustworthy = matches Orrick/IAPP"*,
+> Run-1 plan header) **and** with the planned 4c weights (Orrick 30 + IAPP 20 =
+> still tracker-dominant). Both models can't ship. Product owner must pick:
+> (a) tracker-first = tier measures corroboration, new/uncovered laws are
+> permanently down-tiered; (b) evidence-first = tier measures grounding quality,
+> trackers flag disagreement. EA3 is written for (b); if (a) wins, EA3-1 shrinks
+> to "fix the citation-format reward" only.
+>
+> **⚠️ Cross-plan contradiction #2 (sequencing hazard):** Remediation Phase 3
+> makes confidence tier the **only** publish gate to Policy Navigator. Until EA0/EA3
+> land, tier is inflated by topic-overlap Jaccard and rewards well-*formatted*
+> fabricated citations (`_score_section_reference`) — i.e. P3 would ship data gated
+> by a known-flawed signal. **Land EA0 + EA3 before or with P3**, or interim-gate
+> P3 on `evidence_grounding >= threshold` in addition to tier.
+>
+> **Coupling note:** EA1 (eval substrate) gates every scoring/prompt change
+> (EA3, EA4-4, EA6). EA0 and EA2 are bug-class fixes that need only unit tests
+> and can land immediately. Do not tune weights (EA3-1) before the gold set
+> (EA1-1) exists, or the tuning is unfalsifiable.
+
+### Phase EA0 — Stop-the-bleeding defects (no eval dependency; land now)
+- ✅ **EA0-1** **[Critical]** CV misattribution fixed. `run_cross_validation()`
+  (`cross_validation.py`) now rejects any validation item with a missing,
+  non-int/bool, out-of-range, or duplicate `extraction_index` (discarded +
+  logged, never guessed via the old `len(results)` fallback); a batch where
+  every item is unattributable returns `status="failed"` instead of a clean-
+  looking empty pass. Missing `accuracy_score` no longer defaults to 1.0 —
+  it's recorded as `0.5` with `score_missing: True` so it can never silently
+  inflate confidence. Extractions with no matching validation item are
+  surfaced via new `unmatched_extraction_ids` (they were never actually
+  reviewed by CV — left alone, not treated as passing). Prompt tightened to
+  require `extraction_index`/`accuracy_score` on every item, one per
+  extraction, unique indices. 13 tests in `test_cross_validation.py`;
+  existing `test_verification_agents.py` (21 tests) unaffected. *(NLP, BE)*
+- ✅ **EA0-2** **[High]** Routing recall bug/doc mismatch — resolved as a
+  **doc fix, not a code change**. Investigation found `routing.py`'s
+  ≥1-signal threshold is deliberate, not accidental: `test_routing_recall.py`
+  already pins it as tested behavior (`test_five_of_six_signals_returns_none`
+  explicitly documents "threshold is len-1"), and `triage_recall_sample_rate`
+  (5%, `config.py`) already exists as the compensating control for exactly
+  this recall risk. Rewriting core routing logic without a live-model gold
+  set to measure the tradeoff would be tuning-by-guess — the opposite of
+  what EA1 exists to prevent. `architecture.md` corrected to describe actual
+  behavior, cites the pinning test, and explicitly gates threshold *tuning*
+  (not re-documentation) on the EA1 gold set. *(NLP)*
+- ✅ **EA0-3** **[High]** Stale review priority fixed. New
+  `_sync_review_priority()` in `verification_runner.py`, called after each
+  CV recompute: re-derives `ReviewQueueItem.priority` from the post-CV tier,
+  and forces max urgency (3) when any CV issue is `critical`/`high` severity
+  regardless of tier — closing the case where a ~0.08-weight CV nudge at
+  0.10 weight wasn't enough to cross a tier boundary but the underlying
+  finding was serious. Escalates only (never lowers a priority another
+  signal set higher). 11 tests in `test_verification_review_priority.py`.
+  *(BE)*
+- ✅ **EA0-4** **[High]** Bill-level silent input-truncation now visible.
+  `BillLevelAgent.extract_bill()` (`bill_level_base.py`) computes
+  `chars_dropped`/`input_truncated` from the pre-existing `full_text[:
+  MAX_BILL_TEXT_CHARS]` slice — previously untracked — and threads them
+  through `BillLevelResult` plus into the stored JSONB payload
+  (`_input_truncated`/`_chars_dropped`, via `setdefault` so a model-produced
+  field of the same name is never clobbered) on both the success and
+  unrecoverable-failure paths; no migration needed since `BillLevelExtraction
+  .payload` is JSONB. Distinct from the pre-existing `truncated` column,
+  which only ever covered *output* truncation (`finish_reason=length`). 6
+  tests in `test_bill_level_truncation.py`, including a spy-based test
+  pinning that `get_prompt` only ever sees the truncated slice. **Dashboard
+  surfacing deferred** — this session has no live app/browser to verify a UI
+  change against (see CLAUDE.md environment note); the payload flag is
+  queryable today via the JSONB column for anyone building the panel.
+  Content-side fix (target the enforcement-pattern sections instead of the
+  raw prefix) is still EA5-3. *(BE)*
+- ✅ **EA0-5** **[Medium]** CV/gap model made config-driven. Added
+  `cross_validation`/`gap_detection` entries to `AGENT_DISPLAY` +
+  `_AGENT_MAX_TOKENS` (`model_config.py`) and to `config/agent_models.json`
+  under both `local` and `nvidia` blocks (16384 max_tokens, matching the
+  pre-fix provider-default token budget so behavior doesn't silently
+  change). `_default_agents()` special-cases these two to `openai/gpt-oss-
+  20b` under `nvidia` (preserving current behavior) and to
+  `settings.local_extraction_model` under `local` (fixing the actual bug —
+  the old hardcoded NVIDIA-only model name doesn't exist in LM Studio, so
+  verification silently broke under the local provider). Stale
+  "qwen3.5-9b" docstring replaced with a pointer to EA4-1, which owns the
+  actual lineage-diversity question. *(NLP, BE)*
+
+### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
+- ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
+  vetoed) → stratified set of **12–15 laws**: ≥2 OCR-quality PDFs, ≥1
+  amendment-markup (engrossed) bill, ≥1 deepfake/likeness law, ≥1 tracker-silent
+  law, per-agent expected extractions for **all 6 clause agents**. Annotation by
+  RPR with double-annotation on 20% for agreement measurement. *(RPR, NLP)*
+- ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
+  obligation/definition_actor/threshold_exception — rights_protection,
+  compliance_mechanism, preemption + all 3 bill-level agents have **zero**
+  ground-truth eval. Add bill-level eval mode (whole-bill fixture → expected
+  `law_enforcement_details`/thresholds/timeline fields). *(NLP, BE)*
+- ⏳ **EA1-3** **[High]** Baseline + regression gate: run harness on current prompts/
+  models, commit per-agent per-field P/R/F1 baseline artifact; every prompt/model/
+  weight PR reruns and diffs against baseline. Numerics scored exact-match;
+  text fields scored by span overlap. *(NLP, DevOps)*
+- ✅ **EA1-4** **[High]** Amendment-markup corpus audit — **confirmed live, not
+  theoretical**, across 236 source files / 211 ingested (`output/law_sources/`,
+  `output/law_texts/`). Two distinct encodings found, requiring separate
+  detection: **(1) HTML strikethrough/underline styling** — 3 confirmed
+  real cases after eliminating false positives (generic link-hover CSS in
+  IL/MO, an audio-player "Listen Live" underline in RI, CCPA "deletion
+  request" prose in CA misidentified as drafting markup by a naive keyword
+  scan). The smoking-gun case: **2025 Wisconsin Act 69**
+  (`TMP-WI-ESTATEADVERTIS.html`) flattens via `BeautifulSoup.get_text()` to
+  `"...client , principal firm, or firm , without..."` — `", principal
+  firm,"` and the trailing `","` are struck (no-longer-law) fragments sitting
+  inline with zero distinguishing signal, immediately followed by a genuinely
+  new underlined sentence (itself not effective until 2027-01-01 per the
+  Act's own effective-date section) with no "newly added" marker either.
+  FL (`TMP-FL-FLORIDAACTRELA.html`, `amendmentInsertedText`/
+  `amendmentDeletedText` classes) and NY (`TMP-NY-NYCAIEMPLOYMEN.html`,
+  inline `text-decoration: underline`) are insertion-only variants of the
+  same defect class (lower risk — no stale-law contamination — but the new
+  text still carries no "not yet settled" flag). **(2) Literal bracket
+  deletion convention** — confirmed in `TMP-KY-AMENDMENTTOINT.txt` (PDF
+  source; Kentucky prints deletions as literal `[bracketed]` text, e.g.
+  `[deviant]`, `[beastiality]` — survives `pdftotext` since it's plain
+  characters, not styling) and `TMP-NJ-RULESPERTAININ.txt` (NJ Register
+  regulatory notice, 22 bracket markers in one document, e.g. `[SINGLE
+  FAMILY] SINGLE-FAMILY`). This is the more dangerous encoding for PDF-heavy
+  corpora because **pure visual strikethrough in a PDF (no literal
+  brackets) is undetectable by any text-based heuristic** — would need
+  font/color-run PDF parsing, out of scope here; the 4 PDFs matching
+  `*AMENDMENT*` in filename with zero bracket hits (AZ, ND, OK) could not be
+  ruled out on this basis. *(NLP)*
+
+### Phase EA2 — Grounding: bind evidence to fields (bug-class; parallel with EA1)
+- ✅ **EA2-1** **[Critical]** Deterministic numeric cross-check — **clause-level
+  scope landed**. New `src/core/numeric_grounding.py` extracts candidate
+  numbers (money, days, hours, months incl. year→month conversion, counts,
+  FLOPS incl. caret/scientific/multiplication notation) from a payload's
+  *verified* evidence spans and compares against each populated typed-numeric
+  field (`max_civil_penalty_usd`, `cure_period_days`, `retention_period_months`,
+  `incident_reporting_hours`, `employee_threshold`, `revenue_threshold_usd`,
+  `consumer_data_threshold`, `compute_flops`, `assessment_frequency_months`),
+  reporting `grounded` / `mismatch` / `unverifiable` per field (absence of a
+  parseable number is "unverifiable", not "mismatch" — avoids penalizing
+  spelled-out numbers our regex can't parse). Wired via a new
+  `_apply_numeric_grounding()` helper into all three extraction insertion
+  sites in `extractor.py` (`extract_single_record`, `run_retry_failed`,
+  `run_recovery_extraction`): result stored in
+  `extraction_meta["numeric_grounding"]` (informational — does not change
+  `confidence_score`, that's EA3-1's job) and a confirmed `mismatch` forces
+  review priority to max urgency (3), reusing the EA0-3 escalation pattern.
+  33 tests in `test_numeric_grounding.py` + 5 wiring tests in
+  `test_extraction_pipeline.py`.
+  **Not yet covering bill-level payloads** (`enforcement_agent`,
+  `applicability_agent`, `compliance_timeline_agent`): those agents don't
+  produce a structured, verified `evidence_spans` list at all today — at
+  most one free-text quote (e.g. `enforcement_text`) that's never run
+  through span verification. Extending numeric grounding there depends on
+  **EA5-1** landing first (per-field verified evidence spans for bill-level
+  payloads); EA5-1 should call `numeric_grounding.check_numeric_grounding()`
+  once that structure exists rather than re-implementing the check. *(NLP,
+  BE)*
+- ✅ **EA2-2** **[High]** Span provenance landed, with one honest scope
+  decision. `text_grounding.py` gained index-map-aware normalization
+  (`_normalize_unicode_with_map`, `_normalize_whitespace_with_map`,
+  `_normalize_text_with_map`) that tracks each character in the normalized
+  string back to its raw-passage origin (composing across Unicode
+  substitution and whitespace-collapse, including correctly attributing a
+  *collapsed multi-char whitespace run* to its full raw span, not just one
+  character of it). **Tier 1/2** (`verify_evidence_spans`) now report
+  `char_start`/`char_end` valid against the raw passage — safe to slice
+  `passage[char_start:char_end]` directly for audit-UI highlighting; this is
+  the actual bug fix. **Tier 3/4** (loose/artifact-stripped matches):
+  scoped down to `char_start`/`char_end: None` rather than attempting to
+  invert `strip_revisor_artifacts`'s compound regex transforms (dehyphenation,
+  margin-number stripping, glyph repair) back to raw coordinates — that's a
+  materially harder problem for an already-lower-trust match tier, and
+  reporting *no* offset is safer than reporting a wrong one that silently
+  mis-renders in a highlighter. `review.html` already null-checks
+  `char_start`, confirmed no downstream breakage. Every verified span now
+  carries `match_tier` (1–4) and `loose_match` (bool); unverified spans
+  carry neither key (unchanged). `_normalize_text_with_map` returns `None`
+  (safe fallback to the old norm-passage-only string, no raw offsets) when
+  NFC normalization changes string length — rare combining-character
+  sequences, uncommon in US legislative text; a real test constructs this
+  case directly (`"café"` with a combining acute accent) rather than just
+  asserting the fallback exists in theory.
+  `reground_spans.py` (the backfill): needed two fixes, not just
+  "reprocess more rows" — added `--backfill-provenance` to broaden the SQL
+  filter to catch already-verified spans missing `match_tier`, **and** fixed
+  `_reground_batch`'s write-decision, which previously only detected
+  unverified→verified flips and would have silently skipped writing
+  provenance to rows that were already fully verified (the bulk of the
+  backfill's actual target). 27 new tests: 19 in `test_span_provenance.py`,
+  8 in `test_reground_spans.py` (batch-logic tests against a mocked
+  session — no live DB in this environment, so the SQL string itself is
+  unverified against real Postgres; review the `--backfill-provenance`
+  WHERE-clause addition before running it live). *(NLP, BE)*
+- ✅ **EA2-3** **[High]** Truncation/repair honesty landed. New
+  `was_repaired` field on `ExtractionResult` (`base.py`): `extract()` now
+  compares the fence/think-block-stripped output against `_repair_json`'s
+  output (both `.strip()`-normalized to avoid a whitespace-only false
+  positive) — any actual repair (control-char strip, trailing-comma
+  removal, truncated-JSON salvage, stringified-array unwrap, etc.) sets it
+  True. New `cap_at_tier_c()` in `confidence.py`: when `result.truncated`
+  OR `result.was_repaired`, caps an A/B-tier score+tier down into C's band
+  (score and tier kept mutually consistent — never shows a high score next
+  to a demoted tier); C/D extractions are left unchanged (never improved).
+  Wired into all three extraction insertion sites in `extractor.py`.
+  **"Force review" implemented as a max-urgency (3) `ReviewQueueItem`
+  priority bump, not a publish-block** — Tier C alone is still
+  auto-publish-eligible under the P3 confidence-only sync gate, so capping
+  the tier alone wouldn't guarantee a human look; the priority bump is
+  what actually surfaces it. `extraction_meta` now also records
+  `was_repaired`/`truncated` explicitly (previously only `truncated`, and
+  only when true). 15 new tests: 7 in `test_confidence.py::TestCapAtTierC`,
+  8 in new `test_was_repaired_flag.py` (exercises the real `extract()` path
+  end-to-end with `_call_llm` mocked, not just the static repair helper).
+  *(NLP)*
+- ✅ **EA2-4** **[High]** Parser strikethrough handling landed
+  (`src/ingestion/parser.py`), scoped directly off the EA1-4 findings above.
+  New `_strip_struck_content()` walks the BeautifulSoup tree **before**
+  `get_text()` runs (the actual bug — `get_text()` cannot distinguish
+  struck from live text after the fact) and `.decompose()`s only
+  unambiguous deletion markup: tag name `strike`/`del`/`s`, or inline
+  `style="text-decoration: line-through"` (never a `class=` name heuristic
+  alone — too easy to false-positive-delete real statutory text). Verified
+  against the actual Wisconsin Act 69 file from the audit:
+  `"...client , principal firm, or firm , without..."` → `"principal firm"`
+  now absent from the parsed passage, while the genuinely new
+  `"...out-of-state broker..."` sentence (underline-marked, correctly
+  *not* struck) is retained. Insertion markup (`<ins>`, `text-decoration:
+  underline`) is detected but deliberately left untouched — `get_text()`
+  already includes it correctly, it just wasn't flagged before. New
+  `amendment_markup_detected` (+ `bracket_markers_count` /
+  `struck_chars_removed` when applicable) written to
+  `NormalizedSourceRecord.metadata_` for every affected passage — HTML-path
+  detection is document-level (segmentation runs on already-flattened text
+  with no DOM correspondence, so every passage from a flagged document
+  gets the flag; reporting coarse-but-honest over fabricating a
+  passage-level offset, same precedent as EA2-2's Tier 3/4 scope
+  decision). Separately, a `_BRACKET_DELETION_PATTERN` regex
+  (`\[[A-Za-z][^\[\]]{1,60}\}`, min-count 2 per passage) catches the
+  KY/NJ literal-bracket convention uniformly across HTML/PDF/plaintext —
+  **informational only, never auto-stripped**, since ordinary numeric
+  citations (`[42 U.S.C. § 2000e-8]`) are also bracketed and a false-
+  positive strip there would delete real law; requiring an alpha first
+  character after `[` already excludes the numeric-leading citation
+  pattern in practice. `_parse_html`'s return type changed from
+  `list[tuple]` to `(list[tuple], html_markup_info | None)` — the one
+  caller (`parse_and_normalize`) and the internal PDF-guard branch were
+  both updated; `_parse_pdf`/`_parse_plaintext` signatures untouched. 24
+  new tests in `test_parser_amendment_markup.py` (style-detection,
+  strip-in-place behavior, end-to-end `_parse_html` including a clean-bill
+  regression case and the mixed strike+underline Wisconsin-shaped case,
+  bracket-pattern precision including the numeric-citation exclusion).
+  **Not covered**: visual-only strikethrough inside a PDF with no literal
+  bracket convention (e.g. AZ/ND/OK `*AMENDMENT*`-named PDFs, 0 bracket
+  hits) — undetectable without font/color-run PDF parsing, out of scope;
+  `extract_text_sample()` (the lightweight classification-only HTML
+  sampler) intentionally left unchanged since its output never reaches the
+  extraction pipeline. *(NLP, BE)*
+
+### Phase EA3 — Confidence model v4 (gated on EA1 baseline + contradiction #1 ruling)
+- 🔒 **EA3-1** **[Critical]** Evidence-first rebalance: demote Orrick+IAPP combined
+  to ≤0.20 corroboration signal; evidence grounding dominant; replace Orrick
+  Tier-D hard gate with `uncorroborated` flag (distinct axis, not a tier). Kill
+  the Jaccard→1.0 saturation at 0.25 and the 0.3 floor-for-any-data
+  (`confidence.py:199-205`). Validate on EA1 gold set: tier assignments must
+  correlate with annotated correctness better than v3 weights before serving.
+  *(NLP, product owner sign-off)*
+- 🔒 **EA3-2** **[Critical]** Citation credit must require resolution: `_score_
+  section_reference` rewards citation **format** (fabricated "§ 6-1-1703(2)(b)"
+  scores 1.0). Make citation weight contingent on `citation_verifier` match;
+  tighten verifier — remove number-only substring match
+  (`citation_verifier.py:146-151`, "§ 3" currently verifies against "Section 13"),
+  exact/subsection-prefix only, persist match method per citation. *(NLP, BE)*
+- ⏳ **EA3-3** **[High]** Stop extracting known facts: inject `jurisdiction` and
+  default `section_reference` deterministically from ingestion metadata /
+  `section_path`; model may refine subsection detail but a fabricated ref that
+  contradicts `section_path` is rejected. Removes a hallucination surface that
+  EA3-2's scorer currently *rewards*. *(NLP)*
+- 🔒 **EA3-4** **[High]** CV findings get teeth: confirmed `critical` CV issue →
+  hard tier cap (C) instead of a ~0.08 nudge at 0.10 weight. *(NLP)*
+- 🔒 **EA3-5** **[High]** Recompute + backfill: re-tier all extractions under v4,
+  persist before/after (reuse `ExtractionVerificationStatus` pattern), coordinate
+  with P3 publish gate so PN doesn't serve mixed-model tiers. *(BE, DevOps)*
+
+### Phase EA4 — Verification independence & recall recovery
+- ⏳ **EA4-1** **[High]** Real model diversity: CV/gap currently run gpt-oss-20b
+  auditing gpt-oss-120b — same lineage (correlated blind spots), smaller model
+  auditing larger (inverted). Route verification to a different-lineage model ≥
+  extractor capability (Llama-70B-class or better on NVIDIA); config via EA0-5.
+  Measure CV catch-rate on seeded-error fixtures before/after. *(NLP)*
+- ⏳ **EA4-2** **[High]** Gap candidates become actionable: today they land in
+  `VerificationRunSummary.gap_candidates` JSONB and die. High/medium-confidence
+  candidates spawn targeted re-extraction (route the named agent to that passage)
+  → new extraction rows enter the normal confidence + review path; verbatim
+  `evidence_text` string-verified before accepting a candidate. *(NLP, BE)*
+- ⏳ **EA4-3** **[High]** Triage discard audit: `not_relevant` and `quality_fail`
+  passages are terminal — invisible to extraction, CV, and gap detection. Sample
+  5–10% into a human audit queue (mirror `triage_recall_sample_rate=0.05`
+  pattern); `quality_fail` routes to re-OCR/manual list, never silent drop.
+  Track measured triage FN rate as a standing metric. *(NLP, RPR)*
+- 🔒 **EA4-4** **[High]** Model reassignment (gated on EA1 baseline to prove the
+  lift): `definition_actor` — anchors the whole bill's terminology — runs
+  llama-3.1-8b at temp 0.2/top_p 0.7 (sampling on, weakest model);
+  `preemption` — hardest legal reasoning — also 8B at 1536 tokens. Move both to
+  gpt-oss-120b, temp 0. *(NLP)*
+- 🔒 **EA4-5** **[Medium]** Dual-model agreement on matrix numerics only: second
+  independent model extracts the typed numeric/boolean fields; deterministic
+  field diff; disagreement → review. Reuses `model_agreement_count` (which today
+  is incremented by same-model duplicate emissions — agreement-washing; rename or
+  split the counter). Scope-limited to numerics to bound cost. *(NLP, BE)*
+
+### Phase EA5 — Bill-level hardening & reconciliation
+- ⏳ **EA5-1** **[High]** Bill-level evidence: require a verbatim quote per
+  populated field in bill-level payloads; run quotes through
+  `verify_evidence_spans` against the bill text; unverified quote → field flagged.
+  Today `law_enforcement_details` (the most product-visible data) ships with one
+  unverified ≤300-char quote and no confidence scoring. Once per-field verified
+  spans exist, call `src/core/numeric_grounding.check_numeric_grounding()`
+  (landed in EA2-1) against them for `max_civil_penalty_usd`,
+  `cure_period_days`, `compute_flops`, `assessment_frequency_months`, etc. —
+  do not reimplement the numeric cross-check. *(NLP)*
+- ✅ **EA5-2** **[High]** Conflict detection landed in
+  `normalize_enforcement()` (`src/core/enforcement_normalizer.py`) — with a
+  scope correction the plan's premise got wrong. New
+  `ENFORCEMENT_CONFLICT_FIELDS = (max_civil_penalty_usd,
+  private_right_of_action, cure_period_days)` (exactly the plan's named
+  fields, not all `ENFORCEMENT_FIELDS` — `enforcing_body`/`penalty_per`/
+  `enforcement_text` differ cosmetically across sources far more often
+  than substantively and would flood review with noise). For each
+  conflict field, `_detect_enforcement_conflicts()` collects every
+  source's non-null value (not just the precedence winner) and flags
+  `_has_enforcement_conflict` + a per-field `_enforcement_conflicts` entry
+  (`selected_value`, `selected_source`, `contributions` — every source
+  that reported a value) when two or more sources disagree. Precedence
+  behavior is unchanged (Orrick still wins) — this only adds visibility
+  into what precedence was silently overriding, e.g. the existing
+  `test_boolean_false_is_preserved` case (Orrick says no private right of
+  action, an obligation row disagrees) now also surfaces as a conflict
+  rather than resolving invisibly. **Scope correction discovered before
+  writing this:** the plan describes `enforcement_normalizer` as an
+  already-live reconciliation step ("the redundancy already exists;
+  exploit it") — grepped the whole repo and found `normalize_enforcement`/
+  `normalize_enforcement_for_law` have **zero callers** anywhere outside
+  their own test file. The merge function itself was never wired into any
+  pipeline, script, or dashboard route, so "emit `enforcement_conflict`
+  review items" (i.e. write real `ReviewQueueItem` rows) isn't
+  implementable yet — there's no call site that runs this per-law and
+  persists a result. Landed the conflict-detection logic itself (pure,
+  fully unit-tested, useful the moment this module is wired up), but
+  wiring `normalize_enforcement_for_law()` into an actual per-law job (and
+  deciding *when* it runs — on every extraction run? on-demand? a
+  periodic reconciliation pass?) is a separate architecture decision, not
+  something to unilaterally invent a call site for. **Also out of scope,
+  flagged not silently dropped:** disagreement *within* the obligation
+  source itself (many passage-level obligations stating different cure
+  periods, collapsed to first-non-null by `_coalesce_obligation_enforcements`
+  before it ever reaches conflict detection) — the plan's wording
+  ("sources disagree") reads as the 4 named sources, not intra-source
+  variance; a related but distinct signal. 8 new tests in
+  `test_enforcement_normalizer.py` (20 total, up from 12). *(NLP, BE)*
+- ✅ **EA5-3** **[Medium]** Enforcement-agent input targeting landed
+  (`src/agents/enforcement_agent.py`). New `_build_bill_excerpt()`: for
+  bills at or under `_TAIL_CHARS` (20,000 — the corpus median bill is
+  ~11k chars), behavior is **unchanged** — sent in full, no truncation-
+  bias risk either way. For longer bills, prefers `bill_context
+  ["enforcement"]` (already computed by `build_bill_context()` in
+  `src/core/bill_context.py`, and already passed into every bill-level
+  agent's `context` arg by `extractor.py` — this agent just wasn't using
+  it) since that's built by pattern-matching every passage in the bill
+  regardless of length or position, so it has **no prefix bias at all**;
+  plus a bounded raw tail (last 20k chars) as a catch-all for enforcement
+  language the pattern matcher missed. When no enforcement-pattern
+  passages were found anywhere in the bill, falls back to the tail alone
+  rather than a raw prefix — strictly better, since the tail is the
+  conventional location for enforcement sections and a prefix guarantees
+  the opposite. 8 new tests in
+  `test_enforcement_agent_input_targeting.py` pin exactly the failure
+  mode being closed: a marker planted early in an oversized synthetic bill
+  is confirmed absent from the final prompt (the truncation-bias case),
+  while markers in the enforcement excerpt and the tail are both present.
+  *(NLP)*
+- ✅ **EA5-4** **[Medium]** Penalty-tier structure landed
+  (`src/agents/enforcement_agent.py`), with an honest limit on what "landed"
+  means here. New optional `penalty_tiers` field —
+  `[{"condition": str, "amount_usd": int}, ...]` — requested only when the
+  bill states different amounts for different conditions (negligent vs.
+  willful, first vs. subsequent violation, etc.); the prompt explicitly
+  forbids wrapping a single flat penalty in a one-item array, to avoid
+  manufacturing false tier structure. `_coerce_penalty_tiers()` drops
+  malformed entries (missing condition, unparseable amount) defensively
+  rather than failing the whole extraction, matching the existing int/bool
+  coercion style in this file. `max_civil_penalty_usd` — the flattened
+  matrix column — now **self-heals** from the tiers: if the model leaves
+  it null or reports it inconsistently lower than its own highest tier,
+  it's corrected upward (never lowered), making "keep max for the matrix
+  column" an enforced invariant rather than just a prompt instruction the
+  model might not follow. Purely additive and backward-safe: a law where
+  the model never populates `penalty_tiers` behaves byte-for-byte like
+  before (field defaults to `None`, `max_civil_penalty_usd` untouched). 11
+  new tests in `test_bill_level_agents.py::TestEnforcementAgentPenaltyTiers`
+  cover the coercion and self-heal logic exhaustively — but that's the
+  deterministic *parsing* half only. **What's unvalidated:** whether the
+  model reliably populates `penalty_tiers` *accurately* against real bills
+  (correct tier boundaries, no hallucinated conditions) has no ground
+  truth to check against without EA1's gold set, and the "negligent vs.
+  willful" tier-condition framing itself hasn't had RPR (legal reviewer)
+  sign-off — this file's original role tag was `(NLP, RPR)`, and no RPR
+  role exists in this sandboxed session. Treat the schema/self-heal as
+  solid; treat model-side extraction quality of tier data as an open
+  question for EA1. *(NLP; RPR sign-off still outstanding)*
+
+### Phase EA6 — Prompt & schema legal-nuance fixes (gated on EA1 regression gate)
+- 🔒 **EA6-1** **[High]** Implied rights defensibility: `rights_protection.yml:77`
+  manufactures rights from obligations ("notice obligation implies notice right") —
+  a contested legal inference stored at equal status with textual rights. Add
+  `derivation: textual | implied_from_obligation` to `RightsProtectionPayload`;
+  implied rows visibly badged in review + product. *(RPR ruling, NLP)*
+- 🔒 **EA6-2** **[Medium]** Constrained decoding: NVIDIA NIM structured outputs
+  (JSON schema) for clause agents; shrinks the 5-strategy `_repair_json` surface
+  (repair chain retained as fallback for local provider). *(NLP, BE)*
+- ✅ **EA6-3** **[Low]** Dedupe landed (`src/ingestion/extractor.py`) — was
+  never actually gated on EA1 (it's pure deterministic post-processing on
+  already-validated payloads, no prompt touched; the session note already
+  flagged this, listing it in the "unblocked without live LLM access"
+  bucket rather than the EA6 gate). New `_dedupe_interpretation_risks()`
+  runs once per passage in `extract_single_record()`, right after both
+  agents' results are collected but **before** they're persisted as
+  separate `Extraction` rows — mutates `result.extractions` in place so a
+  merged passage (multiple `source_records`) doesn't re-derive the same
+  duplicate once per source_record. Keys on
+  `(term.strip().lower(), risk_type)`; keeps the first occurrence in a
+  **fixed agent-precedence order** (`obligation` before
+  `rights_protection`), not thread-completion order — `agent_results` is
+  populated via `as_completed()`, so without a fixed order the same
+  passage could dedupe differently on different runs. Same term flagged
+  under a genuinely different `risk_type` is intentionally NOT deduped
+  (e.g. "promptly" as both `vague_term` and `temporal_ambiguity` are two
+  distinct findings). Incidental but correct side effect: since the `seen`
+  set is shared across one passage rather than reset per extraction item,
+  two obligations from the *same* agent citing the same ambiguous term
+  also collapse to one finding — the plan's wording named cross-agent
+  specifically, but the same duplication logic applies within an agent
+  too. 12 new tests in `test_interpretation_risk_dedup.py`. *(BE)*
+- 🔒 **EA6-4** **[Low]** CV prompt trim: stop re-serializing evidence_spans +
+  metadata into the CV payload dump (CV already has the passage). Token savings
+  with zero signal loss. *(NLP)*
+- ✅ **EA6-5** **[Medium]** Date parse status landed — pure deterministic
+  post-processing, no prompt touched (like EA6-3, this was never actually
+  gated on EA1 despite living under the EA6 heading). New
+  `TimelineInfo.date_parse_status: dict[str, str]`
+  (`src/schemas/extraction.py`) — a `model_validator(mode="after")`
+  classifies each populated date field (`effective_date`,
+  `compliance_deadline`, `sunset_date`) as `"parsed"` (matches
+  `YYYY-MM-DD`, meaning `normalize_date()` succeeded) or `"unparsed"`
+  (raw model text passed through unchanged); a field the model never
+  populated is simply absent from the dict, distinct from "populated but
+  unparseable". Scoping note: the raw text itself was never actually
+  *lost* before this fix — `normalize_date(v) or v` already preserved it
+  verbatim in the field on failure — so no separate raw-text field was
+  added; the missing piece was purely the status marker distinguishing
+  the two cases, which is what "store raw + normalized" cashes out to
+  here. **"Unparsed dates excluded from deadline computations"**: found
+  and fixed the one real computation site —
+  `src/core/concept_grouping.py`'s obligation-bucket builder collects a
+  `deadline` value into `bucket.deadlines` (used later for
+  `sorted(bucket.deadlines)[0]`, an earliest-deadline lexicographic sort
+  that's only meaningful for genuine ISO strings) — previously took
+  whatever `timeline.get("effective_date")` held, ISO or free text,
+  unfiltered. New `_is_iso_date()` checks the `YYYY-MM-DD` format
+  directly (rather than trusting a stored `date_parse_status` key) so it
+  correctly excludes bad data from **both** newly-written and
+  already-existing extractions with no backfill required. 17 new tests:
+  9 in `test_timeline_date_parse_status.py`, 8 in
+  `test_concept_grouping.py::TestIsIsoDate`. **Found but out of scope,
+  not fixed:** that same line reads
+  `timeline.get("effective_date") or timeline.get("compliance_date")` —
+  the schema field is named `compliance_deadline`, not `compliance_date`,
+  so the second alternative is dead code and `compliance_deadline` values
+  never reach `bucket.deadlines` at all today. Real, but a distinct bug
+  from the one EA6-5 named (wrong field name entirely omitted vs. free
+  text incorrectly trusted) — flagged here rather than silently bundled
+  in, since fixing it changes what data flows into a concept's deadline
+  and deserves its own look rather than a drive-by edit. *(BE)*
+
+**Sequencing:** EA0 (all) + EA2-1/2-2/2-3 first — pure defect fixes, unit-testable,
+no gating. EA1 starts immediately in parallel (annotation is the long pole; RPR
+capacity is the constraint). EA3 blocks on EA1-3 baseline **and** the contradiction
+#1 product ruling — do not let P3 (tier-only publish) ship before EA3 or without an
+interim evidence-grounding gate. EA4-1/4-2/4-3 after EA0-5. EA5 parallel with EA4.
+EA6 last, each item gated on the EA1 regression gate. Cost note: EA4-1/EA4-5 raise
+per-law token spend — acceptable per the precision mandate, but capture actual
+$/law in `run_summary.json` before/after so the trade is explicit.
+
+**Step-back amendments (self-review, same day):**
+1. **Baseline before behavior changes.** EA1-3's baseline must be captured on
+   *current* code before EA0-2 (routing) lands, or the baseline measures the new
+   routing and the lift is unmeasurable. Exact order: EA1-3-lite (run existing 33
+   fixtures, commit scores) → EA0 → full EA1. Days, not weeks. **Resolved
+   2026-07-03:** EA0-2 landed as a doc-only fix (see above) — no routing
+   behavior changed, so this specific ordering hazard didn't materialize. The
+   ordering principle still holds for any *future* task that changes routing
+   or extraction behavior: capture/refresh the EA1 baseline first.
+2. **EA3-1 additionally gates on EA2-1/EA2-2.** Evidence grounding today verifies
+   *quoting*, not *support* (review finding #2) — promoting it to the dominant
+   confidence weight before field-binding lands would swap one weak dominant
+   signal for another. EA2 is a hard prerequisite for EA3-1, not a parallel track.
+3. **Review-queue capacity budget.** EA0-3, EA4-2, EA4-3, and EA5-2 all *add*
+   review volume; with a single reviewer an unbounded queue is a fake safety net.
+   Each queue-feeding task must state expected items/run; cap total inflow (e.g.
+   top-N by severity per run) and track queue age on the dashboard.
+4. **Right-size EA1-1 to solo capacity.** 12–15 laws double-annotated is
+   team-scale. Floor: 8–10 laws, single annotation + strong-model adjudication on
+   disagreement candidates, prioritizing the agents that feed the PN matrix
+   (obligation, threshold_exception, enforcement_agent, applicability_agent).
+   Expand only if EA1-3 variance shows the set is too small to detect regressions.
+5. **Consolidation spike (unscheduled, flag only):** the 6-clause-agent split is a
+   small-local-model legacy; with 120b-class models + 131k context, a single
+   section-level pass with unified schema + strong verifier might cut error
+   surface and cost more than EA0–EA6 combined. Two-day spike on the EA1 gold set
+   before committing to EA6-2 constrained-decoding work per-agent. Also: 4c's
+   weight model and EA3-1 must merge into ONE confidence plan — whoever lands
+   first absorbs the other; do not maintain two.
+6. **Session note (2026-07-03):** Phase EA0 (5/5) and Phase EA2 (3/4 — EA2-1,
+   EA2-2, EA2-3; EA2-4 correctly left gated) landed this session across 4
+   commits (`ac31f32`, `9c003e4`, `899a6fe`, `bd4b6c1`) — 987/987 unit tests
+   passing (877 pre-session baseline + 110 new). No live LLM required for
+   any of it: every item this session was a pure code/config defect,
+   deterministic post-processing, or offset-math fix, unit-tested with
+   mocked providers/sessions. **EA1 (gold-set baseline capture) could NOT
+   be run this session** — this execution environment has neither
+   `NVIDIA_API_KEY` nor a reachable local LM Studio instance, and the
+   harness (`src/evaluation/harness.py`) calls real model providers.
+   EA1-3-lite (run the existing 33 fixtures, commit baseline scores) is
+   the next step that requires the operator's machine via `python
+   start.py` per CLAUDE.md. EA2-4 (parser strikethrough handling) is
+   correctly gated on EA1-4 (a corpus audit of `output/law_sources/` for
+   engrossed-bill amendment markup) — that's an investigation task, not
+   assumed blocked by live-LLM access; worth a follow-up pass reading the
+   actual source files rather than guessing prevalence.
+   **What's still unblocked without live LLM access, for the next session:**
+   EA5-2 (enforcement reconciliation — flag disagreement between
+   clause-level/bill-level/tracker data; the redundancy already exists,
+   nothing currently exploits it), EA5-3 (enforcement-agent input
+   targeting — feed `bill_context.py`'s enforcement sections instead of
+   the raw 128k-char prefix), EA5-4 (penalty-tier structure), EA6-3
+   (dedupe `interpretation_risks` — deterministic post-processing, not a
+   prompt change), EA6-5 (date parse status). **Not** unblocked: EA6-4 (CV
+   prompt trim) touches the actual prompt sent to the model — per the same
+   discipline applied to EA0-2, a prompt change without EA1 measurement is
+   tuning-by-guess, not a safe pure-code fix, despite looking like one.
+7. **Session note (2026-07-04):** EA1-4 (corpus audit) and EA2-4 (the parser
+   fix it gated) both landed this session. The audit read the actual source
+   files rather than estimating prevalence, per the note above: 236 source
+   files / 211 ingested, 2 markup encodings confirmed live (HTML strike/
+   underline styling — 3 real cases after discarding false positives;
+   literal-bracket deletion convention — 2 real cases, one in a PDF), with
+   one concrete smoking-gun example (2025 Wisconsin Act 69) showing a
+   struck, no-longer-law fragment and a not-yet-effective inserted sentence
+   both reading as plain current text pre-fix. EA2-4 fixed the HTML case
+   at the DOM level (before `get_text()` flattens it — the only point
+   where struck vs. live text is still distinguishable) and added an
+   informational bracket-heuristic for the PDF/plaintext case; visual-only
+   strikethrough inside a PDF with no literal brackets remains genuinely
+   undetectable without font/color-run PDF parsing (flagged as out of
+   scope, not silently dropped). 24 new tests, 1011/1011 passing. Both
+   items were pure code/text-processing work, no live LLM needed — same
+   pattern as EA0/EA2-1/2-2/2-3. **Phase EA2 is now fully landed (4/4).**
+   Remaining unblocked-without-live-LLM work for next session, in priority
+   order: EA5-2, EA5-3, EA5-4, EA6-3, EA6-5 (list unchanged from the prior
+   session note — still not started). EA1-1/1-2/1-3 (gold-set annotation
+   and baseline capture) remain the actual long pole and still require the
+   operator's own machine (`python start.py`) per CLAUDE.md — nothing in
+   this sandbox can substitute for a real model call.
+8. **Session note (2026-07-04, continued):** all five remaining
+   unblocked-without-live-LLM items landed the same day, in the order
+   listed above — EA5-2, EA5-3, EA5-4, EA6-3, EA6-5, five commits
+   (`c08397b`, `22ec59a`, `934322c`, `7a30ec3`, plus this plan update).
+   57 new tests, 1068/1068 passing. Two items (EA6-3, EA6-5) turned out
+   to have been mis-filed under the EA6 "gated on EA1" heading — both are
+   pure deterministic post-processing with no prompt involved, and the
+   session note above already knew this and listed them as unblocked;
+   the tasks.md entries now say so explicitly rather than leaving the 🔒
+   marker's implication uncorrected. Each item surfaced at least one
+   scope-boundary worth recording rather than silently expanding past:
+   EA5-2's `enforcement_normalizer` turned out to have zero callers
+   anywhere (the plan assumed it was already wired into a live
+   reconciliation step); EA5-4's prompt-side change is flagged as
+   unvalidated for extraction *quality* pending EA1 and RPR sign-off,
+   only the deterministic parsing half is claimed as solid; EA6-5 found
+   a second, distinct bug in the same line it fixed
+   (`compliance_date` vs. the schema's actual `compliance_deadline`)
+   and flagged it rather than bundling an unrequested fix into the
+   commit. **Phase EA5 is now fully landed (4/4). EA6-3 and EA6-5 are
+   done; EA6-1/6-2/6-4 remain genuinely gated on the EA1 regression
+   gate** (EA6-1 needs an RPR ruling on the `derivation` field's default
+   framing, EA6-2 is a structured-decoding infra change, EA6-4 trims an
+   existing signal from a live prompt — all three are real prompt/schema
+   risk, not the false-gate pattern EA6-3/6-5 turned out to be). What's
+   left everywhere in the EA plan now requires either the operator's own
+   machine (EA1's gold-set annotation and baseline capture) or a product/
+   RPR decision this sandbox can't make (contradiction #1 in the header
+   above, EA3's confidence-model ruling, EA5-4's RPR sign-off). No further
+   items are known to be safely actionable here without one of those two
+   unblocks.
+
+---
+
+## Repository Cleanup Plan (RC) — from 2026-07-03 audit report
+
+> Source: external cleanup-audit report (backups, archived code, docs sprawl,
+> static/data mixing). The report itself flags most findings as needing
+> verification ("likely safe but needs verification", "unknown / requires
+> human confirmation") — before turning it into a plan, every specific,
+> checkable claim was verified against the actual repo (import scans, git
+> tracking status, CI config, template nav links, secret grep). Findings
+> below are marked **confirmed** (verified this session), **corrected**
+> (audit was imprecise or stale), or **unverifiable here** (needs live DB,
+> external storage, or ops/deployment access this session doesn't have).
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Severity in **[ ]**.
+
+### Verification corrections to the source report (read before acting on it)
+- **`src/ingestion/_archived/` is not one bucket.** Individually import-scanned
+  all 8 files: **5 are confirmed zero-import dead code**
+  (`ambiguity_agent.py`, `connector.py`, `discovery.py`, `verification.py`,
+  `web_search.py` — none imported from any live, non-archived path). **2 are
+  confirmed load-bearing**: `pdf_tracker.py` (imported by
+  `dashboard.py:1113`, `seed_pipeline.py:254,279`) and `iapp_pdf_tracker.py`
+  (imported by `dashboard.py:4668`, `status_checker.py:277`). The audit's
+  "treat each module as live until proven otherwise" was the right caution
+  but left the actual per-file disposition undone — RC3-3 below does it.
+- **`compare_models` is confirmed broken, not just suspicious.**
+  `dashboard.py:4385` (`/dashboard/api/run/compare-models`, wired to a live
+  HTMX button in `templates/analytics.html:99`) imports
+  `src.evaluation.compare_models`, which does not exist —
+  `src/evaluation/` only contains `harness.py`. The only `compare_models.py`
+  is in `_archived/`, and it is **itself doubly broken**: it imports
+  `AnthropicProvider` (fully removed per `llm_provider.py`'s own docstring —
+  "The Anthropic API provider has been archived") and `AmbiguityAgent`
+  (only exists in `src/ingestion/_archived/ambiguity_agent.py`, itself
+  zero-import dead code). Restoring it is not a cleanup action, it's a
+  from-scratch rewrite against the current 9-agent NVIDIA/local
+  architecture — see RC2-1.
+- **`prompts/dependency_graph.yml` is confirmed live**, not a deletion
+  candidate — loaded by `dependency_builder.py:250`
+  (`load_prompt_template("dependency_graph")`), called from
+  `extractor.py`'s `run_dependency_graph`. The audit hedged correctly here
+  ("weak-medium... dynamic/manual runs possible"); do not delete.
+  `prompts/ambiguity.yml` by contrast is confirmed dead (no live agent has
+  `agent_name = "ambiguity"`) — safe to remove.
+- **`archive/` already has an index** (`archive/README.md`) mapping every
+  retired doc/handoff to why it was retired and what superseded it — the
+  audit's "heavy historical duplication... need an index" applies to the
+  *active* `docs/` directory (18 files, no README), not `archive/`, which
+  is already in good shape and a good model to copy.
+- **Backups are schema-only, not data dumps** — grepped both `.sql` files
+  for `INSERT INTO`/`COPY` (0 matches each). Still a real infra-detail leak
+  (full table/RLS/grant structure, including an `api_keys` table with a
+  `key_hash` column), just a smaller blast radius than a row-data leak.
+  Both files are confirmed `git ls-files`-tracked, as is
+  `output/law_texts_quarantine/` (30 tracked files). Neither path is in
+  `.gitignore` today.
+- **`static/` tracker files are confirmed live ingestion inputs**, not
+  orphaned assets — referenced by `dashboard.py`, `seed_pipeline.py`,
+  `iapp_alignment.py`, and `config.py`. Genuinely mis-located (mixed into a
+  directory whose other job is serving web assets via the FastAPI static
+  mount), not dead.
+- **CI lint gate confirmed exactly as described**: `ci.yml` hard-gates only
+  `--select E9,F` (excluding both `_archived` dirs); full `ruff check` runs
+  with `|| true` (advisory, cannot fail the build).
+- **All 7 dashboard templates confirmed live** — each is linked from
+  `layout.html`'s nav bar to a real route. No template deletion candidates.
+
+### Phase RC0 — Documentation and labeling (zero code risk; do first)
+- ⏳ **RC0-1** **[Low]** `docs/README.md` index for the *active* `docs/`
+  directory (18 files): cross-reference against what `tasks.md` already
+  cites as current (`run1_unified_plan.md`, `remediation_plan.md`,
+  `phase2_completion_log.md`, `engineering_strategy_v3.md`,
+  `NORMALIZATION_VOCABULARY_RATIFICATION_PLAN.md` are confirmed current
+  from existing `tasks.md` cross-refs); classify the rest
+  (`pipeline_rebuild_plan.md`, `taxonomy_dev_plan.md`,
+  `product_review_remediation_plan.md`, `production_readiness_review.md`,
+  `code_update_strategy_eng.md`, `actor_taxonomy_analysis.md`,
+  `output_taxonomy_explained.md`, `vocab_harvest_spec_eng.md`,
+  `data_dictionary.md/.pdf`, `missing_laws_ingest_queue.csv`,
+  `phase0/1_completion_log.md`) as current/superseded. Mirror
+  `archive/README.md`'s table format — don't invent a new convention.
+  *(product/tech lead input needed on ambiguous ones)*
+- ⏳ **RC0-2** **[Low]** Label one-off scripts with an owner-facing status
+  comment (`# STATUS: active runbook` / `one-time, completed <date>` /
+  `archive candidate`): `scripts/fix_csv_titles.py`,
+  `scripts/fix_mismatched_sources.py`, `scripts/reset_pipeline.py`,
+  `scripts/debug_pdf_tables.py`, `scripts/apply_pending_migrations.sql`.
+  Static analysis can't tell one-time-completed from still-needed for these
+  — needs the operator who ran them. *(operator input needed)*
+
+### Phase RC1 — Safe removals (git-tracking changes; needs a retention decision)
+- ⏳ **RC1-1** **[Medium — security-adjacent]** Untrack `backups/*.sql`
+  (2 files, confirmed schema-only, confirmed git-tracked). **Blocked on a
+  step this session cannot perform**: copying the files to private/secure
+  storage first requires a destination outside this sandbox — the operator
+  must do that copy. Once confirmed safe to lose from the working tree,
+  `git rm --cached backups/*.sql` + add `backups/` to `.gitignore` removes
+  them going forward. **Note the distinction**: this does NOT purge git
+  *history* — the files remain retrievable from prior commits. A full
+  history purge (`git filter-repo` / BFG) is a separate, much more
+  destructive decision this plan does not recommend without explicit,
+  separate confirmation — untracking going forward is the low-risk action;
+  history rewriting is not. *(operator: secure storage step; explicit
+  confirmation before any history rewrite)*
+- ✅ **RC1-2** **[Low]** Executed (2026-07-04). All 30 files untracked via
+  `git rm --cached` (working-tree copies untouched — nothing deleted from
+  disk) and `output/law_texts_quarantine/` added to `.gitignore`.
+  Pre-checked the ingest path: `local_ingest.py` only *writes* to the
+  quarantine dir (`_quarantine_file()` moves bad files in and appends to
+  `NEEDED_SOURCES.md`); ingestion reads exclusively from
+  `output/law_texts/` / `output/law_sources/`, so nothing re-globs the
+  quarantine path. Note: `NEEDED_SOURCES.md` (the operator-facing "these
+  laws need replacement sources" ledger) was untracked along with the
+  rest — it still exists locally and regenerates at runtime, but if it
+  should stay version-controlled, re-add it with
+  `git add -f output/law_texts_quarantine/NEEDED_SOURCES.md`. Reversible
+  via `git revert`. *(done)*
+
+### Phase RC2 — Broken-feature decisions (product input needed)
+- ⏳ **RC2-1** **[Medium]** `compare_models` broken endpoint — confirmed
+  live, user-facing, and broken (see verification note above). Two options,
+  need a product call: **(a)** remove the button in `analytics.html:99`
+  and the route in `dashboard.py:4382-4386` (low-risk, reversible, matches
+  "prefer deleting broken feature entry points over restoring dead code"
+  from the source report); **(b)** treat "compare local models against
+  each other" as a live feature request and rewrite it fresh against the
+  current NVIDIA/local 9-agent architecture + `EvaluationHarness` (a real
+  scoped feature, not a cleanup task — would reuse `harness.py`'s
+  precision/recall machinery rather than the archived ad-hoc comparator).
+  *(product decision)*
+- ✅ **RC2-2** **[Low]** Executed (2026-07-04). `prompts/ambiguity.yml`
+  deleted. Re-verified before deleting: after RC3-3 removed
+  `ambiguity_agent.py`, the only remaining `load_prompt_template()` callers
+  are `base.py` (loads by live `agent_name` — none is "ambiguity") and
+  `dependency_builder.py` (loads "dependency_graph" — the RC2-3 do-not-touch
+  file). `ExtractionType.ambiguity` DB enum untouched, per the existing
+  read-only decision. *(done)*
+- ✅ **RC2-3** **[Info]** `prompts/dependency_graph.yml` — confirmed live,
+  explicitly marked **do not touch**. No action; recorded here so it isn't
+  re-flagged by a future pass.
+
+### Phase RC3 — Consolidation (scoped multi-file changes)
+- ⏳ **RC3-1** **[Medium]** Split `static/`'s source-data files
+  (`ai_law_tracker.csv`, `ai_law_tracker_QA_report.md`,
+  `IAPP_Legislation_tracker.pdf`, `iapp_law_tracker.csv`,
+  `iapp_law_tracker_QA.md`, `Orrick-US-AI-Law-Tracker.pdf`) from the actual
+  web asset (`static/css/style.css`) into a `data/trackers/` (or similar)
+  directory. Requires updating every path reference atomically —
+  `dashboard.py`, `seed_pipeline.py`, `iapp_alignment.py`, `config.py` (path
+  constants likely live here) — plus a local-ingest smoke test confirming
+  paths still resolve. Do not do speculatively; one PR, all references
+  updated together. *(BE)*
+- ⏳ **RC3-2** **[Low]** Build `docs/README.md` (RC0-1) then move any
+  docs/*.md confirmed superseded into `archive/docs/`, following the
+  existing `archive/README.md` table pattern exactly (retired file → why →
+  what superseded it). Gated on RC0-1's classification pass.
+- ✅ **RC3-3** **[Medium]** Executed (2026-07-04) exactly as scoped:
+  `pdf_tracker.py` and `iapp_pdf_tracker.py` moved to
+  `src/ingestion/legacy/` (the codebase's existing old-but-still-used
+  convention), all 5 call sites updated and re-verified importable from
+  the new path, the 5 zero-import files + package `__init__.py` deleted,
+  directory removed. Two things the scoping pass hadn't caught, found
+  during execution: **(1)** the moved `pdf_tracker.py` carried an unused
+  `xml.etree.ElementTree` import (F401) that was invisible while the file
+  sat inside CI's lint-exclude but would have **failed the hard E9,F gate**
+  the moment it moved — removed as part of the move; **(2)** separately,
+  the hard gate was *already red* on 4 pre-existing errors in live code
+  (unused imports in `base.py`/`orrick_facts_parser.py`/
+  `reground_spans.py`, an F541 in `dashboard.py`) — verified against the
+  pre-branch baseline via a temp worktree that all 4 pre-date this
+  branch's work, fixed in their own commit so CI is green. Follow-on:
+  `ci.yml`'s two `--exclude` flags dropped (`src/_archived` never existed
+  under `src/`; `src/ingestion/_archived` is now gone — both were no-ops),
+  and `CLAUDE.md`/`architecture.md`/`test_orrick_scraper.py` updated to
+  stop pointing at the deleted directory. Moved-file docstrings now state
+  their legacy-but-load-bearing status and who imports them. 1068/1068
+  tests passing; exact new CI gate command verified passing on the full
+  tree. *(done)*
+
+### Phase RC4 — High-risk, environment-gated (explicitly blocked here)
+- 🔒 **RC4-1** **[High]** Retire the `_ensure_extraction_enums` /
+  `_ensure_failed_attempts_table` / `_ensure_pipeline_events_table` /
+  `_ensure_triage_table` raw-SQL fallback helpers in `extractor.py`
+  (confirmed still called at every `run_extraction`/`run_retry_failed`
+  entrypoint). **Blocked**: requires a live schema-drift sweep across the
+  local Docker Postgres and both Supabase projects, which needs DB
+  connectivity this sandboxed session does not have. Do not touch without
+  that sweep — these helpers exist specifically because Alembic migrations
+  may not have run on every target DB. *(operator, live DB access)*
+- 🔒 **RC4-2** **[High]** Retire `scripts/apply_pending_migrations.sql`.
+  Same blocker as RC4-1 — needs Alembic-vs-live-schema reconciliation
+  across local Docker + Regs Checker Supabase + Policy Navigator Supabase
+  before it's safe to remove the manual fallback. *(operator, live DB
+  access)*
+- ⏳ **RC4-3** **[Low, but has a blind spot]** `_archived/dagster_pipelines/`
+  — confirmed zero references anywhere in the live repo (`src/`,
+  `scripts/`, `.github/`, `docker/`). Static analysis cannot see a
+  cron/scheduler configured outside the repo (e.g. a hosted Dagster
+  deployment pointing at this code) — needs an explicit "no such deployment
+  exists" confirmation from whoever owns infrastructure, not just a clean
+  grep. *(ops confirmation needed, then safe to delete)*
+
+**Sequencing:** RC0 first (no risk, clarifies everything downstream). RC1-2
+and RC3-3 are verified-safe enough to execute directly once acknowledged —
+everything else in RC1/RC2/RC3 needs one external input (secure storage
+destination, product decision, or a coordinated multi-file path update) before
+acting, and RC4 needs live DB/ops access this session doesn't have at all.
+
+**Execution note (2026-07-04):** RC1-2, RC2-2, and RC3-3 executed this
+session (details on each item above), plus an unplanned fix for 4
+pre-existing CI hard-gate lint failures discovered while verifying RC3-3's
+lint-exclude removal. **Still open, with their blockers:** RC0-1/RC0-2
+(need operator/product classification of docs and one-off scripts), RC1-1
+(needs the operator to copy `backups/*.sql` to storage outside this repo
+first; untracking is ready to run the moment that's confirmed), RC2-1
+(product decision: delete the broken compare-models button vs. rewrite the
+feature against the current architecture), RC3-1 (`static/` source-data
+split — coordinated multi-file path update, one PR, ready to execute on
+request), RC3-2 (gated on RC0-1's classification), RC4-1/4-2 (live DB
+schema sweep), RC4-3 (ops confirmation no external Dagster deployment
+exists).
+
+---
+
 ## Remediation Plan — Engineering Review Findings (RR)
 
 > Synthesis of two independent reviews: the **agent-engineering review**

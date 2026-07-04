@@ -1,7 +1,9 @@
-"""Legacy test stub — Orrick web scraper and PDF tracker both archived.
+"""Legacy test stub — Orrick web scraper and PDF tracker off the active path.
 
-The web scraper (connector.py) and PDF tracker (pdf_tracker.py) have been
-moved to src/ingestion/_archived/.  The active tracker ingestion path is
+The web scraper (connector.py) was deleted with src/ingestion/_archived/
+(RC3-3; retrievable from git history). The PDF tracker (pdf_tracker.py)
+lives in src/ingestion/legacy/ — old but still used by dashboard and
+seed_pipeline. The active tracker ingestion path is
 src/ingestion/orrick_facts_parser.py (Orrick enrichment from static data).
 """
 

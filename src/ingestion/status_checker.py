@@ -274,7 +274,7 @@ def _scrape_iapp_index() -> IAPPScrapeResult:
 
     # Strategy 1: Parse local IAPP PDF (preferred — no network dependency)
     try:
-        from src.ingestion._archived.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
+        from src.ingestion.legacy.iapp_pdf_tracker import IAPP_PDF_PATH, parse_iapp_pdf
         if IAPP_PDF_PATH.exists():
             records = parse_iapp_pdf()
             logger.info("iapp_loaded_from_pdf", records=len(records))

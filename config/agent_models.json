@@ -12,7 +12,9 @@
         "triage": {"model": "google/gemma-4-26b-a4b", "max_tokens": 512, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
         "enforcement_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
         "applicability_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
-        "compliance_timeline_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null}
+        "compliance_timeline_agent": {"model": "google/gemma-4-26b-a4b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "cross_validation": {"model": "google/gemma-4-26b-a4b", "max_tokens": 16384, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null},
+        "gap_detection": {"model": "google/gemma-4-26b-a4b", "max_tokens": 16384, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "off", "top_p": null}
       }
     },
     "nvidia": {
@@ -26,7 +28,9 @@
         "triage": {"model": "meta/llama-3.1-8b-instruct", "max_tokens": 512, "context_length": 131072, "temperature": 0.2, "reasoning_effort": null, "top_p": 0.7},
         "enforcement_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 3072, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "low", "top_p": null},
         "applicability_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "low", "top_p": null},
-        "compliance_timeline_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "low", "top_p": null}
+        "compliance_timeline_agent": {"model": "openai/gpt-oss-120b", "max_tokens": 4096, "context_length": 131072, "temperature": 0.0, "reasoning_effort": "low", "top_p": null},
+        "cross_validation": {"model": "openai/gpt-oss-20b", "max_tokens": 16384, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null},
+        "gap_detection": {"model": "openai/gpt-oss-20b", "max_tokens": 16384, "context_length": 131072, "temperature": 0.0, "reasoning_effort": null, "top_p": null}
       }
     }
   }

@@ -22,7 +22,7 @@ Extracts structured legal obligations from ~180 US state and federal AI laws usi
 
 #### Passage-level agents (6 agents per triaged passage)
 
-Signal-based routing (`_route_agents_by_signal()`) checks each passage for keyword signals and skips agents unlikely to find content. Falls back to running all 6 when fewer than 2 signals fire (recall safety net). All agents use `google/gemma-4-26b-a4b` via LM Studio; token budget is doubled at call time to reserve half for Gemma's `<think>` blocks. Configured `max_tokens` in `config/agent_models.json` are pre-doubling values.
+Signal-based routing (`src/ingestion/routing.py: route_by_signal()`, wrapped by `extractor.py: _route_agents_by_signal()`) checks each passage for keyword signals and skips agents unlikely to find content. **Falls back to running all agents only when *zero* signals fire**, or when signals cover ≥ (n-1) agents (ambiguous/dense passage) — a passage with exactly one matching signal routes to only that agent. (EA0-2, 2026-07-03: this doc previously said "fewer than 2 signals" — that was never true of the code; the ≥1-signal threshold is deliberate and pinned by `tests/unit/test_routing_recall.py`.) The `triage_recall_sample_rate` setting (`src/core/config.py`, default 0.05) is the compensating control: that fraction of passages bypass routing entirely and run all agents, so single-signal false-narrowing can be measured over time rather than going undetected. Tuning the signal threshold itself is gated on the EA1 gold-standard eval set (see `tasks.md`) so any change is measured against real recall/precision, not guessed. All agents use `google/gemma-4-26b-a4b` via LM Studio; token budget is doubled at call time to reserve half for Gemma's `<think>` blocks. Configured `max_tokens` in `config/agent_models.json` are pre-doubling values.
 
 | Agent | Extracts |
 |---|---|
@@ -33,7 +33,7 @@ Signal-based routing (`_route_agents_by_signal()`) checks each passage for keywo
 | `compliance_mechanism` | Audits, bias testing, red teaming, NIST alignment, reporting, data retention |
 | `preemption` | Federal preemption signals, Commerce Clause tensions, cross-law references |
 
-**Ambiguity agent retired (Phase 1B):** The standalone `ambiguity` agent no longer runs. Ambiguity findings are embedded as `interpretation_risks: list[InterpretationRisk]` directly on `ObligationPayload` and `RightsProtectionPayload` — zero extra LLM calls, findings attached to the obligation they affect. Archived at `src/ingestion/_archived/ambiguity_agent.py`. `ExtractionType.ambiguity` enum value kept read-only for existing DB rows.
+**Ambiguity agent retired (Phase 1B):** The standalone `ambiguity` agent no longer runs. Ambiguity findings are embedded as `interpretation_risks: list[InterpretationRisk]` directly on `ObligationPayload` and `RightsProtectionPayload` — zero extra LLM calls, findings attached to the obligation they affect. Its source was deleted with `src/ingestion/_archived/` (RC3-3; retrievable from git history). `ExtractionType.ambiguity` enum value kept read-only for existing DB rows.
 
 **Bill enforcement context injection:** Before extraction, the obligation agent receives a `BILL ENFORCEMENT & PENALTIES` context block assembled from enforcement-pattern sections of the same bill (`src/core/bill_context.py`). Enables cross-section penalty attribution (penalty in §X attributed to obligation in §Y).
 
