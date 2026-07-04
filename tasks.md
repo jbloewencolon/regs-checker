@@ -485,17 +485,34 @@ $/law in `run_summary.json` before/after so the trade is explicit.
    before committing to EA6-2 constrained-decoding work per-agent. Also: 4c's
    weight model and EA3-1 must merge into ONE confidence plan — whoever lands
    first absorbs the other; do not maintain two.
-6. **Session note (2026-07-03):** all five EA0 items landed this session —
-   code fixes + 36 new regression tests (907/907 unit tests passing), no
-   live LLM required since all five are pure-logic/config defects. **EA1
-   (gold-set baseline capture) could NOT be run this session** — this
-   execution environment has neither `NVIDIA_API_KEY` nor a reachable local
-   LM Studio instance, and the harness (`src/evaluation/harness.py`) calls
-   real model providers. EA1-3-lite (run the existing 33 fixtures, commit
-   baseline scores) is the next unblocked step and must run on the
-   operator's machine via `python start.py` per CLAUDE.md. EA2 (deterministic
-   numeric/span grounding) is pure code + unit tests and can proceed in this
-   kind of environment without waiting on that baseline.
+6. **Session note (2026-07-03):** Phase EA0 (5/5) and Phase EA2 (3/4 — EA2-1,
+   EA2-2, EA2-3; EA2-4 correctly left gated) landed this session across 4
+   commits (`ac31f32`, `9c003e4`, `899a6fe`, `bd4b6c1`) — 987/987 unit tests
+   passing (877 pre-session baseline + 110 new). No live LLM required for
+   any of it: every item this session was a pure code/config defect,
+   deterministic post-processing, or offset-math fix, unit-tested with
+   mocked providers/sessions. **EA1 (gold-set baseline capture) could NOT
+   be run this session** — this execution environment has neither
+   `NVIDIA_API_KEY` nor a reachable local LM Studio instance, and the
+   harness (`src/evaluation/harness.py`) calls real model providers.
+   EA1-3-lite (run the existing 33 fixtures, commit baseline scores) is
+   the next step that requires the operator's machine via `python
+   start.py` per CLAUDE.md. EA2-4 (parser strikethrough handling) is
+   correctly gated on EA1-4 (a corpus audit of `output/law_sources/` for
+   engrossed-bill amendment markup) — that's an investigation task, not
+   assumed blocked by live-LLM access; worth a follow-up pass reading the
+   actual source files rather than guessing prevalence.
+   **What's still unblocked without live LLM access, for the next session:**
+   EA5-2 (enforcement reconciliation — flag disagreement between
+   clause-level/bill-level/tracker data; the redundancy already exists,
+   nothing currently exploits it), EA5-3 (enforcement-agent input
+   targeting — feed `bill_context.py`'s enforcement sections instead of
+   the raw 128k-char prefix), EA5-4 (penalty-tier structure), EA6-3
+   (dedupe `interpretation_risks` — deterministic post-processing, not a
+   prompt change), EA6-5 (date parse status). **Not** unblocked: EA6-4 (CV
+   prompt trim) touches the actual prompt sent to the model — per the same
+   discipline applied to EA0-2, a prompt change without EA1 measurement is
+   tuning-by-guess, not a safe pure-code fix, despite looking like one.
 
 ---
 
