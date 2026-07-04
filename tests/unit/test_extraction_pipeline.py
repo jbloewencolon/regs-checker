@@ -21,6 +21,7 @@ from src.ingestion.extractor import (
     CIRCUIT_BREAKER_THRESHOLD,
     MergedPassage,
     TokenUsageSummary,
+    _apply_numeric_grounding,
     _content_hash,
     _confidence_to_priority,
     _select_agents_for_passage,
@@ -236,6 +237,66 @@ class TestConfidenceToPriority:
 
     def test_unknown_tier(self):
         assert _confidence_to_priority("X") == 1
+
+
+class TestApplyNumericGrounding:
+    """EA2-1 wiring: _apply_numeric_grounding() bridges numeric_grounding.py
+    into the extraction_meta dict at all three extraction insertion sites
+    (extract_single_record, run_retry_failed, run_recovery_extraction).
+    """
+
+    def test_no_numeric_fields_present_is_a_no_op(self):
+        item = {"subject": "developer", "action": "comply"}
+        meta: dict = {}
+        mismatch = _apply_numeric_grounding(item, [], meta)
+        assert mismatch is False
+        assert "numeric_grounding" not in meta
+
+    def test_grounded_field_recorded_no_mismatch(self):
+        item = {"enforcement": {"max_civil_penalty_usd": 10000}}
+        evidence = [{
+            "field_name": "max_civil_penalty_usd",
+            "text": "a civil penalty not to exceed $10,000 per violation",
+            "verified": True,
+        }]
+        meta: dict = {}
+        mismatch = _apply_numeric_grounding(item, evidence, meta)
+        assert mismatch is False
+        assert meta["numeric_grounding"]["max_civil_penalty_usd"]["status"] == "grounded"
+
+    def test_mismatched_field_flagged_and_returns_true(self):
+        item = {"enforcement": {"max_civil_penalty_usd": 99999}}
+        evidence = [{
+            "field_name": "max_civil_penalty_usd",
+            "text": "a civil penalty not to exceed $10,000 per violation",
+            "verified": True,
+        }]
+        meta: dict = {}
+        mismatch = _apply_numeric_grounding(item, evidence, meta)
+        assert mismatch is True
+        assert meta["numeric_grounding"]["max_civil_penalty_usd"]["status"] == "mismatch"
+        assert meta["numeric_grounding"]["max_civil_penalty_usd"]["candidates_found"] == [10000.0]
+
+    def test_unverifiable_field_does_not_count_as_mismatch(self):
+        item = {"employee_threshold": 50}
+        evidence = [{
+            "field_name": "employee_threshold",
+            "text": "small businesses are exempt from this section",
+            "verified": True,
+        }]
+        meta: dict = {}
+        mismatch = _apply_numeric_grounding(item, evidence, meta)
+        assert mismatch is False
+        assert meta["numeric_grounding"]["employee_threshold"]["status"] == "unverifiable"
+
+    def test_does_not_mutate_evidence_or_item(self):
+        item = {"employee_threshold": 50}
+        evidence = [{"field_name": "employee_threshold", "text": "fewer than 50 employees", "verified": True}]
+        item_copy = dict(item)
+        evidence_copy = [dict(e) for e in evidence]
+        _apply_numeric_grounding(item, evidence, {})
+        assert item == item_copy
+        assert evidence == evidence_copy
 
 
 class TestBaseAgentTemplateIntegration:

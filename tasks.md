@@ -263,15 +263,34 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   bills; report count + examples. (Fix gated as EA2-4.) *(NLP)*
 
 ### Phase EA2 — Grounding: bind evidence to fields (bug-class; parallel with EA1)
-- ⏳ **EA2-1** **[Critical]** Deterministic numeric cross-check: typed numerics
-  (`max_civil_penalty_usd`, `cure_period_days`, `retention_period_months`,
+- ✅ **EA2-1** **[Critical]** Deterministic numeric cross-check — **clause-level
+  scope landed**. New `src/core/numeric_grounding.py` extracts candidate
+  numbers (money, days, hours, months incl. year→month conversion, counts,
+  FLOPS incl. caret/scientific/multiplication notation) from a payload's
+  *verified* evidence spans and compares against each populated typed-numeric
+  field (`max_civil_penalty_usd`, `cure_period_days`, `retention_period_months`,
   `incident_reporting_hours`, `employee_threshold`, `revenue_threshold_usd`,
-  `consumer_data_threshold`, `compute_flops`, `assessment_frequency_months`) are
-  LLM-derived integers with unit conversion and **no rule-based check**. New
-  `src/core/numeric_grounding.py`: regex-extract numbers/durations/money from the
-  field's verified evidence span, normalize units, compare to payload value;
-  mismatch → `numeric_grounding: failed` flag + review bump. Applies to clause
-  AND bill-level payloads. *(NLP, BE)*
+  `consumer_data_threshold`, `compute_flops`, `assessment_frequency_months`),
+  reporting `grounded` / `mismatch` / `unverifiable` per field (absence of a
+  parseable number is "unverifiable", not "mismatch" — avoids penalizing
+  spelled-out numbers our regex can't parse). Wired via a new
+  `_apply_numeric_grounding()` helper into all three extraction insertion
+  sites in `extractor.py` (`extract_single_record`, `run_retry_failed`,
+  `run_recovery_extraction`): result stored in
+  `extraction_meta["numeric_grounding"]` (informational — does not change
+  `confidence_score`, that's EA3-1's job) and a confirmed `mismatch` forces
+  review priority to max urgency (3), reusing the EA0-3 escalation pattern.
+  33 tests in `test_numeric_grounding.py` + 5 wiring tests in
+  `test_extraction_pipeline.py`.
+  **Not yet covering bill-level payloads** (`enforcement_agent`,
+  `applicability_agent`, `compliance_timeline_agent`): those agents don't
+  produce a structured, verified `evidence_spans` list at all today — at
+  most one free-text quote (e.g. `enforcement_text`) that's never run
+  through span verification. Extending numeric grounding there depends on
+  **EA5-1** landing first (per-field verified evidence spans for bill-level
+  payloads); EA5-1 should call `numeric_grounding.check_numeric_grounding()`
+  once that structure exists rather than re-implementing the check. *(NLP,
+  BE)*
 - ⏳ **EA2-2** **[High]** Span provenance: record `match_tier` (1–4) on every
   verified span and store `char_start/char_end` valid against the **canonical raw
   passage** (today offsets index tier-dependent normalized strings — audit-UI
@@ -343,7 +362,11 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   populated field in bill-level payloads; run quotes through
   `verify_evidence_spans` against the bill text; unverified quote → field flagged.
   Today `law_enforcement_details` (the most product-visible data) ships with one
-  unverified ≤300-char quote and no confidence scoring. *(NLP)*
+  unverified ≤300-char quote and no confidence scoring. Once per-field verified
+  spans exist, call `src/core/numeric_grounding.check_numeric_grounding()`
+  (landed in EA2-1) against them for `max_civil_penalty_usd`,
+  `cure_period_days`, `compute_flops`, `assessment_frequency_months`, etc. —
+  do not reimplement the numeric cross-check. *(NLP)*
 - ⏳ **EA5-2** **[High]** Reconciliation as verification: `enforcement_normalizer`
   merges clause-level + bill-level + trackers by precedence but never **flags
   disagreement**. Emit `enforcement_conflict` review items when sources disagree

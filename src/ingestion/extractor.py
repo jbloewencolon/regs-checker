@@ -935,6 +935,32 @@ def _confidence_to_priority(tier: str) -> int:
     return {"A": 0, "B": 1, "C": 2, "D": 3}.get(tier, 1)
 
 
+def _apply_numeric_grounding(item: dict, evidence: list[dict], extraction_meta: dict) -> bool:
+    """Run EA2-1 deterministic numeric-field cross-check; returns True on any mismatch.
+
+    Evidence-span verification only confirms a quoted STRING appears in the
+    passage; it never checked whether a field's typed NUMBER (penalty
+    amount, cure period, retention window, etc.) actually matches what the
+    evidence text says. This attaches the per-field grounding result to
+    extraction_meta["numeric_grounding"] (informational — does not change
+    confidence_score, which is EA3 territory) and returns whether the
+    extraction should be treated as high-priority for review.
+    """
+    from src.core.numeric_grounding import check_numeric_grounding, has_numeric_mismatch
+
+    numeric_results = check_numeric_grounding(item, evidence)
+    if numeric_results:
+        extraction_meta["numeric_grounding"] = {
+            field: {
+                "status": r.status,
+                "payload_value": r.payload_value,
+                "candidates_found": r.candidates_found,
+            }
+            for field, r in numeric_results.items()
+        }
+    return has_numeric_mismatch(numeric_results)
+
+
 def _build_context(
     db,
     record: NormalizedSourceRecord,
@@ -1515,6 +1541,9 @@ def extract_single_record(
                         "tracker_alignment_score": confidence.tracker_alignment_score,
                         "schema_completeness_score": confidence.schema_completeness_score,
                     }
+                    numeric_mismatch = _apply_numeric_grounding(
+                        item, evidence, extraction_meta,
+                    )
 
                     # Generate plain-English summary from the verified payload
                     try:
@@ -1554,9 +1583,12 @@ def extract_single_record(
                     db.add(extraction)
                     db.flush()
 
+                    review_priority = _confidence_to_priority(confidence.tier)
+                    if numeric_mismatch:
+                        review_priority = max(review_priority, 3)
                     db.add(ReviewQueueItem(
                         extraction_id=extraction.id,
-                        priority=_confidence_to_priority(confidence.tier),
+                        priority=review_priority,
                         status=ReviewStatus.pending,
                     ))
                     extractions_created += 1
@@ -2675,6 +2707,9 @@ def run_retry_failed(
                             "tracker_alignment_score": confidence.tracker_alignment_score,
                             "schema_completeness_score": confidence.schema_completeness_score,
                         }
+                        numeric_mismatch = _apply_numeric_grounding(
+                            item, evidence, extraction_meta,
+                        )
                         extraction_meta["retried_from"] = attempt.id
                         try:
                             from src.core.summary_generator import generate_summary
@@ -2703,9 +2738,12 @@ def run_retry_failed(
                         db.add(extraction)
                         db.flush()
 
+                        review_priority = _confidence_to_priority(confidence.tier)
+                        if numeric_mismatch:
+                            review_priority = max(review_priority, 3)
                         db.add(ReviewQueueItem(
                             extraction_id=extraction.id,
-                            priority=_confidence_to_priority(confidence.tier),
+                            priority=review_priority,
                             status=ReviewStatus.pending,
                         ))
                         sp.commit()
@@ -3083,6 +3121,11 @@ def run_recovery_extraction(
                                 iapp_has_data=_iapp_has_data_for_ctx(ctx),
                             )
 
+                            recovery_meta: dict = {}
+                            numeric_mismatch = _apply_numeric_grounding(
+                                item, evidence, recovery_meta,
+                            )
+
                             extraction = Extraction(
                                 source_record_id=record.id,
                                 extraction_type=resolved_type,
@@ -3096,13 +3139,17 @@ def run_recovery_extraction(
                                 prompt_hash=result.prompt_hash,
                                 template_version=result.template_version,
                                 model_id=result.model_id,
+                                metadata_=recovery_meta if recovery_meta else {},
                             )
                             db.add(extraction)
                             db.flush()
 
+                            review_priority = _confidence_to_priority(confidence.tier)
+                            if numeric_mismatch:
+                                review_priority = max(review_priority, 3)
                             db.add(ReviewQueueItem(
                                 extraction_id=extraction.id,
-                                priority=_confidence_to_priority(confidence.tier),
+                                priority=review_priority,
                                 status=ReviewStatus.pending,
                             ))
                             total_extractions += 1
