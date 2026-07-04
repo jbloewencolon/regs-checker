@@ -519,10 +519,27 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   ("sources disagree") reads as the 4 named sources, not intra-source
   variance; a related but distinct signal. 8 new tests in
   `test_enforcement_normalizer.py` (20 total, up from 12). *(NLP, BE)*
-- ⏳ **EA5-3** **[Medium]** Enforcement-agent input targeting: feed
-  enforcement-pattern sections from `bill_context.py` (+ bill tail) instead of the
-  raw 128k-char prefix, closing the end-of-bill truncation bias (EA0-4 flags it;
-  this fixes it). *(NLP)*
+- ✅ **EA5-3** **[Medium]** Enforcement-agent input targeting landed
+  (`src/agents/enforcement_agent.py`). New `_build_bill_excerpt()`: for
+  bills at or under `_TAIL_CHARS` (20,000 — the corpus median bill is
+  ~11k chars), behavior is **unchanged** — sent in full, no truncation-
+  bias risk either way. For longer bills, prefers `bill_context
+  ["enforcement"]` (already computed by `build_bill_context()` in
+  `src/core/bill_context.py`, and already passed into every bill-level
+  agent's `context` arg by `extractor.py` — this agent just wasn't using
+  it) since that's built by pattern-matching every passage in the bill
+  regardless of length or position, so it has **no prefix bias at all**;
+  plus a bounded raw tail (last 20k chars) as a catch-all for enforcement
+  language the pattern matcher missed. When no enforcement-pattern
+  passages were found anywhere in the bill, falls back to the tail alone
+  rather than a raw prefix — strictly better, since the tail is the
+  conventional location for enforcement sections and a prefix guarantees
+  the opposite. 8 new tests in
+  `test_enforcement_agent_input_targeting.py` pin exactly the failure
+  mode being closed: a marker planted early in an oversized synthetic bill
+  is confirmed absent from the final prompt (the truncation-bias case),
+  while markers in the enforcement excerpt and the tail are both present.
+  *(NLP)*
 - ⏳ **EA5-4** **[Medium]** Penalty-range structure: "if a range is given, use the
   maximum" collapses legally distinct tiers (negligent vs willful). Add optional
   `penalty_tiers` array {condition, amount_usd}; keep max for the matrix column.
