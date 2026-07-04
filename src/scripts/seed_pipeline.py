@@ -251,7 +251,7 @@ def seed_via_pdf(db) -> list[IngestionJob]:
     """[LEGACY] Seed from ai_law_tracker.csv (primary) or Orrick PDF (fallback)."""
     import csv
 
-    from src.ingestion._archived.pdf_tracker import STATE_CODES, seed_from_tracker
+    from src.ingestion.legacy.pdf_tracker import STATE_CODES, seed_from_tracker
 
     csv_path = Path("static/ai_law_tracker.csv")
     if csv_path.exists():
@@ -276,7 +276,7 @@ def seed_via_pdf(db) -> list[IngestionJob]:
             })
         logger.info("seeding_from_csv", count=len(records))
     else:
-        from src.ingestion._archived.pdf_tracker import parse_tracker_pdf
+        from src.ingestion.legacy.pdf_tracker import parse_tracker_pdf
         records = parse_tracker_pdf()
         logger.info("seeding_from_pdf_fallback", count=len(records))
 

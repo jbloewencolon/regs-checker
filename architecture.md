@@ -33,7 +33,7 @@ Signal-based routing (`src/ingestion/routing.py: route_by_signal()`, wrapped by 
 | `compliance_mechanism` | Audits, bias testing, red teaming, NIST alignment, reporting, data retention |
 | `preemption` | Federal preemption signals, Commerce Clause tensions, cross-law references |
 
-**Ambiguity agent retired (Phase 1B):** The standalone `ambiguity` agent no longer runs. Ambiguity findings are embedded as `interpretation_risks: list[InterpretationRisk]` directly on `ObligationPayload` and `RightsProtectionPayload` — zero extra LLM calls, findings attached to the obligation they affect. Archived at `src/ingestion/_archived/ambiguity_agent.py`. `ExtractionType.ambiguity` enum value kept read-only for existing DB rows.
+**Ambiguity agent retired (Phase 1B):** The standalone `ambiguity` agent no longer runs. Ambiguity findings are embedded as `interpretation_risks: list[InterpretationRisk]` directly on `ObligationPayload` and `RightsProtectionPayload` — zero extra LLM calls, findings attached to the obligation they affect. Its source was deleted with `src/ingestion/_archived/` (RC3-3; retrievable from git history). `ExtractionType.ambiguity` enum value kept read-only for existing DB rows.
 
 **Bill enforcement context injection:** Before extraction, the obligation agent receives a `BILL ENFORCEMENT & PENALTIES` context block assembled from enforcement-pattern sections of the same bill (`src/core/bill_context.py`). Enables cross-section penalty attribution (penalty in §X attributed to obligation in §Y).
 
