@@ -89,6 +89,95 @@ def _normalize_text(text: str) -> str:
     return _normalize_whitespace(_normalize_unicode(text))
 
 
+# ---------------------------------------------------------------------------
+# Index-map-aware normalization (EA2-2) — lets Tier 1/2 report char_start/
+# char_end against the CANONICAL RAW PASSAGE instead of the normalized
+# string. Before this, offsets were always relative to norm_passage (or a
+# further-transformed string for Tier 3/4), which is a different length than
+# the raw text whenever Unicode substitution or whitespace collapsing
+# changed anything — silently wrong offsets for audit-UI highlighting.
+# ---------------------------------------------------------------------------
+
+
+def _normalize_unicode_with_map(text: str) -> tuple[str, list[tuple[int, int]]]:
+    """Like _normalize_unicode but also returns a per-output-char raw span map.
+
+    ``spans[i]`` is the ``(raw_start, raw_end)`` half-open range in ``text``
+    that produced output character ``i``. Every substitution in
+    _UNICODE_CHAR_MAP is either a single-char replacement or a deletion
+    (soft hyphen) — never a multi-char expansion — so this mapping is exact.
+    """
+    out_chars: list[str] = []
+    spans: list[tuple[int, int]] = []
+    for i, ch in enumerate(text):
+        code = ord(ch)
+        if code in _UNICODE_CHAR_MAP:
+            replacement = _UNICODE_CHAR_MAP[code]
+            if replacement:
+                out_chars.append(replacement)
+                spans.append((i, i + 1))
+            # else: deletion (soft hyphen) — no output character, no span entry
+        else:
+            out_chars.append(ch)
+            spans.append((i, i + 1))
+    return "".join(out_chars), spans
+
+
+def _normalize_whitespace_with_map(
+    text: str, base_spans: list[tuple[int, int]]
+) -> tuple[str, list[tuple[int, int]]]:
+    """Collapse whitespace runs to single spaces, composing with base_spans.
+
+    Mirrors ``" ".join(text.split())`` exactly (strips leading/trailing
+    whitespace, collapses internal runs to one space) while composing the
+    supplied per-character raw-span map so the result maps all the way back
+    to the ORIGINAL raw passage, not just to ``text``.
+    """
+    out_chars: list[str] = []
+    out_spans: list[tuple[int, int]] = []
+    i = 0
+    n = len(text)
+    while i < n and text[i].isspace():
+        i += 1
+    while i < n:
+        ch = text[i]
+        if ch.isspace():
+            j = i
+            while j < n and text[j].isspace():
+                j += 1
+            if j < n:
+                # Internal whitespace run — collapses to one space, but the
+                # space's raw span covers the ENTIRE raw whitespace run (not
+                # just its first character), so a later boundary translation
+                # that lands on this space still recovers the true raw extent.
+                out_chars.append(" ")
+                out_spans.append((base_spans[i][0], base_spans[j - 1][1]))
+            i = j
+            # Trailing whitespace run (j == n): drop entirely, no output.
+        else:
+            out_chars.append(ch)
+            out_spans.append(base_spans[i])
+            i += 1
+    return "".join(out_chars), out_spans
+
+
+def _normalize_text_with_map(text: str) -> tuple[str, list[tuple[int, int]]] | None:
+    """Full normalization with a raw-passage span map, or None if unavailable.
+
+    Returns None when NFC normalization changes the string's length — a rare
+    edge case (combining-character sequences uncommon in US legislative
+    text) where exact position correspondence can't be guaranteed. Callers
+    must fall back to _normalize_text() (same resulting string, just without
+    raw-offset capability) rather than trust a possibly-wrong map.
+    """
+    substituted, uni_spans = _normalize_unicode_with_map(text)
+    normalized = unicodedata.normalize("NFC", substituted)
+    if len(normalized) != len(substituted):
+        return None
+    collapsed, spans = _normalize_whitespace_with_map(normalized, uni_spans)
+    return collapsed, spans
+
+
 def _loose_normalize(text: str) -> tuple[str, list[int]]:
     """Reduce text to lowercase alphanumerics with single-space separators.
 
@@ -158,22 +247,52 @@ def verify_evidence_spans(
       3. Punctuation-insensitive (loose) match — ≥ 15-char floor
       4. Revisor-artifact-stripped loose match — ≥ 25-char floor
 
+    Every verified span carries ``match_tier`` (1-4) and ``loose_match``
+    (True for tiers 3-4) so review/audit surfaces can distinguish an exact
+    verbatim hit from a punctuation-or-artifact-tolerant one (EA2-2).
+
+    Tier 1/2 ``char_start``/``char_end`` are offsets into the RAW passage
+    string passed in (not a normalized intermediate) — safe to slice
+    ``passage[char_start:char_end]`` directly for audit-UI highlighting.
+    Tier 3/4 leave ``char_start``/``char_end`` as ``None``: their match
+    coordinates live in a punctuation-stripped/artifact-stripped
+    intermediate string, and precisely inverting those transforms back to
+    raw-passage offsets is not implemented — reporting no offset is safer
+    than reporting a wrong one for a highlighter to silently mis-render.
+
     Args:
         spans: List of evidence span dicts (must have at least "text" and "field_name").
         passage: The source passage text to verify against.
         agent_name: Logged in warnings for traceability.
 
     Returns:
-        List of span dicts with added keys: verified (bool), char_start, char_end
-        (the latter two only when verified=True).
+        List of span dicts with added keys: verified (bool), match_tier
+        (int, only when verified), loose_match (bool, only when verified),
+        char_start, char_end (int or None, only when verified).
     """
-    norm_passage = _normalize_text(passage)
+    map_result = _normalize_text_with_map(passage)
+    if map_result is not None:
+        norm_passage, raw_spans = map_result
+    else:
+        # NFC changed length for this passage (rare) — same normalized
+        # string, but Tier 1/2 raw-offset translation is unavailable.
+        norm_passage = _normalize_text(passage)
+        raw_spans = None
     lower_passage = norm_passage.lower()
-    loose_passage, loose_passage_map = _loose_normalize(norm_passage)
+    # Tier 3/4 no longer translate offsets back through these maps — see
+    # docstring on why char_start/char_end are None for loose matches — so
+    # only the reduced strings themselves are needed, not the index maps.
+    loose_passage, _ = _loose_normalize(norm_passage)
 
     # Precompute Tier 4 inputs once per passage
     stripped_passage = strip_revisor_artifacts(norm_passage)
-    loose_stripped_passage, stripped_map = _loose_normalize(stripped_passage)
+    loose_stripped_passage, _ = _loose_normalize(stripped_passage)
+
+    def _raw_offsets(norm_start: int, norm_end: int) -> tuple[int | None, int | None]:
+        """Translate a [norm_start, norm_end) range in norm_passage to raw offsets."""
+        if raw_spans is None:
+            return None, None
+        return raw_spans[norm_start][0], raw_spans[norm_end - 1][1]
 
     verified: list[dict] = []
     for span_data in spans:
@@ -189,12 +308,16 @@ def verify_evidence_spans(
         # Tier 1 — exact after normalization
         if norm_span in norm_passage:
             start = norm_passage.index(norm_span)
+            end = start + len(norm_span)
+            raw_start, raw_end = _raw_offsets(start, end)
             verified.append({
                 "field_name": span.field_name,
                 "text": span.text,
-                "char_start": start,
-                "char_end": start + len(norm_span),
+                "char_start": raw_start,
+                "char_end": raw_end,
                 "verified": True,
+                "match_tier": 1,
+                "loose_match": False,
             })
             continue
 
@@ -202,40 +325,49 @@ def verify_evidence_spans(
         norm_lower = norm_span.lower()
         if norm_lower in lower_passage:
             start = lower_passage.index(norm_lower)
+            end = start + len(norm_span)
+            raw_start, raw_end = _raw_offsets(start, end)
             verified.append({
                 "field_name": span.field_name,
                 "text": span.text,
-                "char_start": start,
-                "char_end": start + len(norm_span),
+                "char_start": raw_start,
+                "char_end": raw_end,
                 "verified": True,
+                "match_tier": 2,
+                "loose_match": False,
             })
             continue
 
-        # Tier 3 — punctuation-insensitive (loose), ≥ 15-char floor
+        # Tier 3 — punctuation-insensitive (loose), ≥ 15-char floor.
+        # Match coordinates live in loose_passage (alnum-only, norm_passage
+        # positions) — not translated further back to the raw passage; see
+        # docstring on why char_start/char_end are None for this tier.
         loose_span, _ = _loose_normalize(norm_span)
         if len(loose_span) >= 15 and loose_span in loose_passage:
-            ls = loose_passage.index(loose_span)
-            le = ls + len(loose_span) - 1
             verified.append({
                 "field_name": span.field_name,
                 "text": span.text,
-                "char_start": loose_passage_map[ls],
-                "char_end": loose_passage_map[le] + 1,
+                "char_start": None,
+                "char_end": None,
                 "verified": True,
+                "match_tier": 3,
+                "loose_match": True,
             })
             continue
 
-        # Tier 4 — revisor-artifact-stripped loose match, ≥ 25-char floor
+        # Tier 4 — revisor-artifact-stripped loose match, ≥ 25-char floor.
+        # Same rationale as Tier 3 — coordinates live in a doubly-transformed
+        # intermediate string, not translated back to the raw passage.
         loose_stripped_span, _ = _loose_normalize(strip_revisor_artifacts(norm_span))
         if len(loose_stripped_span) >= 25 and loose_stripped_span in loose_stripped_passage:
-            ls = loose_stripped_passage.index(loose_stripped_span)
-            le = ls + len(loose_stripped_span) - 1
             verified.append({
                 "field_name": span.field_name,
                 "text": span.text,
-                "char_start": stripped_map[ls],
-                "char_end": stripped_map[le] + 1,
+                "char_start": None,
+                "char_end": None,
                 "verified": True,
+                "match_tier": 4,
+                "loose_match": True,
             })
             continue
 

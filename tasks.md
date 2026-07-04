@@ -291,12 +291,42 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   payloads); EA5-1 should call `numeric_grounding.check_numeric_grounding()`
   once that structure exists rather than re-implementing the check. *(NLP,
   BE)*
-- ⏳ **EA2-2** **[High]** Span provenance: record `match_tier` (1–4) on every
-  verified span and store `char_start/char_end` valid against the **canonical raw
-  passage** (today offsets index tier-dependent normalized strings — audit-UI
-  highlighting is wrong). Fix at write time in `text_grounding.py`;
-  `reground_spans.py` becomes the backfill. Tier-3/4 (loose) matches get a
-  `loose_match` flag visible in review. *(NLP, BE)*
+- ✅ **EA2-2** **[High]** Span provenance landed, with one honest scope
+  decision. `text_grounding.py` gained index-map-aware normalization
+  (`_normalize_unicode_with_map`, `_normalize_whitespace_with_map`,
+  `_normalize_text_with_map`) that tracks each character in the normalized
+  string back to its raw-passage origin (composing across Unicode
+  substitution and whitespace-collapse, including correctly attributing a
+  *collapsed multi-char whitespace run* to its full raw span, not just one
+  character of it). **Tier 1/2** (`verify_evidence_spans`) now report
+  `char_start`/`char_end` valid against the raw passage — safe to slice
+  `passage[char_start:char_end]` directly for audit-UI highlighting; this is
+  the actual bug fix. **Tier 3/4** (loose/artifact-stripped matches):
+  scoped down to `char_start`/`char_end: None` rather than attempting to
+  invert `strip_revisor_artifacts`'s compound regex transforms (dehyphenation,
+  margin-number stripping, glyph repair) back to raw coordinates — that's a
+  materially harder problem for an already-lower-trust match tier, and
+  reporting *no* offset is safer than reporting a wrong one that silently
+  mis-renders in a highlighter. `review.html` already null-checks
+  `char_start`, confirmed no downstream breakage. Every verified span now
+  carries `match_tier` (1–4) and `loose_match` (bool); unverified spans
+  carry neither key (unchanged). `_normalize_text_with_map` returns `None`
+  (safe fallback to the old norm-passage-only string, no raw offsets) when
+  NFC normalization changes string length — rare combining-character
+  sequences, uncommon in US legislative text; a real test constructs this
+  case directly (`"café"` with a combining acute accent) rather than just
+  asserting the fallback exists in theory.
+  `reground_spans.py` (the backfill): needed two fixes, not just
+  "reprocess more rows" — added `--backfill-provenance` to broaden the SQL
+  filter to catch already-verified spans missing `match_tier`, **and** fixed
+  `_reground_batch`'s write-decision, which previously only detected
+  unverified→verified flips and would have silently skipped writing
+  provenance to rows that were already fully verified (the bulk of the
+  backfill's actual target). 27 new tests: 19 in `test_span_provenance.py`,
+  8 in `test_reground_spans.py` (batch-logic tests against a mocked
+  session — no live DB in this environment, so the SQL string itself is
+  unverified against real Postgres; review the `--backfill-provenance`
+  WHERE-clause addition before running it live). *(NLP, BE)*
 - ✅ **EA2-3** **[High]** Truncation/repair honesty landed. New
   `was_repaired` field on `ExtractionResult` (`base.py`): `extract()` now
   compares the fence/think-block-stripped output against `_repair_json`'s

@@ -46,6 +46,7 @@ def _reground_batch(
         "updated": 0,
         "spans_flipped": 0,
         "spans_total": 0,
+        "spans_provenance_added": 0,
     }
 
     for row in batch:
@@ -63,18 +64,26 @@ def _reground_batch(
             spans, passage_text, agent_name=f"reground:{row['extraction_type']}"
         )
 
-        old_verified = {s.get("text"): s.get("verified", False) for s in spans}
-        flipped = sum(
-            1
-            for s in re_verified
-            if s.get("verified") and not old_verified.get(s.get("text"), True)
-        )
+        old_by_text = {s.get("text"): s for s in spans if isinstance(s, dict)}
+        flipped = 0
+        provenance_added = 0
+        for s in re_verified:
+            old = old_by_text.get(s.get("text"), {})
+            was_verified = bool(old.get("verified", False))
+            if s.get("verified") and not was_verified:
+                flipped += 1
+            elif s.get("verified") and was_verified and "match_tier" not in old:
+                # EA2-2 backfill case: span was already verified before this
+                # run, but predates match_tier/loose_match/raw-offset
+                # provenance — write it even though "verified" didn't flip.
+                provenance_added += 1
 
-        if flipped == 0:
+        if flipped == 0 and provenance_added == 0:
             continue
 
         stats["updated"] += 1
         stats["spans_flipped"] += flipped
+        stats["spans_provenance_added"] += provenance_added
 
         if not dry_run:
             session.execute(
@@ -123,16 +132,39 @@ def main() -> None:
         default=200,
         help="DB fetch batch size (default: 200)",
     )
+    parser.add_argument(
+        "--backfill-provenance",
+        action="store_true",
+        help=(
+            "EA2-2: also reprocess extractions where every span is already "
+            "verified but predates match_tier/loose_match/raw-offset "
+            "provenance (added after the 4-tier matcher started reporting "
+            "raw-passage-relative offsets for Tier 1/2 instead of offsets "
+            "into a normalized intermediate string). Without this flag, "
+            "only extractions with at least one UNVERIFIED span are "
+            "reprocessed — the historical default behavior."
+        ),
+    )
     args = parser.parse_args()
 
     engine = create_engine(args.db_url)
 
+    needs_reverify = (
+        "EXISTS (SELECT 1 FROM jsonb_array_elements(e.evidence_spans) s "
+        "WHERE (s->>'verified')::boolean IS NOT TRUE)"
+    )
     where_clauses = [
         "e.evidence_spans IS NOT NULL",
         "jsonb_array_length(e.evidence_spans) > 0",
-        "EXISTS (SELECT 1 FROM jsonb_array_elements(e.evidence_spans) s "
-        "WHERE (s->>'verified')::boolean IS NOT TRUE)",
     ]
+    if args.backfill_provenance:
+        needs_provenance = (
+            "EXISTS (SELECT 1 FROM jsonb_array_elements(e.evidence_spans) s "
+            "WHERE (s->>'verified')::boolean IS TRUE AND NOT (s ? 'match_tier'))"
+        )
+        where_clauses.append(f"({needs_reverify} OR {needs_provenance})")
+    else:
+        where_clauses.append(needs_reverify)
     if args.extraction_type:
         where_clauses.append(f"e.extraction_type = '{args.extraction_type}'")  # noqa: S608
 
@@ -160,6 +192,7 @@ def main() -> None:
         "updated": 0,
         "spans_flipped": 0,
         "spans_total": 0,
+        "spans_provenance_added": 0,
     }
 
     with Session(engine) as session:
@@ -178,7 +211,8 @@ def main() -> None:
                 print(
                     f"  Batch {batch_num}: processed={stats['processed']} "
                     f"updated={stats['updated']} "
-                    f"spans_flipped={stats['spans_flipped']}"
+                    f"spans_flipped={stats['spans_flipped']} "
+                    f"provenance_added={stats['spans_provenance_added']}"
                 )
                 batch = []
 
@@ -190,7 +224,8 @@ def main() -> None:
             print(
                 f"  Batch {batch_num}: processed={stats['processed']} "
                 f"updated={stats['updated']} "
-                f"spans_flipped={stats['spans_flipped']}"
+                f"spans_flipped={stats['spans_flipped']} "
+                f"provenance_added={stats['spans_provenance_added']}"
             )
 
     print()
@@ -199,6 +234,7 @@ def main() -> None:
     print(f"Extractions updated   : {totals['updated']}")
     print(f"Spans examined        : {totals['spans_total']}")
     print(f"Spans flipped to True : {totals['spans_flipped']}")
+    print(f"Spans provenance added: {totals['spans_provenance_added']}")
     if args.dry_run:
         print("\n(Dry run — no changes written)")
     else:
