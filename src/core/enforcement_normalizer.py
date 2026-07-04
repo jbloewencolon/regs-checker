@@ -40,6 +40,53 @@ ENFORCEMENT_FIELDS = (
 # Source labels, ordered most-trusted first. Field precedence walks this list.
 SOURCE_PRECEDENCE = ("orrick", "iapp", "bill_level", "obligation")
 
+# EA5-2: fields where cross-source disagreement is worth a human look even
+# though precedence already resolves *a* value. Precedence answers "which
+# source do we trust more"; it says nothing about whether the losing
+# source's value is a typo, a stale draft, or a genuine substantive
+# difference (e.g. Orrick says no private right of action, but the bill text
+# itself creates one) — that distinction matters for a legal-defensibility
+# product and is currently invisible once precedence silently picks a
+# winner. Scoped to the three fields the EA5-2 review finding named, not
+# every field, to avoid flooding review with cosmetic differences (e.g.
+# `enforcement_text` free-text quotes will almost always differ verbatim
+# across sources without being a substantive disagreement).
+ENFORCEMENT_CONFLICT_FIELDS = (
+    "max_civil_penalty_usd",
+    "private_right_of_action",
+    "cure_period_days",
+)
+
+
+def _detect_enforcement_conflicts(
+    by_source: dict[str, dict[str, Any]],
+    record: dict[str, Any],
+    provenance: dict[str, str],
+) -> dict[str, Any]:
+    """Find fields where two or more sources reported different values.
+
+    Returns {field: {selected_value, selected_source, contributions}} for
+    each conflicting field, where contributions lists every source that
+    populated the field and what it said (in precedence order) — not just
+    the value that lost.
+    """
+    conflicts: dict[str, Any] = {}
+    for field in ENFORCEMENT_CONFLICT_FIELDS:
+        contributions = []
+        for source in SOURCE_PRECEDENCE:
+            val = by_source[source].get(field)
+            if val is not None and val != "":
+                contributions.append({"source": source, "value": val})
+
+        distinct_values = {c["value"] for c in contributions}
+        if len(distinct_values) > 1:
+            conflicts[field] = {
+                "selected_value": record.get(field),
+                "selected_source": provenance.get(field),
+                "contributions": contributions,
+            }
+    return conflicts
+
 
 def _coalesce_obligation_enforcements(
     obligation_enforcements: list[dict[str, Any]],
@@ -91,6 +138,9 @@ def normalize_enforcement(
           ``_provenance``      — {field: source} for each populated field
           ``_sources_present`` — sources that contributed at least one value
           ``_has_enforcement`` — True if any field is populated
+          ``_enforcement_conflicts`` — {field: detail} for fields in
+              ``ENFORCEMENT_CONFLICT_FIELDS`` where sources disagree
+          ``_has_enforcement_conflict`` — True if any conflict was found
     """
     by_source: dict[str, dict[str, Any]] = {
         "orrick": orrick_facts or {},
@@ -117,6 +167,10 @@ def normalize_enforcement(
         s for s in SOURCE_PRECEDENCE if s in sources_present
     ]
     record["_has_enforcement"] = bool(provenance)
+
+    conflicts = _detect_enforcement_conflicts(by_source, record, provenance)
+    record["_enforcement_conflicts"] = conflicts
+    record["_has_enforcement_conflict"] = bool(conflicts)
     return record
 
 

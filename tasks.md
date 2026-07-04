@@ -480,11 +480,45 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   (landed in EA2-1) against them for `max_civil_penalty_usd`,
   `cure_period_days`, `compute_flops`, `assessment_frequency_months`, etc. —
   do not reimplement the numeric cross-check. *(NLP)*
-- ⏳ **EA5-2** **[High]** Reconciliation as verification: `enforcement_normalizer`
-  merges clause-level + bill-level + trackers by precedence but never **flags
-  disagreement**. Emit `enforcement_conflict` review items when sources disagree
-  on penalty/PRoA/cure-period (the redundancy already exists; exploit it).
-  *(NLP, BE)*
+- ✅ **EA5-2** **[High]** Conflict detection landed in
+  `normalize_enforcement()` (`src/core/enforcement_normalizer.py`) — with a
+  scope correction the plan's premise got wrong. New
+  `ENFORCEMENT_CONFLICT_FIELDS = (max_civil_penalty_usd,
+  private_right_of_action, cure_period_days)` (exactly the plan's named
+  fields, not all `ENFORCEMENT_FIELDS` — `enforcing_body`/`penalty_per`/
+  `enforcement_text` differ cosmetically across sources far more often
+  than substantively and would flood review with noise). For each
+  conflict field, `_detect_enforcement_conflicts()` collects every
+  source's non-null value (not just the precedence winner) and flags
+  `_has_enforcement_conflict` + a per-field `_enforcement_conflicts` entry
+  (`selected_value`, `selected_source`, `contributions` — every source
+  that reported a value) when two or more sources disagree. Precedence
+  behavior is unchanged (Orrick still wins) — this only adds visibility
+  into what precedence was silently overriding, e.g. the existing
+  `test_boolean_false_is_preserved` case (Orrick says no private right of
+  action, an obligation row disagrees) now also surfaces as a conflict
+  rather than resolving invisibly. **Scope correction discovered before
+  writing this:** the plan describes `enforcement_normalizer` as an
+  already-live reconciliation step ("the redundancy already exists;
+  exploit it") — grepped the whole repo and found `normalize_enforcement`/
+  `normalize_enforcement_for_law` have **zero callers** anywhere outside
+  their own test file. The merge function itself was never wired into any
+  pipeline, script, or dashboard route, so "emit `enforcement_conflict`
+  review items" (i.e. write real `ReviewQueueItem` rows) isn't
+  implementable yet — there's no call site that runs this per-law and
+  persists a result. Landed the conflict-detection logic itself (pure,
+  fully unit-tested, useful the moment this module is wired up), but
+  wiring `normalize_enforcement_for_law()` into an actual per-law job (and
+  deciding *when* it runs — on every extraction run? on-demand? a
+  periodic reconciliation pass?) is a separate architecture decision, not
+  something to unilaterally invent a call site for. **Also out of scope,
+  flagged not silently dropped:** disagreement *within* the obligation
+  source itself (many passage-level obligations stating different cure
+  periods, collapsed to first-non-null by `_coalesce_obligation_enforcements`
+  before it ever reaches conflict detection) — the plan's wording
+  ("sources disagree") reads as the 4 named sources, not intra-source
+  variance; a related but distinct signal. 8 new tests in
+  `test_enforcement_normalizer.py` (20 total, up from 12). *(NLP, BE)*
 - ⏳ **EA5-3** **[Medium]** Enforcement-agent input targeting: feed
   enforcement-pattern sections from `bill_context.py` (+ bill tail) instead of the
   raw 128k-char prefix, closing the end-of-bill truncation bias (EA0-4 flags it;
