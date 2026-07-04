@@ -5528,7 +5528,7 @@ def list_concepts(
                 f'<span style="background:#2980b9;color:#fff;padding:1px 5px;'
                 f'border-radius:3px;font-size:10px;">PENDING {eff_str}</span>'
             )
-        row_style = f' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
+        row_style = ' style="opacity:0.65;"' if ts_val in _WARN_STATUSES else ""
 
         # Below-publish-floor flag
         below_floor_badge = ""

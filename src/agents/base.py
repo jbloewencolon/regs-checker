@@ -28,7 +28,7 @@ from src.agents.prompt_loader import load_prompt_template, render_prompt
 from src.core.config import settings
 from src.core.llm_provider import get_extraction_provider
 from src.core.text_grounding import verify_evidence_spans as _grounding_verify
-from src.schemas.extraction import AbstentionResult, EvidenceSpan
+from src.schemas.extraction import AbstentionResult
 
 logger = structlog.get_logger()
 

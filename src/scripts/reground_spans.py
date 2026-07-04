@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
