@@ -253,7 +253,7 @@ def seed_via_pdf(db) -> list[IngestionJob]:
 
     from src.ingestion.legacy.pdf_tracker import STATE_CODES, seed_from_tracker
 
-    csv_path = Path("static/ai_law_tracker.csv")
+    csv_path = Path("data/trackers/ai_law_tracker.csv")
     if csv_path.exists():
         with open(csv_path, newline="", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))

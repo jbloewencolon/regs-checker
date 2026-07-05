@@ -5,7 +5,7 @@ the primary ingestion path by local_ingest.py, but still load-bearing —
 imported by dashboard.py (IAPP alignment endpoint) and status_checker.py.
 
 Replaces the web scraper (iapp_scraper.py) with a local PDF-based approach.
-The IAPP tracker PDF should be placed at: static/IAPP_Legislation_tracker.pdf
+The IAPP tracker PDF should be placed at: data/trackers/IAPP_Legislation_tracker.pdf
 
 Uses the same word-level pdfplumber extraction approach as pdf_tracker.py:
 1. Detects column boundaries from the header row
@@ -27,7 +27,7 @@ import structlog
 
 logger = structlog.get_logger()
 
-IAPP_PDF_PATH = Path("static/IAPP_Legislation_tracker.pdf")
+IAPP_PDF_PATH = Path("data/trackers/IAPP_Legislation_tracker.pdf")
 
 from src.core.us_states import STATE_CODES  # noqa: F401
 

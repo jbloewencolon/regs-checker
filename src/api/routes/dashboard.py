@@ -1182,7 +1182,7 @@ def run_status_check(
             iapp_note = (
                 '<br><span style="font-size:12px;color:var(--warning);">'
                 'IAPP: 0 records — place the IAPP PDF at '
-                '<code>static/IAPP_Legislation_tracker.pdf</code> to enable.'
+                '<code>data/trackers/IAPP_Legislation_tracker.pdf</code> to enable.'
                 '</span>'
             )
 
@@ -4681,7 +4681,7 @@ def run_cross_reference(db: Session = Depends(get_db)) -> HTMLResponse:
             return HTMLResponse(
                 '<div class="result-panel warning">'
                 'IAPP data unavailable. Place the IAPP PDF at '
-                '<code>static/IAPP_Legislation_tracker.pdf</code> to enable cross-referencing.'
+                '<code>data/trackers/IAPP_Legislation_tracker.pdf</code> to enable cross-referencing.'
                 '</div>'
             )
 

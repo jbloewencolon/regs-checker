@@ -1,6 +1,6 @@
 """IAPP alignment — three-state comparison against the IAPP AI law tracker.
 
-Loads static/iapp_law_tracker.csv and provides per-extraction alignment checks.
+Loads data/trackers/iapp_law_tracker.csv and provides per-extraction alignment checks.
 
 IAPP Scope codes:
   G  — general (any actor using AI; broad obligation net)
@@ -23,7 +23,9 @@ import pathlib
 from dataclasses import dataclass
 from functools import lru_cache
 
-_IAPP_CSV = pathlib.Path(__file__).parent.parent.parent / "static" / "iapp_law_tracker.csv"
+_IAPP_CSV = (
+    pathlib.Path(__file__).parent.parent.parent / "data" / "trackers" / "iapp_law_tracker.csv"
+)
 _DIM_JURISDICTIONS = (
     pathlib.Path(__file__).parent.parent.parent / "data" / "dim_jurisdictions.csv"
 )

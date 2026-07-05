@@ -15,7 +15,7 @@ def test_orrick():
         _extract_urls_from_pdf,
         _parse_table_rows,
     )
-    pdf_path = Path("static/Orrick-US-AI-Law-Tracker.pdf")
+    pdf_path = Path("data/trackers/Orrick-US-AI-Law-Tracker.pdf")
     if not pdf_path.exists():
         print("Orrick PDF not found at {}".format(pdf_path))
         return
@@ -39,7 +39,7 @@ def test_orrick():
 
 def test_iapp():
     from src.ingestion.iapp_pdf_tracker import parse_iapp_pdf
-    pdf_path = Path("static/IAPP_Legislation_tracker.pdf")
+    pdf_path = Path("data/trackers/IAPP_Legislation_tracker.pdf")
     if not pdf_path.exists():
         print("IAPP PDF not found at {}".format(pdf_path))
         return
@@ -90,8 +90,8 @@ if __name__ == "__main__":
         test_iapp()
     else:
         # Test both if they exist
-        orrick_exists = Path("static/Orrick-US-AI-Law-Tracker.pdf").exists()
-        iapp_exists = Path("static/IAPP_Legislation_tracker.pdf").exists()
+        orrick_exists = Path("data/trackers/Orrick-US-AI-Law-Tracker.pdf").exists()
+        iapp_exists = Path("data/trackers/IAPP_Legislation_tracker.pdf").exists()
 
         if orrick_exists:
             test_orrick()
