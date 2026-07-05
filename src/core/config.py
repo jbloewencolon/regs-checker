@@ -73,10 +73,10 @@ class Settings(BaseSettings):
     confidence_publish_min_tier: str = "C"
 
     # Orrick PDF Tracker
-    orrick_pdf_path: str = "static/Orrick-US-AI-Law-Tracker.pdf"
+    orrick_pdf_path: str = "data/trackers/Orrick-US-AI-Law-Tracker.pdf"
 
     # IAPP PDF Tracker
-    iapp_pdf_path: str = "static/IAPP_Legislation_tracker.pdf"
+    iapp_pdf_path: str = "data/trackers/IAPP_Legislation_tracker.pdf"
 
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"

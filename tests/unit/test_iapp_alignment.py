@@ -161,7 +161,7 @@ class TestCheckIAPPAlignment:
 
 
 # ---------------------------------------------------------------------------
-# Live CSV lookups (uses actual static/iapp_law_tracker.csv)
+# Live CSV lookups (uses actual data/trackers/iapp_law_tracker.csv)
 # ---------------------------------------------------------------------------
 
 

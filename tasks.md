@@ -906,16 +906,28 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   re-flagged by a future pass.
 
 ### Phase RC3 — Consolidation (scoped multi-file changes)
-- ⏳ **RC3-1** **[Medium]** Split `static/`'s source-data files
-  (`ai_law_tracker.csv`, `ai_law_tracker_QA_report.md`,
-  `IAPP_Legislation_tracker.pdf`, `iapp_law_tracker.csv`,
-  `iapp_law_tracker_QA.md`, `Orrick-US-AI-Law-Tracker.pdf`) from the actual
-  web asset (`static/css/style.css`) into a `data/trackers/` (or similar)
-  directory. Requires updating every path reference atomically —
-  `dashboard.py`, `seed_pipeline.py`, `iapp_alignment.py`, `config.py` (path
-  constants likely live here) — plus a local-ingest smoke test confirming
-  paths still resolve. Do not do speculatively; one PR, all references
-  updated together. *(BE)*
+- ✅ **RC3-1** **[Medium]** Executed (2026-07-04). All 6 source-data files
+  moved (`git mv`, history preserved) from `static/` to `data/trackers/`;
+  `static/` now contains only the real web asset (`css/style.css`). All
+  references updated atomically in one commit, each verified
+  exactly-one-occurrence before replacing: `config.py` (the two
+  `*_pdf_path` setting defaults — note these settings have **zero readers**
+  in live code, the modules hard-code their own constants; updated anyway
+  since they're operator-overridable env config), `iapp_alignment.py`
+  (`_IAPP_CSV`), `legacy/pdf_tracker.py` (`PDF_PATH`),
+  `legacy/iapp_pdf_tracker.py` (`IAPP_PDF_PATH`), `seed_pipeline.py`
+  (csv_path), `dashboard.py` (two operator-facing "place the PDF at ..."
+  message strings), `scripts/debug_pdf_tables.py` (4 refs),
+  `test_iapp_alignment.py` (comment), and `docs/remediation_plan.md`'s
+  still-actionable P4-1 step (historical references in
+  `run1_unified_plan.md` left as-is — that's a record of past state, and
+  its "not ingested" status text is stale independently). Smoke test in
+  lieu of a live ingest run (no DB in this sandbox): every moved path
+  constant verified to resolve on disk via import + `.exists()`, plus
+  `test_iapp_alignment.py`'s live-lookup tests, which read the actual
+  moved CSV through `_IAPP_CSV`. Confirmed no template links or FastAPI
+  static-mount consumers reference the moved files (the `/static` mount
+  serves only css now). 1068/1068 tests passing. *(done)*
 - ⏳ **RC3-2** **[Low]** Build `docs/README.md` (RC0-1) then move any
   docs/*.md confirmed superseded into `archive/docs/`, following the
   existing `archive/README.md` table pattern exactly (retired file → why →
@@ -980,11 +992,12 @@ lint-exclude removal. **Still open, with their blockers:** RC0-1/RC0-2
 (needs the operator to copy `backups/*.sql` to storage outside this repo
 first; untracking is ready to run the moment that's confirmed), RC2-1
 (product decision: delete the broken compare-models button vs. rewrite the
-feature against the current architecture), RC3-1 (`static/` source-data
-split — coordinated multi-file path update, one PR, ready to execute on
-request), RC3-2 (gated on RC0-1's classification), RC4-1/4-2 (live DB
-schema sweep), RC4-3 (ops confirmation no external Dagster deployment
-exists).
+feature against the current architecture), RC3-2 (gated on RC0-1's
+classification), RC4-1/4-2 (live DB schema sweep), RC4-3 (ops confirmation
+no external Dagster deployment exists). RC3-1 executed in a follow-up pass
+the same day (see its entry above) — with that, every RC item executable
+in this sandbox is done; all remaining items need operator, product, or
+ops input.
 
 ---
 

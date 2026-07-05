@@ -17,7 +17,7 @@ This module:
 3. Uses pdfplumber as a fallback for text extraction
 4. Creates Source → DocumentFamily → DocumentVersion → IngestionJob records
 
-The PDF should be placed at: static/Orrick-US-AI-Law-Tracker.pdf
+The PDF should be placed at: data/trackers/Orrick-US-AI-Law-Tracker.pdf
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from src.db.models import (
 
 logger = structlog.get_logger()
 
-PDF_PATH = Path("static/Orrick-US-AI-Law-Tracker.pdf")
+PDF_PATH = Path("data/trackers/Orrick-US-AI-Law-Tracker.pdf")
 
 from src.core.us_states import STATE_CODES  # noqa: F401 — re-exported for dependents
 
