@@ -832,20 +832,26 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   `layout.html`'s nav bar to a real route. No template deletion candidates.
 
 ### Phase RC0 — Documentation and labeling (zero code risk; do first)
-- ⏳ **RC0-1** **[Low]** `docs/README.md` index for the *active* `docs/`
-  directory (18 files): cross-reference against what `tasks.md` already
-  cites as current (`run1_unified_plan.md`, `remediation_plan.md`,
-  `phase2_completion_log.md`, `engineering_strategy_v3.md`,
-  `NORMALIZATION_VOCABULARY_RATIFICATION_PLAN.md` are confirmed current
-  from existing `tasks.md` cross-refs); classify the rest
-  (`pipeline_rebuild_plan.md`, `taxonomy_dev_plan.md`,
-  `product_review_remediation_plan.md`, `production_readiness_review.md`,
-  `code_update_strategy_eng.md`, `actor_taxonomy_analysis.md`,
-  `output_taxonomy_explained.md`, `vocab_harvest_spec_eng.md`,
-  `data_dictionary.md/.pdf`, `missing_laws_ingest_queue.csv`,
-  `phase0/1_completion_log.md`) as current/superseded. Mirror
-  `archive/README.md`'s table format — don't invent a new convention.
-  *(product/tech lead input needed on ambiguous ones)*
+- 🔧 **RC0-1** **[Low]** `docs/README.md` written (2026-07-04) —
+  evidence-based classification of all 18 files, mirroring
+  `archive/README.md`'s table format. 12 classified **current** with the
+  evidence stated per row (5 active plans genuinely cross-referenced from
+  `tasks.md` — the others' single tasks.md "citations" turned out to be
+  this RC0-1 entry's own file list, so content/companion evidence was
+  used instead; 3 completion-log records; 4 reference/operational inputs,
+  including `missing_laws_ingest_queue.csv` which is the still-open task
+  1d worklist). 6 flagged **archive candidate, explicitly marked
+  unconfirmed** rather than guessed: `pipeline_rebuild_plan.md` +
+  `taxonomy_dev_plan.md` (working-draft proposals whose companion docs
+  are already archived or absent — product call on whether the
+  rebuild/redesign path is still live), `code_update_strategy_eng.md` +
+  `vocab_harvest_spec_eng.md` + `actor_taxonomy_analysis.md` (pre-v3 /
+  completed-decision inputs), `product_review_remediation_plan.md`
+  (operator call: absorbed or still open?). Left 🔧 not ✅: the item's
+  whole point was that ambiguous ones need a human ruling — the index
+  exists and is useful now, but the 6 unconfirmed rows (plus the
+  `data_dictionary.pdf` duplicate question) await confirmation, which
+  then unblocks RC3-2. *(product/tech lead: confirm the 6 flagged rows)*
 - ⏳ **RC0-2** **[Low]** Label one-off scripts with an owner-facing status
   comment (`# STATUS: active runbook` / `one-time, completed <date>` /
   `archive candidate`): `scripts/fix_csv_titles.py`,
