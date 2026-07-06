@@ -1428,7 +1428,7 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > stream (fits the one-table contract; PN routes it to `fact_laws`); (b) authority
 > classification is heuristics + review queue (confident label or `unknown` +
 > `needs_review`, never a guessed label).
-- ✅ **PNE-3a** — Ask 5 landed (2026-07-06): `src/core/law_summary.py` —
+- ✅ **PNE-3a** — Ask 5 landed (2026-07-06, commit a071a9a): `src/core/law_summary.py` —
   `build_law_summary()` aggregates `min_employees`/`min_revenue`/
   `consumer_count_trigger` (smallest numeric trigger = applicability floor,
   reusing PNE-2d `derive_trigger`), `small_business_exempt` (exception-text
@@ -1444,7 +1444,7 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   callers) as the wiring target; the actual PROA signal was simpler to read
   directly off enforcement payloads, so that function stays uncalled — flagged,
   not silently worked around.
-- ✅ **PNE-3b** — Ask 6 landed (same commit): `src/core/authority_classifier.py`
+- ✅ **PNE-3b** — Ask 6 landed (2026-07-06, commit a071a9a): `src/core/authority_classifier.py`
   — deterministic `classify_authority(bill_number, title, source_url)` →
   `{authority_type, binding_effect, issuing_body, authority_confidence,
   needs_review}`. Bill number ⇒ statute/binding; title keywords (guidance,
