@@ -1680,11 +1680,8 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
     from sqlalchemy import delete, or_
 
     from src.db.models import SectionTriageResult, TriageDecision
-    from src.ingestion.extractor import _ensure_triage_table
 
     try:
-        _ensure_triage_table(db)
-
         # Count what will be reset
         reset_filter = or_(
             SectionTriageResult.decision == TriageDecision.uncertain,
@@ -1727,11 +1724,8 @@ def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
     from sqlalchemy import delete
 
     from src.db.models import SectionTriageResult
-    from src.ingestion.extractor import _ensure_triage_table
 
     try:
-        _ensure_triage_table(db)
-
         count = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
         ) or 0
@@ -4378,47 +4372,6 @@ def run_evaluate(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
 
-@router.post("/api/run/compare-models")
-def run_compare_models(db: Session = Depends(get_db)) -> HTMLResponse:
-    """Run model comparison (Haiku vs new models)."""
-    try:
-        from src.evaluation.compare_models import compare_models
-        result = compare_models(db)
-
-        rows = ""
-        for model in result:
-            tiers = model.get("tiers", {})
-            rows += f"""
-            <tr>
-              <td><strong>{model['model_id']}</strong></td>
-              <td>{model['count']}</td>
-              <td>{model['avg_confidence']:.1%}</td>
-              <td>{model.get('json_valid_pct', 'N/A')}</td>
-              <td>{tiers.get('A', 0)}</td>
-              <td>{tiers.get('B', 0)}</td>
-              <td>{tiers.get('C', 0)}</td>
-              <td>{tiers.get('D', 0)}</td>
-            </tr>
-            """
-
-        html = f"""
-        <div class="result-panel info">
-          <table class="review-table" style="margin-top: 8px;">
-            <thead>
-              <tr>
-                <th>Model</th><th>Count</th><th>Avg Conf</th><th>JSON Valid</th>
-                <th>A</th><th>B</th><th>C</th><th>D</th>
-              </tr>
-            </thead>
-            <tbody>{rows}</tbody>
-          </table>
-        </div>
-        """
-        return HTMLResponse(html)
-    except Exception as e:
-        return HTMLResponse(
-            f'<div class="result-panel error">Error: {html_escape(str(e))}</div>'
-        )
 
 
 @router.post("/api/edit-document/{job_id}")

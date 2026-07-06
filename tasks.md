@@ -108,12 +108,11 @@ Law-card data model, applicability product, API, productionization — resume on
 > to `review_status != 'rejected'` rather than dropping the column check entirely.
 > Confirm before P3-1 ships.
 
-- ⏳ **P3-1** — `sync_extractions.py`: drop `review_status = 'approved'` from all three
-  queries in `sync_extractions()` (pending count, dry-run bridged count, main fetch).
-  Keep the existing `confidence_tier::text = ANY(:tiers)` filter — `_eligible_tiers()`
-  already excludes D by default (`confidence_publish_min_tier = "C"` in
-  `src/core/config.py`). Update the module docstring (currently documents the P2-1
-  approved-only gate) and inline comments.
+- ✅ **P3-1** **[Done 2026-07-06]** Both legs in `sync_extractions.py` now gate on
+  confidence_tier alone (A/B/C; D excluded) instead of requiring
+  review_status='approved'. Added `review_status != 'rejected'` safety gate to
+  prevent explicitly-rejected extractions from syncing (analyst veto mechanism).
+  Module docstring and inline comments updated. *(sync strategy finalized)*
 - ⏳ **P3-2** — Policy Navigator live migration: `CREATE OR REPLACE VIEW
   rollup_eligible_extractions` to drop its `review_status IN ('approved','verified')`
   condition (added in P2-3, migration `p2_3_rollup_eligible_extractions_view`) so it
@@ -121,10 +120,10 @@ Law-card data model, applicability product, API, productionization — resume on
   `synced_extractions` directly — decide during implementation). Tier filtering
   continues to live in Python in `rollup_matrix.py`, unchanged. Verify against a
   scratch Postgres schema before applying live, per the P2 pattern.
-- ⏳ **P3-3** — `sync_updates()` in `sync_extractions.py`: change `is_eligible` from
-  `review_status == 'approved' and tier in eligible_tiers` to tier-only. Update the
-  function's docstring, which currently documents the "RC leads, PN backs up" review-
-  gated design from P2-6.
+- ✅ **P3-3** **[Done 2026-07-06]** `sync_updates()` in `sync_extractions.py` updated:
+  `is_eligible` now checks `confidence_tier in eligible_tiers and review_status != 'rejected'`.
+  Docstring updated to reflect tier-only + rejection-gate design (no longer
+  "RC leads, PN backs up" approval-gated). Paired with P3-1 in same commit. *(sync strategy finalized)*
 - ⏳ **P3-4** — Dashboard: new panel/route for **Tier-D extractions** (permanently
   ineligible under the tier-only gate) so analysts have a queue of what still needs
   re-extraction or prompt/model tuning to reach C+. Mirror the existing
@@ -134,12 +133,16 @@ Law-card data model, applicability product, API, productionization — resume on
   live in the product without RC human sign-off. This is the visibility backstop for
   removing the P2 review gate; without it there's no way to see what shipped
   unreviewed.
-- ⏳ **P3-6** — Tests: prove pending/flagged/rejected-status extractions at tier A/B/C
-  now sync (regression against the old P2-1 behavior), and tier-D never syncs
-  regardless of review_status. Cover both `sync_extractions()` and `sync_updates()`.
-- ⏳ **P3-7** — `docs/phase3_completion_log.md` (new) + a forward-pointing addendum on
-  `docs/remediation_plan.md`'s Phase 2 section noting the gate was relaxed in Phase 3.
-  Apply the live PN migration via `apply_migration`, re-run the Supabase advisor scan.
+- ✅ **P3-6** **[Done 2026-07-06]** Unit tests for P3 eligibility logic added to
+  `tests/unit/test_sync_extractions.py`. 22 tests covering: tier-eligible helper,
+  sync eligibility logic (tier + rejection gate), regression tests showing
+  pending/flagged/verified at A/B/C now sync (vs P2's approved-only block),
+  tier-D always ineligible, and analyst veto mechanism. All tests passing. *(test coverage finalized)*
+- 🔧 **P3-7** — `docs/phase3_completion_log.md` created (2026-07-06) documenting P3-1,
+  P3-3, P3-6 completion and P3-2/P3-4/P3-5 status. Still needed: forward-pointing
+  addendum on `docs/remediation_plan.md`'s Phase 2 section noting gate was relaxed
+  in Phase 3 (deferred until P3-2 ships for complete before/after). Apply live PN
+  migration via operator's `apply_migration` call post-P3-2. *(docs partial)*
 
 **Sequencing:** P3-1 and P3-3 (code) can land together first since they're pure RC-side
 sync logic. P3-2 (live PN view) should follow, verified on scratch Postgres first — it's
@@ -961,34 +964,48 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   tests passing; exact new CI gate command verified passing on the full
   tree. *(done)*
 
-### Phase RC4 — High-risk, environment-gated (explicitly blocked here)
-- 🔒 **RC4-1** **[High]** Retire the `_ensure_extraction_enums` /
+### Phase RC4 — High-risk, environment-gated
+- ✅ **RC4-1** **[High]** Executed (2026-07-06). Retired the four raw-SQL
+  fallback helpers (`_ensure_extraction_enums` /
   `_ensure_failed_attempts_table` / `_ensure_pipeline_events_table` /
-  `_ensure_triage_table` raw-SQL fallback helpers in `extractor.py`
-  (confirmed still called at every `run_extraction`/`run_retry_failed`
-  entrypoint). **Blocked**: requires a live schema-drift sweep across the
-  local Docker Postgres and both Supabase projects, which needs DB
-  connectivity this sandboxed session does not have. Do not touch without
-  that sweep — these helpers exist specifically because Alembic migrations
-  may not have run on every target DB. *(operator, live DB access)*
-- 🔒 **RC4-2** **[High]** Retire `scripts/apply_pending_migrations.sql`.
-  Same blocker as RC4-1 — needs Alembic-vs-live-schema reconciliation
-  across local Docker + Regs Checker Supabase + Policy Navigator Supabase
-  before it's safe to remove the manual fallback. *(operator, live DB
-  access)*
-- ⏳ **RC4-3** **[Low, but has a blind spot]** `_archived/dagster_pipelines/`
-  — confirmed zero references anywhere in the live repo (`src/`,
-  `scripts/`, `.github/`, `docker/`). Static analysis cannot see a
-  cron/scheduler configured outside the repo (e.g. a hosted Dagster
-  deployment pointing at this code) — needs an explicit "no such deployment
-  exists" confirmation from whoever owns infrastructure, not just a clean
-  grep. *(ops confirmation needed, then safe to delete)*
+  `_ensure_triage_table`) and all call sites (`run_extraction`,
+  `run_retry_failed`, and the two dashboard triage-reset endpoints
+  `reset_triage`/`reset_triage_all`). **Supabase half of the schema-drift
+  sweep done via Supabase MCP:** Regs Checker Supabase
+  (`wjxlimjpaijdogyrqtxc`) is at Alembic head `25cffe678fbc` with zero
+  drift — every enum value (`rights_protection`/`compliance_mechanism`/
+  `preemption_signal`), table (`failed_extraction_attempts` incl. `run_id`,
+  `pipeline_events`, `section_triage_results`), and triage enum
+  (`triagedecision`/`triagemethod`) the helpers guaranteed is present.
+  Policy Navigator Supabase (`aaxxunfarlhmydvohsrm`) is a separate product
+  DB not on this repo's Alembic history — out of scope. **Local Docker
+  Postgres** was unreachable from the sandbox, but `start.py` runs
+  `alembic upgrade head` + verifies head before serving (the helpers were
+  its documented "runtime patches as fallback"), so the local path is
+  covered by real migrations. Operator chose to proceed on that basis
+  (residual risk is a dev calling `run_extraction` outside `start.py` on a
+  stale local DB — now a clear error instead of self-heal). 1071 tests
+  passing; CI hard gate (`ruff check src/ --select E9,F`) green. *(done)*
+- ✅ **RC4-2** **[High]** Executed (2026-07-06). Deleted
+  `scripts/apply_pending_migrations.sql` — every migration it applied
+  (`document_families.primary_source_url`/`orrick_reference_url`/
+  `iapp_reference_url`, `ingestion_jobs.ai_suggested_url`, and the
+  `requires_manual_review` enum value) verified already present on Regs
+  Checker Supabase via the same MCP sweep. Historical retirement note added
+  to the `bf74ef19697d` migration docstring so it doesn't point at deleted
+  code. *(done)*
+- ✅ **RC4-3** **[Low]** Executed (2026-07-06). `_archived/dagster_pipelines/`
+  deleted after operator confirmed no external Dagster deployment points at
+  this code (the missing piece static analysis couldn't see; repo-side was
+  already a clean zero-reference grep across `src/`, `scripts/`, `.github/`,
+  `docker/`). *(done)*
 
 **Sequencing:** RC0 first (no risk, clarifies everything downstream). RC1-2
 and RC3-3 are verified-safe enough to execute directly once acknowledged —
 everything else in RC1/RC2/RC3 needs one external input (secure storage
 destination, product decision, or a coordinated multi-file path update) before
-acting, and RC4 needs live DB/ops access this session doesn't have at all.
+acting. RC4 was originally deferred for live DB/ops access; the Supabase half
+was ultimately reachable via Supabase MCP (see the 2026-07-06 note below).
 
 **Execution note (2026-07-04):** RC1-2, RC2-2, and RC3-3 executed this
 session (details on each item above), plus an unplanned fix for 4
@@ -1004,6 +1021,24 @@ no external Dagster deployment exists). RC3-1 executed in a follow-up pass
 the same day (see its entry above) — with that, every RC item executable
 in this sandbox is done; all remaining items need operator, product, or
 ops input.
+
+**Execution note (2026-07-06):** operator-directed follow-up session
+cleared most of the remaining backlog. **RC2-1** (deleted the broken
+compare-models button + endpoint), **RC0-1/RC3-2** (archived
+`code_update_strategy_eng.md`, `actor_taxonomy_analysis.md`,
+`vocab_harvest_spec_eng.md` to `archive/docs/` per operator classification),
+**RC1-1** (untracked `backups/*.sql` — operator confirmed secured
+externally), and **RC4-3** (deleted `_archived/dagster_pipelines/` — operator
+confirmed no external scheduler) all executed. **RC4-1/RC4-2** unblocked by
+running the schema-drift sweep through Supabase MCP rather than direct DB
+connectivity: both Supabase projects verified, `start.py` covers the local
+Docker path, operator approved proceeding — raw-SQL fallbacks and the manual
+migration script retired. Remediation **P3** (tier-only publish) also shipped
+with an explicit `review_status != 'rejected'` gate. **Still open:** RC0-1's
+remaining doc classifications (`pipeline_rebuild_plan.md`, `taxonomy_dev_plan.md`,
+`product_review_remediation_plan.md` — product call still pending), and the
+local Docker Postgres leg of the RC4 sweep (informational only now — the
+fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ---
 
@@ -1092,8 +1127,12 @@ ops input.
 - ✅ **RR3c** **[Medium]** Fixed `confidence_tier IN :tiers` tuple bind: changed to
   `confidence_tier = ANY(:tiers)` with `list(confidence_tiers)` — works correctly
   with PostgreSQL array operators via SQLAlchemy raw text. *(BE)*
-- ⏳ **RR3d** **[Medium]** Review `/dashboard` + `/internal` auth posture; document
-  the intended deployment trust boundary (currently a localhost analyst tool). *(BE)*
+- ✅ **RR3d** **[Done 2026-07-06]** Created `docs/auth_posture.md` documenting the
+  current three-route-group architecture: `/dashboard/` (unauthenticated, full
+  pipeline access), `/internal/` (unauthenticated, review API), `/v1/` (API key
+  required, published extractions). Clarifies this is appropriate for localhost
+  analyst use but requires auth layer if deployed beyond. Includes security
+  considerations and deployment recommendations. *(docs finalized)*
 
 ### Phase RR4 — Legal parsing & provenance fidelity (foundational; highest product value)
 - ✅ **RR4a** **[High]** Stable section tree + subsection-aware paths. Parser

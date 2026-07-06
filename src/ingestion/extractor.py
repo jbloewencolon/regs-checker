@@ -176,178 +176,6 @@ _BILL_LEVEL_AGENT_CLASSES: list[str] = [
     "src.agents.compliance_timeline_agent.ComplianceTimelineAgent",
 ]
 
-def _ensure_extraction_enums(db, _log=None) -> None:
-    """Ensure all ExtractionType enum values exist in the local Postgres enum.
-
-    The preemption_signal, rights_protection, and compliance_mechanism values
-    were added after the initial schema. If the Alembic migration hasn't been
-    applied to the local database, this adds them idempotently.
-
-    IMPORTANT: ALTER TYPE ... ADD VALUE cannot run inside a transaction in
-    PostgreSQL (it auto-commits). We use a raw psycopg2 connection with
-    autocommit=True to execute these statements outside any transaction.
-    """
-    from sqlalchemy import text
-
-    new_values = [
-        "rights_protection",
-        "compliance_mechanism",
-        "preemption_signal",
-    ]
-
-    bind = db.get_bind()
-
-    # First, check if the enum type exists at all
-    with bind.connect() as conn:
-        result = conn.execute(text(
-            "SELECT enumlabel FROM pg_enum "
-            "JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
-            "WHERE pg_type.typname = 'extractiontype'"
-        ))
-        existing = {row[0] for row in result}
-
-    if not existing:
-        # Enum type doesn't exist — Alembic migrations haven't run.
-        # Don't try to ALTER a non-existent type; the migration will create it.
-        if _log:
-            _log("extractiontype enum not found — run Alembic migrations first.")
-        return
-
-    missing = [v for v in new_values if v not in existing]
-    if not missing:
-        return
-
-    # ALTER TYPE ... ADD VALUE must run outside a transaction block.
-    # Get the raw DBAPI connection and set autocommit mode.
-    raw_conn = bind.raw_connection()
-    try:
-        raw_conn.autocommit = True
-        cursor = raw_conn.cursor()
-        for val in missing:
-            if _log:
-                _log(f"Adding '{val}' to extractiontype enum...")
-            cursor.execute(
-                f"ALTER TYPE extractiontype ADD VALUE IF NOT EXISTS '{val}'"
-            )
-        cursor.close()
-    finally:
-        raw_conn.autocommit = False
-        raw_conn.close()
-
-
-def _ensure_failed_attempts_table(db, _log=None) -> None:
-    """Create the failed_extraction_attempts table if it doesn't exist.
-
-    Also adds the run_id column if missing (migration y1z7a3b5c026).
-    """
-    from sqlalchemy import inspect as sa_inspect
-    from sqlalchemy import text
-
-    bind = db.get_bind()
-    inspector = sa_inspect(bind)
-    if not inspector.has_table("failed_extraction_attempts"):
-        if _log:
-            _log("Creating failed_extraction_attempts table...")
-        with bind.begin() as conn:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS failed_extraction_attempts (
-                    id SERIAL PRIMARY KEY,
-                    source_record_id INTEGER NOT NULL REFERENCES normalized_source_records(id),
-                    agent_name VARCHAR(100) NOT NULL,
-                    error_type VARCHAR(50) NOT NULL,
-                    error_message TEXT NOT NULL,
-                    extraction_job_id INTEGER REFERENCES extraction_jobs(id),
-                    run_id INTEGER REFERENCES extraction_runs(id) ON DELETE SET NULL,
-                    retried BOOLEAN NOT NULL DEFAULT FALSE,
-                    retry_succeeded BOOLEAN,
-                    created_at TIMESTAMP DEFAULT now()
-                )
-            """))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_source "
-                "ON failed_extraction_attempts (source_record_id)"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_retry "
-                "ON failed_extraction_attempts (retried, agent_name)"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_run_id "
-                "ON failed_extraction_attempts (run_id)"
-            ))
-        if _log:
-            _log("Table created.")
-        return
-
-    # Table exists — ensure run_id column is present (added by migration y1z7a3b5c026)
-    existing_cols = {c["name"] for c in inspector.get_columns("failed_extraction_attempts")}
-    if "run_id" not in existing_cols:
-        with bind.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE failed_extraction_attempts "
-                "ADD COLUMN IF NOT EXISTS run_id INTEGER "
-                "REFERENCES extraction_runs(id) ON DELETE SET NULL"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_failed_attempts_run_id "
-                "ON failed_extraction_attempts (run_id)"
-            ))
-        if _log:
-            _log("Added run_id column to failed_extraction_attempts.")
-
-
-def _ensure_pipeline_events_table(db, _log=None) -> None:
-    """Create the pipeline_events table if it doesn't exist (RR6a).
-
-    Mirrors migration t6u2v8w0x021 so extraction works even when that
-    migration has not been applied to the local database.
-    """
-    from sqlalchemy import inspect as sa_inspect
-    from sqlalchemy import text
-
-    bind = db.get_bind()
-    inspector = sa_inspect(bind)
-    if inspector.has_table("pipeline_events"):
-        return
-
-    if _log:
-        _log("Creating pipeline_events table...")
-
-    with bind.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS pipeline_events (
-                id SERIAL PRIMARY KEY,
-                run_id INTEGER REFERENCES extraction_runs(id) ON DELETE SET NULL,
-                source_record_id INTEGER,
-                event_type VARCHAR(50) NOT NULL,
-                agent_name VARCHAR(100),
-                extraction_count INTEGER,
-                input_tokens INTEGER,
-                output_tokens INTEGER,
-                duration_ms INTEGER,
-                confidence_tier VARCHAR(1),
-                error_message TEXT,
-                details JSONB,
-                created_at TIMESTAMP NOT NULL DEFAULT now()
-            )
-        """))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_run_type "
-            "ON pipeline_events (run_id, event_type)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_created_at "
-            "ON pipeline_events (created_at)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_pipeline_events_run_id "
-            "ON pipeline_events (run_id)"
-        ))
-
-    if _log:
-        _log("Table created.")
-
-
 def _classify_llm_error(exc: Exception | str) -> str:
     """Map an extraction exception to a coarse error_type for the UI.
 
@@ -530,63 +358,6 @@ def _persist_pipeline_event(
             ))
     except Exception as e:
         logger.warning("pipeline_event_persist_error", event_type=event_type, error=str(e))
-
-
-def _ensure_triage_table(db, _log=None) -> None:
-    """Create the section_triage_results table if it doesn't exist.
-
-    Handles the case where the alembic migration hasn't been applied
-    to the local database. Creates enum types and the table idempotently.
-    """
-    from sqlalchemy import inspect as sa_inspect
-    from sqlalchemy import text
-
-    bind = db.get_bind()
-    inspector = sa_inspect(bind)
-    if inspector.has_table("section_triage_results"):
-        return
-
-    if _log:
-        _log("Creating section_triage_results table (migration not applied)...")
-
-    with bind.begin() as conn:
-        conn.execute(text("""
-            DO $$ BEGIN
-                CREATE TYPE triagedecision AS ENUM ('relevant', 'not_relevant', 'uncertain');
-            EXCEPTION WHEN duplicate_object THEN NULL;
-            END $$
-        """))
-        conn.execute(text("""
-            DO $$ BEGIN
-                CREATE TYPE triagemethod AS ENUM ('keyword', 'orrick_cross_check', 'llm_generic', 'quality_fail', 'passthrough', 'manual_review');
-            EXCEPTION WHEN duplicate_object THEN NULL;
-            END $$
-        """))
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS section_triage_results (
-                id SERIAL PRIMARY KEY,
-                source_record_id INTEGER NOT NULL UNIQUE REFERENCES normalized_source_records(id),
-                decision triagedecision NOT NULL,
-                method triagemethod NOT NULL,
-                confidence FLOAT NOT NULL DEFAULT 0.0,
-                matched_keywords JSONB DEFAULT '[]'::jsonb,
-                orrick_terms_checked JSONB DEFAULT '[]'::jsonb,
-                llm_reasoning TEXT,
-                pdf_quality_score FLOAT,
-                quality_flags JSONB DEFAULT '[]'::jsonb,
-                model_id VARCHAR(100),
-                created_at TIMESTAMP DEFAULT now()
-            )
-        """))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_triage_source_record ON section_triage_results (source_record_id)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_triage_decision ON section_triage_results (decision)"
-        ))
-
-    if _log:
-        _log("Table created.")
 
 
 # Agent registry — 7 extraction agents
@@ -1789,10 +1560,6 @@ def run_triage(
             on_progress(msg)
         logger.info(msg)
 
-    # Ensure section_triage_results table exists (may not if migration
-    # hasn't been applied to the local database yet).
-    _ensure_triage_table(db, _log)
-
     # Find all passages from completed ingestion jobs that haven't been triaged
     triaged_ids = select(SectionTriageResult.source_record_id)
     records = db.scalars(
@@ -2172,15 +1939,6 @@ def run_extraction(
     clear_pause()
     global _last_passage_at
     _last_passage_at = 0.0
-
-    # Ensure all extraction type enum values exist in local Postgres
-    _ensure_extraction_enums(db, on_progress)
-
-    # Ensure failed_extraction_attempts table exists for error tracking
-    _ensure_failed_attempts_table(db, on_progress)
-
-    # Ensure pipeline_events table exists for the durable event log (RR6a)
-    _ensure_pipeline_events_table(db, on_progress)
 
     # --- Explicit purge (opt-in only) ---
     # Never runs automatically. The caller must pass purge=True to wipe
@@ -2650,10 +2408,6 @@ def run_retry_failed(
             on_progress(msg)
         logger.info(msg)
 
-    _ensure_extraction_enums(db, on_progress)
-    _ensure_failed_attempts_table(db, on_progress)
-    _ensure_pipeline_events_table(db, on_progress)
-
     # Find un-retried failures
     query = (
         select(FailedExtractionAttempt)
@@ -3013,7 +2767,6 @@ def run_condition_parsing(
     return _run_parsing(db, document_version_id, on_progress)
 
 
-
 def run_recovery_extraction(
     db,
     limit: int | None = None,
@@ -3293,7 +3046,6 @@ def run_recovery_extraction(
             "total_calls": token_usage.total_calls,
         },
     }
-
 
 
 # ---------------------------------------------------------------------------

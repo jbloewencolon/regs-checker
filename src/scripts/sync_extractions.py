@@ -15,14 +15,14 @@ Key design decisions:
   - sync_to_supabase.py is NOT replaced — it handles local Docker →
     Regs Checker Supabase. This script handles the next leg:
     Regs Checker Supabase → Policy Navigator Supabase.
-  - Publish gate (P3-1, supersedes P2-1): only confidence_tier at or above
-    REGS_CONFIDENCE_PUBLISH_MIN_TIER is required to sync — below-floor (D)
-    extractions never reach the product database. review_status is no
-    longer a publish precondition (Phase 2's approved-only gate was
-    deliberately removed in Phase 3 — see docs/phase3_completion_log.md);
-    review_status still travels with each synced row for visibility, and
-    Policy Navigator's own post-sync review workflow still applies once a
-    row exists there.
+  - Publish gate (P3-1, supersedes P2-1): confidence_tier at or above
+    REGS_CONFIDENCE_PUBLISH_MIN_TIER + review_status != 'rejected' are both
+    required to sync — below-floor (D) extractions and rejected items never
+    reach the product database. review_status='approved' is no longer required
+    (Phase 2's approved-only gate was deliberately removed in Phase 3 —
+    see docs/phase3_completion_log.md); review_status still travels with each
+    synced row for visibility, and Policy Navigator's own post-sync review
+    workflow still applies once a row exists there.
   - Two-leg sync (P2-6, tier-only as of P3-3): sync_extractions() discovers
     brand-new extractions via the id cursor. sync_updates() (run right
     after, in the same CLI invocation) separately re-checks recently-changed
@@ -200,6 +200,7 @@ def sync_extractions(
                 SELECT COUNT(*) FROM extractions
                 WHERE id > :cursor
                   AND confidence_tier::text = ANY(:tiers)
+                  AND review_status != 'rejected'
                 """
             ),
             {"cursor": cursor, "tiers": eligible_tiers},
@@ -228,6 +229,7 @@ def sync_extractions(
                     JOIN document_versions dv ON nsr.document_version_id = dv.id
                     WHERE e.id > :cursor
                     AND e.confidence_tier::text = ANY(:tiers)
+                    AND e.review_status != 'rejected'
                     AND dv.family_id IN :family_ids
                     """
                 ),
@@ -283,6 +285,7 @@ def sync_extractions(
                 JOIN document_versions dv ON nsr.document_version_id = dv.id
                 WHERE e.id > :cursor
                   AND e.confidence_tier::text = ANY(:tiers)
+                  AND e.review_status != 'rejected'
                 ORDER BY e.id
                 """
             ),
@@ -504,7 +507,7 @@ def sync_updates(
         for row in rows:
             max_updated_at = max(max_updated_at, row["updated_at"])
 
-            is_eligible = row["confidence_tier"] in eligible_tiers
+            is_eligible = row["confidence_tier"] in eligible_tiers and row["review_status"] != "rejected"
             if not is_eligible:
                 skipped_ineligible += 1
                 continue

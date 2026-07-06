@@ -18,6 +18,10 @@ y1z7a3b5c026_failed_attempts_run_id.py migration, unchanged). Existing
 databases where the raw-SQL fallback already created this table will be
 reconciled onto the Alembic history via `alembic stamp` per P1-5; this
 migration is what a fresh database now runs instead of relying on the hack.
+
+Update (RC4-1): the `_ensure_*` raw-SQL fallbacks in extractor.py referenced
+above have since been retired — this migration (plus its peers) is now the
+sole creator of the table. The reference is kept for historical context only.
 """
 
 from __future__ import annotations
