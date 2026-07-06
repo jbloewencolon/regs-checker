@@ -1125,8 +1125,12 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 - ✅ **RR3c** **[Medium]** Fixed `confidence_tier IN :tiers` tuple bind: changed to
   `confidence_tier = ANY(:tiers)` with `list(confidence_tiers)` — works correctly
   with PostgreSQL array operators via SQLAlchemy raw text. *(BE)*
-- ⏳ **RR3d** **[Medium]** Review `/dashboard` + `/internal` auth posture; document
-  the intended deployment trust boundary (currently a localhost analyst tool). *(BE)*
+- ✅ **RR3d** **[Done 2026-07-06]** Created `docs/auth_posture.md` documenting the
+  current three-route-group architecture: `/dashboard/` (unauthenticated, full
+  pipeline access), `/internal/` (unauthenticated, review API), `/v1/` (API key
+  required, published extractions). Clarifies this is appropriate for localhost
+  analyst use but requires auth layer if deployed beyond. Includes security
+  considerations and deployment recommendations. *(docs finalized)*
 
 ### Phase RR4 — Legal parsing & provenance fidelity (foundational; highest product value)
 - ✅ **RR4a** **[High]** Stable section tree + subsection-aware paths. Parser
