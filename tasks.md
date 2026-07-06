@@ -1341,6 +1341,78 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ---
 
+## PN Enrichment Plan (PNE) — Policy Navigator Extraction Asks (2026-07-06)
+
+> Source: `RC_PIPELINE_EXTRACTION_ASKS_20260706.md` (PN data/taxonomy review) —
+> 8 asks to emit more structure at extraction time. Full evaluation + RC response:
+> `docs/pn_asks_response.md`. Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+>
+> **Operator decisions (2026-07-06):** (1) RC enriches the `synced_extractions`
+> payload only — PN's ingestion maps into their tables; RC does not write PN's
+> internal schema. (2) RC's ratified vocabularies stay canon; PN values shipped
+> via crosswalk (both codes emitted). (3) Prompt-change asks held behind the EA1
+> gold-set baseline, per standing discipline.
+>
+> **Key findings that reshaped the memo:** RC's own `payload_adapter.py`
+> whitelists fields and was *stripping data already extracted*
+> (`interpretation_risks`, `safe_harbor`, `consent_requirements`, `object`,
+> structured timeline) — fixing that beats new extraction. Coverage query
+> (run via Supabase MCP; PN couldn't — 502s): **all 8 PN target tables at 0
+> rows, `synced_extractions` itself 0 post-P2-purge** → next sync is
+> greenfield, enrichment landed now ships in the first real rows.
+> `fact_laws` booleans (`small_business_exempt`/`private_right_of_action`)
+> are all-default `false` for 221 laws — fake data reading as an affirmative
+> legal claim; PN advised to make them nullable. Ask 8 is moot (ambiguity
+> agent retired; `interpretation_risks` embedded on obligation/rights rows —
+> DI-4); RC-side fix is the adapter pass-through.
+
+### PNE-1 — Stop dropping what's already extracted (deterministic, sync-layer)
+- 🔧 **PNE-1a** — adapter pass-through: `_adapt_obligation` ships `object`,
+  `safe_harbor`, `consent_requirements`, `interpretation_risks`,
+  `preemption_signals`, and the structured timeline object (with
+  `date_parse_status`) alongside the flattened string; `_adapt_rights_protection`
+  ships `interpretation_risks`. Backward-compatible (existing keys unchanged). *(BE)*
+- 🔧 **PNE-1b** — Ask 7 provenance: `provenance {content_hash, retrieved_at,
+  section_locator}` attached to every synced payload from
+  `document_versions.source_hash`/`retrieved_at` (both sync legs). *(BE)*
+- 🔧 **PNE-1c** — tests for pass-through + provenance; response memo committed. *(BE)*
+
+### PNE-2 — Deterministic derivation (mapping code, no LLM)
+- ⏳ **PNE-2a** — Ask 1: `actor_role_rc` (canonical 13-code) via vocab mapping of
+  `subject_normalized`; `actor_role` (PN 7-value) via new crosswalk CSV;
+  `enforcement_authority` from `enforcement.enforcing_body`. *(BE, NLP)*
+- ⏳ **PNE-2b** — Ask 2: `obligation_family` (RC 22-code, reuse concept-grouping
+  alias classifier) + `obligation_type` (PN 13-value) via crosswalk CSV. *(BE)*
+- ⏳ **PNE-2c** — Ask 3a: `deadlines[]` array derived from parsed ISO timeline
+  fields only (skip `unparsed` per `date_parse_status`). *(BE)*
+- ⏳ **PNE-2d** — Ask 4b: `{trigger_type, trigger_operator, trigger_value}` parsed
+  from threshold fields + condition text (numeric-grounding parser pattern).
+  Ask 4a (stable ID) already ships as `system_a_extraction_id` — documented. *(BE)*
+- ⏳ **PNE-2e** — hygiene: domain-tag id alignment with PN `DOMAIN_TAGS`. *(BE)*
+
+### PNE-3 — Law-level rollups (deterministic aggregation)
+- ⏳ **PNE-3a** — Ask 5: covered-entity rollup (`min_employees`, `min_revenue`,
+  `consumer_count_trigger`, `small_business_exempt`, `private_right_of_action`)
+  from threshold/exception/enforcement extractions — finally wires
+  `normalize_enforcement_for_law()` (zero callers since EA5-2). Emission shape:
+  law-level record in the payload stream (RC does not write `fact_laws`). *(BE, NLP)*
+- ⏳ **PNE-3b** — Ask 6 (partial): `authority_type`/`binding_effect`/`issuing_body`
+  via seed metadata + deterministic heuristics + human-review queue for the
+  ambiguous residue. *(BE, operator review)*
+
+### PNE-4 — Gated (EA1 baseline or design ruling)
+- 🔒 **PNE-4a** — Ask 3b: per-cohort deadline extraction (prompt/schema change). *(after EA1)*
+- 🔒 **PNE-4b** — Ask 4c: threshold→obligation `applies_to_obligation_id` linking —
+  needs a design (same-passage co-location vs concept key vs model reference). *(design ruling)*
+- 🔒 **PNE-4c** — Ask 6 (full): LLM classification pass if PNE-3b residue is too
+  large. *(after EA1)*
+
+**Sequencing:** PNE-1 now (greenfield window — land before the operator's next
+Extract All + sync so the first synced rows carry the enrichment). PNE-2 next,
+PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
+
+---
+
 ### Merge backlog
 - `claude/onboard-government-project-3bq7i` (Phase 7M) and `claude/onboard-government-project-PyyB9` (Phase 8) — review and merge after extraction validates on main.
 

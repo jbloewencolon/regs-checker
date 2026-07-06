@@ -14,6 +14,14 @@ Mapping Summary:
   - threshold: Rename threshold_exception fields, flatten exceptions list
   - definition: Rename definition_actor fields to match expected schema
   - ambiguity: Nearly 1:1, just ensure all keys present
+
+PNE-1a (2026-07-06): the adapters are whitelists, and they were silently
+stripping fields the pipeline already extracts. Obligation now passes through
+object / safe_harbor / consent_requirements / interpretation_risks /
+preemption_signals and ships the structured timeline dict as
+``timeline_structured`` (with date_parse_status) alongside the flattened
+string; rights_protection passes through interpretation_risks. When adding a
+field to an extraction schema, add it to the adapter too or it never syncs.
 """
 
 from __future__ import annotations
@@ -62,15 +70,30 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         "subject_normalized": payload.get("subject_normalized"),
         "modality": payload.get("modality"),
         "action": payload.get("action"),
+        # PNE-1a: the fields below were extracted and stored all along but
+        # stripped here at sync time. "object" is the model_dump(by_alias=True)
+        # key for ObligationPayload.object_.
+        "object": payload.get("object"),
         "condition": payload.get("condition"),
         "jurisdiction": payload.get("jurisdiction"),
+        "safe_harbor": payload.get("safe_harbor"),
+        "consent_requirements": payload.get("consent_requirements"),
+        "interpretation_risks": payload.get("interpretation_risks") or [],
+        "preemption_signals": payload.get("preemption_signals") or [],
         "timeline": None,
+        # PNE-1a (PN Ask 3, deterministic half): the structured TimelineInfo
+        # dict — including date_parse_status, which marks each date field
+        # "parsed" (real ISO-8601) or "unparsed" (free text passed through).
+        # Consumers must skip "unparsed" fields for date arithmetic. The
+        # flattened "timeline" string below is kept for backward compat.
+        "timeline_structured": None,
         "enforcement": None,
     }
 
     # Flatten timeline object into a string summary
     timeline = payload.get("timeline")
     if isinstance(timeline, dict):
+        result["timeline_structured"] = timeline
         parts = []
         if timeline.get("effective_date"):
             parts.append(f"Effective: {timeline['effective_date']}")
@@ -264,6 +287,10 @@ def _adapt_rights_protection(payload: dict[str, Any]) -> dict[str, Any]:
         "duty_bearer": payload.get("duty_bearer"),
         "section_reference": payload.get("section_reference"),
         "jurisdiction": payload.get("jurisdiction"),
+        # PNE-1a: extracted and stored all along, previously stripped here.
+        # Ambiguity findings live embedded on the rights row they affect
+        # (the ambiguity agent is retired — see DI-4).
+        "interpretation_risks": payload.get("interpretation_risks") or [],
         "remedies": None,
     }
 

@@ -29,6 +29,11 @@ Key design decisions:
     rows by updated_at, so a confidence recompute on a previously-synced-or-
     skipped extraction still reaches Policy Navigator even though the id
     cursor never looks backward.
+  - Provenance (PNE-1b, PN Ask 7): both legs attach a ``provenance`` object
+    to every adapted payload — content_hash (SHA-256 of the retrieved source,
+    from document_versions.source_hash), retrieved_at, section_locator —
+    so PN's source_provenance ingestion can detect upstream document changes
+    without a human transcribing citations.
 
 Usage:
     # Dry run — show what would be synced/updated:
@@ -107,6 +112,24 @@ def _serialize_value(v):
     if isinstance(v, (dict, list)):
         return json.dumps(v)
     return v
+
+
+def _build_provenance(row) -> dict:
+    """PNE-1b (PN Ask 7): claim-level provenance attached to every synced payload.
+
+    RC is the only actor holding the retrieved source bytes, so RC is the only
+    place ``content_hash`` (SHA-256 of the retrieved source content, stamped at
+    ingest — RR7b) can be computed honestly. PN uses it for tamper detection:
+    when the upstream document changes, the hash stops matching and the
+    citation gets re-flagged. ``authority_type`` joins this object once PNE-3b
+    lands.
+    """
+    retrieved_at = row["retrieved_at"]
+    return {
+        "content_hash": row["source_hash"],
+        "retrieved_at": retrieved_at.isoformat() if retrieved_at else None,
+        "section_locator": row["section_path"],
+    }
 
 
 def sync_extractions(
@@ -245,6 +268,8 @@ def sync_extractions(
                     e.model_id,
                     e.created_at,
                     dv.family_id AS doc_family_id,
+                    dv.source_hash,
+                    dv.retrieved_at,
                     nsr.section_path,
                     nsr.text_content AS passage_text
                 FROM extractions e
@@ -287,6 +312,7 @@ def sync_extractions(
             adapted_payload = adapt_payload_for_sync(
                 row["extraction_type"], raw_payload or {}
             )
+            adapted_payload["provenance"] = _build_provenance(row)
 
             insert_batch.append({
                 "system_a_extraction_id": extraction_id,
@@ -435,6 +461,8 @@ def sync_updates(
                     e.model_id,
                     e.updated_at,
                     dv.family_id AS doc_family_id,
+                    dv.source_hash,
+                    dv.retrieved_at,
                     nsr.section_path,
                     nsr.text_content AS passage_text
                 FROM extractions e
@@ -485,6 +513,7 @@ def sync_updates(
             if isinstance(raw_payload, str):
                 raw_payload = json.loads(raw_payload)
             adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+            adapted_payload["provenance"] = _build_provenance(row)
 
             target_session.execute(
                 text("""
