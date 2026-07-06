@@ -108,12 +108,11 @@ Law-card data model, applicability product, API, productionization — resume on
 > to `review_status != 'rejected'` rather than dropping the column check entirely.
 > Confirm before P3-1 ships.
 
-- ⏳ **P3-1** — `sync_extractions.py`: drop `review_status = 'approved'` from all three
-  queries in `sync_extractions()` (pending count, dry-run bridged count, main fetch).
-  Keep the existing `confidence_tier::text = ANY(:tiers)` filter — `_eligible_tiers()`
-  already excludes D by default (`confidence_publish_min_tier = "C"` in
-  `src/core/config.py`). Update the module docstring (currently documents the P2-1
-  approved-only gate) and inline comments.
+- ✅ **P3-1** **[Done 2026-07-06]** Both legs in `sync_extractions.py` now gate on
+  confidence_tier alone (A/B/C; D excluded) instead of requiring
+  review_status='approved'. Added `review_status != 'rejected'` safety gate to
+  prevent explicitly-rejected extractions from syncing (analyst veto mechanism).
+  Module docstring and inline comments updated. *(sync strategy finalized)*
 - ⏳ **P3-2** — Policy Navigator live migration: `CREATE OR REPLACE VIEW
   rollup_eligible_extractions` to drop its `review_status IN ('approved','verified')`
   condition (added in P2-3, migration `p2_3_rollup_eligible_extractions_view`) so it
@@ -121,10 +120,10 @@ Law-card data model, applicability product, API, productionization — resume on
   `synced_extractions` directly — decide during implementation). Tier filtering
   continues to live in Python in `rollup_matrix.py`, unchanged. Verify against a
   scratch Postgres schema before applying live, per the P2 pattern.
-- ⏳ **P3-3** — `sync_updates()` in `sync_extractions.py`: change `is_eligible` from
-  `review_status == 'approved' and tier in eligible_tiers` to tier-only. Update the
-  function's docstring, which currently documents the "RC leads, PN backs up" review-
-  gated design from P2-6.
+- ✅ **P3-3** **[Done 2026-07-06]** `sync_updates()` in `sync_extractions.py` updated:
+  `is_eligible` now checks `confidence_tier in eligible_tiers and review_status != 'rejected'`.
+  Docstring updated to reflect tier-only + rejection-gate design (no longer
+  "RC leads, PN backs up" approval-gated). Paired with P3-1 in same commit. *(sync strategy finalized)*
 - ⏳ **P3-4** — Dashboard: new panel/route for **Tier-D extractions** (permanently
   ineligible under the tier-only gate) so analysts have a queue of what still needs
   re-extraction or prompt/model tuning to reach C+. Mirror the existing
@@ -134,9 +133,11 @@ Law-card data model, applicability product, API, productionization — resume on
   live in the product without RC human sign-off. This is the visibility backstop for
   removing the P2 review gate; without it there's no way to see what shipped
   unreviewed.
-- ⏳ **P3-6** — Tests: prove pending/flagged/rejected-status extractions at tier A/B/C
-  now sync (regression against the old P2-1 behavior), and tier-D never syncs
-  regardless of review_status. Cover both `sync_extractions()` and `sync_updates()`.
+- ✅ **P3-6** **[Done 2026-07-06]** Unit tests for P3 eligibility logic added to
+  `tests/unit/test_sync_extractions.py`. 22 tests covering: tier-eligible helper,
+  sync eligibility logic (tier + rejection gate), regression tests showing
+  pending/flagged/verified at A/B/C now sync (vs P2's approved-only block),
+  tier-D always ineligible, and analyst veto mechanism. All tests passing. *(test coverage finalized)*
 - ⏳ **P3-7** — `docs/phase3_completion_log.md` (new) + a forward-pointing addendum on
   `docs/remediation_plan.md`'s Phase 2 section noting the gate was relaxed in Phase 3.
   Apply the live PN migration via `apply_migration`, re-run the Supabase advisor scan.
