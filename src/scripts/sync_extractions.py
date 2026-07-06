@@ -29,6 +29,11 @@ Key design decisions:
     rows by updated_at, so a confidence recompute on a previously-synced-or-
     skipped extraction still reaches Policy Navigator even though the id
     cursor never looks backward.
+  - Provenance (PNE-1b, PN Ask 7): both legs attach a ``provenance`` object
+    to every adapted payload — content_hash (SHA-256 of the retrieved source,
+    from document_versions.source_hash), retrieved_at, section_locator —
+    so PN's source_provenance ingestion can detect upstream document changes
+    without a human transcribing citations.
 
 Usage:
     # Dry run — show what would be synced/updated:
@@ -59,6 +64,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from src.core.config import settings
+from src.core.law_summary import LAW_SUMMARY_ID_BASE, build_law_summary_row
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
 from src.core.vocab_loader import get_canonical_codes
@@ -127,9 +133,19 @@ def _get_cursor(target_session) -> int:
     """Get the high-water mark: MAX(system_a_extraction_id) already synced.
 
     Returns 0 if synced_extractions is empty (first run).
+
+    Excludes the synthetic law_summary id space (PNE-3a): those rows carry ids
+    at LAW_SUMMARY_ID_BASE + family_id (~2e9), and letting them into the MAX(id)
+    watermark would push the cursor past every real extraction id and starve the
+    new-extraction leg. law_summary rows are maintained by their own upsert leg,
+    not the id cursor.
     """
     result = target_session.execute(
-        text("SELECT COALESCE(MAX(system_a_extraction_id), 0) FROM synced_extractions")
+        text(
+            "SELECT COALESCE(MAX(system_a_extraction_id), 0) FROM synced_extractions "
+            "WHERE system_a_extraction_id < :base"
+        ),
+        {"base": LAW_SUMMARY_ID_BASE},
     ).scalar()
     return result
 
@@ -139,6 +155,24 @@ def _serialize_value(v):
     if isinstance(v, (dict, list)):
         return json.dumps(v)
     return v
+
+
+def _build_provenance(row) -> dict:
+    """PNE-1b (PN Ask 7): claim-level provenance attached to every synced payload.
+
+    RC is the only actor holding the retrieved source bytes, so RC is the only
+    place ``content_hash`` (SHA-256 of the retrieved source content, stamped at
+    ingest — RR7b) can be computed honestly. PN uses it for tamper detection:
+    when the upstream document changes, the hash stops matching and the
+    citation gets re-flagged. ``authority_type`` joins this object once PNE-3b
+    lands.
+    """
+    retrieved_at = row["retrieved_at"]
+    return {
+        "content_hash": row["source_hash"],
+        "retrieved_at": retrieved_at.isoformat() if retrieved_at else None,
+        "section_locator": row["section_path"],
+    }
 
 
 def sync_extractions(
@@ -320,6 +354,7 @@ def sync_extractions(
             adapted_payload = adapt_payload_for_sync(
                 row["extraction_type"], raw_payload or {}
             )
+            adapted_payload["provenance"] = _build_provenance(row)
 
             # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
             canonical_actor_code = _extract_canonical_actor_code(raw_payload)
@@ -528,6 +563,7 @@ def sync_updates(
             if isinstance(raw_payload, str):
                 raw_payload = json.loads(raw_payload)
             adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+            adapted_payload["provenance"] = _build_provenance(row)
 
             # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
             canonical_actor_code = _extract_canonical_actor_code(raw_payload)
@@ -616,6 +652,156 @@ def sync_updates(
         target_session.close()
 
 
+def sync_law_summaries(
+    source_url: str,
+    target_url: str,
+    dry_run: bool = False,
+) -> dict:
+    """PNE-3a (PN Ask 5): emit one synthetic law_summary row per law.
+
+    Aggregates each law's tier-eligible, non-rejected extractions into a
+    covered-entity rollup (min_employees/min_revenue/consumer_count_trigger/
+    small_business_exempt/private_right_of_action) plus a metadata-derived
+    authority classification (PNE-3b), and upserts a synthetic
+    extraction_type='law_summary' row keyed on LAW_SUMMARY_ID_BASE + family_id.
+
+    Runs after the per-extraction legs so it aggregates over what actually
+    synced. Uses upsert (not the id cursor) so every run refreshes each law's
+    summary from current data; the synthetic id space is excluded from the
+    id-cursor watermark (see _get_cursor).
+    """
+    source_engine = create_engine(source_url)
+    target_engine = create_engine(target_url)
+    source_session = sessionmaker(bind=source_engine)()
+    target_session = sessionmaker(bind=target_engine)()
+
+    try:
+        bridge = _load_bridge(target_session)
+        if not bridge:
+            print("law_summary: bridge empty — nothing to summarize.")
+            return {"laws_summarized": 0, "laws_skipped_no_bridge": 0}
+
+        eligible_tiers = _eligible_tiers(settings.confidence_publish_min_tier)
+
+        # Pull every tier-eligible, non-rejected extraction with its law metadata,
+        # ordered by family so we can group in a single pass.
+        rows = source_session.execute(
+            text(
+                """
+                SELECT
+                    dv.family_id            AS family_id,
+                    e.extraction_type       AS extraction_type,
+                    e.payload               AS payload,
+                    df.canonical_title      AS title,
+                    df.primary_source_url   AS source_url,
+                    dv.bill_number          AS bill_number,
+                    s.jurisdiction_code     AS jurisdiction_code
+                FROM extractions e
+                JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
+                JOIN document_versions dv ON nsr.document_version_id = dv.id
+                JOIN document_families df ON dv.family_id = df.id
+                JOIN sources s ON df.source_id = s.id
+                WHERE e.confidence_tier::text = ANY(:tiers)
+                  AND e.review_status != 'rejected'
+                ORDER BY dv.family_id
+                """
+            ),
+            {"tiers": eligible_tiers},
+        ).mappings().all()
+
+        # Group extractions + carry the (constant per family) law metadata.
+        by_family: dict[int, dict] = {}
+        for row in rows:
+            fam = row["family_id"]
+            group = by_family.setdefault(
+                fam,
+                {
+                    "extractions": [],
+                    "title": row["title"],
+                    "source_url": row["source_url"],
+                    "bill_number": row["bill_number"],
+                    "jurisdiction_code": row["jurisdiction_code"],
+                },
+            )
+            payload = row["payload"]
+            if isinstance(payload, str):
+                payload = json.loads(payload)
+            group["extractions"].append(
+                {"extraction_type": row["extraction_type"], "payload": payload or {}}
+            )
+
+        summarized = 0
+        skipped_no_bridge = 0
+        for family_id, group in by_family.items():
+            law_id = bridge.get(family_id)
+            if law_id is None:
+                skipped_no_bridge += 1
+                continue
+            if is_excluded(law_id):
+                continue
+
+            record = build_law_summary_row(
+                family_id=family_id,
+                law_id=law_id,
+                jurisdiction_code=group["jurisdiction_code"],
+                extractions=group["extractions"],
+                bill_number=group["bill_number"],
+                title=group["title"],
+                source_url=group["source_url"],
+            )
+
+            if dry_run:
+                summarized += 1
+                continue
+
+            target_session.execute(
+                text(
+                    """
+                    INSERT INTO synced_extractions (
+                        system_a_extraction_id, law_id, extraction_type, payload,
+                        evidence_spans, confidence_score, confidence_tier,
+                        jurisdiction_code, synced_at
+                    ) VALUES (
+                        :sid, :law_id, :etype, :payload,
+                        :spans, :score, :tier,
+                        :jcode, :synced_at
+                    )
+                    ON CONFLICT (system_a_extraction_id) DO UPDATE SET
+                        payload = EXCLUDED.payload,
+                        synced_at = EXCLUDED.synced_at
+                    """
+                ),
+                {
+                    "sid": record["system_a_extraction_id"],
+                    "law_id": record["law_id"],
+                    "etype": record["extraction_type"],
+                    "payload": _serialize_value(record["payload"]),
+                    "spans": _serialize_value(record["evidence_spans"]),
+                    "score": record["confidence_score"],
+                    "tier": record["confidence_tier"],
+                    "jcode": record["jurisdiction_code"],
+                    "synced_at": record["synced_at"],
+                },
+            )
+            summarized += 1
+
+        if not dry_run:
+            target_session.commit()
+
+        print(
+            f"law_summary: {summarized} law(s) summarized, "
+            f"{skipped_no_bridge} no bridge mapping"
+        )
+        return {
+            "laws_summarized": summarized,
+            "laws_skipped_no_bridge": skipped_no_bridge,
+        }
+
+    finally:
+        source_session.close()
+        target_session.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Sync extractions: Regs Checker → Policy Navigator"
@@ -645,6 +831,11 @@ def main():
         "--skip-updates",
         action="store_true",
         help="Run only the new-extraction leg; skip the P2-6 update-propagation leg",
+    )
+    parser.add_argument(
+        "--skip-law-summaries",
+        action="store_true",
+        help="Skip the PNE-3a law_summary rollup leg",
     )
     args = parser.parse_args()
 
@@ -694,6 +885,13 @@ def main():
         print(f"Skipped (not eligible):    {update_summary['updates_skipped_ineligible']}")
         print(f"Skipped (no bridge):       {update_summary['updates_skipped_no_bridge']}")
         print(f"Watermark:                 {update_summary['watermark_start']} → {update_summary['watermark_end']}")
+
+    if not args.skip_law_summaries:
+        print(f"\n{'=' * 60}")
+        print("Law-summary rollup leg (PNE-3a)...\n")
+        ls_summary = sync_law_summaries(source_url, target_url, dry_run=args.dry_run)
+        print(f"Laws summarized:           {ls_summary['laws_summarized']}")
+        print(f"Skipped (no bridge):       {ls_summary['laws_skipped_no_bridge']}")
 
 
 if __name__ == "__main__":

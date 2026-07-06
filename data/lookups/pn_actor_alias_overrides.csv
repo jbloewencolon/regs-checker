@@ -1,0 +1,5 @@
+raw_term,pn_role,note
+employer,employer,"RC folds employer under deployer (sector captured separately); PN treats employer as a first-class role, so recover it from the raw term."
+vendor,vendor,"RC folds vendor under provider; PN treats vendor as first-class."
+integrator,integrator,"RC has no integrator code (nearest is regulated_entity/provider); PN treats integrator as first-class."
+system integrator,integrator,Variant phrasing for integrator.

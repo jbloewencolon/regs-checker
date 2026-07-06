@@ -10,8 +10,10 @@ P3 changes (Phase 3, Confidence-Only Publish Gate):
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
-from src.scripts.sync_extractions import _eligible_tiers
+from src.scripts.sync_extractions import _build_provenance, _eligible_tiers
 
 
 class TestEligibleTiers:
@@ -210,6 +212,68 @@ class TestP3RegressionAgainstP2:
 
         p3_eligible = (tier in eligible_tiers and review_status != "rejected")
         assert p3_eligible is False, "Explicit rejection prevents sync (analyst veto)"
+
+
+class TestCursorExcludesLawSummaryIds:
+    """PNE-3a: the id cursor must ignore the synthetic law_summary id space."""
+
+    def test_get_cursor_filters_synthetic_range(self):
+        from src.core.law_summary import LAW_SUMMARY_ID_BASE
+        from src.scripts.sync_extractions import _get_cursor
+
+        captured = {}
+
+        class _FakeResult:
+            def scalar(self):
+                return 512
+
+        class _FakeSession:
+            def execute(self, stmt, params=None):
+                captured["sql"] = str(stmt)
+                captured["params"] = params
+                return _FakeResult()
+
+        result = _get_cursor(_FakeSession())
+        assert result == 512
+        # The query must bound the MAX() below the synthetic base, and pass it.
+        assert "system_a_extraction_id < :base" in captured["sql"]
+        assert captured["params"] == {"base": LAW_SUMMARY_ID_BASE}
+
+
+class TestBuildProvenance:
+    """PNE-1b (PN Ask 7): provenance object attached to every synced payload."""
+
+    def test_full_provenance(self):
+        row = {
+            "source_hash": "a" * 64,
+            "retrieved_at": datetime(2026, 7, 1, 12, 30, tzinfo=UTC),
+            "section_path": "§ 6-1-1703(2)(b)",
+        }
+        prov = _build_provenance(row)
+        assert prov["content_hash"] == "a" * 64
+        assert prov["retrieved_at"] == "2026-07-01T12:30:00+00:00"
+        assert prov["section_locator"] == "§ 6-1-1703(2)(b)"
+
+    def test_missing_hash_and_timestamp_are_null_not_fabricated(self):
+        # Documents ingested before RR7b stamped source_hash/retrieved_at have
+        # NULLs — the provenance object must say so honestly, not invent values.
+        row = {"source_hash": None, "retrieved_at": None, "section_path": "Section 3"}
+        prov = _build_provenance(row)
+        assert prov["content_hash"] is None
+        assert prov["retrieved_at"] is None
+        assert prov["section_locator"] == "Section 3"
+
+    def test_json_serializable(self):
+        # The payload goes through json.dumps with no default= handler; a raw
+        # datetime in the provenance dict would crash the sync at insert time.
+        import json
+
+        row = {
+            "source_hash": "b" * 64,
+            "retrieved_at": datetime(2026, 7, 6, tzinfo=UTC),
+            "section_path": None,
+        }
+        json.dumps(_build_provenance(row))  # must not raise
 
 
 if __name__ == "__main__":
