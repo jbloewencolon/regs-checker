@@ -1680,11 +1680,8 @@ def reset_triage(db: Session = Depends(get_db)) -> HTMLResponse:
     from sqlalchemy import delete, or_
 
     from src.db.models import SectionTriageResult, TriageDecision
-    from src.ingestion.extractor import _ensure_triage_table
 
     try:
-        _ensure_triage_table(db)
-
         # Count what will be reset
         reset_filter = or_(
             SectionTriageResult.decision == TriageDecision.uncertain,
@@ -1727,11 +1724,8 @@ def reset_triage_all(db: Session = Depends(get_db)) -> HTMLResponse:
     from sqlalchemy import delete
 
     from src.db.models import SectionTriageResult
-    from src.ingestion.extractor import _ensure_triage_table
 
     try:
-        _ensure_triage_table(db)
-
         count = db.scalar(
             select(func.count()).select_from(SectionTriageResult)
         ) or 0
