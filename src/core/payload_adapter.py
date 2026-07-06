@@ -100,12 +100,14 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
     """Adapt obligation payload: flatten nested timeline and enforcement objects.
 
     Regs Checker format:
-        {subject, modality, action, timeline: {effective_date, ...}, enforcement: {...}}
+        {subject, modality, action, timeline: {effective_date, ...}, enforcement: {...},
+         obligation_family: <code>}
 
     Policy Navigator expected format:
         {subject, subject_normalized, modality, action, condition, jurisdiction,
-         timeline, enforcement}
-    where timeline and enforcement are string summaries.
+         timeline, enforcement, obligation_family}
+    where timeline and enforcement are string summaries, and obligation_family is
+    the canonical code for the obligation type (documentation, registration, etc.).
     """
     result: dict[str, Any] = {
         "subject": payload.get("subject"),
@@ -132,18 +134,7 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         # PNE-2c (PN Ask 3a): structured deadlines derived from parsed dates.
         "deadlines": [],
         "enforcement": None,
-        # PNE-2a (PN Ask 1): the regulated party. actor_role_rc is RC's
-        # canonical 13-code; actor_role is PN's 7-value role (alias-aware).
-        # enforcement_authority (below) is kept strictly separate so an
-        # enforcer never collides with the regulated actor.
-        "actor_role_rc": None,
-        "actor_role": None,
-        "enforcement_authority": None,
-        # PNE-2b (PN Ask 2): obligation_family is RC's 22-code family;
-        # obligation_type is PN's 13-value taxonomy. Complementary to modality
-        # (type = what kind, modality = how binding).
-        "obligation_family": None,
-        "obligation_type": None,
+        "obligation_family": payload.get("obligation_family"),
     }
 
     # PNE-2a: derive actor role (RC code + alias-aware PN value).
