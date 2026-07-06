@@ -1367,19 +1367,29 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > DI-4); RC-side fix is the adapter pass-through.
 
 ### PNE-1 — Stop dropping what's already extracted (deterministic, sync-layer)
-- 🔧 **PNE-1a** — adapter pass-through: `_adapt_obligation` ships `object`,
-  `safe_harbor`, `consent_requirements`, `interpretation_risks`,
-  `preemption_signals`, and the structured timeline object (with
-  `date_parse_status`) alongside the flattened string; `_adapt_rights_protection`
-  ships `interpretation_risks`. Backward-compatible (existing keys unchanged). *(BE)*
-- 🔧 **PNE-1b** — Ask 7 provenance: `provenance {content_hash, retrieved_at,
-  section_locator}` attached to every synced payload from
-  `document_versions.source_hash`/`retrieved_at` (both sync legs). *(BE)*
-- 🔧 **PNE-1c** — tests for pass-through + provenance; response memo committed. *(BE)*
+- ✅ **PNE-1a** — adapter pass-through landed (2026-07-06, commit `0e4263b`):
+  `_adapt_obligation` ships `object`, `safe_harbor`, `consent_requirements`,
+  `interpretation_risks`, `preemption_signals`, and the structured timeline
+  object as `timeline_structured` (with `date_parse_status`) alongside the
+  flattened string; `_adapt_rights_protection` ships `interpretation_risks`.
+  Backward-compatible (existing keys unchanged). *(BE)*
+- ✅ **PNE-1b** — Ask 7 provenance landed (same commit): `provenance
+  {content_hash, retrieved_at, section_locator}` attached to every synced
+  payload from `document_versions.source_hash`/`retrieved_at` (both sync
+  legs); pre-RR7b rows carry honest nulls, never fabricated values. *(BE)*
+- ✅ **PNE-1c** — 14 tests (11 adapter pass-through, 3 provenance incl. JSON
+  serializability); response memo committed. 1104/1104 passing. *(BE)*
 
 ### PNE-2 — Deterministic derivation (mapping code, no LLM)
+> **Operator decisions (2026-07-06, second check-in):** crosswalks are
+> **alias-aware** — when RC's canonical code is `deployer` but the raw term
+> was "employer", emit PN `actor_role="employer"` (use the 215-row alias
+> table to recover PN's finer value). All PNE-2 derivations computed
+> **sync-time in the adapter** (retroactive on all stored rows, no
+> re-extraction, revisable by re-sync). Execution paused pending operator
+> review of PNE-1.
 - ⏳ **PNE-2a** — Ask 1: `actor_role_rc` (canonical 13-code) via vocab mapping of
-  `subject_normalized`; `actor_role` (PN 7-value) via new crosswalk CSV;
+  `subject_normalized`; `actor_role` (PN 7-value) via new alias-aware crosswalk CSV;
   `enforcement_authority` from `enforcement.enforcing_body`. *(BE, NLP)*
 - ⏳ **PNE-2b** — Ask 2: `obligation_family` (RC 22-code, reuse concept-grouping
   alias classifier) + `obligation_type` (PN 13-value) via crosswalk CSV. *(BE)*
