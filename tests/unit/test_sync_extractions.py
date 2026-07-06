@@ -214,6 +214,32 @@ class TestP3RegressionAgainstP2:
         assert p3_eligible is False, "Explicit rejection prevents sync (analyst veto)"
 
 
+class TestCursorExcludesLawSummaryIds:
+    """PNE-3a: the id cursor must ignore the synthetic law_summary id space."""
+
+    def test_get_cursor_filters_synthetic_range(self):
+        from src.core.law_summary import LAW_SUMMARY_ID_BASE
+        from src.scripts.sync_extractions import _get_cursor
+
+        captured = {}
+
+        class _FakeResult:
+            def scalar(self):
+                return 512
+
+        class _FakeSession:
+            def execute(self, stmt, params=None):
+                captured["sql"] = str(stmt)
+                captured["params"] = params
+                return _FakeResult()
+
+        result = _get_cursor(_FakeSession())
+        assert result == 512
+        # The query must bound the MAX() below the synthetic base, and pass it.
+        assert "system_a_extraction_id < :base" in captured["sql"]
+        assert captured["params"] == {"base": LAW_SUMMARY_ID_BASE}
+
+
 class TestBuildProvenance:
     """PNE-1b (PN Ask 7): provenance object attached to every synced payload."""
 

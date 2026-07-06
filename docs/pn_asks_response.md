@@ -174,7 +174,7 @@ obligation/rights rows instead (as DI-4 requested).
 |---|---|---|
 | **1** | Stop stripping already-extracted fields (`interpretation_risks`, `safe_harbor`, `consent_requirements`, `object`, structured timeline); Ask 7 provenance object; Ask 8 documentation | ✅ Landed (commit `0e4263b`) |
 | **2** | Ask 1 actor_role + alias-aware crosswalk; Ask 2 obligation_type crosswalk; Ask 3a `deadlines[]` from parsed dates; Ask 4b trigger predicates | ✅ Landed (commit `2243de4`) |
-| **3** | Ask 5 law-level rollup; Ask 6 metadata/heuristic classification + review queue | Ready after tranche 2 |
+| **3** | Ask 5 law-level covered-entity rollup; Ask 6 authority classification + review queue | ✅ Landed |
 | **4 (gated)** | Ask 3b per-cohort deadline extraction; Ask 4c obligation-FK linking design; Ask 6 LLM residue pass | EA1 baseline or design ruling required |
 
 ### What PN receives from tranche 2 (contract detail)
@@ -207,6 +207,36 @@ Every synced **threshold** payload now carries:
 **Ask 4c** (`applies_to_obligation_id` FK linking threshold→obligation rows) is
 a real design question, not a field this deterministic parser can honestly
 fill; it's tranche 4.
+
+### What PN receives from tranche 3 (contract detail)
+
+A new synthetic row type, **`extraction_type = "law_summary"`** — one per law,
+carrying the law-level rollup PN's applicability engine and AuthorityTypeBadge
+need. Recognize it by `extraction_type` (or by `system_a_extraction_id ≥ 2e9`,
+the synthetic id space `2_000_000_000 + family_id`). Its `confidence_score`/
+`confidence_tier` are a fixed `1.0`/`A` sentinel — a law_summary is a
+deterministic rollup, **not** a scored model extraction, so don't read them as
+a model confidence. Payload fields:
+
+- **Covered-entity (Ask 5):** `min_employees`, `min_revenue`,
+  `consumer_count_trigger` (smallest numeric trigger = the applicability floor),
+  `small_business_exempt`, `private_right_of_action`, plus `_provenance`
+  naming which extractions contributed. **Booleans are `null` on absence, never
+  `false`** — this is the fix for the overclaim we flagged in your current
+  all-`false` columns; treat `null` as "not assessed", not "no".
+- **Authority (Ask 6):** `authority_type` (statute/regulation/guidance/
+  executive_order/ordinance/court_opinion/enforcement_action/unknown),
+  `binding_effect` (binding/non_binding/advisory/proposed/unknown),
+  `issuing_body`, `authority_confidence` (high/medium/low), and `needs_review`.
+  When RC has no positive signal it emits `unknown` + `needs_review=true`
+  rather than guessing "statute" — filter on `needs_review` for the analyst
+  queue. `issuing_body` is currently conservative (often null); it fills in as
+  seed metadata improves.
+
+Emission is a new sync leg (`sync_law_summaries`) that runs after the
+per-extraction legs and **upserts** these rows, so each run refreshes every
+law's summary from current data. The synthetic id space is excluded from the
+new-extraction id cursor, so it can't interfere with normal syncing.
 
 ### Correction to the memo's hygiene list (domain tags)
 

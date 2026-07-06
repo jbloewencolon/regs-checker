@@ -1423,14 +1423,36 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   a tag field (same discipline as Ask 8). *(BE)*
 
 ### PNE-3 — Law-level rollups (deterministic aggregation)
-- ⏳ **PNE-3a** — Ask 5: covered-entity rollup (`min_employees`, `min_revenue`,
-  `consumer_count_trigger`, `small_business_exempt`, `private_right_of_action`)
-  from threshold/exception/enforcement extractions — finally wires
-  `normalize_enforcement_for_law()` (zero callers since EA5-2). Emission shape:
-  law-level record in the payload stream (RC does not write `fact_laws`). *(BE, NLP)*
-- ⏳ **PNE-3b** — Ask 6 (partial): `authority_type`/`binding_effect`/`issuing_body`
-  via seed metadata + deterministic heuristics + human-review queue for the
-  ambiguous residue. *(BE, operator review)*
+> **Operator decisions (2026-07-06, third check-in):** (a) rollup ships as a
+> synthetic `extraction_type="law_summary"` row per law in the `synced_extractions`
+> stream (fits the one-table contract; PN routes it to `fact_laws`); (b) authority
+> classification is heuristics + review queue (confident label or `unknown` +
+> `needs_review`, never a guessed label).
+- ✅ **PNE-3a** — Ask 5 landed (2026-07-06): `src/core/law_summary.py` —
+  `build_law_summary()` aggregates `min_employees`/`min_revenue`/
+  `consumer_count_trigger` (smallest numeric trigger = applicability floor,
+  reusing PNE-2d `derive_trigger`), `small_business_exempt` (exception-text
+  markers), `private_right_of_action` (enforcement, obligation + bill-level).
+  **Honesty rule:** booleans are `None` on absence, never False — directly
+  avoids the legal-overclaim class the coverage audit found live in PN's
+  all-`false` columns. Emitted via a new `sync_law_summaries()` leg with
+  synthetic ids `LAW_SUMMARY_ID_BASE (2e9) + family_id`; `_get_cursor()` now
+  excludes that range so the synthetic ids can't poison the MAX(id) watermark
+  and starve real extractions (the Phase-C cursor footgun, avoided). Upsert, so
+  every run refreshes each law's summary. *(BE, NLP)*
+  — Note: the plan named `normalize_enforcement_for_law()` (EA5-2, zero
+  callers) as the wiring target; the actual PROA signal was simpler to read
+  directly off enforcement payloads, so that function stays uncalled — flagged,
+  not silently worked around.
+- ✅ **PNE-3b** — Ask 6 landed (same commit): `src/core/authority_classifier.py`
+  — deterministic `classify_authority(bill_number, title, source_url)` →
+  `{authority_type, binding_effect, issuing_body, authority_confidence,
+  needs_review}`. Bill number ⇒ statute/binding; title keywords (guidance,
+  executive order, ordinance, regulation, court opinion) win when they name a
+  non-statute; "proposed" downgrades binding→proposed; URL domain as fallback;
+  no positive signal ⇒ `unknown` + `needs_review` (the manual queue = filter
+  law_summary rows on `needs_review`/low confidence). Merged into the
+  law_summary payload via `build_law_summary_payload()`. *(BE, operator review)*
 
 ### PNE-4 — Gated (EA1 baseline or design ruling)
 - 🔒 **PNE-4a** — Ask 3b: per-cohort deadline extraction (prompt/schema change). *(after EA1)*
