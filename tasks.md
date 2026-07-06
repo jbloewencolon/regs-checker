@@ -961,34 +961,48 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   tests passing; exact new CI gate command verified passing on the full
   tree. *(done)*
 
-### Phase RC4 — High-risk, environment-gated (explicitly blocked here)
-- 🔒 **RC4-1** **[High]** Retire the `_ensure_extraction_enums` /
+### Phase RC4 — High-risk, environment-gated
+- ✅ **RC4-1** **[High]** Executed (2026-07-06). Retired the four raw-SQL
+  fallback helpers (`_ensure_extraction_enums` /
   `_ensure_failed_attempts_table` / `_ensure_pipeline_events_table` /
-  `_ensure_triage_table` raw-SQL fallback helpers in `extractor.py`
-  (confirmed still called at every `run_extraction`/`run_retry_failed`
-  entrypoint). **Blocked**: requires a live schema-drift sweep across the
-  local Docker Postgres and both Supabase projects, which needs DB
-  connectivity this sandboxed session does not have. Do not touch without
-  that sweep — these helpers exist specifically because Alembic migrations
-  may not have run on every target DB. *(operator, live DB access)*
-- 🔒 **RC4-2** **[High]** Retire `scripts/apply_pending_migrations.sql`.
-  Same blocker as RC4-1 — needs Alembic-vs-live-schema reconciliation
-  across local Docker + Regs Checker Supabase + Policy Navigator Supabase
-  before it's safe to remove the manual fallback. *(operator, live DB
-  access)*
-- ⏳ **RC4-3** **[Low, but has a blind spot]** `_archived/dagster_pipelines/`
-  — confirmed zero references anywhere in the live repo (`src/`,
-  `scripts/`, `.github/`, `docker/`). Static analysis cannot see a
-  cron/scheduler configured outside the repo (e.g. a hosted Dagster
-  deployment pointing at this code) — needs an explicit "no such deployment
-  exists" confirmation from whoever owns infrastructure, not just a clean
-  grep. *(ops confirmation needed, then safe to delete)*
+  `_ensure_triage_table`) and all call sites (`run_extraction`,
+  `run_retry_failed`, and the two dashboard triage-reset endpoints
+  `reset_triage`/`reset_triage_all`). **Supabase half of the schema-drift
+  sweep done via Supabase MCP:** Regs Checker Supabase
+  (`wjxlimjpaijdogyrqtxc`) is at Alembic head `25cffe678fbc` with zero
+  drift — every enum value (`rights_protection`/`compliance_mechanism`/
+  `preemption_signal`), table (`failed_extraction_attempts` incl. `run_id`,
+  `pipeline_events`, `section_triage_results`), and triage enum
+  (`triagedecision`/`triagemethod`) the helpers guaranteed is present.
+  Policy Navigator Supabase (`aaxxunfarlhmydvohsrm`) is a separate product
+  DB not on this repo's Alembic history — out of scope. **Local Docker
+  Postgres** was unreachable from the sandbox, but `start.py` runs
+  `alembic upgrade head` + verifies head before serving (the helpers were
+  its documented "runtime patches as fallback"), so the local path is
+  covered by real migrations. Operator chose to proceed on that basis
+  (residual risk is a dev calling `run_extraction` outside `start.py` on a
+  stale local DB — now a clear error instead of self-heal). 1071 tests
+  passing; CI hard gate (`ruff check src/ --select E9,F`) green. *(done)*
+- ✅ **RC4-2** **[High]** Executed (2026-07-06). Deleted
+  `scripts/apply_pending_migrations.sql` — every migration it applied
+  (`document_families.primary_source_url`/`orrick_reference_url`/
+  `iapp_reference_url`, `ingestion_jobs.ai_suggested_url`, and the
+  `requires_manual_review` enum value) verified already present on Regs
+  Checker Supabase via the same MCP sweep. Historical retirement note added
+  to the `bf74ef19697d` migration docstring so it doesn't point at deleted
+  code. *(done)*
+- ✅ **RC4-3** **[Low]** Executed (2026-07-06). `_archived/dagster_pipelines/`
+  deleted after operator confirmed no external Dagster deployment points at
+  this code (the missing piece static analysis couldn't see; repo-side was
+  already a clean zero-reference grep across `src/`, `scripts/`, `.github/`,
+  `docker/`). *(done)*
 
 **Sequencing:** RC0 first (no risk, clarifies everything downstream). RC1-2
 and RC3-3 are verified-safe enough to execute directly once acknowledged —
 everything else in RC1/RC2/RC3 needs one external input (secure storage
 destination, product decision, or a coordinated multi-file path update) before
-acting, and RC4 needs live DB/ops access this session doesn't have at all.
+acting. RC4 was originally deferred for live DB/ops access; the Supabase half
+was ultimately reachable via Supabase MCP (see the 2026-07-06 note below).
 
 **Execution note (2026-07-04):** RC1-2, RC2-2, and RC3-3 executed this
 session (details on each item above), plus an unplanned fix for 4
@@ -1004,6 +1018,24 @@ no external Dagster deployment exists). RC3-1 executed in a follow-up pass
 the same day (see its entry above) — with that, every RC item executable
 in this sandbox is done; all remaining items need operator, product, or
 ops input.
+
+**Execution note (2026-07-06):** operator-directed follow-up session
+cleared most of the remaining backlog. **RC2-1** (deleted the broken
+compare-models button + endpoint), **RC0-1/RC3-2** (archived
+`code_update_strategy_eng.md`, `actor_taxonomy_analysis.md`,
+`vocab_harvest_spec_eng.md` to `archive/docs/` per operator classification),
+**RC1-1** (untracked `backups/*.sql` — operator confirmed secured
+externally), and **RC4-3** (deleted `_archived/dagster_pipelines/` — operator
+confirmed no external scheduler) all executed. **RC4-1/RC4-2** unblocked by
+running the schema-drift sweep through Supabase MCP rather than direct DB
+connectivity: both Supabase projects verified, `start.py` covers the local
+Docker path, operator approved proceeding — raw-SQL fallbacks and the manual
+migration script retired. Remediation **P3** (tier-only publish) also shipped
+with an explicit `review_status != 'rejected'` gate. **Still open:** RC0-1's
+remaining doc classifications (`pipeline_rebuild_plan.md`, `taxonomy_dev_plan.md`,
+`product_review_remediation_plan.md` — product call still pending), and the
+local Docker Postgres leg of the RC4 sweep (informational only now — the
+fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ---
 
