@@ -1388,7 +1388,7 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > **sync-time in the adapter** (retroactive on all stored rows, no
 > re-extraction, revisable by re-sync). Execution paused pending operator
 > review of PNE-1.
-- ✅ **PNE-2a** — Ask 1 landed (2026-07-06, commit `d45e7cb`): new
+- ✅ **PNE-2a** — Ask 1 landed (2026-07-06, commit `2243de4`): new
   `src/core/pn_crosswalk.py` + `data/lookups/pn_actor_crosswalk.csv` (rc_code→
   pn_role) + `pn_actor_alias_overrides.csv`. `_adapt_obligation` emits
   `actor_role_rc` (RC 13-code via ratified alias table), `actor_role` (PN

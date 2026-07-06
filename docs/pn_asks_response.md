@@ -173,7 +173,7 @@ obligation/rights rows instead (as DI-4 requested).
 | Tranche | Content | Status |
 |---|---|---|
 | **1** | Stop stripping already-extracted fields (`interpretation_risks`, `safe_harbor`, `consent_requirements`, `object`, structured timeline); Ask 7 provenance object; Ask 8 documentation | ✅ Landed (commit `0e4263b`) |
-| **2** | Ask 1 actor_role + alias-aware crosswalk; Ask 2 obligation_type crosswalk; Ask 3a `deadlines[]` from parsed dates; Ask 4b trigger predicates | ✅ Landed (commit `d45e7cb`) |
+| **2** | Ask 1 actor_role + alias-aware crosswalk; Ask 2 obligation_type crosswalk; Ask 3a `deadlines[]` from parsed dates; Ask 4b trigger predicates | ✅ Landed (commit `2243de4`) |
 | **3** | Ask 5 law-level rollup; Ask 6 metadata/heuristic classification + review queue | Ready after tranche 2 |
 | **4 (gated)** | Ask 3b per-cohort deadline extraction; Ask 4c obligation-FK linking design; Ask 6 LLM residue pass | EA1 baseline or design ruling required |
 
