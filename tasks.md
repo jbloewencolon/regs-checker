@@ -138,9 +138,11 @@ Law-card data model, applicability product, API, productionization — resume on
   sync eligibility logic (tier + rejection gate), regression tests showing
   pending/flagged/verified at A/B/C now sync (vs P2's approved-only block),
   tier-D always ineligible, and analyst veto mechanism. All tests passing. *(test coverage finalized)*
-- ⏳ **P3-7** — `docs/phase3_completion_log.md` (new) + a forward-pointing addendum on
-  `docs/remediation_plan.md`'s Phase 2 section noting the gate was relaxed in Phase 3.
-  Apply the live PN migration via `apply_migration`, re-run the Supabase advisor scan.
+- 🔧 **P3-7** — `docs/phase3_completion_log.md` created (2026-07-06) documenting P3-1,
+  P3-3, P3-6 completion and P3-2/P3-4/P3-5 status. Still needed: forward-pointing
+  addendum on `docs/remediation_plan.md`'s Phase 2 section noting gate was relaxed
+  in Phase 3 (deferred until P3-2 ships for complete before/after). Apply live PN
+  migration via operator's `apply_migration` call post-P3-2. *(docs partial)*
 
 **Sequencing:** P3-1 and P3-3 (code) can land together first since they're pure RC-side
 sync logic. P3-2 (live PN view) should follow, verified on scratch Postgres first — it's
