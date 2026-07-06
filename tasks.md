@@ -1388,17 +1388,39 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > **sync-time in the adapter** (retroactive on all stored rows, no
 > re-extraction, revisable by re-sync). Execution paused pending operator
 > review of PNE-1.
-- ⏳ **PNE-2a** — Ask 1: `actor_role_rc` (canonical 13-code) via vocab mapping of
-  `subject_normalized`; `actor_role` (PN 7-value) via new alias-aware crosswalk CSV;
-  `enforcement_authority` from `enforcement.enforcing_body`. *(BE, NLP)*
-- ⏳ **PNE-2b** — Ask 2: `obligation_family` (RC 22-code, reuse concept-grouping
-  alias classifier) + `obligation_type` (PN 13-value) via crosswalk CSV. *(BE)*
-- ⏳ **PNE-2c** — Ask 3a: `deadlines[]` array derived from parsed ISO timeline
-  fields only (skip `unparsed` per `date_parse_status`). *(BE)*
-- ⏳ **PNE-2d** — Ask 4b: `{trigger_type, trigger_operator, trigger_value}` parsed
-  from threshold fields + condition text (numeric-grounding parser pattern).
-  Ask 4a (stable ID) already ships as `system_a_extraction_id` — documented. *(BE)*
-- ⏳ **PNE-2e** — hygiene: domain-tag id alignment with PN `DOMAIN_TAGS`. *(BE)*
+- ✅ **PNE-2a** — Ask 1 landed (2026-07-06, commit `d45e7cb`): new
+  `src/core/pn_crosswalk.py` + `data/lookups/pn_actor_crosswalk.csv` (rc_code→
+  pn_role) + `pn_actor_alias_overrides.csv`. `_adapt_obligation` emits
+  `actor_role_rc` (RC 13-code via ratified alias table), `actor_role` (PN
+  7-value, **alias-aware** — word-boundary match recovers employer/vendor/
+  integrator from the raw subject; "employment agency" correctly does NOT match
+  employer), and `enforcement_authority` (from `enforcing_body`, strictly
+  separate). Enforcer/individual codes → null PN role so they never display as
+  regulated actors. *(BE, NLP)*
+- ✅ **PNE-2b** — Ask 2 landed (same commit): `pn_obligation_type_crosswalk.csv`
+  (RC 22-family → PN 13-value). `_adapt_obligation` emits `obligation_family`
+  (via the same `_classify_obligation_family` concept-grouping uses, so sync
+  matches the concept layer) + `obligation_type` (PN). `obligation_general`
+  → null PN type. *(BE)*
+- ✅ **PNE-2c** — Ask 3a landed (same commit): `deadlines[]` in `_adapt_obligation`
+  derived from `timeline_structured`, emitting one entry per date field marked
+  `parsed` in `date_parse_status` (unparsed prose skipped, never used in a
+  deadline_date). Per-cohort phasing stays PNE-4a (EA1-gated). *(BE)*
+- ✅ **PNE-2d** — Ask 4b landed (same commit): `derive_trigger()` emits
+  `{trigger_type, trigger_operator, trigger_value, trigger_condition_raw}` in
+  `_adapt_threshold`. Operator parse keeps `gt`/`lt` distinct from `gte`/`lte`
+  (so "more than 50" stays strictly >50, boundary not silently shifted); raw
+  condition preserved so PN can fold to its 4-value enum without losing the
+  exact phrasing. Unparseable values kept as string, never a fabricated number.
+  Ask 4a (stable id) ships as `system_a_extraction_id` — documented in the
+  module. *(BE)*
+- ✅ **PNE-2e** — **finding, not a code change:** there is **no per-extraction
+  `compliance_tags`/`domain_tags` field** anywhere in the RC extraction payload
+  or sync path (grepped `src/`). The memo's hygiene item describes a *law-level*
+  path (`map_law_scopes` scope codes → migration 025 → `fact_laws.domain_tags`
+  on PN's side), which is outside the per-extraction payload-enrichment scope
+  of this plan. Nothing to align in the adapter; flagged rather than fabricating
+  a tag field (same discipline as Ask 8). *(BE)*
 
 ### PNE-3 — Law-level rollups (deterministic aggregation)
 - ⏳ **PNE-3a** — Ask 5: covered-entity rollup (`min_employees`, `min_revenue`,

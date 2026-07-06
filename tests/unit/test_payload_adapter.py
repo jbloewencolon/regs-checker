@@ -229,6 +229,92 @@ class TestPNE1aObligationPassthrough:
         assert result["timeline_structured"] is None
 
 
+class TestPNE2ObligationDerivations:
+    """PNE-2: derived PN fields wired into _adapt_obligation."""
+
+    def test_actor_role_and_enforcement_authority_separate(self):
+        payload = {
+            "subject": "an employer",
+            "subject_normalized": "deployer",
+            "modality": "must",
+            "action": "provide disclosure to employees",
+            "enforcement": {"enforcing_body": "State Attorney General"},
+        }
+        result = adapt_payload_for_sync("obligation", payload)
+        # Alias-aware PN role recovered from the raw term...
+        assert result["actor_role_rc"] == "deployer"
+        assert result["actor_role"] == "employer"
+        # ...and the enforcer is a strictly separate field (Ask 1's whole point).
+        assert result["enforcement_authority"] == "State Attorney General"
+
+    def test_obligation_type_derived(self):
+        payload = {
+            "subject": "developer",
+            "modality": "shall",
+            "action": "conduct an impact_assessment before deployment",
+        }
+        result = adapt_payload_for_sync("obligation", payload)
+        assert result["obligation_family"] == "impact_assessment"
+        assert result["obligation_type"] == "assessment"
+
+    def test_deadlines_only_from_parsed_dates(self):
+        payload = {
+            "subject": "deployer",
+            "modality": "must",
+            "action": "notify",
+            "timeline": {
+                "effective_date": "2026-01-01",
+                "compliance_deadline": "upon the commissioner's determination",
+                "date_parse_status": {
+                    "effective_date": "parsed",
+                    "compliance_deadline": "unparsed",
+                },
+            },
+        }
+        result = adapt_payload_for_sync("obligation", payload)
+        # Only the parsed date becomes a structured deadline; the prose is skipped.
+        assert result["deadlines"] == [
+            {"deadline_type": "effective", "deadline_date": "2026-01-01"}
+        ]
+
+    def test_no_timeline_yields_empty_deadlines(self):
+        payload = {"subject": "developer", "modality": "shall", "action": "x"}
+        result = adapt_payload_for_sync("obligation", payload)
+        assert result["deadlines"] == []
+
+    def test_enforcer_role_not_shown_as_actor(self):
+        payload = {
+            "subject": "the Attorney General",
+            "subject_normalized": "regulator",
+            "modality": "may",
+            "action": "bring an enforcement action",
+        }
+        result = adapt_payload_for_sync("obligation", payload)
+        assert result["actor_role_rc"] == "regulator"
+        assert result["actor_role"] is None
+
+
+class TestPNE2ThresholdTrigger:
+    """PNE-2d: trigger predicate wired into _adapt_threshold."""
+
+    def test_trigger_present(self):
+        payload = {
+            "threshold_type": "numeric",
+            "threshold_value": "50",
+            "threshold_unit": "employees",
+            "threshold_condition": "more than 50 employees",
+        }
+        result = adapt_payload_for_sync("threshold", payload)
+        assert result["trigger"]["trigger_type"] == "employee_count"
+        assert result["trigger"]["trigger_operator"] == "gt"
+        assert result["trigger"]["trigger_value"] == 50.0
+
+    def test_trigger_none_when_no_signal(self):
+        payload = {"threshold_type": None, "threshold_value": None}
+        result = adapt_payload_for_sync("threshold", payload)
+        assert result["trigger"] is None
+
+
 class TestPNE1aRightsPassthrough:
     def test_interpretation_risks_pass_through(self):
         payload = {

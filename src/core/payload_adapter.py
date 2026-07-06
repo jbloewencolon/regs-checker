@@ -30,7 +30,49 @@ from typing import Any
 
 import structlog
 
+from src.core.pn_crosswalk import (
+    derive_actor_role,
+    derive_obligation_type,
+    derive_trigger,
+)
+
 logger = structlog.get_logger()
+
+# PNE-2c: timeline sub-fields that carry an actual date, in the order PN's
+# deadline model expects them. Mapped to PN deadline_type values.
+_TIMELINE_DEADLINE_TYPES: list[tuple[str, str]] = [
+    ("effective_date", "effective"),
+    ("compliance_deadline", "compliance"),
+    ("sunset_date", "sunset"),
+]
+
+
+def _derive_deadlines(timeline: dict[str, Any]) -> list[dict[str, Any]]:
+    """PNE-2c (PN Ask 3a): structured deadlines[] from a TimelineInfo dict.
+
+    Emits one entry per date field that actually parsed to ISO-8601. The
+    authority for "parsed" is ``date_parse_status`` (set by TimelineInfo's
+    validator: 'parsed' = normalize_date produced YYYY-MM-DD, 'unparsed' =
+    raw model prose passed through). Unparsed fields are skipped entirely —
+    never emitted as a deadline_date — so PN never does date arithmetic on
+    free text. Per-cohort phasing (min_employees etc.) is deferred to the
+    EA1-gated extraction change (PNE-4a); today every entry is whole-law.
+    """
+    status = timeline.get("date_parse_status")
+    status = status if isinstance(status, dict) else {}
+    deadlines: list[dict[str, Any]] = []
+    for field_name, deadline_type in _TIMELINE_DEADLINE_TYPES:
+        value = timeline.get(field_name)
+        if not value or not isinstance(value, str):
+            continue
+        # Only emit fields the validator confirmed as real ISO dates. If the
+        # status dict is absent (legacy row), fall back to trusting the value
+        # as-is only when it already looks like a bare ISO date is unsafe —
+        # so require an explicit 'parsed' marker.
+        if status.get(field_name) != "parsed":
+            continue
+        deadlines.append({"deadline_type": deadline_type, "deadline_date": value})
+    return deadlines
 
 
 def adapt_payload_for_sync(
@@ -87,13 +129,38 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         # Consumers must skip "unparsed" fields for date arithmetic. The
         # flattened "timeline" string below is kept for backward compat.
         "timeline_structured": None,
+        # PNE-2c (PN Ask 3a): structured deadlines derived from parsed dates.
+        "deadlines": [],
         "enforcement": None,
+        # PNE-2a (PN Ask 1): the regulated party. actor_role_rc is RC's
+        # canonical 13-code; actor_role is PN's 7-value role (alias-aware).
+        # enforcement_authority (below) is kept strictly separate so an
+        # enforcer never collides with the regulated actor.
+        "actor_role_rc": None,
+        "actor_role": None,
+        "enforcement_authority": None,
+        # PNE-2b (PN Ask 2): obligation_family is RC's 22-code family;
+        # obligation_type is PN's 13-value taxonomy. Complementary to modality
+        # (type = what kind, modality = how binding).
+        "obligation_family": None,
+        "obligation_type": None,
     }
+
+    # PNE-2a: derive actor role (RC code + alias-aware PN value).
+    result["actor_role_rc"], result["actor_role"] = derive_actor_role(
+        payload.get("subject"), payload.get("subject_normalized")
+    )
+
+    # PNE-2b: derive obligation family (RC) + type (PN) from the action text.
+    result["obligation_family"], result["obligation_type"] = derive_obligation_type(
+        payload.get("action")
+    )
 
     # Flatten timeline object into a string summary
     timeline = payload.get("timeline")
     if isinstance(timeline, dict):
         result["timeline_structured"] = timeline
+        result["deadlines"] = _derive_deadlines(timeline)
         parts = []
         if timeline.get("effective_date"):
             parts.append(f"Effective: {timeline['effective_date']}")
@@ -128,6 +195,8 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         result["private_right_of_action"] = enforcement.get("private_right_of_action")
         result["max_civil_penalty_usd"] = enforcement.get("max_civil_penalty_usd")
         result["cure_period_days"] = enforcement.get("cure_period_days")
+        # PNE-2a: the enforcer, kept separate from actor_role (Ask 1's core point).
+        result["enforcement_authority"] = enforcement.get("enforcing_body")
     elif isinstance(enforcement, str):
         result["enforcement"] = enforcement
 
@@ -157,6 +226,10 @@ def _adapt_threshold(payload: dict[str, Any]) -> dict[str, Any]:
         "compute_flops": payload.get("compute_flops"),
         "compute_description": payload.get("compute_description"),
         "sector_applicability": payload.get("sector_applicability"),
+        # PNE-2d (PN Ask 4b): machine-comparable predicate derived from the
+        # threshold fields — {trigger_type, trigger_operator, trigger_value,
+        # trigger_condition_raw}. None when there's no threshold signal.
+        "trigger": derive_trigger(payload),
     }
 
     exceptions = payload.get("exceptions")

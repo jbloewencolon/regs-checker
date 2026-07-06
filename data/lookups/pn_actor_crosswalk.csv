@@ -1,0 +1,14 @@
+rc_code,pn_role,note
+developer,developer,Direct equivalent.
+provider,provider,Direct equivalent.
+deployer,deployer,Direct equivalent.
+operator,deployer,Operator runs a deployed system; deployment-side obligations map to deployer (PN has no operator role).
+distributor,provider,"Supply-chain actor that makes an AI system available; maps to provider."
+compute_provider,provider,Infrastructure supply; nearest PN role is provider (PN has no compute_provider).
+controller,deployer,"Privacy controller determines purpose/means and uses the system in a context; deployment-side."
+processor,provider,"Processes on behalf of and under instruction of a controller = a service provider."
+data_broker,deployer,"Covered entity with deployment-context obligations; PN has no data_broker role."
+government_agency,government_agency,Direct equivalent (government-as-regulated-actor).
+regulator,,"Enforcer/oversight body, not a regulated actor. No PN role emitted (null) so an enforcer never displays as a regulated party."
+individual,,"Protected rights-holder, not a duty-bearer. No PN role emitted (null)."
+regulated_entity,deployer,"Generic covered-entity catch-all; deployer is the modal regulated role. PN may refine on its side."

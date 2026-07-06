@@ -1,0 +1,23 @@
+rc_code,pn_type,note
+documentation,documentation,Direct equivalent.
+registration,registration,Direct equivalent.
+impact_assessment,assessment,Algorithmic impact/risk assessment -> assessment.
+bias_testing,assessment,Bias audit is a pre-deployment assessment.
+red_teaming,risk_management,Adversarial/safety evaluation -> risk management.
+third_party_audit,assessment,Independent third-party audit -> assessment.
+incident_reporting,reporting,Reporting incidents to a regulator -> reporting.
+record_keeping,retention,Retention of logs/records -> retention.
+disclosure_to_user,disclosure,Direct equivalent.
+labeling_watermarking,disclosure,Labeling/watermarking is a disclosure form (PN has no labeling type).
+human_review,human_oversight,Human oversight/appeal -> human_oversight.
+opt_out_right,opt_out,Direct equivalent.
+explanation_right,disclosure,Explanation/meaningful-information right -> disclosure.
+training_mandate,training,Direct equivalent.
+certification,documentation,Conformity declaration/attestation -> documentation.
+reporting_to_regulator,reporting,Direct equivalent.
+prohibition,prohibition,Direct equivalent.
+consent_mechanism,consent,Direct equivalent.
+data_governance,data_governance,Direct equivalent.
+security_measures,risk_management,Security safeguards -> risk management (PN has no security type).
+risk_management,risk_management,Direct equivalent.
+obligation_general,,No specific family matched; no PN type emitted (null) so PN can infer.

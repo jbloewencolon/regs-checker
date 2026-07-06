@@ -172,7 +172,47 @@ obligation/rights rows instead (as DI-4 requested).
 
 | Tranche | Content | Status |
 |---|---|---|
-| **1 (now)** | Stop stripping already-extracted fields (`interpretation_risks`, `safe_harbor`, `consent_requirements`, `object`, structured timeline); Ask 7 provenance object; Ask 8 documentation | In progress |
-| **2** | Ask 1 actor_role + crosswalk; Ask 2 obligation_type crosswalk; Ask 3a `deadlines[]` from parsed dates; Ask 4b trigger predicates; tag/modality alignment | Ready after tranche 1 |
+| **1** | Stop stripping already-extracted fields (`interpretation_risks`, `safe_harbor`, `consent_requirements`, `object`, structured timeline); Ask 7 provenance object; Ask 8 documentation | ✅ Landed (commit `0e4263b`) |
+| **2** | Ask 1 actor_role + alias-aware crosswalk; Ask 2 obligation_type crosswalk; Ask 3a `deadlines[]` from parsed dates; Ask 4b trigger predicates | ✅ Landed (commit `d45e7cb`) |
 | **3** | Ask 5 law-level rollup; Ask 6 metadata/heuristic classification + review queue | Ready after tranche 2 |
 | **4 (gated)** | Ask 3b per-cohort deadline extraction; Ask 4c obligation-FK linking design; Ask 6 LLM residue pass | EA1 baseline or design ruling required |
+
+### What PN receives from tranche 2 (contract detail)
+
+Every synced **obligation** payload now additionally carries:
+
+- `actor_role_rc` — RC canonical actor code (13-value); `actor_role` — PN's
+  7-value role, **alias-aware** (a raw "employer"/"vendor"/"integrator" wins
+  over the flattened RC code). Enforcers (`regulator`) and protected parties
+  (`individual`) emit `actor_role = null` — they are never regulated actors.
+- `enforcement_authority` — the enforcer, strictly separate from `actor_role`.
+- `obligation_family` (RC 22-value) + `obligation_type` (PN 13-value). Derived
+  by the same classifier the RC concept layer uses, so they agree.
+- `deadlines[]` — `{deadline_type, deadline_date}`, **parsed ISO dates only**.
+  A field whose `date_parse_status` is `unparsed` is omitted, never emitted as
+  a `deadline_date`. Whole-law for now; per-cohort phasing is tranche 4.
+
+Every synced **threshold** payload now carries:
+
+- `trigger` — `{trigger_type, trigger_operator, trigger_value,
+  trigger_condition_raw}`. **Operator note:** RC emits precise operators
+  (`gt`/`gte`/`lt`/`lte`/`eq`/`any`), not just your four — "more than 50" is
+  `gt` with value 50, not `gte`, because collapsing it would silently shift the
+  boundary to include 50. Fold `gt→gte` / `lt→lte` on your side if your column
+  enum is strict; `trigger_condition_raw` preserves the exact phrasing either
+  way. Unparseable values (e.g. "high-risk systems") are kept as the raw
+  string, never coerced to a wrong number.
+
+**Stable id (Ask 4a):** already shipping — join on `system_a_extraction_id`.
+**Ask 4c** (`applies_to_obligation_id` FK linking threshold→obligation rows) is
+a real design question, not a field this deterministic parser can honestly
+fill; it's tranche 4.
+
+### Correction to the memo's hygiene list (domain tags)
+
+There is **no per-extraction `compliance_tags`/`domain_tags` field** in the RC
+extraction payload — grepped the whole `src/` tree. The tag path you describe
+is law-level: `map_law_scopes` scope codes → migration 025 →
+`fact_laws.domain_tags`, entirely on PN's side. There is nothing for RC to
+align in the per-extraction sync payload. If you meant a different field, send
+the exact key and we'll trace it.
