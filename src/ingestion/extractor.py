@@ -833,6 +833,14 @@ def _build_context(
             ctx["key_requirements"] = key_reqs
         if enforcement:
             ctx["enforcement_summary"] = enforcement
+        # SFH-1f (SF-08): forward the provenance stamp written by
+        # orrick_enrichment so validate_extraction_against_orrick can
+        # quarantine LLM-generated pseudo-Orrick from the scoring path.
+        # (Generated text stays in ctx above — still useful as extraction
+        # context; it just must not score as tracker validation.)
+        orrick_source = df.metadata_.get("orrick_source")
+        if orrick_source:
+            ctx["orrick_source"] = orrick_source
         ai_scope = df.metadata_.get("ai_scope_summary")
         if ai_scope:
             ctx["ai_scope"] = ai_scope
@@ -2241,6 +2249,34 @@ def run_extraction(
         label = "unknown"
         if dv and dv.family:
             label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+
+        # SFH-1f (SF-08): per-run tracker-provenance accounting + key-drift
+        # check, once per law.
+        _df_meta = (dv.family.metadata_ or {}) if dv and dv.family else {}
+        _tp = summary.setdefault(
+            "tracker_provenance",
+            {"laws_with_real_orrick": 0, "laws_with_generated_orrick": 0,
+             "laws_without_orrick": 0, "suspicious_metadata_keys": {}},
+        )
+        if _df_meta.get("orrick_source") == "llm_generated":
+            _tp["laws_with_generated_orrick"] += 1
+        elif _df_meta.get("key_requirements") or _df_meta.get("orrick_summary") \
+                or _df_meta.get("enforcement_penalties"):
+            _tp["laws_with_real_orrick"] += 1
+        else:
+            _tp["laws_without_orrick"] += 1
+        from src.core.orrick_validation import find_suspicious_tracker_keys
+        _bad_keys = find_suspicious_tracker_keys(_df_meta)
+        if _bad_keys:
+            _tp["suspicious_metadata_keys"][label] = _bad_keys
+            logger.warning(
+                "tracker_metadata_key_drift",
+                label=label,
+                suspicious_keys=_bad_keys,
+                hint="tracker-ish key outside the canonical set — the "
+                     "'enforcement' vs 'enforcement_penalties' drift class; "
+                     "data under these keys reads as tracker-absent downstream",
+            )
 
         _log(
             f"\n[{label}] Processing {len(merged_passages)} passages "
