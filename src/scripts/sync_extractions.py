@@ -67,7 +67,6 @@ from src.core.config import settings
 from src.core.law_summary import LAW_SUMMARY_ID_BASE, build_law_summary_row
 from src.core.payload_adapter import adapt_payload_for_sync
 from src.core.sync_exclusions import is_excluded
-from src.core.vocab_loader import get_canonical_codes
 
 # P3-1 (supersedes P2-1's review_status='approved' requirement): only
 # confidence tier at or above the configured publish floor determines
@@ -85,35 +84,57 @@ def _eligible_tiers(min_tier: str) -> list[str]:
     return _TIER_ORDER[: idx + 1]
 
 
-def _extract_canonical_actor_code(payload: dict[str, any]) -> str | None:
-    """Extract canonical actor code from normalized subject field in payload.
+def _assert_insert_columns(target_session, required: set[str]) -> None:
+    """SFH-1k (audit B9): fail loud before writing if INSERT columns don't exist.
 
-    For obligation payloads, maps subject_normalized to the canonical actor
-    code (developer, provider, deployer, etc.). Returns None if not an obligation
-    or if subject_normalized is not present.
+    The historical "INSERT likely never actually succeeded" episode — months of
+    silent failure from a section_path/section_reference column mismatch — and
+    the a7f723d enrichment (which named canonical_key/canonical_actor_code/
+    obligation_family columns that don't exist on the live table) are the same
+    bug class. This assertion runs once per sync invocation, before any write.
     """
-    subject_normalized = payload.get("subject_normalized")
-    if not subject_normalized:
-        return None
+    rows = target_session.execute(
+        text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'synced_extractions'"
+        )
+    ).fetchall()
+    actual = {r[0] for r in rows}
+    missing = required - actual
+    if missing:
+        raise RuntimeError(
+            f"SYNC SCHEMA MISMATCH: synced_extractions is missing column(s) "
+            f"{sorted(missing)} that this sync would INSERT into. Live columns: "
+            f"{sorted(actual)}. Refusing to run — a mismatched INSERT fails on "
+            f"every row (or worse, has 'likely never actually succeeded' — see "
+            f"docs/phase0_completion_log.md for the historical episode). Fix the "
+            f"column list or apply the missing PN migration first."
+        )
 
-    # Load the actor canonical codes and aliases
-    try:
-        canonical_codes = get_canonical_codes("actor")
-        if subject_normalized in canonical_codes:
-            return subject_normalized
-    except Exception:
-        # If vocab loading fails, gracefully skip enrichment
-        pass
 
-    return None
+def _record_sync_skip(
+    source_session, extraction_id: int, doc_family_id: int | None, reason: str
+) -> None:
+    """SFH-1c (audit SF-03): persist a skipped extraction for later replay.
 
-
-def _extract_obligation_family(payload: dict[str, any]) -> str | None:
-    """Extract obligation family code from payload if present.
-
-    Returns the obligation_family field from the payload, or None if not found.
+    Upserts so a re-run refreshes skipped_at instead of erroring; an already-
+    resolved skip that recurs is reopened (resolved_at cleared).
     """
-    return payload.get("obligation_family")
+    source_session.execute(
+        text(
+            """
+            INSERT INTO sync_skips
+                (extraction_id, doc_family_id, reason, destination, skipped_at, resolved_at)
+            VALUES (:eid, :fam, :reason, 'policy_navigator', now(), NULL)
+            ON CONFLICT (extraction_id, destination) DO UPDATE SET
+                doc_family_id = EXCLUDED.doc_family_id,
+                reason = EXCLUDED.reason,
+                skipped_at = now(),
+                resolved_at = NULL
+            """
+        ),
+        {"eid": extraction_id, "fam": doc_family_id, "reason": reason},
+    )
 
 
 def _load_bridge(target_session) -> dict[int, int]:
@@ -173,6 +194,69 @@ def _build_provenance(row) -> dict:
         "retrieved_at": retrieved_at.isoformat() if retrieved_at else None,
         "section_locator": row["section_path"],
     }
+
+
+def _build_insert_row(row, law_id: int) -> dict:
+    """Build one synced_extractions insert dict from a source row.
+
+    Shared by the id-cursor leg and the --resync-skips replay so both produce
+    byte-identical rows. Enrichment is payload-only (operator decision,
+    2026-07-06): canonical_key (DI-1) rides inside the payload; the actor code
+    and obligation_family already ship inside the adapted payload as
+    actor_role_rc / obligation_family (PNE-2a/2b) — they are NOT insert
+    columns, which don't exist on the live table (see _assert_insert_columns).
+    """
+    raw_payload = row["payload"]
+    if isinstance(raw_payload, str):
+        raw_payload = json.loads(raw_payload)
+    adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+    adapted_payload["provenance"] = _build_provenance(row)
+    # DI-1: stable join key, payload-only.
+    adapted_payload["canonical_key"] = row["canonical_key"]
+
+    return {
+        "system_a_extraction_id": row["extraction_id"],
+        "law_id": law_id,
+        "extraction_type": row["extraction_type"],
+        "payload": _serialize_value(adapted_payload),
+        "evidence_spans": _serialize_value(row["evidence_spans"]),
+        "confidence_score": row["confidence_score"],
+        "confidence_tier": row["confidence_tier"],
+        "review_status": row["review_status"],
+        "model_id": row["model_id"],
+        "section_reference": row["section_path"],
+        "source_text_excerpt": row["passage_text"],
+        "system_a_created_at": row["created_at"],
+        "synced_at": datetime.now(UTC),
+    }
+
+
+# The SELECT shared by the id-cursor leg and the resync replay — one place to
+# keep the column list and joins consistent. canonical_key lives on
+# document_families (DI-1), NOT document_versions; a7f723d selected
+# dv.canonical_key, which raises UndefinedColumn on the first run.
+_FETCH_COLUMNS_SQL = """
+    SELECT
+        e.id AS extraction_id,
+        e.extraction_type,
+        e.payload,
+        e.evidence_spans,
+        e.confidence_score,
+        e.confidence_tier,
+        e.review_status,
+        e.model_id,
+        e.created_at,
+        dv.family_id AS doc_family_id,
+        df.canonical_key,
+        dv.source_hash,
+        dv.retrieved_at,
+        nsr.section_path,
+        nsr.text_content AS passage_text
+    FROM extractions e
+    JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
+    JOIN document_versions dv ON nsr.document_version_id = dv.id
+    JOIN document_families df ON dv.family_id = df.id
+"""
 
 
 def sync_extractions(
@@ -296,27 +380,12 @@ def sync_extractions(
         # so it always catches an extraction whose tier changed after the fact
         # regardless of where its id sits relative to the cursor.
 
-        # Fetch extractions joined with their document_family_id and canonical_key
+        # Fetch extractions with law metadata (shared column list/joins —
+        # see _FETCH_COLUMNS_SQL for the a7f723d dv.canonical_key fix).
         rows = source_session.execute(
             text(
-                """
-                SELECT
-                    e.id AS extraction_id,
-                    e.extraction_type,
-                    e.payload,
-                    e.evidence_spans,
-                    e.confidence_score,
-                    e.confidence_tier,
-                    e.review_status,
-                    e.model_id,
-                    e.created_at,
-                    dv.family_id AS doc_family_id,
-                    dv.canonical_key,
-                    nsr.section_path,
-                    nsr.text_content AS passage_text
-                FROM extractions e
-                JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
-                JOIN document_versions dv ON nsr.document_version_id = dv.id
+                _FETCH_COLUMNS_SQL
+                + """
                 WHERE e.id > :cursor
                   AND e.confidence_tier::text = ANY(:tiers)
                   AND e.review_status != 'rejected'
@@ -325,6 +394,14 @@ def sync_extractions(
             ),
             {"cursor": cursor, "tiers": eligible_tiers},
         ).mappings().all()
+
+        # SFH-1k: verify the INSERT column list against the live schema before
+        # any write (this fetch only runs on live syncs — dry-run returned above).
+        if rows:
+            _assert_insert_columns(
+                target_session,
+                set(_build_insert_row(rows[0], law_id=0).keys()),
+            )
 
         # Build insert batches
         insert_batch = []
@@ -337,7 +414,14 @@ def sync_extractions(
             # Resolve bridge
             law_id = bridge.get(doc_family_id)
             if law_id is None:
+                # SFH-1c (SF-03): the cursor advances past this row, making it
+                # permanently unreachable by this leg — persist the skip so
+                # --resync-skips can replay it after the bridge is backfilled.
                 skipped_no_bridge += 1
+                if not dry_run:
+                    _record_sync_skip(
+                        source_session, extraction_id, doc_family_id, "no_bridge"
+                    )
                 max_id = max(max_id, extraction_id)
                 continue
 
@@ -347,50 +431,7 @@ def sync_extractions(
                 max_id = max(max_id, extraction_id)
                 continue
 
-            # Adapt payload to Policy Navigator's expected format
-            raw_payload = row["payload"]
-            if isinstance(raw_payload, str):
-                raw_payload = json.loads(raw_payload)
-            adapted_payload = adapt_payload_for_sync(
-                row["extraction_type"], raw_payload or {}
-            )
-            adapted_payload["provenance"] = _build_provenance(row)
-
-            # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
-            canonical_actor_code = _extract_canonical_actor_code(raw_payload)
-            obligation_family = _extract_obligation_family(raw_payload)
-
-            insert_batch.append({
-                "system_a_extraction_id": extraction_id,
-                "law_id": law_id,
-                "extraction_type": row["extraction_type"],
-                "payload": _serialize_value(adapted_payload),
-                "evidence_spans": _serialize_value(row["evidence_spans"]),
-                "confidence_score": row["confidence_score"],
-                "confidence_tier": row["confidence_tier"],
-                "review_status": row["review_status"],
-                "model_id": row["model_id"],
-                # P2-6 bugfix (pre-existing, unrelated to the P2-1 filter change):
-                # _insert_batch() builds the INSERT column list directly from these
-                # dict keys, but synced_extractions' real columns are
-                # section_reference/source_text_excerpt, not section_path/
-                # passage_text — this INSERT has likely never actually succeeded;
-                # the rows previously in the table came from the bulk_sync_extractions/
-                # sync_from_rc_chunk RPCs (see docs/phase0_completion_log.md), not
-                # this path.
-                "section_reference": row["section_path"],
-                "source_text_excerpt": row["passage_text"],
-                # Same bug class: the real column is system_a_created_at, not
-                # source_created_at.
-                "system_a_created_at": row["created_at"],
-                "synced_at": datetime.now(UTC),
-                # DI-1: Stable join key for Policy Navigator (pre-reload enrichment)
-                "canonical_key": row["canonical_key"],
-                # P3 pre-reload enrichment: actor code and obligation classification
-                "canonical_actor_code": canonical_actor_code,
-                "obligation_family": obligation_family,
-            })
-
+            insert_batch.append(_build_insert_row(row, law_id))
             max_id = max(max_id, extraction_id)
 
             # Flush batch
@@ -406,12 +447,22 @@ def sync_extractions(
             synced += len(insert_batch)
 
         target_session.commit()
+        # SFH-1c: commit the sync_skips rows written to the source DB.
+        source_session.commit()
 
         print("\nSync complete:")
         print(f"  Synced:              {synced}")
         print(f"  Skipped (no bridge): {skipped_no_bridge}")
         print(f"  Skipped (excluded):  {skipped_excluded}")
         print(f"  Cursor:              {cursor} → {max_id}")
+        if skipped_no_bridge:
+            print(
+                f"\n  ⚠ {skipped_no_bridge} extraction(s) SKIPPED with no "
+                f"law_document_bridge entry and will NOT be retried by the "
+                f"cursor. Skips persisted to sync_skips. ACTION: add bridge "
+                f"rows in Policy Navigator, then run: "
+                f"python -m src.scripts.sync_extractions --resync-skips"
+            )
 
         return {
             "cursor_start": cursor,
@@ -512,12 +563,15 @@ def sync_updates(
                     e.model_id,
                     e.updated_at,
                     dv.family_id AS doc_family_id,
-                    dv.canonical_key,
+                    df.canonical_key,
+                    dv.source_hash,
+                    dv.retrieved_at,
                     nsr.section_path,
                     nsr.text_content AS passage_text
                 FROM extractions e
                 JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                 JOIN document_versions dv ON nsr.document_version_id = dv.id
+                JOIN document_families df ON dv.family_id = df.id
                 WHERE e.updated_at > :watermark
                 ORDER BY e.updated_at
                 """
@@ -549,7 +603,16 @@ def sync_updates(
 
             law_id = bridge.get(row["doc_family_id"])
             if law_id is None:
+                # SFH-1c: this leg only rescues rows that get touched again,
+                # so an unmapped row here is as lost as in the id-cursor leg.
                 skipped_no_bridge += 1
+                if not dry_run:
+                    _record_sync_skip(
+                        source_session,
+                        row["extraction_id"],
+                        row["doc_family_id"],
+                        "no_bridge",
+                    )
                 continue
 
             if is_excluded(law_id):
@@ -564,23 +627,20 @@ def sync_updates(
                 raw_payload = json.loads(raw_payload)
             adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
             adapted_payload["provenance"] = _build_provenance(row)
-
-            # Extract enrichment fields for Policy Navigator (DI-1, P3 pre-reload fixes)
-            canonical_actor_code = _extract_canonical_actor_code(raw_payload)
-            obligation_family = _extract_obligation_family(raw_payload)
+            # DI-1: stable join key, payload-only (a7f723d's column targets
+            # don't exist on the live table — see _assert_insert_columns).
+            adapted_payload["canonical_key"] = row["canonical_key"]
 
             target_session.execute(
                 text("""
                     INSERT INTO synced_extractions (
                         system_a_extraction_id, law_id, extraction_type, payload,
                         evidence_spans, confidence_score, confidence_tier, review_status,
-                        model_id, section_reference, source_text_excerpt, system_a_created_at, synced_at,
-                        canonical_key, canonical_actor_code, obligation_family
+                        model_id, section_reference, source_text_excerpt, system_a_created_at, synced_at
                     ) VALUES (
                         :eid, :law_id, :etype, :payload,
                         :spans, :score, :tier, :status,
-                        :model, :section, :passage, :updated_at, :synced_at,
-                        :ckey, :actor_code, :obl_family
+                        :model, :section, :passage, :updated_at, :synced_at
                     )
                     ON CONFLICT (system_a_extraction_id) DO UPDATE SET
                         payload = EXCLUDED.payload,
@@ -589,10 +649,7 @@ def sync_updates(
                         confidence_tier = EXCLUDED.confidence_tier,
                         section_reference = EXCLUDED.section_reference,
                         source_text_excerpt = EXCLUDED.source_text_excerpt,
-                        synced_at = EXCLUDED.synced_at,
-                        canonical_key = EXCLUDED.canonical_key,
-                        canonical_actor_code = EXCLUDED.canonical_actor_code,
-                        obligation_family = EXCLUDED.obligation_family
+                        synced_at = EXCLUDED.synced_at
                 """),
                 {
                     "eid": row["extraction_id"],
@@ -608,9 +665,6 @@ def sync_updates(
                     "passage": row["passage_text"],
                     "updated_at": row["updated_at"],
                     "synced_at": datetime.now(UTC),
-                    "ckey": row["canonical_key"],
-                    "actor_code": canonical_actor_code,
-                    "obl_family": obligation_family,
                 },
             )
             applied += 1
@@ -645,6 +699,104 @@ def sync_updates(
             "updates_skipped_no_bridge": skipped_no_bridge,
             "watermark_start": watermark,
             "watermark_end": max_updated_at,
+        }
+
+    finally:
+        source_session.close()
+        target_session.close()
+
+
+def resync_skips(
+    source_url: str,
+    target_url: str,
+    dry_run: bool = False,
+) -> dict:
+    """SFH-1c (audit SF-03): replay extractions previously skipped for no bridge.
+
+    Reads unresolved sync_skips rows, re-attempts bridge resolution for each,
+    and inserts the ones that now map (same row shape as the id-cursor leg via
+    _build_insert_row). Skips that still don't map stay unresolved for the next
+    run; successfully replayed ones get resolved_at stamped.
+    """
+    source_engine = create_engine(source_url)
+    target_engine = create_engine(target_url)
+    source_session = sessionmaker(bind=source_engine)()
+    target_session = sessionmaker(bind=target_engine)()
+
+    try:
+        skips = source_session.execute(
+            text(
+                "SELECT extraction_id, doc_family_id FROM sync_skips "
+                "WHERE resolved_at IS NULL AND destination = 'policy_navigator' "
+                "ORDER BY extraction_id"
+            )
+        ).fetchall()
+        if not skips:
+            print("resync-skips: no unresolved skips.")
+            return {"skips_found": 0, "replayed": 0, "still_unmapped": 0}
+
+        bridge = _load_bridge(target_session)
+        skip_ids = [s[0] for s in skips]
+        print(f"resync-skips: {len(skip_ids)} unresolved skip(s) to attempt")
+
+        rows = source_session.execute(
+            text(_FETCH_COLUMNS_SQL + " WHERE e.id = ANY(:ids) ORDER BY e.id"),
+            {"ids": skip_ids},
+        ).mappings().all()
+        rows_by_id = {r["extraction_id"]: r for r in rows}
+
+        if rows and not dry_run:
+            _assert_insert_columns(
+                target_session,
+                set(_build_insert_row(rows[0], law_id=0).keys()),
+            )
+
+        replayed = 0
+        still_unmapped = 0
+        for extraction_id in skip_ids:
+            row = rows_by_id.get(extraction_id)
+            if row is None:
+                # Extraction no longer exists (purged/superseded) — resolve the
+                # skip so it stops appearing; nothing to replay.
+                if not dry_run:
+                    source_session.execute(
+                        text(
+                            "UPDATE sync_skips SET resolved_at = now(), "
+                            "reason = 'source_row_gone' "
+                            "WHERE extraction_id = :eid AND destination = 'policy_navigator'"
+                        ),
+                        {"eid": extraction_id},
+                    )
+                continue
+
+            law_id = bridge.get(row["doc_family_id"])
+            if law_id is None or is_excluded(law_id):
+                still_unmapped += 1
+                continue
+
+            if not dry_run:
+                _insert_batch(target_session, [_build_insert_row(row, law_id)])
+                source_session.execute(
+                    text(
+                        "UPDATE sync_skips SET resolved_at = now() "
+                        "WHERE extraction_id = :eid AND destination = 'policy_navigator'"
+                    ),
+                    {"eid": extraction_id},
+                )
+            replayed += 1
+
+        if not dry_run:
+            target_session.commit()
+            source_session.commit()
+
+        print(
+            f"resync-skips: {replayed} replayed, {still_unmapped} still unmapped "
+            f"(left unresolved for a future run)"
+        )
+        return {
+            "skips_found": len(skip_ids),
+            "replayed": replayed,
+            "still_unmapped": still_unmapped,
         }
 
     finally:
@@ -837,6 +989,14 @@ def main():
         action="store_true",
         help="Skip the PNE-3a law_summary rollup leg",
     )
+    parser.add_argument(
+        "--resync-skips",
+        action="store_true",
+        help=(
+            "SFH-1c: replay extractions previously skipped for a missing "
+            "law_document_bridge entry (runs ONLY the replay, then exits)"
+        ),
+    )
     args = parser.parse_args()
 
     source_url = args.source_url or os.environ.get("REGS_SUPABASE_URL")
@@ -863,6 +1023,10 @@ def main():
     print(f"Source (Regs Checker):     {source_url[:60]}...")
     print(f"Target (Policy Navigator): {target_url[:60]}...")
     print(f"Mode:   {'DRY RUN' if args.dry_run else 'LIVE SYNC'}\n")
+
+    if args.resync_skips:
+        resync_skips(source_url, target_url, dry_run=args.dry_run)
+        return
 
     summary = sync_extractions(
         source_url, target_url, dry_run=args.dry_run, batch_size=args.batch_size

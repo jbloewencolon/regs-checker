@@ -240,6 +240,105 @@ class TestCursorExcludesLawSummaryIds:
         assert captured["params"] == {"base": LAW_SUMMARY_ID_BASE}
 
 
+class TestAssertInsertColumns:
+    """SFH-1k (audit B9): schema-drift guard on the sync INSERT."""
+
+    class _FakeSession:
+        def __init__(self, columns):
+            self._columns = columns
+
+        def execute(self, stmt, params=None):
+            cols = self._columns
+
+            class _R:
+                def fetchall(self):
+                    return [(c,) for c in cols]
+
+            return _R()
+
+    def test_passes_when_all_columns_exist(self):
+        from src.scripts.sync_extractions import _assert_insert_columns
+
+        session = self._FakeSession(["system_a_extraction_id", "law_id", "payload"])
+        _assert_insert_columns(session, {"law_id", "payload"})  # must not raise
+
+    def test_raises_naming_missing_columns(self):
+        # The a7f723d episode: INSERT named canonical_key/canonical_actor_code/
+        # obligation_family — none of which exist on the live table. This
+        # assertion turns a silent months-long failure into an immediate error.
+        from src.scripts.sync_extractions import _assert_insert_columns
+
+        session = self._FakeSession(["system_a_extraction_id", "law_id", "payload"])
+        with pytest.raises(RuntimeError) as exc:
+            _assert_insert_columns(session, {"law_id", "canonical_actor_code"})
+        assert "canonical_actor_code" in str(exc.value)
+        assert "SYNC SCHEMA MISMATCH" in str(exc.value)
+
+
+class TestBuildInsertRow:
+    """SFH-1c refactor: shared row builder for the id-cursor leg + resync replay."""
+
+    _ROW = {
+        "extraction_id": 42,
+        "extraction_type": "obligation",
+        "payload": {
+            "subject": "developer",
+            "modality": "shall",
+            "action": "complete registration with the state registry",
+        },
+        "evidence_spans": [],
+        "confidence_score": 0.9,
+        "confidence_tier": "B",
+        "review_status": "pending",
+        "model_id": "m",
+        "created_at": None,
+        "doc_family_id": 7,
+        "canonical_key": "CO-SB205-2024",
+        "source_hash": "a" * 64,
+        "retrieved_at": None,
+        "section_path": "§ 2",
+        "passage_text": "text",
+    }
+
+    def test_no_phantom_columns(self):
+        # The three a7f723d column targets don't exist on the live table —
+        # they must never appear as insert keys (enrichment is payload-only).
+        from src.scripts.sync_extractions import _build_insert_row
+
+        row = _build_insert_row(dict(self._ROW), law_id=99)
+        assert "canonical_key" not in row
+        assert "canonical_actor_code" not in row
+        assert "obligation_family" not in row
+
+    def test_canonical_key_rides_in_payload(self):
+        import json as _json
+
+        from src.scripts.sync_extractions import _build_insert_row
+
+        row = _build_insert_row(dict(self._ROW), law_id=99)
+        payload = _json.loads(row["payload"])
+        assert payload["canonical_key"] == "CO-SB205-2024"
+        # PNE-2a/2b enrichment is already inside the adapted payload too.
+        assert payload["actor_role_rc"] == "developer"
+        assert payload["obligation_family"] == "registration"
+        # PNE-1b provenance also present.
+        assert payload["provenance"]["content_hash"] == "a" * 64
+
+    def test_row_targets_real_columns_only(self):
+        from src.scripts.sync_extractions import _build_insert_row
+
+        row = _build_insert_row(dict(self._ROW), law_id=99)
+        live_columns = {
+            "id", "system_a_extraction_id", "law_id", "extraction_type",
+            "payload", "evidence_spans", "confidence_score", "confidence_tier",
+            "jurisdiction_code", "section_reference", "source_text_excerpt",
+            "synced_at", "system_a_created_at", "review_status", "review_notes",
+            "reviewed_at", "reviewed_by", "review_count", "unique_reviewers",
+            "consensus_status", "display_status", "model_id",
+        }
+        assert set(row.keys()) <= live_columns
+
+
 class TestBuildProvenance:
     """PNE-1b (PN Ask 7): provenance object attached to every synced payload."""
 

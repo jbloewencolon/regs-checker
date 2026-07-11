@@ -1222,6 +1222,39 @@ class SyncCursor(Base):
     )
 
 
+class SyncSkip(Base):
+    """SFH-1c (audit SF-03): extractions skipped by a sync leg, persisted for replay.
+
+    The id-cursor sync leg advances MAX(id) past extractions whose law has no
+    law_document_bridge entry yet — new laws are exactly the ones likely to be
+    unmapped — making them permanently unreachable by that leg even after the
+    bridge is backfilled. Each skip is recorded here so
+    ``sync_extractions --resync-skips`` can replay them once the mapping
+    exists. ``resolved_at`` is stamped when a replay successfully syncs the row.
+    """
+
+    __tablename__ = "sync_skips"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    extraction_id = Column(Integer, nullable=False)
+    doc_family_id = Column(Integer, nullable=True)
+    reason = Column(String(50), nullable=False, default="no_bridge")
+    destination = Column(String(50), nullable=False, default="policy_navigator")
+    skipped_at = Column(DateTime, server_default=func.now(), nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        # One open skip per (extraction, destination); replays update in place.
+        Index(
+            "uq_sync_skips_extraction_dest",
+            "extraction_id",
+            "destination",
+            unique=True,
+        ),
+        Index("ix_sync_skips_unresolved", "resolved_at"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # RR7b — DocumentVersion versioning columns (added via migration)
 # ---------------------------------------------------------------------------
