@@ -231,12 +231,14 @@ class ModelConfigStore:
         to a single model uniformly (gpt-oss-120b); operators tier it per-agent
         from the Models page.
 
-        cross_validation/gap_detection (EA0-5) default to gpt-oss-20b on NVIDIA
-        — preserving the pre-config-driven hardcoded value used for verification
-        — but fall back to the local extraction model under the local provider,
-        since LM Studio only holds one model in VRAM at a time and gpt-oss-20b
-        is not a local model name. True model-lineage diversity for
-        verification is a separate, measured change (EA4-1), not this default.
+        cross_validation/gap_detection default to llama-3.1-70b on NVIDIA
+        (SFH-1m / EA4-1: a different model family than the gpt-oss extractors,
+        so verification errors decorrelate from extraction errors — same-family
+        siblings share blind spots and agreement scores as validation). They
+        fall back to the local extraction model under the local provider,
+        since LM Studio only holds one model in VRAM at a time. Catch-rate
+        measurement on seeded-error fixtures remains an operator task
+        (needs live LLM).
         """
         agents: dict[str, AgentModelConfig] = {}
         for name in AGENT_DISPLAY:
@@ -244,7 +246,7 @@ class ModelConfigStore:
             temp = 0.0 if name == "triage" else settings.extraction_temperature
             if provider == "nvidia":
                 model = (
-                    "openai/gpt-oss-20b"
+                    "meta/llama-3.1-70b-instruct"
                     if name in ("cross_validation", "gap_detection")
                     else settings.nvidia_extraction_model
                 )

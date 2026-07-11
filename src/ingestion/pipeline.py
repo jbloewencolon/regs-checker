@@ -15,7 +15,7 @@ import threading
 from datetime import datetime
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from src.core.circuit_breaker import CircuitBreakerTripped, FailureTracker
 from src.db.models import (
@@ -154,6 +154,7 @@ def process_single_job(
     db,
     job: IngestionJob,
     on_progress: callable | None = None,
+    force_reparse: bool = False,
 ) -> int:
     """Run the full fetch→store→parse→chunk pipeline for a single IngestionJob.
 
@@ -165,6 +166,17 @@ def process_single_job(
         db: SQLAlchemy session
         job: The pending IngestionJob to process
         on_progress: Optional callback(message: str) for status updates
+        force_reparse: SFH-1h (audit SF-10) — re-parsing deletes the version's
+            existing passages, which severs the FK lineage of every extraction
+            built on them (triage results cascade too). Within a single static
+            version that's survivable; once amended-bill versions arrive it
+            silently destroys the history needed to diff an amendment and
+            answer "what changed". When existing passages carry linked
+            extractions, the delete now requires this explicit flag; the
+            orphaned-extraction count is logged either way. A text CHANGE
+            should never come through here at all — it must create a NEW
+            DocumentVersion (predecessor_id set) with its own passage set
+            (SFH-4b, diff-driven re-extraction).
 
     Returns:
         Number of normalized_source_records created (0 on failure).
@@ -191,7 +203,11 @@ def process_single_job(
             f"{raw_artifact.size_bytes:,} bytes"
         )
 
-        # Delete old parsed records so re-parse starts clean
+        # Delete old parsed records so re-parse starts clean.
+        # SFH-1h (SF-10): when those records carry linked extractions, the
+        # delete severs extraction lineage — require an explicit opt-in and
+        # log exactly what would be lost instead of discarding it silently.
+        from src.db.models import Extraction
         from src.db.models import NormalizedSourceRecord as NSR
         old_records = db.scalars(
             select(NSR).where(
@@ -199,6 +215,34 @@ def process_single_job(
             )
         ).all()
         if old_records:
+            old_ids = [r.id for r in old_records]
+            linked_extractions = db.scalar(
+                select(func.count()).select_from(Extraction).where(
+                    Extraction.source_record_id.in_(old_ids)
+                )
+            ) or 0
+            if linked_extractions and not force_reparse:
+                job.status = IngestionStatus.failed
+                job.error_message = (
+                    f"Re-parse blocked (SF-10): {len(old_records)} existing "
+                    f"passages carry {linked_extractions} linked extraction(s) "
+                    f"whose lineage the re-parse would destroy. If the source "
+                    f"text changed, ingest it as a NEW document version "
+                    f"(predecessor_id set) instead. To deliberately discard "
+                    f"this version's extraction lineage, re-run with "
+                    f"force_reparse=True."
+                )
+                db.commit()
+                _log(f"✗ {job.error_message}")
+                return 0
+            if linked_extractions:
+                logger.warning(
+                    "reparse_lineage_discarded",
+                    job_id=job.id,
+                    document_version_id=job.document_version_id,
+                    passages_deleted=len(old_records),
+                    extractions_orphaned=linked_extractions,
+                )
             for rec in old_records:
                 db.delete(rec)
             db.commit()

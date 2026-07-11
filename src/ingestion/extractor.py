@@ -1756,6 +1756,18 @@ def run_triage(
             )
 
     db.commit()
+    # SFH-1i (SF-11): surface warning-channel write failures — the monitoring
+    # channel dying silently is itself a monitored condition now.
+    from src.agents.section_triage import get_and_reset_warning_write_failures
+    _ww_failures = get_and_reset_warning_write_failures()
+    summary["triage_warning_write_failures"] = _ww_failures
+    if _ww_failures:
+        _log(
+            f"⚠ MONITORING SELF-CHECK: {_ww_failures} triage warning(s) could not "
+            f"be written to output/triage_warnings.jsonl — counted in-memory; "
+            f"warning content for this run is recoverable from structlog output. "
+            f"ACTION: check path permissions/disk."
+        )
     _log(
         f"Triage complete: {summary['relevant']} relevant, "
         f"{summary['uncertain']} uncertain, {summary['skipped']} skipped "
@@ -2410,6 +2422,10 @@ def run_extraction(
         },
     )
     summary["conservation"] = conservation
+    # SFH-1i (B8): reviewers seeing a blank/failed plain_summary should be a
+    # known quantity per run, not a mystery.
+    from src.core.summary_generator import get_and_reset_generation_failures
+    summary["summary_generation_failures"] = get_and_reset_generation_failures()
     if not conservation["conserved"]:
         logger.error(
             "run_integrity_check_failed",

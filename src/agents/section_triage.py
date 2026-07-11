@@ -44,6 +44,20 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 _TRIAGE_LOG_PATH = Path(__file__).resolve().parents[2] / "output" / "triage_warnings.jsonl"
 
+# SFH-1i (audit SF-11): the warning channel itself can fail (permissions,
+# disk, path) — the system built to record silent problems dying silently is
+# a meta-monitoring gap. Failures are counted in memory (never raised) and
+# surfaced in the triage run summary via get_and_reset_warning_write_failures().
+_warning_write_failures = 0
+
+
+def get_and_reset_warning_write_failures() -> int:
+    """Return the count of triage-warning write failures and reset it."""
+    global _warning_write_failures
+    count = _warning_write_failures
+    _warning_write_failures = 0
+    return count
+
 
 def _log_triage_warning(
     warning_type: str,
@@ -52,6 +66,7 @@ def _log_triage_warning(
     raw_response: str | None = None,
 ) -> None:
     """Append a triage warning to output/triage_warnings.jsonl."""
+    global _warning_write_failures
     entry = {
         "timestamp": datetime.now(UTC).isoformat(),
         "record_id": record_id,
@@ -65,7 +80,10 @@ def _log_triage_warning(
         with open(_TRIAGE_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(_json.dumps(entry) + "\n")
     except Exception:
-        pass  # Don't let logging failures break triage
+        # Don't let logging failures break triage — but count them so the
+        # run summary shows the channel degraded (warning content for the
+        # run remains recoverable from structlog output).
+        _warning_write_failures += 1
 
 
 # ---------------------------------------------------------------------------
