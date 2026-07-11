@@ -1510,65 +1510,79 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
 > tracker scoring ("only after weight re-architecture"), Dagster ("once
 > versioning lands").
 
-### Phase SFH-1 — Make failure visible (deterministic, unit-testable; ⏳ awaiting operator go)
-- ⏳ **SFH-1a** **[High]** SF-04 loop-truncation bypass: treat `stop_reason in
+### Phase SFH-1 — Make failure visible ✅ COMPLETE (2026-07-11, operator go given)
+
+> **Execution note (2026-07-11):** all 14 items landed across 6 commits
+> (`aa1bb7c` 1a+1b, `292a90d` 1c+1k, `d071410` 1f, `95edcf5` 1h/1i/1m/1n,
+> `7d92f0c` 1d+1e, `9ebe513` 1g, `c923161` 1j+1l). 1212/1212 tests passing
+> (+49 new this phase); CI hard gate green throughout. Two migrations added
+> (`3f8a2b9c1d04` sync_skips, `4a9b3c8d2e15` sync_runs) — **operator: run
+> `alembic upgrade head`**. Notable finds during execution: SFH-1k's schema
+> guard caught a LIVE crash in the merged a7f723d enrichment (dv.canonical_key
+> UndefinedColumn + three INSERT columns that don't exist on PN's table —
+> reconciled to payload-only, fixed in 292a90d); the SF-08 provenance stamp
+> already existed (orrick_enrichment.py:221) — only the scoring path ignored
+> it; the truncated-JSON salvage turns out to only repair bare-array shapes
+> (envelope-shape cuts are unrepairable by the current chain — documented in
+> tests, feeds the SFH-3b structured-outputs case).
+- ✅ **SFH-1a** **[High]** SF-04 loop-truncation bypass: treat `stop_reason in
   ('length','loop')` as truncated at both consult sites (`base.py:358` truncation
   flag; `base.py:~481` retry-with-doubled-budget condition); record `stop_reason`
   in extraction metadata; count loops per agent in `agent_stats.json`. Closes the
   one truncation path that today sails through with full confidence eligibility. *(BE)*
-- ⏳ **SFH-1b** **[High]** SF-06 passage-conservation check: run-end invariant
+- ✅ **SFH-1b** **[High]** SF-06 passage-conservation check: run-end invariant
   `selected == extracted + abstained + failed + skipped_boilerplate + skipped_dedup`,
   each term emitted in `run_summary.json`, hard alert with residual ids (set
   difference) on any mismatch. Kills the 660-vs-647 class of silent loss. *(BE)*
-- ⏳ **SFH-1c** **[High]** SF-03 sync-skip persistence: `sync_skips` table
+- ✅ **SFH-1c** **[High]** SF-03 sync-skip persistence: `sync_skips` table
   (extraction_id, doc_family_id, reason, run_ts; Alembic migration) + persist on
   every bridge-miss in both legs + `--resync-skips` replay mode + alert naming the
   unmapped families. Today the id cursor advances past unmapped rows forever. *(BE)*
-- ⏳ **SFH-1d** **[Medium]** SF-02 routing recall delta: tag sampled passages
+- ✅ **SFH-1d** **[Medium]** SF-02 routing recall delta: tag sampled passages
   (`routing_bypassed=true` in metadata), compute at run end which extractions came
   from agents routing would have skipped, emit delta + false-narrowing rate in
   `run_summary.json`, alert over threshold. The 5% sampling cost currently buys
   zero monitoring value. *(BE)*
-- ⏳ **SFH-1e** **[Medium]** SF-05 salvage accounting: count array elements
+- ✅ **SFH-1e** **[Medium]** SF-05 salvage accounting: count array elements
   pre/post `_repair_truncated_json`, store `items_dropped_by_repair` in extraction
   metadata, aggregate per-strategy repair hits into `run_summary.json`, alert when
   run repair rate exceeds ~3%. *(BE)*
-- ⏳ **SFH-1f** **[High]** SF-08 remainder (quarantine approved): Pydantic-validate
+- ✅ **SFH-1f** **[High]** SF-08 remainder (quarantine approved): Pydantic-validate
   tracker metadata keys at read time (fail loud — kills the
   'enforcement'-vs-'enforcement_penalties' drift class); make the scoring path
   honor the existing `orrick_source='llm_generated'` stamp — generated summaries
   score as tracker-absent (triage keyword seeding only); per-run counts of laws
   scored against generated vs. real tracker data. **Known consequence, accepted:**
   enrich-orrick-only laws drop to the gated/capped path until SFH-3. *(BE, NLP)*
-- ⏳ **SFH-1g** **[Medium]** SF-09 sync observability: `sync_runs` row per
+- ✅ **SFH-1g** **[Medium]** SF-09 sync observability: `sync_runs` row per
   invocation (leg, started, finished, synced, skipped, updated, error) + freshness
   check in `sync_monitor.py` (alert when newest `synced_at` exceeds cadence, or a
   run syncs 0 with pending cursor rows). *(BE)*
-- ⏳ **SFH-1h** **[Medium]** SF-10 reparse lineage guard: within-version re-parse
+- ✅ **SFH-1h** **[Medium]** SF-10 reparse lineage guard: within-version re-parse
   requires explicit `--force-reparse` (logs count of extraction rows orphaned);
   never delete across versions — text change ⇒ new `DocumentVersion` with
   `predecessor_id`. **Prerequisite for the entire SFH-4 live-data phase.** *(BE)*
-- ⏳ **SFH-1i** **[Low]** SF-11 + B8 meta-monitoring: count triage-warning write
+- ✅ **SFH-1i** **[Low]** SF-11 + B8 meta-monitoring: count triage-warning write
   failures (the `except Exception: pass` at `section_triage.py:67`) and
   summary-generation failures in `run_summary` — never raise, never invisible. *(BE)*
-- ⏳ **SFH-1j** **[Medium]** B5 remainder: extend the EA5-3 input-targeting pattern
+- ✅ **SFH-1j** **[Medium]** B5 remainder: extend the EA5-3 input-targeting pattern
   (pattern-located sections + bounded tail, no raw head-truncation bias) from
   enforcement_agent to **applicability_agent + compliance_timeline_agent** —
   deadlines and applicability clauses also live in bill tails. Same
   strictly-better-input class EA5-3 landed under. *(NLP)*
-- ⏳ **SFH-1k** **[Low]** B9 schema-drift guard: startup assertion that the sync
+- ✅ **SFH-1k** **[Low]** B9 schema-drift guard: startup assertion that the sync
   INSERT column list matches `synced_extractions` information_schema (five lines
   that would have caught the months-long "INSERT never succeeded" episode). *(BE)*
-- ⏳ **SFH-1l** **[Medium]** B10 process: one-passage end-to-end CI smoke test
+- ✅ **SFH-1l** **[Medium]** B10 process: one-passage end-to-end CI smoke test
   (triage → routing → one agent with stubbed provider → persistence) so wiring
   errors fail CI; fix README vs `architecture.md` provider drift
   (`config/agent_models.json` is authoritative). *(BE, DevOps)*
-- ⏳ **SFH-1m** **[Medium]** EA4-1 config flip (audit B7 concurs): move
+- ✅ **SFH-1m** **[Medium]** EA4-1 config flip (audit B7 concurs): move
   `cross_validation`/`gap_detection` from `openai/gpt-oss-20b` to a
   different-lineage model ≥ extractor capability (e.g. `meta/llama-3.1-70b-instruct`)
   in `config/agent_models.json`; catch-rate measurement on seeded-error fixtures
   stays with the operator (needs live LLM). *(NLP)*
-- ⏳ **SFH-1n** **[Low]** Triage determinism (approved): nvidia triage
+- ✅ **SFH-1n** **[Low]** Triage determinism (approved): nvidia triage
   `temperature 0.2 → 0`, `top_p → null` in `config/agent_models.json` — variance
   reduction on a binary gate. (Routing threshold explicitly NOT changed — see
   operator decision 3.) *(NLP)*
