@@ -13,6 +13,15 @@ from __future__ import annotations
 
 from src.agents.bill_level_base import BillLevelAgent
 
+# SFH-1j (audit B5): same input-targeting fix EA5-3 landed for
+# enforcement_agent. Effective-date and phase-in clauses conventionally sit
+# at the very END of state bills ("This act takes effect...") — exactly what
+# bill_level_base's head truncation drops on long bills. bill_context has no
+# timeline-pattern section, so this agent uses a head+tail hybrid: dates can
+# open a bill (definitions of compliance periods) and almost always close
+# one. Bills at or under 2×window are sent in full, unchanged.
+_WINDOW_CHARS = 20_000
+
 _PROMPT_TEMPLATE = """\
 You are a legal analyst extracting compliance timeline information from AI legislation.
 
@@ -60,7 +69,24 @@ class ComplianceTimelineAgent(BillLevelAgent):
     max_tokens_override = 2048
 
     def get_prompt(self, full_text: str, context: dict) -> str:
-        return _PROMPT_TEMPLATE.format(full_text=full_text)
+        return _PROMPT_TEMPLATE.format(
+            full_text=self._build_bill_excerpt(full_text, context)
+        )
+
+    @staticmethod
+    def _build_bill_excerpt(full_text: str, context: dict) -> str:
+        """SFH-1j: timeline input without head-truncation bias (head + tail)."""
+        if len(full_text) <= 2 * _WINDOW_CHARS:
+            return full_text
+        head = full_text[:_WINDOW_CHARS]
+        tail = full_text[-_WINDOW_CHARS:]
+        return (
+            "OPENING-OF-BILL EXCERPT:\n"
+            f"{head}\n\n"
+            "END-OF-BILL EXCERPT (effective-date and phase-in clauses "
+            "conventionally sit here):\n"
+            f"{tail}"
+        )
 
     def parse_response(self, raw: str) -> dict:
         data = self._parse_json_payload(raw)

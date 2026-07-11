@@ -15,6 +15,13 @@ from __future__ import annotations
 
 from src.agents.bill_level_base import BillLevelAgent
 
+# SFH-1j (audit B5): same input-targeting fix EA5-3 landed for
+# enforcement_agent — bill_level_base head-truncates long bills, and while
+# scope/definitions conventionally open a bill, exemptions and carve-outs
+# (fields this agent exists to find) often close one. Bills at or under
+# 2×window are sent in full, unchanged.
+_WINDOW_CHARS = 20_000
+
 _PROMPT_TEMPLATE = """\
 You are a legal analyst extracting applicability information from AI legislation.
 
@@ -57,7 +64,41 @@ class ApplicabilityAgent(BillLevelAgent):
     max_tokens_override = 2048
 
     def get_prompt(self, full_text: str, context: dict) -> str:
-        return _PROMPT_TEMPLATE.format(full_text=full_text)
+        return _PROMPT_TEMPLATE.format(
+            full_text=self._build_bill_excerpt(full_text, context)
+        )
+
+    @staticmethod
+    def _build_bill_excerpt(full_text: str, context: dict) -> str:
+        """SFH-1j: applicability input without head-truncation bias.
+
+        For bills over the window budget: pattern-matched scope sections
+        (built by bill_context from EVERY passage — no positional bias),
+        plus a bounded head (scope/definitions open a bill) and tail
+        (exemptions and carve-outs often close one).
+        """
+        if len(full_text) <= 2 * _WINDOW_CHARS:
+            return full_text
+
+        head = full_text[:_WINDOW_CHARS]
+        tail = full_text[-_WINDOW_CHARS:]
+        scope_excerpt = (context or {}).get("scope") or ""
+        if scope_excerpt:
+            return (
+                "SCOPE/APPLICABILITY SECTIONS (matched from across the full "
+                "bill, not just a prefix):\n"
+                f"{scope_excerpt}\n\n"
+                "OPENING-OF-BILL EXCERPT:\n"
+                f"{head}\n\n"
+                "END-OF-BILL EXCERPT (exemptions and carve-outs often sit here):\n"
+                f"{tail}"
+            )
+        return (
+            "OPENING-OF-BILL EXCERPT:\n"
+            f"{head}\n\n"
+            "END-OF-BILL EXCERPT:\n"
+            f"{tail}"
+        )
 
     def parse_response(self, raw: str) -> dict:
         data = self._parse_json_payload(raw)
