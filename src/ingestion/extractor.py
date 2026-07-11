@@ -589,6 +589,47 @@ _COMPLIANCE_MECHANISM_PATTERN = re.compile(
 )
 
 
+def compute_conservation(
+    selected_ids: set[int],
+    outcomes: dict[str, set[int]],
+) -> dict[str, Any]:
+    """SFH-1b (audit SF-06): run-level passage-conservation check.
+
+    Every selected record must end in exactly one outcome bucket. Historically
+    the pipeline tracked totals in independent counters with no invariant tying
+    them together, so a passage dropped by an untracked early-exit path showed
+    up as nothing at all (the archived 660-vs-647 run gap: 13 passages with
+    zero failure records, discovered only by manually diffing two JSON files).
+
+    Args:
+        selected_ids: record ids selected for extraction (post short-skip).
+        outcomes: bucket name -> set of record ids that ended there
+                  (e.g. processed / failed / skipped_jurisdiction).
+
+    Returns:
+        Dict with per-bucket counts, ``residual_ids`` (selected but in NO
+        bucket — the silent-loss signal), ``double_counted_ids`` (in more
+        than one bucket — a different integrity bug), and ``conserved``.
+    """
+    accounted: set[int] = set()
+    seen_twice: set[int] = set()
+    for ids in outcomes.values():
+        seen_twice |= accounted & ids
+        accounted |= ids
+
+    residual = selected_ids - accounted
+    report: dict[str, Any] = {
+        "selected": len(selected_ids),
+        **{name: len(ids) for name, ids in outcomes.items()},
+        "residual_count": len(residual),
+        # Cap the id lists so a catastrophic run can't bloat run_summary.json.
+        "residual_ids": sorted(residual)[:100],
+        "double_counted_ids": sorted(seen_twice)[:100],
+        "conserved": not residual and not seen_twice,
+    }
+    return report
+
+
 @dataclass
 class TokenUsageSummary:
     """Aggregate token usage and invocation counts for one extraction run.
@@ -1357,6 +1398,9 @@ def extract_single_record(
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.stop_reason and result.stop_reason != "stop":
+                        # SFH-1a: distinguishes loop cutoffs from length cutoffs
+                        extraction_meta["stop_reason"] = result.stop_reason
                     if result.was_repaired:
                         extraction_meta["was_repaired"] = True
                     if result.model_reasoning:
@@ -2146,6 +2190,13 @@ def run_extraction(
     if skipped_short:
         _log(f"Skipped {skipped_short} passages under {MIN_PASSAGE_LENGTH} chars")
 
+    # SFH-1b (SF-06): conservation ledger — every selected record must end in
+    # exactly one outcome set below, checked at run end.
+    _conservation_selected: set[int] = {r.id for r in records}
+    _c_processed: set[int] = set()
+    _c_failed: set[int] = set()
+    _c_skipped_jurisdiction: set[int] = set()
+
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}
     for record in records:
@@ -2245,10 +2296,12 @@ def run_extraction(
                     summary["records_skipped_jurisdiction"] += 1
                     extraction_job.records_processed += len(passage.source_records)
                     summary["records_processed"] += len(passage.source_records)
+                    _c_skipped_jurisdiction.update(r.id for r in passage.source_records)
                     continue
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
+                _c_processed.update(r.id for r in passage.source_records)
 
                 # Reset consecutive failure counter between passages.
                 # One bad passage may fail multiple agents, but that shouldn't
@@ -2279,6 +2332,7 @@ def run_extraction(
                 job_failures += 1
                 extraction_job.records_failed += len(passage.source_records)
                 summary["records_failed"] += len(passage.source_records)
+                _c_failed.update(r.id for r in passage.source_records)
                 logger.error(
                     "record_extraction_error",
                     record_id=passage.primary_record.id,
@@ -2307,6 +2361,40 @@ def run_extraction(
         )
 
     summary["agents_skipped_by_signal"] = token_usage.agents_skipped
+
+    # SFH-1b (SF-06): run-integrity check. Only meaningful on complete runs —
+    # the cancelled/circuit-breaker paths return before reaching here, and a
+    # partial run can't satisfy the identity by construction.
+    conservation = compute_conservation(
+        _conservation_selected,
+        {
+            "processed": _c_processed,
+            "failed": _c_failed,
+            "skipped_jurisdiction": _c_skipped_jurisdiction,
+        },
+    )
+    summary["conservation"] = conservation
+    if not conservation["conserved"]:
+        logger.error(
+            "run_integrity_check_failed",
+            selected=conservation["selected"],
+            processed=conservation["processed"],
+            failed=conservation["failed"],
+            skipped_jurisdiction=conservation["skipped_jurisdiction"],
+            residual_count=conservation["residual_count"],
+            residual_ids=conservation["residual_ids"][:20],
+            double_counted_ids=conservation["double_counted_ids"][:20],
+        )
+        _log(
+            f"\n⚠ RUN INTEGRITY CHECK FAILED: {conservation['selected']} passages "
+            f"selected but only {conservation['selected'] - conservation['residual_count']} "
+            f"accounted for (processed {conservation['processed']} + failed "
+            f"{conservation['failed']} + skipped {conservation['skipped_jurisdiction']}). "
+            f"RESIDUAL: {conservation['residual_count']} passage(s) with NO outcome "
+            f"record — ids: {conservation['residual_ids'][:20]}. This indicates an "
+            f"untracked early-exit path; re-run these ids with recovery mode and "
+            f"file a bug on the code path."
+        )
 
     # Finalize token usage — named buckets + scope annotation.
     # Note: these are result tokens only; adaptive retries inside agent.extract()
@@ -2521,6 +2609,8 @@ def run_retry_failed(
                         extraction_meta: dict = {}
                         if result.truncated:
                             extraction_meta["truncated"] = True
+                        if result.stop_reason and result.stop_reason != "stop":
+                            extraction_meta["stop_reason"] = result.stop_reason
                         if result.was_repaired:
                             extraction_meta["was_repaired"] = True
                         extraction_meta["confidence_breakdown"] = {
@@ -2955,6 +3045,8 @@ def run_recovery_extraction(
                             recovery_meta: dict = {}
                             if result.truncated:
                                 recovery_meta["truncated"] = True
+                            if result.stop_reason and result.stop_reason != "stop":
+                                recovery_meta["stop_reason"] = result.stop_reason
                             if result.was_repaired:
                                 recovery_meta["was_repaired"] = True
                             numeric_mismatch = _apply_numeric_grounding(

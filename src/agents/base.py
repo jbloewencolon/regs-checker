@@ -178,9 +178,10 @@ class ExtractionResult:
     prompt_hash: str
     model_id: str
     template_version: str | None
-    truncated: bool = False  # True when finish_reason=length (output cut off)
+    truncated: bool = False  # True when output was cut off (finish_reason=length OR loop detection — SFH-1a)
     model_reasoning: str | None = None  # Chain-of-thought from <think> blocks
     was_repaired: bool = False  # True when _repair_json had to change output to parse (EA2-3)
+    stop_reason: str | None = None  # Provider stop reason ('stop'/'length'/'loop'/...) — SFH-1a telemetry
 
 
 class BaseExtractionAgent(ABC):
@@ -355,7 +356,13 @@ class BaseExtractionAgent(ABC):
                 if isinstance(parsed, list):
                     parsed = {"extractions": parsed}
 
-                was_truncated = stop_reason == "length"
+                # SFH-1a (SF-04): loop detection returns stop_reason='loop' after
+                # cutting output at the third repetition — that payload lost
+                # content by definition, exactly like a length cutoff. Before
+                # this fix, loop-truncated output bypassed every truncation
+                # safeguard (tier cap, forced review) because the flag keyed
+                # on 'length' alone.
+                was_truncated = stop_reason in ("length", "loop")
 
                 # Check for abstention
                 if parsed.get("detected") is False:
@@ -370,6 +377,7 @@ class BaseExtractionAgent(ABC):
                         truncated=was_truncated,
                         model_reasoning=model_reasoning,
                         was_repaired=was_repaired,
+                        stop_reason=stop_reason,
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -417,10 +425,15 @@ class BaseExtractionAgent(ABC):
                         )
                         validated_extractions = unique
 
-                if was_truncated:
+                if was_truncated and stop_reason == "length":
                     # Retry with doubled budget when we have attempts left and
                     # the budget can still be increased.  Cheap passages start
                     # at a scaled budget and escalate only when they need to.
+                    # SFH-1a: budget escalation is deliberately length-only —
+                    # a loop cutoff is not budget-starved (more tokens would
+                    # just buy more repetition), so loops skip this branch and
+                    # return below with truncated=True, which triggers the
+                    # EA2-3 tier cap + forced review downstream.
                     _prev = current_max_tokens or settings.extraction_max_tokens
                     _cap = settings.local_extraction_max_tokens
                     _doubled = min(_prev * 2, _cap)
@@ -443,6 +456,14 @@ class BaseExtractionAgent(ABC):
                         extractions_count=len(validated_extractions),
                         budget_exhausted=(_doubled == _prev),
                     )
+                elif was_truncated:
+                    logger.warning(
+                        "extraction_loop_truncated",
+                        agent=self.agent_name,
+                        model_id=response_model_id,
+                        output_tokens=usage.output_tokens,
+                        extractions_count=len(validated_extractions),
+                    )
 
                 return ExtractionResult(
                     extractions=validated_extractions,
@@ -455,6 +476,7 @@ class BaseExtractionAgent(ABC):
                     truncated=was_truncated,
                     model_reasoning=model_reasoning,
                     was_repaired=was_repaired,
+                    stop_reason=stop_reason,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
