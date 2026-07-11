@@ -38,6 +38,10 @@ from dataclasses import dataclass, field
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+# SFH-1g: alert when the newest synced row is older than this (a daily cadence
+# with slack; operators on a different cadence can tune it here).
+FRESHNESS_MAX_AGE_HOURS = 26
+
 # ---------------------------------------------------------------------------
 # Alert thresholds — calibrated against batch run baselines
 # ---------------------------------------------------------------------------
@@ -73,6 +77,10 @@ class HealthReport:
     # Alerts
     alerts: list[str] = field(default_factory=list)
     healthy: bool = True
+
+    newest_synced_age_hours: float | None = None
+    recent_sync_runs: list = field(default_factory=list)
+    unresolved_sync_skips: int = 0
 
     def add_alert(self, message: str) -> None:
         self.alerts.append(message)
@@ -193,6 +201,62 @@ def run_health_check(source_url: str, target_url: str) -> HealthReport:
 
         # --- Sync lag ---
         report.sync_lag = report.source_total_extractions - report.target_total_synced
+
+        # --- SFH-1g (audit SF-09): freshness + last-run health ---
+        # Newest synced_at on the target vs. expected cadence; last sync_runs
+        # rows on the source for errors and unresolved skips.
+        try:
+            newest_synced = target_session.execute(
+                text("SELECT MAX(synced_at) FROM synced_extractions")
+            ).scalar()
+            if newest_synced is not None:
+                from datetime import UTC, datetime as _dt
+                _now = _dt.now(UTC)
+                if newest_synced.tzinfo is None:
+                    from datetime import timezone as _tz
+                    newest_synced = newest_synced.replace(tzinfo=_tz.utc)
+                age_hours = (_now - newest_synced).total_seconds() / 3600
+                report.newest_synced_age_hours = round(age_hours, 1)
+                if age_hours > FRESHNESS_MAX_AGE_HOURS:
+                    report.add_alert(
+                        f"FRESHNESS: newest synced_extractions.synced_at is "
+                        f"{age_hours:.0f}h old (cadence threshold "
+                        f"{FRESHNESS_MAX_AGE_HOURS}h). The product DB may have "
+                        f"quietly stopped receiving updates — check sync_runs "
+                        f"for the last invocation's outcome."
+                    )
+        except Exception:
+            pass  # freshness is best-effort; the core check must still run
+
+        try:
+            last_runs = source_session.execute(
+                text(
+                    "SELECT leg, started_at, error FROM sync_runs "
+                    "ORDER BY started_at DESC LIMIT 5"
+                )
+            ).fetchall()
+            report.recent_sync_runs = [
+                {"leg": r[0], "started_at": str(r[1]), "error": r[2]}
+                for r in last_runs
+            ]
+            for r in last_runs:
+                if r[2]:
+                    report.add_alert(
+                        f"SYNC RUN FAILED: leg '{r[0]}' at {r[1]} — {r[2][:200]}"
+                    )
+                    break  # newest failure is enough for one alert
+            unresolved = source_session.execute(
+                text("SELECT COUNT(*) FROM sync_skips WHERE resolved_at IS NULL")
+            ).scalar() or 0
+            report.unresolved_sync_skips = unresolved
+            if unresolved:
+                report.add_alert(
+                    f"SYNC SKIPS: {unresolved} extraction(s) skipped for missing "
+                    f"bridge mappings and not yet replayed. ACTION: add bridge "
+                    f"rows, then run sync_extractions --resync-skips"
+                )
+        except Exception:
+            pass  # tables may predate the SFH-1c/1g migrations
 
         # --- Alert checks ---
 

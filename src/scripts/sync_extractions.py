@@ -178,6 +178,53 @@ def _serialize_value(v):
     return v
 
 
+def _record_sync_run(
+    source_url: str,
+    leg: str,
+    started_at,
+    result: dict | None,
+    error: str | None = None,
+) -> None:
+    """SFH-1g (audit SF-09): one durable sync_runs row per leg invocation.
+
+    Opens its own short-lived connection so a failure in the leg (including a
+    dead target connection) can still be recorded on the source side. Never
+    raises — a recording failure prints but doesn't mask the leg's outcome.
+    """
+    try:
+        engine = create_engine(source_url)
+        session = sessionmaker(bind=engine)()
+        try:
+            result = result or {}
+            session.execute(
+                text(
+                    "INSERT INTO sync_runs "
+                    "(leg, started_at, finished_at, rows_synced, rows_skipped, error) "
+                    "VALUES (:leg, :started, now(), :synced, :skipped, :error)"
+                ),
+                {
+                    "leg": leg,
+                    "started": started_at,
+                    "synced": result.get("synced")
+                    or result.get("updates_applied")
+                    or result.get("laws_summarized")
+                    or result.get("replayed")
+                    or 0,
+                    "skipped": result.get("skipped_no_bridge")
+                    or result.get("updates_skipped_no_bridge")
+                    or result.get("laws_skipped_no_bridge")
+                    or result.get("still_unmapped")
+                    or 0,
+                    "error": error,
+                },
+            )
+            session.commit()
+        finally:
+            session.close()
+    except Exception as rec_err:  # pragma: no cover - best-effort recorder
+        print(f"WARNING: could not record sync_runs row for leg={leg}: {rec_err}")
+
+
 def _build_provenance(row) -> dict:
     """PNE-1b (PN Ask 7): claim-level provenance attached to every synced payload.
 
@@ -1024,12 +1071,28 @@ def main():
     print(f"Target (Policy Navigator): {target_url[:60]}...")
     print(f"Mode:   {'DRY RUN' if args.dry_run else 'LIVE SYNC'}\n")
 
+    def _run_leg(leg_name: str, fn, *fn_args, **fn_kwargs):
+        """SFH-1g: run one leg, always leaving a durable sync_runs record
+        (skipped in dry-run — nothing durable should change)."""
+        started = datetime.now(UTC)
+        try:
+            result = fn(*fn_args, **fn_kwargs)
+        except Exception as leg_err:
+            if not args.dry_run:
+                _record_sync_run(source_url, leg_name, started, None, error=str(leg_err))
+            raise
+        if not args.dry_run:
+            _record_sync_run(source_url, leg_name, started, result)
+        return result
+
     if args.resync_skips:
-        resync_skips(source_url, target_url, dry_run=args.dry_run)
+        _run_leg("resync_skips", resync_skips, source_url, target_url, dry_run=args.dry_run)
         return
 
-    summary = sync_extractions(
-        source_url, target_url, dry_run=args.dry_run, batch_size=args.batch_size
+    summary = _run_leg(
+        "new_extractions",
+        sync_extractions,
+        source_url, target_url, dry_run=args.dry_run, batch_size=args.batch_size,
     )
 
     print(f"\n{'=' * 60}")
@@ -1042,7 +1105,9 @@ def main():
     if not args.skip_updates:
         print(f"\n{'=' * 60}")
         print("Update-propagation leg (P2-6)...\n")
-        update_summary = sync_updates(source_url, target_url, dry_run=args.dry_run)
+        update_summary = _run_leg(
+            "updates", sync_updates, source_url, target_url, dry_run=args.dry_run
+        )
         print(f"\n{'=' * 60}")
         print(f"Updates checked:           {update_summary['updates_checked']}")
         print(f"Updates applied:           {update_summary['updates_applied']}")
@@ -1053,7 +1118,9 @@ def main():
     if not args.skip_law_summaries:
         print(f"\n{'=' * 60}")
         print("Law-summary rollup leg (PNE-3a)...\n")
-        ls_summary = sync_law_summaries(source_url, target_url, dry_run=args.dry_run)
+        ls_summary = _run_leg(
+            "law_summaries", sync_law_summaries, source_url, target_url, dry_run=args.dry_run
+        )
         print(f"Laws summarized:           {ls_summary['laws_summarized']}")
         print(f"Skipped (no bridge):       {ls_summary['laws_skipped_no_bridge']}")
 

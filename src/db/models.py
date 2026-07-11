@@ -1255,6 +1255,30 @@ class SyncSkip(Base):
     )
 
 
+class SyncRun(Base):
+    """SFH-1g (audit SF-09): durable record of every sync invocation.
+
+    Sync/rollup outcomes previously existed only as console prints — under
+    cron, a failed or empty sync left no trace and the product DB just
+    quietly stopped receiving updates. One row per leg per CLI invocation;
+    sync_monitor reads the tail of this table for freshness alerting.
+    """
+
+    __tablename__ = "sync_runs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    leg = Column(String(50), nullable=False)  # new_extractions/updates/law_summaries/resync_skips
+    started_at = Column(DateTime, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+    rows_synced = Column(Integer, nullable=False, default=0)
+    rows_skipped = Column(Integer, nullable=False, default=0)
+    error = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_sync_runs_leg_started", "leg", "started_at"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # RR7b — DocumentVersion versioning columns (added via migration)
 # ---------------------------------------------------------------------------
