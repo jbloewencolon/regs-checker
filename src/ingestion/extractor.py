@@ -662,6 +662,18 @@ class TokenUsageSummary:
     merged_passages: int = 0
     agents_skipped: int = 0
 
+    # SFH-1d (SF-02) — routing recall telemetry: passages sampled to the full
+    # battery, and extractions those samples produced from agents routing
+    # would have skipped (the false-narrowing signal).
+    recall_sampled_passages: int = 0
+    recall_extractions_from_skipped_agents: int = 0
+
+    # SFH-1e (SF-05) — JSON-repair telemetry: responses that needed repair,
+    # per-strategy hit counts, and est. items discarded by truncation salvage.
+    repaired_responses: int = 0
+    repair_strategy_counts: dict = field(default_factory=dict)
+    items_dropped_by_repair_total: int = 0
+
     @property
     def total_tokens(self) -> int:
         return self.total_input_tokens + self.total_output_tokens
@@ -942,6 +954,7 @@ def _payload_hash(payload: dict) -> str:
 from src.ingestion.routing import (  # noqa: E402
     route_by_signal,
     select_agent_names,
+    select_agent_names_with_decision,
 )
 
 
@@ -1187,10 +1200,23 @@ def extract_single_record(
     # triage_result is a list-like backref; grab first if present
     if isinstance(triage, list):
         triage = triage[0] if triage else None
-    selected_agents = _select_agents_for_passage(passage.text, agents, triage_result=triage)
+    # SFH-1d (SF-02): use the decision-returning variant so the recall delta
+    # is computable — which extractions came from agents routing would have
+    # skipped on sampled passages.
+    routing_decision = select_agent_names_with_decision(
+        passage.text,
+        set(agents.keys()),
+        triage_result=triage,
+        recall_sample_rate=settings.triage_recall_sample_rate,
+    )
+    selected_agents = {
+        k: v for k, v in agents.items() if k in routing_decision.selected
+    }
 
     if token_usage is not None:
         token_usage.agents_skipped += len(agents) - len(selected_agents)
+        if routing_decision.bypassed:
+            token_usage.recall_sampled_passages += 1
 
     if not selected_agents:
         logger.debug("all_agents_skipped", record_id=record.id)
@@ -1317,6 +1343,15 @@ def extract_single_record(
             template_version=result.template_version,
         )
 
+        # SFH-1e: aggregate repair telemetry once per response.
+        if token_usage is not None and result.was_repaired:
+            token_usage.repaired_responses += 1
+            for _strat in result.repair_strategies:
+                token_usage.repair_strategy_counts[_strat] = (
+                    token_usage.repair_strategy_counts.get(_strat, 0) + 1
+                )
+            token_usage.items_dropped_by_repair_total += result.items_dropped_by_repair
+
         if result.abstention is not None:
             if token_usage is not None:
                 token_usage.abstention_count += 1
@@ -1411,6 +1446,21 @@ def extract_single_record(
                         extraction_meta["stop_reason"] = result.stop_reason
                     if result.was_repaired:
                         extraction_meta["was_repaired"] = True
+                        if result.repair_strategies:
+                            extraction_meta["repair_strategies"] = result.repair_strategies
+                        if result.items_dropped_by_repair:
+                            extraction_meta["items_dropped_by_repair"] = (
+                                result.items_dropped_by_repair
+                            )
+                    # SFH-1d (SF-02): on recall-sampled passages, tag extractions
+                    # from agents routing would have skipped — the false-narrowing
+                    # evidence the 5% sampling exists to produce.
+                    if routing_decision.bypassed:
+                        extraction_meta["routing_bypassed"] = True
+                        if name not in routing_decision.routed:
+                            extraction_meta["routing_would_have_skipped"] = True
+                            if token_usage is not None:
+                                token_usage.recall_extractions_from_skipped_agents += 1
                     if result.model_reasoning:
                         extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
                     extraction_meta["confidence_breakdown"] = {
@@ -2426,6 +2476,35 @@ def run_extraction(
     # known quantity per run, not a mystery.
     from src.core.summary_generator import get_and_reset_generation_failures
     summary["summary_generation_failures"] = get_and_reset_generation_failures()
+    # SFH-1e (SF-05): per-run JSON-repair report — a rising repair rate is an
+    # early prompt/model regression signal that was previously invisible.
+    summary["json_repair"] = {
+        "repaired_responses": token_usage.repaired_responses,
+        "repair_rate": (
+            round(token_usage.repaired_responses / token_usage.total_calls, 4)
+            if token_usage.total_calls else 0.0
+        ),
+        "strategy_counts": dict(token_usage.repair_strategy_counts),
+        "items_dropped_by_truncation_salvage_est":
+            token_usage.items_dropped_by_repair_total,
+    }
+    # SFH-1d (SF-02): the routing-recall delta the 5% sampling exists to
+    # produce — previously collected, never analyzed.
+    summary["routing_recall"] = {
+        "sampled_passages": token_usage.recall_sampled_passages,
+        "extractions_from_agents_routing_would_have_skipped":
+            token_usage.recall_extractions_from_skipped_agents,
+    }
+    if token_usage.recall_extractions_from_skipped_agents:
+        _log(
+            f"\n⚠ ROUTING RECALL DELTA: {token_usage.recall_sampled_passages} "
+            f"passage(s) sampled at full battery produced "
+            f"{token_usage.recall_extractions_from_skipped_agents} extraction(s) "
+            f"from agents routing would have SKIPPED (false-narrowing evidence — "
+            f"extractions tagged routing_would_have_skipped in metadata). "
+            f"ACTION: feed this into the routing-threshold decision (SFH-3c), "
+            f"priced against the eval set."
+        )
     if not conservation["conserved"]:
         logger.error(
             "run_integrity_check_failed",

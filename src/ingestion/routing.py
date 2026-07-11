@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import random
 import re
+from dataclasses import dataclass
 
 # ---------------------------------------------------------------------------
 # Passage-exclusion patterns
@@ -163,6 +164,63 @@ def route_by_signal(
     return signaled & all_agent_names
 
 
+@dataclass(frozen=True)
+class RoutingDecision:
+    """SFH-1d (audit SF-02): full routing decision, sampling made visible.
+
+    ``selected`` is what actually runs. ``routed`` is what signal routing
+    would have selected regardless of sampling — kept so the recall delta
+    (extractions produced by agents routing would have SKIPPED) is computable.
+    ``bypassed`` is True when this passage was recall-sampled to the full
+    battery.
+    """
+
+    selected: frozenset
+    routed: frozenset
+    bypassed: bool
+
+
+def select_agent_names_with_decision(
+    text: str,
+    all_agent_names: set[str],
+    triage_result=None,
+    recall_sample_rate: float = 0.0,
+) -> RoutingDecision:
+    """Like select_agent_names, but returns the full RoutingDecision.
+
+    RR7c pays for 5% of passages to run the full agent battery specifically
+    so routing false-narrowing can be measured — but nothing ever computed
+    the measurement (audit SF-02). This variant always computes what routing
+    *would* have chosen, so the caller can compare it against what the full
+    battery actually found on sampled passages.
+    """
+    if is_boilerplate(text):
+        empty = frozenset()
+        return RoutingDecision(selected=empty, routed=empty, bypassed=False)
+
+    stripped = text.strip()
+
+    # Bare definitions section header → definition_actor only (deterministic, like boilerplate).
+    if _DEFINITIONS_SECTION_HEADER.fullmatch(stripped):
+        only_def = frozenset({"definition_actor"} & all_agent_names)
+        return RoutingDecision(selected=only_def, routed=only_def, bypassed=False)
+
+    # What routing would choose, computed unconditionally (None = ambiguous →
+    # all agents; that's routing's own fallback, not a sampling bypass).
+    routed = route_by_signal(text, all_agent_names, triage_result)
+    routed_set = frozenset(routed) if routed is not None else frozenset(all_agent_names)
+
+    # RR7c — Recall sampling: bypass routing for a random fraction of passages.
+    if recall_sample_rate > 0.0 and random.random() < recall_sample_rate:
+        return RoutingDecision(
+            selected=frozenset(all_agent_names),
+            routed=routed_set,
+            bypassed=True,
+        )
+
+    return RoutingDecision(selected=routed_set, routed=routed_set, bypassed=False)
+
+
 def select_agent_names(
     text: str,
     all_agent_names: set[str],
@@ -179,6 +237,9 @@ def select_agent_names(
     random fraction of passages bypass signal-based routing entirely so that
     abstention false-negatives can be measured over time.
 
+    Thin wrapper over select_agent_names_with_decision (SFH-1d) — callers that
+    need the recall delta should use that variant.
+
     Args:
         text: Passage text.
         all_agent_names: Available agent names for this run.
@@ -188,21 +249,8 @@ def select_agent_names(
     Returns:
         Set of agent names to run (may be empty).
     """
-    if is_boilerplate(text):
-        return set()
-
-    stripped = text.strip()
-
-    # Bare definitions section header → definition_actor only (deterministic, like boilerplate).
-    if _DEFINITIONS_SECTION_HEADER.fullmatch(stripped):
-        return {"definition_actor"} & all_agent_names
-
-    # RR7c — Recall sampling: bypass routing for a random fraction of passages.
-    if recall_sample_rate > 0.0 and random.random() < recall_sample_rate:
-        return set(all_agent_names)
-
-    routed = route_by_signal(text, all_agent_names, triage_result)
-    if routed is not None:
-        return routed
-
-    return set(all_agent_names)
+    return set(
+        select_agent_names_with_decision(
+            text, all_agent_names, triage_result, recall_sample_rate
+        ).selected
+    )
