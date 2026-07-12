@@ -25,6 +25,7 @@ import structlog
 from pydantic import BaseModel, ValidationError
 
 from src.agents.prompt_loader import load_prompt_template, render_prompt
+from src.core.cancellation import OperationCancelled
 from src.core.config import settings
 from src.core.llm_provider import get_extraction_provider
 from src.core.text_grounding import verify_evidence_spans as _grounding_verify
@@ -899,6 +900,11 @@ class BaseExtractionAgent(ABC):
 
         try:
             response = self._provider.call(**call_kwargs)
+        except OperationCancelled:
+            # Operator stopped the run — propagate immediately. Retrying
+            # here would defeat the provider's own mid-flight cancellation
+            # check and add another multi-minute retry storm on top.
+            raise
         except Exception as exc:
             # Retry the SAME model once after a brief pause.  The previous
             # fallback strategy tried a different model (local_extraction_model),
@@ -917,6 +923,8 @@ class BaseExtractionAgent(ABC):
             time.sleep(2)
             try:
                 response = self._provider.call(**call_kwargs)
+            except OperationCancelled:
+                raise
             except Exception as retry_exc:
                 logger.error(
                     "extraction_retry_failed",

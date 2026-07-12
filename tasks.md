@@ -1674,6 +1674,49 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   Documents (per-row "Parsed" column using `parse_completed_at`). Lets an
   operator tell at a glance whether a panel reflects the run they just
   kicked off or stale data from days ago.
+- ✅ **TA-11** — extraction stall + Terminate diagnosis, prompted by a real
+  16-minute stuck extraction run where clicking Terminate had no effect.
+  Root causes: (1) `NvidiaLLMProvider.call()` used `stream: false` — one
+  blind blocking request with zero signal between "still generating" and
+  "actually stuck," a 300s per-attempt timeout, and 5 retries, so a truly
+  stalled call could silently run ~25 min before failing; (2) cancellation
+  (`request_cancel()`) was only checked between passages, never inside an
+  in-flight LLM call or its retry/backoff loop, so Terminate couldn't
+  interrupt a stuck call at all; (3) background extraction runs in a
+  `daemon=True` thread invisible to uvicorn's `reload=True` (used by
+  `start.py`) — a worker restart can orphan that thread, which keeps
+  retrying against a fresh process's un-set cancel flag (observed directly:
+  retry logs continued after `"Finished server process"`).
+  Fixes: switched `NvidiaLLMProvider.call()` to `stream: true` with a 60s
+  per-chunk idle timeout (httpx's `read` timeout applied to streaming reads)
+  — steady chunk arrivals now prove it's genuinely working; silence for 60s
+  (not 300s) means it's actually stuck. New `src/core/cancellation.py`
+  (`is_cancelled`/`OperationCancelled`, re-exported from `extractor.py` to
+  avoid a circular import with `src/agents/base.py`) is checked before each
+  retry attempt, between every streamed chunk, and during backoff sleeps
+  (broken into 0.5s increments) — a stuck call now aborts within seconds of
+  Terminate instead of only after the full retry storm finishes.
+  `agents/base.py`'s outer "retry once" wrapper re-raises `OperationCancelled`
+  immediately instead of attempting a second call. Preserves the exact same
+  `LLMResponse`/retry/backoff/error-message behavior on the non-cancelled
+  paths — verified via 11 new tests mocking `httpx.stream` (happy path,
+  missing usage data, reasoning-content stripping, malformed chunks, 429 and
+  transport-error retry-then-raise, transport-error-then-recover, cancel
+  before/during/mid-stream with a timing assertion). The pre-existing
+  `TestNvidiaLLMProvider` suite in `test_llm_provider.py` mocked the old
+  `stream:false` path via full `sys.modules["httpx"]` replacement, which
+  silently produced a `TypeError` on the new code that only looked like a
+  pass because the tests asserted `pytest.raises(Exception)`; rewrote all 9
+  to mock `httpx.stream` properly, preserving each one's original
+  regression-guard intent (double-`/v1`, bearer header, temperature default,
+  empty-content, 401, 429, reasoning_content, model_override).
+  The orphaned-daemon-thread risk (3) is a `reload=True` + background-thread
+  interaction, not something fixed by this change — flagged to the operator
+  as "check Task Manager for a stray python.exe if Terminate doesn't work."
+  Not yet verified against the live NVIDIA endpoint (sandbox has no network
+  access to it) — the gated `tests/integration/test_nvidia_provider.py`
+  suite (`NVIDIA_API_KEY=... pytest tests/integration/ -v`) is the way to
+  confirm on the operator's machine.
 - 🔒 **TA-7** — extraction-yield feedback loop (deferred, not gated but bigger
   lift): record whether each `uncertain` passage produced any extractions
   across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —

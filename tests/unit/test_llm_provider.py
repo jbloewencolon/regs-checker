@@ -3,6 +3,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from src.core.llm_provider import (
@@ -238,6 +239,40 @@ class TestNvidiaLLMProvider:
         assert provider.model_id == "openai-gpt-oss-120b-nvidia"
         assert "local" not in provider.model_id
 
+    # NvidiaLLMProvider.call() streams (stream:true) rather than making one
+    # blind blocking request, so it can tell "still generating" from "truly
+    # stuck" and interrupt cleanly on cancellation (TA-11). These helpers
+    # build fake httpx.stream()-shaped SSE responses for that mechanism.
+
+    def _sse_lines(self, *chunks: dict) -> list:
+        import json as _json
+        lines = [f"data: {_json.dumps(c)}" for c in chunks]
+        lines.append("data: [DONE]")
+        return lines
+
+    class _FakeResponse:
+        def __init__(self, status_code, lines, body_text=""):
+            self.status_code = status_code
+            self._lines = lines
+            self.text = body_text
+            self.request = MagicMock(name="request")
+
+        def read(self):
+            pass
+
+        def iter_lines(self):
+            yield from self._lines
+
+    class _FakeStreamCM:
+        def __init__(self, response):
+            self._response = response
+
+        def __enter__(self):
+            return self._response
+
+        def __exit__(self, *exc_info):
+            return False
+
     @patch("src.core.llm_provider.settings")
     def test_call_posts_to_chat_completions_not_double_v1(self, mock_settings):
         """Regression guard: NVIDIA base URL already has /v1; must not double it."""
@@ -245,20 +280,17 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": '{"a": 1}'}, "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"content": '{"a": 1}'}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 10, "completion_tokens": 5}},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)) as mock_stream:
             provider.call("sys", "usr")
 
-        called_url = mock_httpx.post.call_args[0][0]
+        called_url = mock_stream.call_args[0][1]
         assert called_url == "https://integrate.api.nvidia.com/v1/chat/completions"
         assert "/v1/v1/" not in called_url
 
@@ -268,20 +300,16 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": "hello"}, "finish_reason": "stop"}],
-            "usage": {},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"content": "hello"}, "finish_reason": "stop"}]},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)) as mock_stream:
             provider.call("sys", "usr")
 
-        headers = mock_httpx.post.call_args[1]["headers"]
+        headers = mock_stream.call_args[1]["headers"]
         assert headers["Authorization"] == "Bearer nvapi-secret-key"
 
     @patch("src.core.llm_provider.settings")
@@ -290,19 +318,14 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [
-                {"message": {"content": '{"extracted": true}'}, "finish_reason": "stop"}
-            ],
-            "usage": {"prompt_tokens": 80, "completion_tokens": 30},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"content": '{"extracted": true}'}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 80, "completion_tokens": 30}},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)):
             result = provider.call("system", "user")
 
         assert isinstance(result, LLMResponse)
@@ -318,20 +341,16 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
-            "usage": {},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)) as mock_stream:
             provider.call("sys", "usr")
 
-        payload = mock_httpx.post.call_args[1]["json"]
+        payload = mock_stream.call_args[1]["json"]
         assert payload["temperature"] == 0.0
 
     @patch("src.core.llm_provider.settings")
@@ -340,17 +359,13 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": ""}, "finish_reason": "length"}],
-            "usage": {},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {}, "finish_reason": "length"}]},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)):
             with pytest.raises(ValueError, match="Empty response from NVIDIA LLM"):
                 provider.call("sys", "usr")
 
@@ -360,16 +375,11 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 401
-        mock_resp.text = "Unauthorized"
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
-        mock_httpx.HTTPStatusError = Exception
+        response = self._FakeResponse(401, [], body_text="Unauthorized")
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
-            with pytest.raises(Exception):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)):
+            with pytest.raises(httpx.HTTPStatusError, match="auth/entitlement"):
                 provider.call("sys", "usr")
 
     @patch("src.core.llm_provider.settings")
@@ -378,15 +388,12 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 429
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
-        mock_httpx.HTTPStatusError = Exception
+        response = self._FakeResponse(429, [], body_text="quota exceeded")
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
-            with pytest.raises(Exception):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)), \
+             patch("time.sleep"):  # skip real backoff delays in this test
+            with pytest.raises(httpx.HTTPStatusError, match="rate/quota limit"):
                 provider.call("sys", "usr")
 
     @patch("src.core.llm_provider.settings")
@@ -396,23 +403,15 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{
-                "message": {
-                    "content": '{"answer": 42}',
-                    "reasoning_content": "Let me think through this...",
-                },
-                "finish_reason": "stop",
-            }],
-            "usage": {"prompt_tokens": 50, "completion_tokens": 100},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"reasoning_content": "Let me think through this..."}, "finish_reason": None}]},
+            {"choices": [{"delta": {"content": '{"answer": 42}'}, "finish_reason": "stop"}]},
+            {"choices": [], "usage": {"prompt_tokens": 50, "completion_tokens": 100}},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)):
             result = provider.call("sys", "usr")
 
         assert result.text == '{"answer": 42}'  # content used, not reasoning_content
@@ -423,19 +422,15 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
 
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
-            "usage": {},
-        }
-        mock_httpx = MagicMock()
-        mock_httpx.post.return_value = mock_resp
+        chunks = self._sse_lines(
+            {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]},
+        )
+        response = self._FakeResponse(200, chunks)
 
         provider = NvidiaLLMProvider()
-        with patch.dict(sys.modules, {"httpx": mock_httpx}):
+        with patch("httpx.stream", return_value=self._FakeStreamCM(response)) as mock_stream:
             result = provider.call("sys", "usr", model_override="meta/llama-3.1-70b-instruct")
 
-        payload = mock_httpx.post.call_args[1]["json"]
+        payload = mock_stream.call_args[1]["json"]
         assert payload["model"] == "meta/llama-3.1-70b-instruct"
         assert result.model_id == "meta-llama-3.1-70b-instruct-nvidia"
