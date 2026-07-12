@@ -1827,7 +1827,7 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
             SectionTriageResult.llm_reasoning,
             NormalizedSourceRecord.section_path,
             NormalizedSourceRecord.text_content,
-            DocumentFamily.label,
+            DocumentFamily.canonical_title,
         ]
         _problem_join = (
             select(*_problem_cols)
