@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from src.api.routes._dashboard_helpers import (
     _acquire_pipeline_lock,
+    _format_last_updated,
     _get_export_files,
     _get_pipeline_stats,
     _pipeline_lock,
@@ -679,7 +680,22 @@ def pipeline_tracker(db: Session = Depends(get_db)) -> HTMLResponse:
             parts.append(f'<span class="tracker-badge failed">{failed} failed</span>')
         return " ".join(parts)
 
+    # Most recent activity across fetch/parse/triage — lets an operator tell
+    # whether this snapshot reflects a run they just kicked off or stale
+    # data from days ago, even though this panel itself polls every 10s.
+    last_fetch_at = db.scalar(select(func.max(IngestionJob.fetch_completed_at)))
+    last_parse_at = db.scalar(select(func.max(IngestionJob.parse_completed_at)))
+    last_triage_at = db.scalar(select(func.max(SectionTriageResult.created_at)))
+    candidates = [d for d in (last_fetch_at, last_parse_at, last_triage_at) if d is not None]
+    last_activity_at = max(candidates) if candidates else None
+    last_activity_html = (
+        f'<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">'
+        f'Data as of: {html_escape(_format_last_updated(last_activity_at))}'
+        f'</div>'
+    )
+
     html = f"""
+    {last_activity_html}
     <div class="tracker-grid">
       <div class="tracker-card">
         <div class="tracker-header">
@@ -791,6 +807,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                 DocumentVersion.temporal_status,
                 IngestionJob.fetch_url,
                 IngestionJob.status.label("job_status"),
+                IngestionJob.parse_completed_at,
                 RawArtifact.content_type,
                 RawArtifact.size_bytes,
                 func.count(NormalizedSourceRecord.id).label("passages"),
@@ -812,6 +829,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
                 DocumentVersion.temporal_status,
                 IngestionJob.fetch_url,
                 IngestionJob.status,
+                IngestionJob.parse_completed_at,
                 RawArtifact.content_type,
                 RawArtifact.size_bytes,
             )
@@ -841,6 +859,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         size_kb = f"{r.size_bytes / 1024:.0f} KB" if r.size_bytes else "—"
         passages = r.passages or 0
         status_val = r.temporal_status.value if hasattr(r.temporal_status, "value") else str(r.temporal_status or "—")
+        parsed_display = html_escape(_format_last_updated(r.parse_completed_at))
 
         # Extract bill_id and IAPP fields from family metadata
         meta = r.family_metadata or {}
@@ -880,13 +899,14 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           <td style="max-width:160px;">{url_cell}</td>
           <td style="text-align:right;">{size_kb}</td>
           <td style="text-align:right;">{passages}</td>
+          <td style="font-size:11px;white-space:nowrap;color:var(--text-muted);">{parsed_display}</td>
           <td>
             <button class="btn btn-sm"
                     onclick="toggleDocEdit({jid})">Edit</button>
           </td>
         </tr>
         <tr id="doc-edit-{jid}" style="display:none;background:var(--bg-secondary);">
-          <td colspan="9" style="padding:8px;">
+          <td colspan="10" style="padding:8px;">
             <form hx-post="/dashboard/api/edit-document/{jid}"
                   hx-target="#doc-edit-result-{jid}"
                   hx-swap="innerHTML"
@@ -945,6 +965,7 @@ def list_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<th>Source URL</th>'
         f'<th style="text-align:right;">Size</th>'
         f'<th style="text-align:right;">Passages</th>'
+        f'<th>Parsed</th>'
         f'<th>Actions</th>'
         f'</tr></thead>'
         f'<tbody>{table_rows}</tbody>'
@@ -1788,6 +1809,15 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
                 'Run triage first.</div>'
             )
 
+        last_triaged_at = db.scalar(
+            select(func.max(SectionTriageResult.created_at))
+        )
+        last_updated_html = (
+            f'<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">'
+            f'Last triaged: {html_escape(_format_last_updated(last_triaged_at))}'
+            f'</div>'
+        )
+
         # --- Breakdown by decision ---
         decision_counts = {}
         for row in db.execute(
@@ -2022,6 +2052,7 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
         )
 
         html = f"""
+        {last_updated_html}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
           <div>
             <strong>Decisions</strong> <span style="font-size:12px;color:var(--text-muted);">({total} total)</span>
@@ -2051,6 +2082,7 @@ def triage_results_detail(db: Session = Depends(get_db)) -> HTMLResponse:
 def triage_warnings(limit: int = 200) -> HTMLResponse:
     """Return triage warnings from output/triage_warnings.jsonl."""
     import json as _json
+    from datetime import datetime
     from pathlib import Path
 
     log_path = Path("output/triage_warnings.jsonl")
@@ -2110,7 +2142,18 @@ def triage_warnings(limit: int = 200) -> HTMLResponse:
             ".then(function(){alert('Copied ' + rows.length + ' rows to clipboard.');})"
             ".catch(function(){alert('Copy failed — use Download CSV instead.');});"
         )
+        last_ts_raw = entries[-1].get("timestamp", "")
+        try:
+            last_ts = datetime.fromisoformat(last_ts_raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            last_ts = None
+        last_updated_html = (
+            f'<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">'
+            f'Last warning: {html_escape(_format_last_updated(last_ts))}'
+            f'</div>'
+        )
         return HTMLResponse(
+            f'{last_updated_html}'
             f'<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
             f'<strong>{len(entries)}</strong> warnings total. {summary_chips}'
             f'<a class="btn" style="font-size:11px;padding:2px 8px;" '
@@ -4887,6 +4930,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         error_short = html_escape(str(job.error_message or "")[:150])
         url_display = html_escape(str(job.fetch_url or ""))
         jid = job.id
+        updated_display = html_escape(_format_last_updated(job.updated_at))
 
         rows_html += f"""
         <tr id="failed-row-{jid}">
@@ -4901,6 +4945,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
             <br><code style="word-break:break-all;">{url_display[:80]}</code>
             <br><span style="color:var(--{ing_class});font-size:11px;">{error_short}</span>
           </td>
+          <td style="font-size:11px;white-space:nowrap;color:var(--text-muted);">{updated_display}</td>
           <td style="white-space:nowrap;">
             <form hx-post="/dashboard/api/upload-document"
                   hx-target="#failed-result-{jid}"
@@ -4929,7 +4974,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="failed-edit-{jid}" style="display:none;background:var(--bg-secondary);">
-          <td colspan="6" style="padding:8px;">
+          <td colspan="7" style="padding:8px;">
             <form hx-post="/dashboard/api/edit-document/{jid}"
                   hx-target="#failed-result-{jid}"
                   hx-swap="innerHTML"
@@ -4977,15 +5022,16 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
           </td>
         </tr>
         <tr id="failed-result-row-{jid}" style="display:none;">
-          <td colspan="6"><div id="failed-result-{jid}"></div></td>
+          <td colspan="7"><div id="failed-result-{jid}"></div></td>
         </tr>
         """
 
+    most_recent_display = html_escape(_format_last_updated(jobs[0].updated_at))
     return HTMLResponse(
         f'<div style="margin-top:10px;">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
         f'<span style="font-size:13px;color:var(--text-muted);">'
-        f'{len(jobs)} documents need attention</span>'
+        f'{len(jobs)} documents need attention &mdash; most recent: {most_recent_display}</span>'
         f'<button class="btn btn-sm"'
         f' hx-get="/dashboard/api/export-failed-txt"'
         f' hx-swap="none"'
@@ -4998,7 +5044,7 @@ def list_failed_documents(db: Session = Depends(get_db)) -> HTMLResponse:
         f'<table class="review-table">'
         f'<thead><tr>'
         f'<th>Jur.</th><th>Document</th><th>Bill ID</th><th>Bill Status</th>'
-        f'<th>Error / URL</th><th>Actions</th>'
+        f'<th>Error / URL</th><th>Updated</th><th>Actions</th>'
         f'</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         f'</table></div>'

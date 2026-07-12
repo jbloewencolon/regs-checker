@@ -88,8 +88,10 @@ from src.schemas.extraction import EXTRACTION_TYPE_SCHEMAS
 
 logger = structlog.get_logger()
 
-# Global cancellation event — set to signal running extraction to stop.
-_cancel_event = threading.Event()
+# Cancellation lives in src/core/cancellation.py (re-exported here) so
+# src/agents/base.py and src/core/llm_provider.py can check is_cancelled()
+# without importing this module and creating a circular import.
+from src.core.cancellation import _cancel_event, clear_cancel, is_cancelled  # noqa: E402
 
 # Global pause event — cleared to pause the loop, set to run.
 _pause_event = threading.Event()
@@ -100,19 +102,17 @@ _last_passage_at: float = 0.0
 
 
 def request_cancel() -> None:
-    """Signal the running extraction pipeline to stop after the current passage."""
+    """Signal the running extraction pipeline to stop.
+
+    Takes effect at the next between-passage check (as before), but now
+    also reaches any LLM call currently in flight: the provider checks
+    cancellation between streamed chunks and before each retry attempt,
+    so a stuck call is interrupted within seconds rather than only after
+    it finishes (successfully or by exhausting retries, which could
+    previously take up to ~25 minutes).
+    """
     _cancel_event.set()
     _pause_event.set()  # wake the loop so it sees the cancel immediately
-
-
-def is_cancelled() -> bool:
-    """Check whether cancellation has been requested."""
-    return _cancel_event.is_set()
-
-
-def clear_cancel() -> None:
-    """Reset the cancellation flag (called at extraction start)."""
-    _cancel_event.clear()
 
 
 def request_pause() -> None:

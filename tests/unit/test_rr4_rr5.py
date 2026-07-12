@@ -176,6 +176,99 @@ class TestParserSectionTracking:
             _, _, _, _, ids = passage
             assert len(ids) > 0
 
+    def test_cross_reference_does_not_steal_section_content(self):
+        """Regression (real Massachusetts bill, TMP-MA-AMENDMENTTOTHE):
+        'SECTION 7. Chapter 272 of the General Laws is hereby amended...' is
+        one continuous clause, but "Chapter 272" also matches the marker
+        pattern, so section_pattern's lookahead stopped right after
+        "SECTION 7." Before the fix this produced an empty 'SECTION 7.' stub
+        AND mislabeled Section 7's real content under 'Chapter 272' instead.
+        _splice_marker_only_stubs runs on the raw marker/body pairs before
+        the size-based chunk merge, so it's tested directly here rather than
+        through _segment_text (whose merge step would otherwise combine
+        short synthetic sections regardless of this bug).
+        """
+        from src.ingestion.parser import _splice_marker_only_stubs
+
+        raw = [
+            ("SECTION 6.", "SECTION 6. Some real prior section content.", 0, 44),
+            ("SECTION 7.", "SECTION 7.", 44, 54),  # empty body -- the bug signature
+            (
+                "Chapter 272",
+                "Chapter 272 of the General Laws is hereby amended by inserting "
+                "after section 29C the following section:- Section 29D. (a) "
+                "Whoever, while under the age of criminal majority, possesses "
+                "visual material shall be punished as provided herein.",
+                54, 250,
+            ),
+            ("SECTION 8.", "SECTION 8.", 250, 260),  # empty body -- same bug
+            (
+                "Section 63",
+                "Section 63 of chapter 277 of the General Laws is hereby "
+                "amended by striking out certain language.",
+                260, 350,
+            ),
+        ]
+        fixed = _splice_marker_only_stubs(raw)
+        markers = [f[0] for f in fixed]
+
+        # No bare marker-only stub should survive as its own entry.
+        assert not any(f[1].strip() == f[0].strip() for f in fixed), (
+            "no entry should be just a bare marker with no body"
+        )
+
+        # The real content must be attributed to "SECTION 7."/"SECTION 8.",
+        # not mislabeled as "Chapter 272"/"Section 63".
+        assert "Chapter 272" not in markers
+        assert "Section 63" not in markers
+        section_7 = next(f for f in fixed if f[0] == "SECTION 7.")
+        assert "Whoever, while under the age of criminal majority" in section_7[1]
+        section_8 = next(f for f in fixed if f[0] == "SECTION 8.")
+        assert "striking out certain language" in section_8[1]
+
+        # SECTION 6 (a genuinely non-empty marker) must be untouched.
+        section_6 = next(f for f in fixed if f[0] == "SECTION 6.")
+        assert section_6[1] == "SECTION 6. Some real prior section content."
+
+    def test_splice_marker_only_stubs_leaves_normal_sections_untouched(self):
+        """A section with real content of its own (non-empty body) must not
+        be merged forward, even if it's short."""
+        from src.ingestion.parser import _splice_marker_only_stubs
+
+        raw = [
+            ("SECTION 4.", "SECTION 4. Repealed.", 0, 20),
+            ("SECTION 5.", "SECTION 5. This act takes effect January 1, 2026.", 20, 70),
+        ]
+        fixed = _splice_marker_only_stubs(raw)
+        assert fixed == raw
+
+    def test_splice_marker_only_stubs_handles_chain_of_empty_markers(self):
+        """Two consecutive empty markers before real content should both be
+        absorbed into the section that actually contains the content."""
+        from src.ingestion.parser import _splice_marker_only_stubs
+
+        raw = [
+            ("SECTION 1.", "SECTION 1.", 0, 10),
+            ("SECTION 2.", "SECTION 2.", 10, 20),
+            ("Chapter 5", "Chapter 5 of the General Laws is hereby amended.", 20, 70),
+        ]
+        fixed = _splice_marker_only_stubs(raw)
+        assert len(fixed) == 1
+        assert fixed[0][0] == "SECTION 1."
+        assert "Chapter 5 of the General Laws is hereby amended" in fixed[0][1]
+
+    def test_splice_marker_only_stubs_trailing_empty_marker_left_alone(self):
+        """An empty marker with nothing after it (end of document) has
+        nothing to absorb — it should pass through unchanged, not crash."""
+        from src.ingestion.parser import _splice_marker_only_stubs
+
+        raw = [
+            ("SECTION 1.", "SECTION 1. Real content here.", 0, 30),
+            ("SECTION 2.", "SECTION 2.", 30, 40),
+        ]
+        fixed = _splice_marker_only_stubs(raw)
+        assert fixed == raw
+
 
 # ---------------------------------------------------------------------------
 # RR4d — Parse quality scoring

@@ -403,6 +403,20 @@ class LocalLLMProvider(BaseLLMProvider):
 # NVIDIA hosted LLM provider
 # ---------------------------------------------------------------------------
 
+import json as _json
+
+
+class _RateLimited(Exception):
+    """Internal signal for a 429 response — carries the request/response so
+    the retry loop can build the existing HTTPStatusError message on final
+    exhaustion, without httpx.stream()'s context manager having already
+    closed the response by the time the retry loop's except clause runs."""
+
+    def __init__(self, request: Any, response: Any) -> None:
+        super().__init__("NVIDIA rate limited (429)")
+        self.request = request
+        self.response = response
+
 
 class NvidiaLLMProvider(BaseLLMProvider):
     """NVIDIA-hosted LLM via OpenAI-compatible API (integrate.api.nvidia.com).
@@ -448,6 +462,13 @@ class NvidiaLLMProvider(BaseLLMProvider):
     def model_id(self) -> str:
         return self._model.replace("/", "-") + "-nvidia"
 
+    # How long we tolerate silence between streamed chunks before treating the
+    # call as stalled. Much shorter than the old blind 300s whole-response
+    # timeout: with streaming, silence genuinely means "nothing is happening"
+    # rather than "still generating a long response" (which shows up as
+    # steady, if slow, chunk arrivals and never trips this).
+    _IDLE_TIMEOUT_SECONDS = 60.0
+
     def call(
         self,
         system_prompt: str,
@@ -462,6 +483,8 @@ class NvidiaLLMProvider(BaseLLMProvider):
 
         import httpx
 
+        from src.core.cancellation import OperationCancelled, is_cancelled
+
         effective_model = model_override or self._model
 
         payload: dict[str, Any] = {
@@ -472,7 +495,12 @@ class NvidiaLLMProvider(BaseLLMProvider):
             ],
             "max_tokens": max_tokens,
             "temperature": temperature,
-            "stream": False,
+            # Streamed (not stream: False) so callers can tell "still
+            # generating" (chunks keep arriving) from "actually stuck" (no
+            # chunk within _IDLE_TIMEOUT_SECONDS) instead of blocking blind
+            # for up to 300s with zero signal either way.
+            "stream": True,
+            "stream_options": {"include_usage": True},
         }
 
         # Optional inference parameters — only include when explicitly set so that
@@ -491,24 +519,46 @@ class NvidiaLLMProvider(BaseLLMProvider):
 
         headers = {
             "Authorization": f"Bearer {self._api_key}",
-            "Accept": "application/json",
+            "Accept": "text/event-stream",
         }
+
+        # connect/write/pool bound the request setup; read bounds each
+        # individual chunk — this IS the idle-stall detector.
+        timeout = httpx.Timeout(
+            connect=30.0, read=self._IDLE_TIMEOUT_SECONDS, write=30.0, pool=30.0,
+        )
+
+        def _sleep_cancellable(seconds: float) -> None:
+            """Sleep in small increments so a cancel during backoff is
+            noticed within ~0.5s instead of waiting out the full backoff."""
+            elapsed = 0.0
+            step = 0.5
+            while elapsed < seconds:
+                if is_cancelled():
+                    raise OperationCancelled(
+                        "Extraction cancelled by operator (during retry backoff)."
+                    )
+                time.sleep(min(step, seconds - elapsed))
+                elapsed += step
 
         _max_retries = 5
         for attempt in range(_max_retries + 1):
-            # NVIDIA base URL already ends in /v1 — append only /chat/completions.
-            # Connection-level failures (server drops the socket, read timeout,
-            # DNS/connect errors) raise httpx.TransportError rather than returning
-            # a response. These are transient, so retry them with the same
-            # exponential backoff used for 429s.
+            if is_cancelled():
+                raise OperationCancelled("Extraction cancelled by operator.")
+
             try:
-                response = httpx.post(
-                    f"{self._base_url}/chat/completions",
-                    json=payload,
-                    headers=headers,
-                    timeout=300.0,
+                result = self._stream_chat_completion(
+                    payload, headers, timeout, effective_model,
                 )
+                return result
+            except OperationCancelled:
+                raise
             except httpx.TransportError as exc:
+                # Connection-level failures (server drops the socket, read/idle
+                # timeout, DNS/connect errors) — including the idle-stall
+                # ReadTimeout above, since httpx.ReadTimeout is itself a
+                # TransportError subclass. These are transient, so retry with
+                # exponential backoff, same as before.
                 if attempt < _max_retries:
                     wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
                     logger.warning(
@@ -518,7 +568,7 @@ class NvidiaLLMProvider(BaseLLMProvider):
                         wait_s=wait_s,
                         error=str(exc)[:200],
                     )
-                    time.sleep(wait_s)
+                    _sleep_cancellable(wait_s)
                     continue
                 logger.error(
                     "nvidia_transport_error_exhausted",
@@ -526,16 +576,7 @@ class NvidiaLLMProvider(BaseLLMProvider):
                     error=str(exc)[:200],
                 )
                 raise
-
-            if response.status_code in (401, 403):
-                raise httpx.HTTPStatusError(
-                    f"NVIDIA auth/entitlement error (HTTP {response.status_code}) — "
-                    "verify NVIDIA_API_KEY and model access in your NVIDIA account.",
-                    request=response.request,
-                    response=response,
-                )
-
-            if response.status_code == 429:
+            except _RateLimited as exc:
                 if attempt < _max_retries:
                     wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
                     logger.warning(
@@ -544,7 +585,7 @@ class NvidiaLLMProvider(BaseLLMProvider):
                         attempt=attempt + 1,
                         wait_s=wait_s,
                     )
-                    time.sleep(wait_s)
+                    _sleep_cancellable(wait_s)
                     continue
                 logger.warning(
                     "nvidia_quota_exhausted",
@@ -554,11 +595,54 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 raise httpx.HTTPStatusError(
                     "NVIDIA rate/quota limit hit (429).  Check credits and RPM limits "
                     "in your NVIDIA account before retrying.",
+                    request=exc.request,
+                    response=exc.response,
+                ) from None
+
+        raise RuntimeError(f"NVIDIA call exhausted all {_max_retries} retries for {effective_model}")
+
+    def _stream_chat_completion(
+        self,
+        payload: dict[str, Any],
+        headers: dict[str, str],
+        timeout: Any,
+        effective_model: str,
+    ) -> LLMResponse:
+        """Perform one streamed chat-completion attempt.
+
+        Raises httpx.TransportError (incl. ReadTimeout on stall),
+        _RateLimited on 429, httpx.HTTPStatusError on other HTTP errors, or
+        src.core.cancellation.OperationCancelled if cancelled mid-stream.
+        """
+        import httpx
+
+        from src.core.cancellation import OperationCancelled, is_cancelled
+
+        text_parts: list[str] = []
+        finish_reason: str | None = None
+        usage_data: dict[str, Any] = {}
+        saw_reasoning_content = False
+
+        with httpx.stream(
+            "POST",
+            f"{self._base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=timeout,
+        ) as response:
+            if response.status_code in (401, 403):
+                response.read()
+                raise httpx.HTTPStatusError(
+                    f"NVIDIA auth/entitlement error (HTTP {response.status_code}) — "
+                    "verify NVIDIA_API_KEY and model access in your NVIDIA account.",
                     request=response.request,
                     response=response,
                 )
-
+            if response.status_code == 429:
+                response.read()
+                raise _RateLimited(request=response.request, response=response)
             if response.status_code >= 400:
+                response.read()
                 body = response.text[:500] if response.text else ""
                 raise httpx.HTTPStatusError(
                     f"NVIDIA API HTTP {response.status_code} for model {effective_model}: {body}",
@@ -566,52 +650,78 @@ class NvidiaLLMProvider(BaseLLMProvider):
                     response=response,
                 )
 
-            data = response.json()
-            choice = data["choices"][0]
-            message = choice["message"]
-            text = (message.get("content") or "").strip()
-            finish_reason = choice.get("finish_reason")
+            for line in response.iter_lines():
+                if is_cancelled():
+                    raise OperationCancelled("Extraction cancelled by operator (mid-stream).")
+                if not line or not line.startswith("data:"):
+                    continue
+                data_str = line[len("data:"):].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    chunk = _json.loads(data_str)
+                except _json.JSONDecodeError:
+                    continue  # ignore malformed keep-alive/comment lines
 
-            # Log unexpected reasoning tokens (means reasoning_effort was not honoured).
-            if message.get(self._REASONING_CONTENT_KEY):
-                logger.warning(
-                    "nvidia_unexpected_reasoning_content",
-                    model=effective_model,
-                    reasoning_len=len(message[self._REASONING_CONTENT_KEY]),
-                )
+                # The final chunk when stream_options.include_usage is honoured
+                # has empty/absent choices and a top-level usage object.
+                if chunk.get("usage"):
+                    usage_data = chunk["usage"]
 
-            usage_data = data.get("usage", {})
-            usage = LLMUsage(
-                input_tokens=usage_data.get("prompt_tokens", 0),
-                output_tokens=usage_data.get("completion_tokens", 0),
-            )
+                choices = chunk.get("choices") or []
+                if not choices:
+                    continue
+                choice = choices[0]
+                delta = choice.get("delta") or {}
+                if delta.get("content"):
+                    text_parts.append(delta["content"])
+                if delta.get(self._REASONING_CONTENT_KEY):
+                    saw_reasoning_content = True
+                if choice.get("finish_reason"):
+                    finish_reason = choice["finish_reason"]
 
-            if not text:
-                raise ValueError(
-                    f"Empty response from NVIDIA LLM "
-                    f"(finish_reason={finish_reason}, model={effective_model})"
-                )
+        text = "".join(text_parts).strip()
 
-            effective_model_id = effective_model.replace("/", "-") + "-nvidia"
-
-            logger.debug(
-                "nvidia_llm_response",
+        if saw_reasoning_content:
+            logger.warning(
+                "nvidia_unexpected_reasoning_content",
                 model=effective_model,
-                model_id=effective_model_id,
-                input_tokens=usage.input_tokens,
-                output_tokens=usage.output_tokens,
-                finish_reason=finish_reason,
-                response_length=len(text),
             )
 
-            return LLMResponse(
-                text=text,
-                usage=usage,
-                model_id=effective_model_id,
-                stop_reason=finish_reason,
+        usage = LLMUsage(
+            input_tokens=usage_data.get("prompt_tokens", 0),
+            output_tokens=usage_data.get("completion_tokens", 0),
+        )
+        if not usage_data:
+            # stream_options.include_usage wasn't honoured — token accounting
+            # for this call will under-report rather than silently look
+            # normal. Visible in run_summary token totals if this recurs.
+            logger.warning("nvidia_stream_usage_missing", model=effective_model)
+
+        if not text:
+            raise ValueError(
+                f"Empty response from NVIDIA LLM "
+                f"(finish_reason={finish_reason}, model={effective_model})"
             )
 
-        raise RuntimeError(f"NVIDIA call exhausted all {_max_retries} retries for {effective_model}")
+        effective_model_id = effective_model.replace("/", "-") + "-nvidia"
+
+        logger.debug(
+            "nvidia_llm_response",
+            model=effective_model,
+            model_id=effective_model_id,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            finish_reason=finish_reason,
+            response_length=len(text),
+        )
+
+        return LLMResponse(
+            text=text,
+            usage=usage,
+            model_id=effective_model_id,
+            stop_reason=finish_reason,
+        )
 
 
 # ---------------------------------------------------------------------------
