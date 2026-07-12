@@ -1676,18 +1676,48 @@ def run_triage(
         )
     ).all()
 
-    # Filter out tiny passages
-    records = [r for r in records if len(r.text_content or "") >= MIN_PASSAGE_LENGTH]
-
     summary = {
-        "total": len(records),
+        "total": 0,
         "relevant": 0,
         "uncertain": 0,
         "skipped": 0,
+        "skipped_short": 0,
+        "deduped": 0,
     }
 
     if not records:
         _log("No untriaged passages found.")
+        return summary
+
+    # TA-5: passages under MIN_PASSAGE_LENGTH used to be silently dropped
+    # from the loop below — no SectionTriageResult row was ever written for
+    # them, so they stayed permanently "untriaged" (the pipeline tracker's
+    # denominator could never reach 100%, and there was no way to tell "not
+    # yet triaged" from "excluded as too short"). Give them a real row.
+    long_enough: list = []
+    for r in records:
+        if len(r.text_content or "") >= MIN_PASSAGE_LENGTH:
+            long_enough.append(r)
+        else:
+            db.add(SectionTriageResult(
+                source_record_id=r.id,
+                decision=TriageDecision.not_relevant,
+                method=TriageMethod.quality_fail,
+                confidence=1.0,
+                quality_flags=["too_short"],
+            ))
+    if len(long_enough) < len(records):
+        summary["skipped_short"] = len(records) - len(long_enough)
+        db.commit()
+        _log(
+            f"Recorded {summary['skipped_short']} passages under "
+            f"{MIN_PASSAGE_LENGTH} chars as not_relevant (too_short)."
+        )
+    records = long_enough
+
+    summary["total"] = len(records)
+    if not records:
+        _log("No untriaged passages found (all were too short).")
         return summary
 
     # Get LLM provider for Layer 2/3 triage (keyword-only passages are free).
@@ -1724,10 +1754,21 @@ def run_triage(
             logger.debug("bill_context_build_failed", dv_id=dv_id, exc_info=True)
             _bill_ctx_cache[dv_id] = {}
 
-    for i, record in enumerate(records):
+    # TA-2: build every record's context on the main thread — SQLAlchemy
+    # Sessions aren't thread-safe, and _build_context()/relationship lazy-
+    # loads issue queries. triage_passage() itself takes no db argument and
+    # does no DB I/O, so once context is built it's safe to fan the LLM
+    # calls out to a thread pool — same shape as _run_agent/ThreadPoolExecutor
+    # for concurrent extraction agents.
+    #
+    # TA-6: dedupe by (text, ai_scope, key_requirements) — output/law_texts_
+    # quarantine/NEEDED_SOURCES.md documents 12 byte-identical same-bill
+    # duplicate pairs ingested under two different canonical IDs; identical
+    # passages would otherwise be triaged (and LLM-billed) twice.
+    prepared: list[tuple] = []  # (record, ctx, neighbors, dedupe_key)
+    for record in records_sorted:
         try:
             ctx = _build_context(db, record)
-            # Inject bill-level context (definitions, scope, enforcement, structure)
             bill_ctx = _bill_ctx_cache.get(record.document_version_id, {})
             if bill_ctx:
                 if bill_ctx.get("definitions"):
@@ -1741,69 +1782,122 @@ def run_triage(
                 if bill_ctx.get("defined_terms"):
                     ctx["defined_terms"] = bill_ctx["defined_terms"]
 
-            # Gather neighboring passage texts for surrounding context
             siblings = _dv_records.get(record.document_version_id, [])
             neighbors = _get_neighbor_texts(record, siblings)
 
-            result = triage_passage(
-                record.text_content, ctx, llm_provider=llm_provider, neighbors=neighbors,
-                record_id=record.id,
+            dedupe_key = _text_hash(
+                (record.text_content or "")
+                + "\x00" + ctx.get("ai_scope", "")
+                + "\x00" + ctx.get("key_requirements", "")
             )
-
-            triage_row = SectionTriageResult(
-                source_record_id=record.id,
-                decision=TriageDecision(result.decision),
-                method=TriageMethod(result.method),
-                confidence=result.confidence,
-                matched_keywords=result.matched_keywords,
-                orrick_terms_checked=result.orrick_terms_checked,
-                llm_reasoning=result.llm_reasoning,
-                ai_signals=result.ai_signals,
-                pdf_quality_score=result.pdf_quality_score,
-                quality_flags=result.quality_flags,
-                model_id=result.model_id,
-            )
-            db.add(triage_row)
-
-            if result.decision == "not_relevant":
-                summary["skipped"] += 1
-            elif result.decision == "relevant":
-                summary["relevant"] += 1
-            else:
-                summary["uncertain"] += 1
+            prepared.append((record, ctx, neighbors, dedupe_key))
         except Exception as exc:
-            logger.error("triage_passage_failed", record_id=record.id, exc_info=True)
+            logger.error("triage_context_build_failed", record_id=record.id, exc_info=True)
             from src.agents.section_triage import _log_triage_warning
             _log_triage_warning(
-                "passage_exception", f"Unhandled exception: {exc}",
+                "passage_exception", f"Context build failed: {exc}",
                 record_id=record.id,
             )
             db.rollback()
-            # Record as uncertain/passthrough so it doesn't block extraction
             try:
-                triage_row = SectionTriageResult(
+                db.add(SectionTriageResult(
                     source_record_id=record.id,
                     decision=TriageDecision.uncertain,
                     method=TriageMethod.passthrough,
                     confidence=0.0,
                     quality_flags=["triage_error"],
-                )
-                db.add(triage_row)
+                ))
                 db.commit()
                 summary["uncertain"] += 1
             except Exception:
                 logger.error("triage_error_record_failed", record_id=record.id, exc_info=True)
                 db.rollback()
 
-        # Commit in batches of 10 for progress visibility in the dashboard
-        if (i + 1) % 10 == 0:
+    # Group prepared records by dedupe_key — one triage_passage() call per
+    # unique key, its result applied to every record sharing that key.
+    by_key: dict[str, list[tuple]] = {}
+    for item in prepared:
+        by_key.setdefault(item[3], []).append(item)
+    unique_work = [group[0] for group in by_key.values()]  # one representative each
+    dupe_count = len(prepared) - len(unique_work)
+    if dupe_count:
+        summary["deduped"] = dupe_count
+        _log(f"Deduped {dupe_count} passages with identical (text, bill scope) to {len(unique_work)} unique triage calls.")
+
+    def _persist(record, result) -> None:
+        triage_row = SectionTriageResult(
+            source_record_id=record.id,
+            decision=TriageDecision(result.decision),
+            method=TriageMethod(result.method),
+            confidence=result.confidence,
+            matched_keywords=result.matched_keywords,
+            orrick_terms_checked=result.orrick_terms_checked,
+            llm_reasoning=result.llm_reasoning,
+            ai_signals=result.ai_signals,
+            pdf_quality_score=result.pdf_quality_score,
+            quality_flags=result.quality_flags,
+            model_id=result.model_id,
+        )
+        db.add(triage_row)
+        if result.decision == "not_relevant":
+            summary["skipped"] += 1
+        elif result.decision == "relevant":
+            summary["relevant"] += 1
+        else:
+            summary["uncertain"] += 1
+
+    def _persist_error(record, exc: Exception) -> None:
+        logger.error("triage_passage_failed", record_id=record.id, exc_info=True)
+        from src.agents.section_triage import _log_triage_warning
+        _log_triage_warning(
+            "passage_exception", f"Unhandled exception: {exc}",
+            record_id=record.id,
+        )
+        db.rollback()
+        try:
+            db.add(SectionTriageResult(
+                source_record_id=record.id,
+                decision=TriageDecision.uncertain,
+                method=TriageMethod.passthrough,
+                confidence=0.0,
+                quality_flags=["triage_error"],
+            ))
             db.commit()
-            _log(
-                f"Triaged {i + 1}/{len(records)}: "
-                f"{summary['relevant']} relevant, "
-                f"{summary['uncertain']} uncertain, "
-                f"{summary['skipped']} skipped"
-            )
+            summary["uncertain"] += 1
+        except Exception:
+            logger.error("triage_error_record_failed", record_id=record.id, exc_info=True)
+            db.rollback()
+
+    concurrency = max(1, min(len(unique_work), settings.triage_concurrency))
+    completed = 0
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = {
+            executor.submit(
+                triage_passage, record.text_content, ctx,
+                llm_provider=llm_provider, neighbors=neighbors, record_id=record.id,
+            ): key
+            for record, ctx, neighbors, key in unique_work
+        }
+        for future in as_completed(futures):
+            key = futures[future]
+            group = by_key[key]
+            try:
+                result = future.result()
+                for record, _ctx, _neighbors, _key in group:
+                    _persist(record, result)
+            except Exception as exc:
+                for record, _ctx, _neighbors, _key in group:
+                    _persist_error(record, exc)
+
+            completed += len(group)
+            if completed % 10 < len(group):  # commit roughly every 10 passages
+                db.commit()
+                _log(
+                    f"Triaged {completed}/{len(prepared)}: "
+                    f"{summary['relevant']} relevant, "
+                    f"{summary['uncertain']} uncertain, "
+                    f"{summary['skipped']} skipped"
+                )
 
     db.commit()
     # SFH-1i (SF-11): surface warning-channel write failures — the monitoring

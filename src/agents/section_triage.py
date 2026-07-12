@@ -342,16 +342,19 @@ def _extract_orrick_terms(context: dict) -> set[str]:
                 if len(part) >= 3:
                     terms.add(part)
 
-    # Key requirements — extract noun phrases and regulatory terms
+    # Key requirements — extract curated regulatory keywords only.
+    #
+    # TA-1: this used to also extract generic 2+ word phrases via
+    # `\b[a-z][a-z\s\-]{4,30}\b` over the raw text. fact_laws.csv's
+    # key_requirements column is frequently OCR-scrambled ("...the Permanent
+    # declaratory relief, Advertising person knows is a deceptive..."), so
+    # that regex turned noise fragments into auto-relevant match terms —
+    # any passage sharing one of those fragments got marked `relevant` at
+    # confidence >=0.75 without ever reaching the LLM. The whitelist below
+    # is deliberately narrow: only terms an analyst would recognize as
+    # AI-regulation vocabulary make it into the keyword screen.
     key_reqs = context.get("key_requirements", "")
     if key_reqs:
-        # Extract significant phrases (3+ word sequences)
-        for match in re.finditer(r"\b[a-z][a-z\s\-]{4,30}\b", key_reqs.lower()):
-            phrase = match.group().strip()
-            if len(phrase.split()) >= 2:
-                terms.add(phrase)
-
-        # Also extract individual regulatory keywords
         for word in re.findall(r"\b[a-z]{4,}\b", key_reqs.lower()):
             if word in {
                 "deployer", "deployers", "developer", "developers",
@@ -432,13 +435,16 @@ def _build_bill_context_block(context: dict) -> str:
     """
     parts: list[str] = []
 
+    # TA-3: trimmed from 30000/20000 — triage is a binary relevance call, not
+    # extraction; the far tail of a definitions/scope excerpt was adding
+    # ~15K input tokens per LLM call without evidence it changed verdicts.
     bill_defs = context.get("bill_definitions", "")
     if bill_defs:
-        parts.append(f"DEFINITIONS FROM THIS BILL (excerpt):\n{bill_defs[:30000]}")
+        parts.append(f"DEFINITIONS FROM THIS BILL (excerpt):\n{bill_defs[:6000]}")
 
     bill_scope = context.get("bill_scope", "")
     if bill_scope:
-        parts.append(f"SCOPE / APPLICABILITY (excerpt):\n{bill_scope[:20000]}")
+        parts.append(f"SCOPE / APPLICABILITY (excerpt):\n{bill_scope[:5000]}")
 
     defined_terms = context.get("defined_terms")
     if defined_terms:
@@ -607,10 +613,16 @@ def triage_passage(
 
     # If quality is too low, skip triage — extraction would fail anyway
     if quality_score < 0.3:
+        # TA-4: `confidence` is how sure we are about the *decision*
+        # (not_relevant), not the raw quality score — those are different
+        # quantities. A quality_score of 0.1 means the text is nearly
+        # unreadable, which makes us MORE confident it's not usable
+        # regulatory content, not 10% confident. The raw score is still
+        # preserved separately in pdf_quality_score for diagnostics.
         return TriageResult(
             decision="not_relevant",
             method="quality_fail",
-            confidence=quality_score,
+            confidence=round(1.0 - quality_score, 3),
             pdf_quality_score=quality_score,
             quality_flags=quality_flags,
         )

@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     # Provides recall coverage on passages triage might mis-label.
     triage_recall_sample_rate: float = 0.05
 
+    # TA-2 — Concurrent LLM triage calls. triage_passage() does no DB I/O, so
+    # it's safe to fan out across a thread pool (mirrors max_concurrent_agents_
+    # per_model's extraction pattern). Same LM Studio caveat: single-GPU local
+    # setups should set this to 1 to avoid VRAM thrashing; hosted APIs
+    # (NVIDIA) tolerate real concurrency.
+    triage_concurrency: int = 3
+
     # FastAPI
     # Default to loopback — the dashboard has no authentication, so binding
     # to all interfaces by default would expose it on any network the host

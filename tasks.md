@@ -1612,6 +1612,54 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   enforcement_agent, applicability_agent), per EA amendment #4's own criteria.
   Expand only if EA1-3 variance shows 8 is too small to detect regressions.
 
+### Phase TA — Triage audit & efficiency hardening (2026-07-12)
+> Full read-through of `src/agents/section_triage.py` (799 lines) + `run_triage`/
+> `run_retry_failed_triage` in `extractor.py` + the triage dashboard endpoints,
+> prompted by fixing the `DocumentFamily.label` AttributeError in Triage Results.
+> Baseline from the last full run: 805 relevant / 154 uncertain / 265 not_relevant
+> of 1,224 passages — triage filters only ~22% of the corpus (uncertain also goes
+> to extraction), so precision matters as much as the recall-first design intended.
+- ✅ **TA-1** — `_extract_orrick_terms` generic phrase regex removed. The
+  `\b[a-z][a-z\s\-]{4,30}\b` sweep over OCR-garbled `key_requirements` text was
+  auto-marking passages `relevant` (conf ≥0.75, **no LLM ever sees them**) on
+  noise phrases from scrambled OCR text — undermining the intra-bill filtering
+  triage exists to do. Kept: `ai_scope`/`iapp_ai_topic` splitting (controlled
+  vocabulary) and the curated single-word regulatory-term whitelist.
+- ✅ **TA-2** — concurrent LLM triage. `run_triage` now builds all per-record DB
+  context serially (unsafe to share a Session across threads) then fans the
+  DB-free `triage_passage()` LLM calls out to a `ThreadPoolExecutor`, mirroring
+  the existing `_run_agent`/extraction concurrency pattern exactly. New setting
+  `triage_concurrency` (default 3; lower to 1 for single-GPU LM Studio, same
+  caveat as `max_concurrent_agents_per_model`).
+- ✅ **TA-3** — bill-context blocks in the triage prompt trimmed: definitions
+  30K→6K chars, scope 20K→5K chars. ~15K input tokens/call → ~6-7K for what's
+  ultimately a binary relevance call. *(Soft-gated: re-verify against the EA1
+  gold set once it exists, in case trimming ever flips a real decision.)*
+- ✅ **TA-4** — `quality_fail` confidence semantics fixed. Was storing the raw
+  PDF-quality score as `decision` confidence (a 0.1-quality passage read as
+  "10% confident it's not_relevant" — backwards). Now stores confidence in how
+  certain the *decision* is (high — "this is unreadable" is an easy call) and
+  keeps the raw quality score only in `pdf_quality_score`. Pure bug fix, no
+  threshold/routing behavior changed — safe outside the SFH-3a gate.
+- ✅ **TA-5** — passages under `MIN_PASSAGE_LENGTH` (150 chars) now get a real
+  `SectionTriageResult` row (`not_relevant`/`quality_fail`/`too_short` flag)
+  instead of being silently dropped from the triage loop. Fixes two things:
+  the pipeline tracker's "Triaged X/Y" bar could never reach 100% (denominator
+  included passages that would never get a row), and there was no way to tell
+  "not yet triaged" from "excluded as too short."
+- ✅ **TA-6** — text-hash dedup for triage. `output/law_texts_quarantine/NEEDED_SOURCES.md`
+  documents 12 byte-identical same-bill duplicate pairs; identical passage text
+  was being triaged (and would be extracted) twice. `triage_passage` results are
+  now cached by a hash of `(text, ai_scope, key_requirements)` within a run.
+- 🔒 **TA-7** — extraction-yield feedback loop (deferred, not gated but bigger
+  lift): record whether each `uncertain` passage produced any extractions
+  across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —
+  feeds directly into EA1/EA4-3. Needs a join between `SectionTriageResult` and
+  `Extraction` plus a report; scoped as its own item rather than folded in here.
+- 🔒 **TA-8** — any threshold/keyword-list retuning (the LLM 0.4 not-relevant
+  cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion). **Hard-
+  gated on the EA1 gold set** per SFH-3c — do not touch without regression data.
+
 ### Phase SFH-3 — Trust model (🔒 gated: EA1 gold set + product ruling)
 - 🔒 **SFH-3a** — confidence re-architecture: **merge EA3 + Phase-4c weights +
   audit B6 into ONE plan** (per EA amendment #5 — whoever lands first absorbs the

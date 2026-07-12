@@ -1639,7 +1639,21 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
 
         _triage_progress = {"running": False, **summary}
 
+        skipped_short = summary.get("skipped_short", 0)
+        deduped = summary.get("deduped", 0)
+        extra_note = ""
+        if skipped_short:
+            extra_note += f' <span style="color:var(--text-muted);">{skipped_short} too-short passages recorded as not_relevant.</span>'
+        if deduped:
+            extra_note += f' <span style="color:var(--text-muted);">{deduped} deduped (identical text + bill scope).</span>'
+
         if summary["total"] == 0:
+            if skipped_short:
+                return (
+                    f'<div class="result-panel success">'
+                    f'No passages needed LLM triage.{extra_note}'
+                    f'</div>'
+                )
             return (
                 '<div class="result-panel info">No untriaged passages found — '
                 'all passages are already triaged. '
@@ -1651,7 +1665,8 @@ def run_triage_endpoint(db: Session = Depends(get_db)) -> HTMLResponse:
             f'Triaged <strong>{summary["total"]}</strong> passages: '
             f'<span style="color:var(--success);">{summary["relevant"]} relevant</span>, '
             f'<span style="color:var(--warning);">{summary["uncertain"]} uncertain</span>, '
-            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>. '
+            f'<span style="color:var(--text-muted);">{summary["skipped"]} skipped</span>.'
+            f'{extra_note} '
             f'<a href="/dashboard/triage">View results &rarr;</a>'
             f'</div>'
         )
