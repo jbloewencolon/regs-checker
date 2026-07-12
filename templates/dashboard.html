@@ -197,10 +197,17 @@
       </div>
       <div class="step-body">
         <div class="step-description">
-          Parse seeded documents into passages, then triage for AI relevance.
-          <strong>Parse Documents</strong> reads files from <code>output/law_texts/</code> and
-          creates searchable passages. <strong>Triage Passages</strong> uses the triage agent to
-          filter passages to only AI-relevant sections before extraction.
+          <strong>Seed &amp; Ingest All</strong> (Step&nbsp;1) already parses documents into
+          passages automatically &mdash; you don't need to run this step after a normal ingest.
+          <strong>Parse Documents</strong> only matters for jobs left pending/fetched (e.g. after
+          <strong>Requeue Failed</strong> below), since it re-parses without re-seeding from the CSV.
+          <strong>Triage Passages</strong> uses the triage agent to filter passages to only
+          AI-relevant sections before extraction.
+          {% if stats.pending_ingestion > 0 %}
+          <span style="color:var(--warning);"><strong>{{ stats.pending_ingestion }}</strong> job(s) pending parse.</span>
+          {% else %}
+          <span style="color:var(--success);">No documents pending parse.</span>
+          {% endif %}
           {% if stats.total_passages_raw > 0 %}
           <strong>{{ stats.total_passages_raw }}</strong> passages in database.
           {% endif %}
@@ -215,12 +222,13 @@
         </div>
 
         <div class="step-actions">
-          <button class="btn btn-primary"
+          <button class="btn"
                   hx-post="/dashboard/api/run/fetch"
                   hx-target="#step2-result"
                   hx-swap="innerHTML"
-                  hx-disabled-elt="this">
-            <span class="btn-label">Parse Documents</span>
+                  hx-disabled-elt="this"
+                  title="Only needed for jobs left pending/fetched, e.g. after Requeue Failed — Seed &amp; Ingest All already parses new documents.">
+            <span class="btn-label">Parse Pending Documents</span>
             <span class="htmx-indicator"><span class="spinner"></span> Parsing documents...</span>
           </button>
           <button class="btn"

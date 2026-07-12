@@ -450,9 +450,16 @@ _PORTAL_SIGNATURES: list[bytes] = [
     b"<!DOCTYPE html",
 ]
 
-# At least one of these byte patterns must appear in the first 4 KB for the file
-# to be accepted as real statutory/bill text.  WHEREAS covers executive orders;
-# § covers regulation-style documents that skip "SECTION" headers.
+# At least one of these byte patterns must appear within the scan window for the
+# file to be accepted as real statutory/bill text.  WHEREAS covers executive
+# orders; § covers regulation-style documents that skip "SECTION" headers.
+#
+# 20 KB (not 4 KB) because scraped LegiScan/portal pages routinely prepend a
+# nav-menu/sidebar of that size before the actual bill text — a handful of
+# real bills were being quality-gate-rejected solely because their markers
+# landed at bytes 5-12K, past the old 4 KB cutoff.
+_STRUCTURE_SCAN_BYTES = 20_000
+
 _STATUTORY_STRUCTURE_MARKERS: list[bytes] = [
     b"AN ACT",
     b"Be it enacted",
@@ -483,7 +490,7 @@ def _compute_fulltext_status(content: bytes) -> str:
     for sig in _PORTAL_SIGNATURES:
         if sig in head:
             return "capture_failed"
-    structural_sample = content[:4096]
+    structural_sample = content[:_STRUCTURE_SCAN_BYTES]
     if any(marker in structural_sample for marker in _STATUTORY_STRUCTURE_MARKERS):
         return "ok"
     return "no_statutory_structure"
@@ -503,7 +510,10 @@ def _check_source_quality(content: bytes, law_id: str) -> str | None:
             if sig in head:
                 return f"portal/JS page detected (matched '{sig.decode(errors='replace')[:40]}')"
     if status == "no_statutory_structure":
-        return "no statutory structure found (missing AN ACT / SECTION / § markers in first 4 KB)"
+        return (
+            "no statutory structure found (missing AN ACT / SECTION / § markers "
+            f"in first {_STRUCTURE_SCAN_BYTES // 1000} KB)"
+        )
     return None
 
 
