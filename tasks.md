@@ -1651,6 +1651,29 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   documents 12 byte-identical same-bill duplicate pairs; identical passage text
   was being triaged (and would be extracted) twice. `triage_passage` results are
   now cached by a hash of `(text, ai_scope, key_requirements)` within a run.
+- ✅ **TA-9** — parser bug found while spot-checking real `too_short` rows against
+  ground-truth source (`TMP-MA-AMENDMENTTOTHE`): `_segment_text`'s section-marker
+  regex can't tell "this bill's own section marker" from "a cross-reference to
+  the code being amended." `"SECTION 7. Chapter 272 of the General Laws is
+  hereby amended..."` is one continuous clause in real MA-style amendment
+  bills, but `"Chapter 272"` also matches the marker pattern, so the lookahead
+  stopped right after `"SECTION 7."` — producing an empty stub AND mislabeling
+  Section 7's real ~3,900-char body under `"Chapter 272"` instead (content
+  wasn't lost, but citations/section_path were wrong). New
+  `_splice_marker_only_stubs()` in `src/ingestion/parser.py` merges any
+  marker whose captured body is empty into its successor before the size-based
+  chunk-merge pass runs; handles chains of back-to-back empty markers too.
+  Verified against the real file: 9 chunks → 7, all four affected sections
+  (2/3/7/8) now correctly attributed. 4 new regression tests.
+- ✅ **TA-10** — "last updated" timestamps added to the checker panels audited
+  this session, via a new shared `_format_last_updated()` helper (absolute
+  UTC + relative "Xm/h/d ago") in `_dashboard_helpers.py`: Triage Results
+  ("Last triaged"), Triage Warnings ("Last warning"), Pipeline Tracker ("Data
+  as of", MAX across fetch/parse/triage), Failed Documents (per-row "Updated"
+  column + "most recent" summary using `IngestionJob.updated_at`), Browse
+  Documents (per-row "Parsed" column using `parse_completed_at`). Lets an
+  operator tell at a glance whether a panel reflects the run they just
+  kicked off or stale data from days ago.
 - 🔒 **TA-7** — extraction-yield feedback loop (deferred, not gated but bigger
   lift): record whether each `uncertain` passage produced any extractions
   across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —

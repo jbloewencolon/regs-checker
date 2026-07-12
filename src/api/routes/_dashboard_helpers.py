@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import threading
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import Request
@@ -50,6 +51,33 @@ TRACKER_FIELDS = [
 # ---------------------------------------------------------------------------
 
 _pipeline_lock = threading.Lock()
+
+
+def _format_last_updated(dt: datetime | None) -> str:
+    """Format a timestamp as an absolute time plus a relative "X ago" —
+    lets an operator tell at a glance whether a checker panel's data is
+    from the run they just kicked off or a stale run from days ago.
+
+    DB timestamps in this app are naive datetimes written via
+    server_default=func.now(); assumed UTC to match datetime.now(UTC) used
+    elsewhere (e.g. the triage warnings log), not local server time.
+    """
+    if dt is None:
+        return "never"
+    now = datetime.utcnow()
+    delta = now - dt
+    seconds = delta.total_seconds()
+    if seconds < 0:
+        relative = "just now"
+    elif seconds < 60:
+        relative = f"{int(seconds)}s ago"
+    elif seconds < 3600:
+        relative = f"{int(seconds // 60)}m ago"
+    elif seconds < 86400:
+        relative = f"{int(seconds // 3600)}h ago"
+    else:
+        relative = f"{int(seconds // 86400)}d ago"
+    return f'{dt.strftime("%Y-%m-%d %H:%M UTC")} ({relative})'
 
 
 def _acquire_pipeline_lock() -> bool:

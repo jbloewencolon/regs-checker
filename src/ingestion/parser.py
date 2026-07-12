@@ -342,6 +342,35 @@ def _parse_plaintext(content: bytes) -> list[tuple[str, str, int, int]]:
     return _segment_text(text)
 
 
+def _splice_marker_only_stubs(
+    raw: list[tuple[str, str, int, int]],
+) -> list[tuple[str, str, int, int]]:
+    """Merge section markers with an empty captured body into their successor.
+
+    An empty body (passage_text == marker) means section_pattern's lookahead
+    stopped immediately because the next token was itself a marker match —
+    the real content that should belong to this section got split off under
+    a different label. See the call site in _segment_text for the concrete
+    "SECTION 7. Chapter 272..." example this fixes.
+    """
+    fixed: list[tuple[str, str, int, int]] = []
+    i = 0
+    n = len(raw)
+    while i < n:
+        marker, ptext, start, end = raw[i]
+        text_parts = [ptext]
+        combined_end = end
+        j = i
+        while text_parts[-1].strip() == raw[j][0].strip() and j + 1 < n:
+            j += 1
+            _, next_ptext, _, next_end = raw[j]
+            text_parts.append(next_ptext)
+            combined_end = next_end
+        fixed.append((marker, "\n\n".join(text_parts), start, combined_end))
+        i = j + 1
+    return fixed
+
+
 def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
     """Segment legislative text into passage-level chunks.
 
@@ -408,6 +437,21 @@ def _segment_text(text: str) -> list[tuple[str, str, int, int]]:
 
     if not raw_passages:
         return _split_on_paragraphs(text)
+
+    # Fix a mislabeling bug: a section marker whose captured body is empty
+    # (passage_text == the bare marker itself) means the lookahead in
+    # section_pattern stopped immediately because the very next token was
+    # ALSO a marker match — typically a cross-reference to the code being
+    # amended, e.g. "SECTION 7. Chapter 272 of the General Laws is hereby
+    # amended by..." is one continuous clause, but "Chapter 272" matches the
+    # same pattern as a top-level marker, so section_pattern split it off as
+    # its own chunk. Left alone, this produces an empty "SECTION 7." stub
+    # AND mislabels SECTION 7's real content as belonging to "Chapter 272"
+    # instead — the section number and its own body get separated. Splice
+    # marker-only entries into their immediate successor (handles chains of
+    # back-to-back empty markers too) so real content stays attributed to
+    # the section that actually contains it.
+    raw_passages = _splice_marker_only_stubs(raw_passages)
 
     # Merge adjacent small section passages into larger chunks.
     # PDF-extracted text often splits on every "Section X" marker,
