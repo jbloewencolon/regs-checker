@@ -143,9 +143,12 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
     )
 
     # PNE-2b: derive obligation family (RC) + type (PN) from the action text.
-    result["obligation_family"], result["obligation_type"] = derive_obligation_type(
-        payload.get("action")
-    )
+    # Merge reconciliation (a7f723d): a payload-provided obligation_family wins
+    # over the derived one — the schema doesn't carry the field today, but if a
+    # future extraction-time classifier populates it, sync must not clobber it.
+    derived_family, derived_type = derive_obligation_type(payload.get("action"))
+    result["obligation_family"] = payload.get("obligation_family") or derived_family
+    result["obligation_type"] = derived_type
 
     # Flatten timeline object into a string summary
     timeline = payload.get("timeline")

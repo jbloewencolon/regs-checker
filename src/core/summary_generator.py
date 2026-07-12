@@ -33,6 +33,20 @@ import structlog
 
 logger = structlog.get_logger()
 
+# SFH-1i (audit B8): count summary-generation failures so a reviewer staring
+# at a "(summary generation failed)" placeholder is a known, run-level
+# quantity rather than a mystery. Presentation-only by design — the counter
+# never affects extraction data. Surfaced via get_and_reset_generation_failures().
+_generation_failures = 0
+
+
+def get_and_reset_generation_failures() -> int:
+    """Return the count of summary-generation failures and reset it."""
+    global _generation_failures
+    count = _generation_failures
+    _generation_failures = 0
+    return count
+
 
 # ---------------------------------------------------------------------------
 # Template-based summaries (deterministic, no LLM)
@@ -329,6 +343,8 @@ def generate_summary(
         try:
             return generator(clean_payload, jurisdiction)
         except Exception as e:
+            global _generation_failures
+            _generation_failures += 1
             logger.warning(
                 "summary_generation_failed",
                 extraction_type=extraction_type,

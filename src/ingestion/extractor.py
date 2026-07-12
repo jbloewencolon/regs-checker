@@ -589,6 +589,47 @@ _COMPLIANCE_MECHANISM_PATTERN = re.compile(
 )
 
 
+def compute_conservation(
+    selected_ids: set[int],
+    outcomes: dict[str, set[int]],
+) -> dict[str, Any]:
+    """SFH-1b (audit SF-06): run-level passage-conservation check.
+
+    Every selected record must end in exactly one outcome bucket. Historically
+    the pipeline tracked totals in independent counters with no invariant tying
+    them together, so a passage dropped by an untracked early-exit path showed
+    up as nothing at all (the archived 660-vs-647 run gap: 13 passages with
+    zero failure records, discovered only by manually diffing two JSON files).
+
+    Args:
+        selected_ids: record ids selected for extraction (post short-skip).
+        outcomes: bucket name -> set of record ids that ended there
+                  (e.g. processed / failed / skipped_jurisdiction).
+
+    Returns:
+        Dict with per-bucket counts, ``residual_ids`` (selected but in NO
+        bucket — the silent-loss signal), ``double_counted_ids`` (in more
+        than one bucket — a different integrity bug), and ``conserved``.
+    """
+    accounted: set[int] = set()
+    seen_twice: set[int] = set()
+    for ids in outcomes.values():
+        seen_twice |= accounted & ids
+        accounted |= ids
+
+    residual = selected_ids - accounted
+    report: dict[str, Any] = {
+        "selected": len(selected_ids),
+        **{name: len(ids) for name, ids in outcomes.items()},
+        "residual_count": len(residual),
+        # Cap the id lists so a catastrophic run can't bloat run_summary.json.
+        "residual_ids": sorted(residual)[:100],
+        "double_counted_ids": sorted(seen_twice)[:100],
+        "conserved": not residual and not seen_twice,
+    }
+    return report
+
+
 @dataclass
 class TokenUsageSummary:
     """Aggregate token usage and invocation counts for one extraction run.
@@ -620,6 +661,18 @@ class TokenUsageSummary:
     skipped_short: int = 0
     merged_passages: int = 0
     agents_skipped: int = 0
+
+    # SFH-1d (SF-02) — routing recall telemetry: passages sampled to the full
+    # battery, and extractions those samples produced from agents routing
+    # would have skipped (the false-narrowing signal).
+    recall_sampled_passages: int = 0
+    recall_extractions_from_skipped_agents: int = 0
+
+    # SFH-1e (SF-05) — JSON-repair telemetry: responses that needed repair,
+    # per-strategy hit counts, and est. items discarded by truncation salvage.
+    repaired_responses: int = 0
+    repair_strategy_counts: dict = field(default_factory=dict)
+    items_dropped_by_repair_total: int = 0
 
     @property
     def total_tokens(self) -> int:
@@ -792,6 +845,14 @@ def _build_context(
             ctx["key_requirements"] = key_reqs
         if enforcement:
             ctx["enforcement_summary"] = enforcement
+        # SFH-1f (SF-08): forward the provenance stamp written by
+        # orrick_enrichment so validate_extraction_against_orrick can
+        # quarantine LLM-generated pseudo-Orrick from the scoring path.
+        # (Generated text stays in ctx above — still useful as extraction
+        # context; it just must not score as tracker validation.)
+        orrick_source = df.metadata_.get("orrick_source")
+        if orrick_source:
+            ctx["orrick_source"] = orrick_source
         ai_scope = df.metadata_.get("ai_scope_summary")
         if ai_scope:
             ctx["ai_scope"] = ai_scope
@@ -893,6 +954,7 @@ def _payload_hash(payload: dict) -> str:
 from src.ingestion.routing import (  # noqa: E402
     route_by_signal,
     select_agent_names,
+    select_agent_names_with_decision,
 )
 
 
@@ -1138,10 +1200,23 @@ def extract_single_record(
     # triage_result is a list-like backref; grab first if present
     if isinstance(triage, list):
         triage = triage[0] if triage else None
-    selected_agents = _select_agents_for_passage(passage.text, agents, triage_result=triage)
+    # SFH-1d (SF-02): use the decision-returning variant so the recall delta
+    # is computable — which extractions came from agents routing would have
+    # skipped on sampled passages.
+    routing_decision = select_agent_names_with_decision(
+        passage.text,
+        set(agents.keys()),
+        triage_result=triage,
+        recall_sample_rate=settings.triage_recall_sample_rate,
+    )
+    selected_agents = {
+        k: v for k, v in agents.items() if k in routing_decision.selected
+    }
 
     if token_usage is not None:
         token_usage.agents_skipped += len(agents) - len(selected_agents)
+        if routing_decision.bypassed:
+            token_usage.recall_sampled_passages += 1
 
     if not selected_agents:
         logger.debug("all_agents_skipped", record_id=record.id)
@@ -1268,6 +1343,15 @@ def extract_single_record(
             template_version=result.template_version,
         )
 
+        # SFH-1e: aggregate repair telemetry once per response.
+        if token_usage is not None and result.was_repaired:
+            token_usage.repaired_responses += 1
+            for _strat in result.repair_strategies:
+                token_usage.repair_strategy_counts[_strat] = (
+                    token_usage.repair_strategy_counts.get(_strat, 0) + 1
+                )
+            token_usage.items_dropped_by_repair_total += result.items_dropped_by_repair
+
         if result.abstention is not None:
             if token_usage is not None:
                 token_usage.abstention_count += 1
@@ -1357,8 +1441,26 @@ def extract_single_record(
                     extraction_meta: dict = {}
                     if result.truncated:
                         extraction_meta["truncated"] = True
+                    if result.stop_reason and result.stop_reason != "stop":
+                        # SFH-1a: distinguishes loop cutoffs from length cutoffs
+                        extraction_meta["stop_reason"] = result.stop_reason
                     if result.was_repaired:
                         extraction_meta["was_repaired"] = True
+                        if result.repair_strategies:
+                            extraction_meta["repair_strategies"] = result.repair_strategies
+                        if result.items_dropped_by_repair:
+                            extraction_meta["items_dropped_by_repair"] = (
+                                result.items_dropped_by_repair
+                            )
+                    # SFH-1d (SF-02): on recall-sampled passages, tag extractions
+                    # from agents routing would have skipped — the false-narrowing
+                    # evidence the 5% sampling exists to produce.
+                    if routing_decision.bypassed:
+                        extraction_meta["routing_bypassed"] = True
+                        if name not in routing_decision.routed:
+                            extraction_meta["routing_would_have_skipped"] = True
+                            if token_usage is not None:
+                                token_usage.recall_extractions_from_skipped_agents += 1
                     if result.model_reasoning:
                         extraction_meta["model_reasoning"] = result.model_reasoning[:2000]
                     extraction_meta["confidence_breakdown"] = {
@@ -1704,6 +1806,18 @@ def run_triage(
             )
 
     db.commit()
+    # SFH-1i (SF-11): surface warning-channel write failures — the monitoring
+    # channel dying silently is itself a monitored condition now.
+    from src.agents.section_triage import get_and_reset_warning_write_failures
+    _ww_failures = get_and_reset_warning_write_failures()
+    summary["triage_warning_write_failures"] = _ww_failures
+    if _ww_failures:
+        _log(
+            f"⚠ MONITORING SELF-CHECK: {_ww_failures} triage warning(s) could not "
+            f"be written to output/triage_warnings.jsonl — counted in-memory; "
+            f"warning content for this run is recoverable from structlog output. "
+            f"ACTION: check path permissions/disk."
+        )
     _log(
         f"Triage complete: {summary['relevant']} relevant, "
         f"{summary['uncertain']} uncertain, {summary['skipped']} skipped "
@@ -2146,6 +2260,13 @@ def run_extraction(
     if skipped_short:
         _log(f"Skipped {skipped_short} passages under {MIN_PASSAGE_LENGTH} chars")
 
+    # SFH-1b (SF-06): conservation ledger — every selected record must end in
+    # exactly one outcome set below, checked at run end.
+    _conservation_selected: set[int] = {r.id for r in records}
+    _c_processed: set[int] = set()
+    _c_failed: set[int] = set()
+    _c_skipped_jurisdiction: set[int] = set()
+
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}
     for record in records:
@@ -2190,6 +2311,34 @@ def run_extraction(
         label = "unknown"
         if dv and dv.family:
             label = f"{dv.family.source.jurisdiction_code} - {dv.family.short_cite}"
+
+        # SFH-1f (SF-08): per-run tracker-provenance accounting + key-drift
+        # check, once per law.
+        _df_meta = (dv.family.metadata_ or {}) if dv and dv.family else {}
+        _tp = summary.setdefault(
+            "tracker_provenance",
+            {"laws_with_real_orrick": 0, "laws_with_generated_orrick": 0,
+             "laws_without_orrick": 0, "suspicious_metadata_keys": {}},
+        )
+        if _df_meta.get("orrick_source") == "llm_generated":
+            _tp["laws_with_generated_orrick"] += 1
+        elif _df_meta.get("key_requirements") or _df_meta.get("orrick_summary") \
+                or _df_meta.get("enforcement_penalties"):
+            _tp["laws_with_real_orrick"] += 1
+        else:
+            _tp["laws_without_orrick"] += 1
+        from src.core.orrick_validation import find_suspicious_tracker_keys
+        _bad_keys = find_suspicious_tracker_keys(_df_meta)
+        if _bad_keys:
+            _tp["suspicious_metadata_keys"][label] = _bad_keys
+            logger.warning(
+                "tracker_metadata_key_drift",
+                label=label,
+                suspicious_keys=_bad_keys,
+                hint="tracker-ish key outside the canonical set — the "
+                     "'enforcement' vs 'enforcement_penalties' drift class; "
+                     "data under these keys reads as tracker-absent downstream",
+            )
 
         _log(
             f"\n[{label}] Processing {len(merged_passages)} passages "
@@ -2245,10 +2394,12 @@ def run_extraction(
                     summary["records_skipped_jurisdiction"] += 1
                     extraction_job.records_processed += len(passage.source_records)
                     summary["records_processed"] += len(passage.source_records)
+                    _c_skipped_jurisdiction.update(r.id for r in passage.source_records)
                     continue
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
+                _c_processed.update(r.id for r in passage.source_records)
 
                 # Reset consecutive failure counter between passages.
                 # One bad passage may fail multiple agents, but that shouldn't
@@ -2279,6 +2430,7 @@ def run_extraction(
                 job_failures += 1
                 extraction_job.records_failed += len(passage.source_records)
                 summary["records_failed"] += len(passage.source_records)
+                _c_failed.update(r.id for r in passage.source_records)
                 logger.error(
                     "record_extraction_error",
                     record_id=passage.primary_record.id,
@@ -2307,6 +2459,73 @@ def run_extraction(
         )
 
     summary["agents_skipped_by_signal"] = token_usage.agents_skipped
+
+    # SFH-1b (SF-06): run-integrity check. Only meaningful on complete runs —
+    # the cancelled/circuit-breaker paths return before reaching here, and a
+    # partial run can't satisfy the identity by construction.
+    conservation = compute_conservation(
+        _conservation_selected,
+        {
+            "processed": _c_processed,
+            "failed": _c_failed,
+            "skipped_jurisdiction": _c_skipped_jurisdiction,
+        },
+    )
+    summary["conservation"] = conservation
+    # SFH-1i (B8): reviewers seeing a blank/failed plain_summary should be a
+    # known quantity per run, not a mystery.
+    from src.core.summary_generator import get_and_reset_generation_failures
+    summary["summary_generation_failures"] = get_and_reset_generation_failures()
+    # SFH-1e (SF-05): per-run JSON-repair report — a rising repair rate is an
+    # early prompt/model regression signal that was previously invisible.
+    summary["json_repair"] = {
+        "repaired_responses": token_usage.repaired_responses,
+        "repair_rate": (
+            round(token_usage.repaired_responses / token_usage.total_calls, 4)
+            if token_usage.total_calls else 0.0
+        ),
+        "strategy_counts": dict(token_usage.repair_strategy_counts),
+        "items_dropped_by_truncation_salvage_est":
+            token_usage.items_dropped_by_repair_total,
+    }
+    # SFH-1d (SF-02): the routing-recall delta the 5% sampling exists to
+    # produce — previously collected, never analyzed.
+    summary["routing_recall"] = {
+        "sampled_passages": token_usage.recall_sampled_passages,
+        "extractions_from_agents_routing_would_have_skipped":
+            token_usage.recall_extractions_from_skipped_agents,
+    }
+    if token_usage.recall_extractions_from_skipped_agents:
+        _log(
+            f"\n⚠ ROUTING RECALL DELTA: {token_usage.recall_sampled_passages} "
+            f"passage(s) sampled at full battery produced "
+            f"{token_usage.recall_extractions_from_skipped_agents} extraction(s) "
+            f"from agents routing would have SKIPPED (false-narrowing evidence — "
+            f"extractions tagged routing_would_have_skipped in metadata). "
+            f"ACTION: feed this into the routing-threshold decision (SFH-3c), "
+            f"priced against the eval set."
+        )
+    if not conservation["conserved"]:
+        logger.error(
+            "run_integrity_check_failed",
+            selected=conservation["selected"],
+            processed=conservation["processed"],
+            failed=conservation["failed"],
+            skipped_jurisdiction=conservation["skipped_jurisdiction"],
+            residual_count=conservation["residual_count"],
+            residual_ids=conservation["residual_ids"][:20],
+            double_counted_ids=conservation["double_counted_ids"][:20],
+        )
+        _log(
+            f"\n⚠ RUN INTEGRITY CHECK FAILED: {conservation['selected']} passages "
+            f"selected but only {conservation['selected'] - conservation['residual_count']} "
+            f"accounted for (processed {conservation['processed']} + failed "
+            f"{conservation['failed']} + skipped {conservation['skipped_jurisdiction']}). "
+            f"RESIDUAL: {conservation['residual_count']} passage(s) with NO outcome "
+            f"record — ids: {conservation['residual_ids'][:20]}. This indicates an "
+            f"untracked early-exit path; re-run these ids with recovery mode and "
+            f"file a bug on the code path."
+        )
 
     # Finalize token usage — named buckets + scope annotation.
     # Note: these are result tokens only; adaptive retries inside agent.extract()
@@ -2521,6 +2740,8 @@ def run_retry_failed(
                         extraction_meta: dict = {}
                         if result.truncated:
                             extraction_meta["truncated"] = True
+                        if result.stop_reason and result.stop_reason != "stop":
+                            extraction_meta["stop_reason"] = result.stop_reason
                         if result.was_repaired:
                             extraction_meta["was_repaired"] = True
                         extraction_meta["confidence_breakdown"] = {
@@ -2955,6 +3176,8 @@ def run_recovery_extraction(
                             recovery_meta: dict = {}
                             if result.truncated:
                                 recovery_meta["truncated"] = True
+                            if result.stop_reason and result.stop_reason != "stop":
+                                recovery_meta["stop_reason"] = result.stop_reason
                             if result.was_repaired:
                                 recovery_meta["was_repaired"] = True
                             numeric_mismatch = _apply_numeric_grounding(

@@ -52,6 +52,10 @@ class TestProcessSingleJob:
     def test_successful_ingestion(self, mock_fetch, mock_parse):
         """Full successful path: fetch → store → parse → chunk → completed."""
         db = MagicMock()
+        # SFH-1h: fresh version — no pre-existing passages, no linked
+        # extractions (the SF-10 reparse guard queries both).
+        db.scalars.return_value.all.return_value = []
+        db.scalar.return_value = 0
         job = MagicMock(spec=IngestionJob)
         job.id = 1
         job.fetch_url = "https://example.com/bill.pdf"
@@ -114,6 +118,8 @@ class TestProcessSingleJob:
     def test_parse_failure_marks_failed(self, mock_fetch, mock_parse):
         """When parse raises, job should be marked failed after successful fetch."""
         db = MagicMock()
+        db.scalars.return_value.all.return_value = []
+        db.scalar.return_value = 0
         job = MagicMock(spec=IngestionJob)
         job.id = 3
         job.fetch_url = "https://example.com/bill.html"

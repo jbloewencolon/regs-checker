@@ -14,13 +14,16 @@
 > in at 0.10. IAPP **not yet ingested** — Phase 4b. Phase 3 normalization substrate complete
 > (actor B0 + B1.5 + V2–V4 vocab + B4 loader/queue). Phase 4 = tracker alignment + recompute.
 >
-> **⚠️ Open contradiction:** v3 says applicability "not run"; my C-1 analysis saw 472
-> bill-level rows. Reconciles if 472 = enforcement+timeline only. **Settle with
-> `GROUP BY agent_name` before Phase 1a.** Plan §3.
+> **✅ Contradiction settled (2026-07-06, via Supabase MCP):** `GROUP BY agent_name`
+> on the RC Supabase returned **169 rows for each of the three bill-level agents**
+> (applicability_agent / compliance_timeline_agent / enforcement_agent). The
+> applicability agent HAS run with full parity; the old "472 = enforcement+timeline
+> only" hypothesis is disproven for current state. 169-of-232 coverage gap = the
+> 1d seeding backlog + 16 quarantined laws, not a missing agent.
 
 ### Phase 1 — Foundation: trustworthy, measurable, non-destructive runs (now)
 - ✅ Model pin — NVIDIA primary: `openai/gpt-oss-120b` (heavy agents) + `meta/llama-3.1-8b-instruct` (triage/definition_actor/preemption); local Gemma fallback retained in `config/agent_models.json`. 6+3 agents.
-- ⏳ **1a** — confirm `applicability_agent` row count (`GROUP BY agent_name`); if 0, run applicability across all 232. C-1 export fix is the prerequisite. *(NLP, DevOps)* **Operator query: `SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name;`**
+- ✅ **1a** — resolved (2026-07-06, run via Supabase MCP against `wjxlimjpaijdogyrqtxc`): `applicability_agent` = **169 rows**, equal to `compliance_timeline_agent` (169) and `enforcement_agent` (169). Applicability has run with full parity — **no backfill needed**. Remaining gap to 232 is coverage (1d), not a missing agent. *(NLP, DevOps)*
 - ✅ **1b** — run versioning: `ExtractionRun` model + Alembic migration `m9j5k1l3h814` + nullable `run_id` FK on `extractions`/`bill_level_extractions` + run creation/finalization in `run_extraction()`. Purge kept for now; query-filter refactor deferred to when serving-run queries land. *(SDPA, BE, DevOps)*
 - ✅ **1c** — **metric schema** (C-2 fix): `TokenUsageSummary` extended with `clause_level_*`/`bill_level_*` token buckets, `abstention_count`, `error_count`, `extraction_item_count`, `llm_call_count`; `run_summary.json` now emits named counters with `scope` annotation; `agent_stats.json` emits matching `scope`/`scope_note`. All call sites updated. Tests updated + passing. *(BE)*
 - ⏳ **1d** — coverage 138→232: seed 135 text-ready laws; re-fetch **SB 205** (priority) + **SB_2966** (file missing). *(checklist was in r1_findings_supplement.md, now archived)*
@@ -62,7 +65,7 @@
 - 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError fixes that crash extraction. Must merge before next run.
+1. ~~**Merge `claude/brave-lamport-d9zgjx` → main**~~ — **done, confirmed 2026-07-12 (SFH-2a)**: merged long before this list was last touched (23 merge-commit refs on main, PRs #134–155).
 2. **Run `alembic upgrade head`** on operator machine — migration `l8i4j0k2g713`.
 3. **Selective triage reset + Extract All** — unblocks everything downstream.
 4. **1a confirm query** — settle the applicability-row contradiction (`SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name`).
@@ -247,10 +250,16 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 
 ### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
 - ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
-  vetoed) → stratified set of **12–15 laws**: ≥2 OCR-quality PDFs, ≥1
-  amendment-markup (engrossed) bill, ≥1 deepfake/likeness law, ≥1 tracker-silent
-  law, per-agent expected extractions for **all 6 clause agents**. Annotation by
-  RPR with double-annotation on 20% for agreement measurement. *(RPR, NLP)*
+  vetoed) → stratified set of **8 laws** (size ruled 2026-07-12, SFH-2c — the
+  EA amendment #4 solo-capacity floor, not the original 12–15 target below):
+  ≥2 OCR-quality PDFs, ≥1 amendment-markup (engrossed) bill, ≥1 deepfake/
+  likeness law, ≥1 tracker-silent law, per-agent expected extractions for
+  **all 6 clause agents**, prioritizing the agents that feed the PN matrix
+  (obligation, threshold_exception, enforcement_agent, applicability_agent)
+  per amendment #4. Single annotation + strong-model adjudication on
+  disagreement candidates (team-scale double-annotation dropped at 8 laws);
+  expand past 8 only if EA1-3 variance shows the set too small to detect
+  regressions. *(RPR, NLP)*
 - ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
   obligation/definition_actor/threshold_exception — rights_protection,
   compliance_mechanism, preemption + all 3 bill-level agents have **zero**
@@ -1467,6 +1476,185 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
 
 ---
 
+## Silent-Failure Hardening Plan (SFH) — from external pipeline audit (2026-07-06)
+
+> Source: 16-page external audit (`regs_checker_audit.pdf`, assessed **main** branch
+> 2026-07-06). Every load-bearing claim was re-verified against **this branch**
+> before planning — the audit is high quality (all spot-checks confirmed:
+> `stop_reason='loop'` at `llm_provider.py:306` vs `base.py:358` `== "length"`,
+> reparse delete at `pipeline.py:195–205`, confidence weights 0.50/0.35/0.15,
+> nvidia triage temp 0.2/top_p 0.7, CV/gap on same-family `gpt-oss-20b`) — but a
+> meaningful slice is stale because this branch is far ahead of main.
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+>
+> **Operator decisions (2026-07-06, audit check-in):** (1) **Plan only for now** —
+> no SFH code lands until the operator reviews this assessment; every ⏳ below is
+> approved-in-principle but awaits the go signal. (2) **Pseudo-Orrick quarantine
+> approved** (SFH-1f): honoring the `llm_generated` stamp in scoring is an honesty
+> fix, accepted knowing tiers on enrich-orrick-only laws will drop to the gated
+> path until the confidence re-architecture (SFH-3) gives tracker-silent laws a
+> fair path. (3) **Triage temperature 0.2→0 approved; routing threshold change
+> declined** — the threshold stays pinned per the EA0-2 resolution until the eval
+> set prices routing's recall cost; SFH-1d's delta report supplies the data.
+> (4) RC Supabase checked live: `ACTIVE_HEALTHY` (earlier timeout was transient),
+> and the audit-P0 applicability query is **answered — 169/169/169, no backfill**
+> (see Phase 1a above).
+>
+> **Audit findings already resolved on this branch (stale — no action):**
+> SF-07 (runtime schema patching — RC4-1 retired the `_ensure_*` helpers
+> entirely, stronger than the audit's "keep but loud"); the SF-08 provenance
+> *stamp* (`orrick_enrichment.py:221` already writes `orrick_source='llm_generated'`
+> — the scoring path ignoring it is the live half); B5's enforcement-agent
+> tail-cut fix (EA5-3 — but only for enforcement_agent; the other two bill-level
+> agents still head-truncate); B9 per-row provenance (PNE-1b, landed same day);
+> repaired/truncated→tier-cap+forced-review (EA2-3, audit marks "verified good");
+> CV fail-closed (RR0.1), the P3 publish gate, abstention-as-first-class,
+> interpretation-risk dedup — all confirmed "keep" by the audit.
+>
+> **Explicitly deferred by the audit itself (ignorable now):** chunk-size tuning
+> ("do not tune blind"), passage-offset strip-map ("low severity"), entailment
+> tracker scoring ("only after weight re-architecture"), Dagster ("once
+> versioning lands").
+
+### Phase SFH-1 — Make failure visible ✅ COMPLETE (2026-07-11, operator go given)
+
+> **Execution note (2026-07-11):** all 14 items landed across 6 commits
+> (`aa1bb7c` 1a+1b, `292a90d` 1c+1k, `d071410` 1f, `95edcf5` 1h/1i/1m/1n,
+> `7d92f0c` 1d+1e, `9ebe513` 1g, `c923161` 1j+1l). 1212/1212 tests passing
+> (+49 new this phase); CI hard gate green throughout. Two migrations added
+> (`3f8a2b9c1d04` sync_skips, `4a9b3c8d2e15` sync_runs) — **operator: run
+> `alembic upgrade head`**. Notable finds during execution: SFH-1k's schema
+> guard caught a LIVE crash in the merged a7f723d enrichment (dv.canonical_key
+> UndefinedColumn + three INSERT columns that don't exist on PN's table —
+> reconciled to payload-only, fixed in 292a90d); the SF-08 provenance stamp
+> already existed (orrick_enrichment.py:221) — only the scoring path ignored
+> it; the truncated-JSON salvage turns out to only repair bare-array shapes
+> (envelope-shape cuts are unrepairable by the current chain — documented in
+> tests, feeds the SFH-3b structured-outputs case).
+- ✅ **SFH-1a** **[High]** SF-04 loop-truncation bypass: treat `stop_reason in
+  ('length','loop')` as truncated at both consult sites (`base.py:358` truncation
+  flag; `base.py:~481` retry-with-doubled-budget condition); record `stop_reason`
+  in extraction metadata; count loops per agent in `agent_stats.json`. Closes the
+  one truncation path that today sails through with full confidence eligibility. *(BE)*
+- ✅ **SFH-1b** **[High]** SF-06 passage-conservation check: run-end invariant
+  `selected == extracted + abstained + failed + skipped_boilerplate + skipped_dedup`,
+  each term emitted in `run_summary.json`, hard alert with residual ids (set
+  difference) on any mismatch. Kills the 660-vs-647 class of silent loss. *(BE)*
+- ✅ **SFH-1c** **[High]** SF-03 sync-skip persistence: `sync_skips` table
+  (extraction_id, doc_family_id, reason, run_ts; Alembic migration) + persist on
+  every bridge-miss in both legs + `--resync-skips` replay mode + alert naming the
+  unmapped families. Today the id cursor advances past unmapped rows forever. *(BE)*
+- ✅ **SFH-1d** **[Medium]** SF-02 routing recall delta: tag sampled passages
+  (`routing_bypassed=true` in metadata), compute at run end which extractions came
+  from agents routing would have skipped, emit delta + false-narrowing rate in
+  `run_summary.json`, alert over threshold. The 5% sampling cost currently buys
+  zero monitoring value. *(BE)*
+- ✅ **SFH-1e** **[Medium]** SF-05 salvage accounting: count array elements
+  pre/post `_repair_truncated_json`, store `items_dropped_by_repair` in extraction
+  metadata, aggregate per-strategy repair hits into `run_summary.json`, alert when
+  run repair rate exceeds ~3%. *(BE)*
+- ✅ **SFH-1f** **[High]** SF-08 remainder (quarantine approved): Pydantic-validate
+  tracker metadata keys at read time (fail loud — kills the
+  'enforcement'-vs-'enforcement_penalties' drift class); make the scoring path
+  honor the existing `orrick_source='llm_generated'` stamp — generated summaries
+  score as tracker-absent (triage keyword seeding only); per-run counts of laws
+  scored against generated vs. real tracker data. **Known consequence, accepted:**
+  enrich-orrick-only laws drop to the gated/capped path until SFH-3. *(BE, NLP)*
+- ✅ **SFH-1g** **[Medium]** SF-09 sync observability: `sync_runs` row per
+  invocation (leg, started, finished, synced, skipped, updated, error) + freshness
+  check in `sync_monitor.py` (alert when newest `synced_at` exceeds cadence, or a
+  run syncs 0 with pending cursor rows). *(BE)*
+- ✅ **SFH-1h** **[Medium]** SF-10 reparse lineage guard: within-version re-parse
+  requires explicit `--force-reparse` (logs count of extraction rows orphaned);
+  never delete across versions — text change ⇒ new `DocumentVersion` with
+  `predecessor_id`. **Prerequisite for the entire SFH-4 live-data phase.** *(BE)*
+- ✅ **SFH-1i** **[Low]** SF-11 + B8 meta-monitoring: count triage-warning write
+  failures (the `except Exception: pass` at `section_triage.py:67`) and
+  summary-generation failures in `run_summary` — never raise, never invisible. *(BE)*
+- ✅ **SFH-1j** **[Medium]** B5 remainder: extend the EA5-3 input-targeting pattern
+  (pattern-located sections + bounded tail, no raw head-truncation bias) from
+  enforcement_agent to **applicability_agent + compliance_timeline_agent** —
+  deadlines and applicability clauses also live in bill tails. Same
+  strictly-better-input class EA5-3 landed under. *(NLP)*
+- ✅ **SFH-1k** **[Low]** B9 schema-drift guard: startup assertion that the sync
+  INSERT column list matches `synced_extractions` information_schema (five lines
+  that would have caught the months-long "INSERT never succeeded" episode). *(BE)*
+- ✅ **SFH-1l** **[Medium]** B10 process: one-passage end-to-end CI smoke test
+  (triage → routing → one agent with stubbed provider → persistence) so wiring
+  errors fail CI; fix README vs `architecture.md` provider drift
+  (`config/agent_models.json` is authoritative). *(BE, DevOps)*
+- ✅ **SFH-1m** **[Medium]** EA4-1 config flip (audit B7 concurs): move
+  `cross_validation`/`gap_detection` from `openai/gpt-oss-20b` to a
+  different-lineage model ≥ extractor capability (e.g. `meta/llama-3.1-70b-instruct`)
+  in `config/agent_models.json`; catch-rate measurement on seeded-error fixtures
+  stays with the operator (needs live LLM). *(NLP)*
+- ✅ **SFH-1n** **[Low]** Triage determinism (approved): nvidia triage
+  `temperature 0.2 → 0`, `top_p → null` in `config/agent_models.json` — variance
+  reduction on a binary gate. (Routing threshold explicitly NOT changed — see
+  operator decision 3.) *(NLP)*
+
+### Phase SFH-2 — Operator actions ✅ COMPLETE (2026-07-12)
+- ✅ **SFH-2a** — merge `claude/brave-lamport-d9zgjx` → main: **confirmed already
+  merged**, and not recently — 23 merge-commit references on `origin/main`
+  (PRs #134–155, oldest well before this SFH phase started). Verified via
+  `git merge-base --is-ancestor 8ff0f2c origin/main` (the branch's merge
+  commit) → true. This branch (`claude/legal-extraction-architecture-1exlem`)
+  already carries main's history through its own `80f4750` merge-from-main
+  commit, so the BUG-7 NameError fixes have been live throughout SFH-1. No
+  action needed; the tasks.md top-item note describing it as unmerged was stale.
+- ✅ **SFH-2b** — applicability confirm query: **done 2026-07-06 via Supabase MCP**
+  (169/169/169 — no backfill; see Phase 1a).
+- ✅ **SFH-2c** — eval-set size ruled (2026-07-12, operator decision): **8 laws**.
+  Audit suggested 20–30; EA amendment #4 floored it to 8–10 for solo annotation
+  capacity; operator picked the floor. Unblocks EA1-1 annotation — 8 laws,
+  single annotation + strong-model adjudication on disagreement candidates,
+  prioritizing agents that feed the PN matrix (obligation, threshold_exception,
+  enforcement_agent, applicability_agent), per EA amendment #4's own criteria.
+  Expand only if EA1-3 variance shows 8 is too small to detect regressions.
+
+### Phase SFH-3 — Trust model (🔒 gated: EA1 gold set + product ruling)
+- 🔒 **SFH-3a** — confidence re-architecture: **merge EA3 + Phase-4c weights +
+  audit B6 into ONE plan** (per EA amendment #5 — whoever lands first absorbs the
+  other; the audit is now a third independent vote for evidence-first: its
+  proposed shape evidence 0.40 / CV 0.25 / numeric+citation 0.20 / tracker ≤0.15
+  ≈ EA3-1). Includes: tracker → separate `tracker_status` axis
+  (confirmed/silent/conflict/generated-only), auto-Tier-D replaced by
+  "unvalidated → priority review". Validate on gold set before serving;
+  contradiction #1 product ruling required. *(NLP, product owner)*
+- 🔒 **SFH-3b** — structured outputs (= EA6-2, audit B4 concurs): NIM
+  `response_format` guided JSON; repair chain becomes telemetry. After the EA1
+  regression gate exists. *(NLP, BE)*
+- 🔒 **SFH-3c** — routing threshold + triage-model A/B: tune against the eval set
+  using SFH-1d's delta data (EA0-2 discipline holds). *(NLP)*
+- 🔒 **SFH-3d** — B2 subsection map into agent context (changes model input;
+  eval-gated); citation-granularity lift for merged chunks. *(NLP)*
+
+### Phase SFH-4 — Live data (🔒 gated: SFH-1h prerequisite + operator/product sign-off, API keys, cost)
+- 🔒 **SFH-4a** — LegiScan change-hash delta ingestion (cron MVP: daily status,
+  text-change ⇒ new DocumentVersion via `source_hash` compare); Congress.gov for
+  federal; weekly Orrick/IAPP refresh + `status_checker.py` scheduling. *(BE, DevOps, operator)*
+- 🔒 **SFH-4b** — diff-driven re-extraction: per-ordinal text_hash diff vs
+  predecessor passages; extract only new/changed; copy-forward unchanged with
+  lineage link; supersede (never delete). *(BE, NLP)*
+- 🔒 **SFH-4c** — bounded passage-level concurrency (4–8 in flight; semaphore
+  around provider; session-per-thread care) — required before re-extraction
+  cadence makes runs frequent. *(BE)*
+- 🔒 **SFH-4d** — registry reconciliation (fixes the 232/243/236/211 count drift)
+  + weekly missing-text/tracker/bridge report. *(BE, operator)*
+- 🔒 **SFH-4e** — later: two-hop DB topology decision; Dagster asset graph
+  (Section-A alerts become asset checks); extractor.py/dashboard.py
+  decomposition; RR2d test backfill in change-risk order. *(product, BE)*
+
+**Sequencing:** SFH-1 items are independent and land in severity order
+(1a/1b/1c/1f first) once the operator gives the go. SFH-2a/2c (both ✅
+2026-07-12) were the operator week-one actions. SFH-3 stays behind EA1 —
+which both the audit ("the single highest-leverage investment") and the EA
+plan agree is the true long pole; EA1-1 is now unblocked on set size (8
+laws) and just needs the annotation pass on the operator's machine.
+SFH-4 starts only after SFH-1h and an explicit live-data sign-off.
+
+---
+
 ### Merge backlog
 - `claude/onboard-government-project-3bq7i` (Phase 7M) and `claude/onboard-government-project-PyyB9` (Phase 8) — review and merge after extraction validates on main.
 
@@ -1739,7 +1927,7 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 
 ## Immediate Next Tasks (blocking Phase 1: Taxonomy)
 
-1. **BLOCKING**: Merge `claude/brave-lamport-d9zgjx` + run extraction to populate `bill_level_extractions`. See Active Tasks above.
+1. ~~**BLOCKING**: Merge `claude/brave-lamport-d9zgjx`~~ — **done** (see SFH-2a). `bill_level_extractions` population confirmed separately via SFH-2b (169/169/169).
 2. **DONE 2026-05-26** — Taxonomy doc drift reconciled. *(see completed_tasks.md)*
 3. Verify claim that `subject_area` is "hardcoded to 'artificial_intelligence'" in Policy Navigator `fact_laws` (impacts Phase 1.A normalization table design).
 4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` (see Active Tasks).

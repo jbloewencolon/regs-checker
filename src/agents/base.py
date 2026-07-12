@@ -18,7 +18,7 @@ import hashlib
 import json
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import structlog
@@ -31,6 +31,43 @@ from src.core.text_grounding import verify_evidence_spans as _grounding_verify
 from src.schemas.extraction import AbstentionResult
 
 logger = structlog.get_logger()
+
+
+def _estimate_array_elements(text: str) -> int:
+    """SFH-1e (audit SF-05): estimate how many array elements a raw response started.
+
+    Counts object openings at array-element depth (depth 2: the elements of
+    ``{"extractions": [...]}`` or of a bare top-level array) with string-aware
+    walking. Compared against the parsed element count after truncation salvage,
+    the difference estimates items the salvage threw away. Best-effort by
+    design — used for telemetry, never for data.
+    """
+    stack: list[str] = []
+    in_string = False
+    escape_next = False
+    count = 0
+    for ch in text:
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\":
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in "{[":
+            # An object opening directly inside an array is an element —
+            # works for {"extractions": [...]} and bare top-level arrays,
+            # and ignores nested objects (their parent is "{").
+            if ch == "{" and stack and stack[-1] == "[":
+                count += 1
+            stack.append(ch)
+        elif ch in "}]" and stack:
+            stack.pop()
+    return count
 
 
 def _repair_truncated_json(text: str) -> str:
@@ -178,9 +215,12 @@ class ExtractionResult:
     prompt_hash: str
     model_id: str
     template_version: str | None
-    truncated: bool = False  # True when finish_reason=length (output cut off)
+    truncated: bool = False  # True when output was cut off (finish_reason=length OR loop detection — SFH-1a)
     model_reasoning: str | None = None  # Chain-of-thought from <think> blocks
     was_repaired: bool = False  # True when _repair_json had to change output to parse (EA2-3)
+    stop_reason: str | None = None  # Provider stop reason ('stop'/'length'/'loop'/...) — SFH-1a telemetry
+    repair_strategies: list[str] = field(default_factory=list)  # SFH-1e: which repair fixes fired
+    items_dropped_by_repair: int = 0  # SFH-1e: est. array elements discarded by truncation salvage
 
 
 class BaseExtractionAgent(ABC):
@@ -345,7 +385,8 @@ class BaseExtractionAgent(ABC):
                 # now parses cleanly — that's a structural defect the
                 # downstream tier should reflect, not just a debug flag.
                 pre_repair = cleaned.strip()
-                cleaned = self._repair_json(cleaned)
+                repair_report: dict = {}
+                cleaned = self._repair_json(cleaned, report=repair_report)
                 was_repaired = cleaned.strip() != pre_repair
                 parsed = json.loads(cleaned)
 
@@ -355,7 +396,13 @@ class BaseExtractionAgent(ABC):
                 if isinstance(parsed, list):
                     parsed = {"extractions": parsed}
 
-                was_truncated = stop_reason == "length"
+                # SFH-1a (SF-04): loop detection returns stop_reason='loop' after
+                # cutting output at the third repetition — that payload lost
+                # content by definition, exactly like a length cutoff. Before
+                # this fix, loop-truncated output bypassed every truncation
+                # safeguard (tier cap, forced review) because the flag keyed
+                # on 'length' alone.
+                was_truncated = stop_reason in ("length", "loop")
 
                 # Check for abstention
                 if parsed.get("detected") is False:
@@ -370,6 +417,8 @@ class BaseExtractionAgent(ABC):
                         truncated=was_truncated,
                         model_reasoning=model_reasoning,
                         was_repaired=was_repaired,
+                        stop_reason=stop_reason,
+                        repair_strategies=repair_report.get("strategies", []),
                     )
 
                 # Handle multi-extraction: look for "extractions" array
@@ -417,10 +466,15 @@ class BaseExtractionAgent(ABC):
                         )
                         validated_extractions = unique
 
-                if was_truncated:
+                if was_truncated and stop_reason == "length":
                     # Retry with doubled budget when we have attempts left and
                     # the budget can still be increased.  Cheap passages start
                     # at a scaled budget and escalate only when they need to.
+                    # SFH-1a: budget escalation is deliberately length-only —
+                    # a loop cutoff is not budget-starved (more tokens would
+                    # just buy more repetition), so loops skip this branch and
+                    # return below with truncated=True, which triggers the
+                    # EA2-3 tier cap + forced review downstream.
                     _prev = current_max_tokens or settings.extraction_max_tokens
                     _cap = settings.local_extraction_max_tokens
                     _doubled = min(_prev * 2, _cap)
@@ -443,7 +497,23 @@ class BaseExtractionAgent(ABC):
                         extractions_count=len(validated_extractions),
                         budget_exhausted=(_doubled == _prev),
                     )
+                elif was_truncated:
+                    logger.warning(
+                        "extraction_loop_truncated",
+                        agent=self.agent_name,
+                        model_id=response_model_id,
+                        output_tokens=usage.output_tokens,
+                        extractions_count=len(validated_extractions),
+                    )
 
+                # SFH-1e: when truncation salvage fired, estimate how many
+                # array elements it threw away (started - kept, floor 0).
+                _items_dropped = 0
+                if "items_started_estimate" in repair_report:
+                    _items_dropped = max(
+                        0,
+                        repair_report["items_started_estimate"] - len(validated_extractions),
+                    )
                 return ExtractionResult(
                     extractions=validated_extractions,
                     abstention=None,
@@ -455,6 +525,9 @@ class BaseExtractionAgent(ABC):
                     truncated=was_truncated,
                     model_reasoning=model_reasoning,
                     was_repaired=was_repaired,
+                    stop_reason=stop_reason,
+                    repair_strategies=repair_report.get("strategies", []),
+                    items_dropped_by_repair=_items_dropped,
                 )
 
             except (json.JSONDecodeError, ValidationError, ValueError) as e:
@@ -534,8 +607,13 @@ class BaseExtractionAgent(ABC):
         return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
     @staticmethod
-    def _repair_json(text: str) -> str:
+    def _repair_json(text: str, report: dict | None = None) -> str:
         """Attempt to repair common JSON issues from local LLMs.
+
+        SFH-1e (audit SF-05): when ``report`` is passed, each strategy that
+        actually changed the text appends its name to report["strategies"] —
+        per-run aggregation of repair-strategy hits is an early regression
+        signal (a rising repair rate precedes visible quality loss).
 
         Handles four patterns that local models produce:
 
@@ -561,7 +639,10 @@ class BaseExtractionAgent(ABC):
         # --- Fix 0: Strip absolute junk control chars ---
         # Remove chars that are never valid in JSON regardless of context.
         import re as _re
+        _pre = text
         text = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)
+        if report is not None and text != _pre:
+            report.setdefault("strategies", []).append("control_char_strip")
 
         # --- Fix 0b: String-aware escape and control-char repair ---
         # Walk the JSON tracking string state.  Inside strings:
@@ -615,7 +696,10 @@ class BaseExtractionAgent(ABC):
             # Only pay the O(n) walk cost when standard parse fails
             json.loads(text)
         except json.JSONDecodeError:
+            _pre = text
             text = _repair_string_contents(text)
+            if report is not None and text != _pre:
+                report.setdefault("strategies", []).append("string_escape_repair")
 
         # --- Fix 1: Extract first complete JSON object/array ---
         # If json.loads fails on the full text, try to find the first
@@ -659,6 +743,10 @@ class BaseExtractionAgent(ABC):
                                     original_len=len(text),
                                     extracted_len=len(candidate),
                                 )
+                                if report is not None:
+                                    report.setdefault("strategies", []).append(
+                                        "first_object_extraction"
+                                    )
                             text = candidate
                             break
                         except json.JSONDecodeError:
@@ -666,7 +754,10 @@ class BaseExtractionAgent(ABC):
 
         # --- Fix 2: Trailing commas ---
         if not initial_valid:
+            _pre = text
             text = re.sub(r",\s*([}\]])", r"\1", text)
+            if report is not None and text != _pre:
+                report.setdefault("strategies", []).append("trailing_comma_strip")
 
         # --- Fix 3: Truncated JSON (incomplete output from token limit) ---
         # When the LLM hits max_tokens, the JSON is cut off mid-object.
@@ -685,6 +776,10 @@ class BaseExtractionAgent(ABC):
                         original_len=len(text),
                         repaired_len=len(repaired_text),
                     )
+                    if report is not None:
+                        report.setdefault("strategies", []).append("truncation_salvage")
+                        # SFH-1e: estimate elements the salvage discarded.
+                        report["items_started_estimate"] = _estimate_array_elements(text)
                     text = repaired_text
                 except json.JSONDecodeError:
                     pass
