@@ -131,6 +131,40 @@ class TestStreamingHappyPath:
         assert result.text == "ok"
 
 
+class TestReasoningModelIdleTimeout:
+    """Reasoning models (gpt-oss, deepseek-r1, qwen3) can go quiet for well
+    over a minute before their first streamed byte — they need a longer
+    idle-timeout allowance than instruct models, which stream almost
+    immediately."""
+
+    def _call_and_capture_timeout(self, model: str) -> float:
+        provider = _make_provider()
+        chunks = [{"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]}]
+        response = _FakeResponse(200, _sse_lines(*chunks))
+        captured = {}
+
+        def _capture(*args, **kwargs):
+            captured["timeout"] = kwargs["timeout"]
+            return _FakeStreamCM(response)
+
+        with patch("httpx.stream", side_effect=_capture):
+            provider.call("sys", "user", model_override=model)
+        return captured["timeout"].read
+
+    def test_reasoning_model_gets_longer_idle_timeout(self):
+        from src.core.llm_provider import NvidiaLLMProvider
+
+        read_timeout = self._call_and_capture_timeout("openai/gpt-oss-120b")
+        assert read_timeout == NvidiaLLMProvider._IDLE_TIMEOUT_REASONING_SECONDS
+        assert read_timeout > NvidiaLLMProvider._IDLE_TIMEOUT_SECONDS
+
+    def test_instruct_model_keeps_default_idle_timeout(self):
+        from src.core.llm_provider import NvidiaLLMProvider
+
+        read_timeout = self._call_and_capture_timeout("meta/llama-3.1-8b-instruct")
+        assert read_timeout == NvidiaLLMProvider._IDLE_TIMEOUT_SECONDS
+
+
 class TestCancellation:
     def test_cancelled_before_first_attempt_raises_immediately_no_http_call(self):
         provider = _make_provider()

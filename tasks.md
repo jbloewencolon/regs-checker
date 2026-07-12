@@ -1717,6 +1717,32 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   access to it) — the gated `tests/integration/test_nvidia_provider.py`
   suite (`NVIDIA_API_KEY=... pytest tests/integration/ -v`) is the way to
   confirm on the operator's machine.
+- ✅ **TA-12** — fixed a false-positive stall detection introduced by TA-11,
+  found from a real extraction stuck 44+ minutes on `nvidia_transport_error_exhausted
+  error='The read operation timed out'` for `openai/gpt-oss-120b` (a reasoning
+  model, run with `reasoning_effort: None` for `threshold_exception`/
+  `compliance_mechanism` in `config/agent_models.json` — no cap on NVIDIA's
+  own default reasoning effort). Root cause: TA-11's 60s idle-chunk timeout
+  assumed silence always means "stuck," but reasoning models can legitimately
+  go quiet server-side for well over a minute while "thinking" before their
+  first streamed byte, and NVIDIA's hosted endpoint does not appear to
+  stream any interim signal during that phase. The old pre-TA-11 blind 300s
+  whole-response wait tolerated this invisibly; TA-11's 60s idle detector
+  killed and retried calls that were working fine, and since every retry hit
+  the same reasoning-latency wall, the call never succeeded no matter how
+  many times it retried — explaining the repeating, non-recovering timeout
+  pattern read at first as an NVIDIA outage. Fix: `NvidiaLLMProvider` now
+  picks the idle timeout by model — reasoning models (tag match on
+  `deepseek-r1`/`qwen3`/`gpt-oss`) get `_IDLE_TIMEOUT_REASONING_SECONDS =
+  180.0`; everything else keeps `_IDLE_TIMEOUT_SECONDS = 60.0`, since
+  instruct models stream almost immediately and a stall there still means
+  stuck. 2 new tests assert the selected `httpx.Timeout.read` value per
+  model class; full suite (1241 tests) green. Retry count/backoff and the
+  redundant "retry same model" layer in `agents/base.py::_call_llm` were
+  deliberately left untouched this round — tightening those was the
+  originally-proposed fix but was superseded once the timeout-miscalibration
+  theory was confirmed as the more likely cause; revisit only if 180s still
+  proves insufficient on the live endpoint.
 - 🔒 **TA-7** — extraction-yield feedback loop (deferred, not gated but bigger
   lift): record whether each `uncertain` passage produced any extractions
   across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —
