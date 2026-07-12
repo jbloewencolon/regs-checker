@@ -65,7 +65,7 @@
 - 🔒 **after 3c** — threshold_exception (split downstream; normalize units); rights_protection (map to rights taxonomy; link duty-bearer); compliance_mechanism (tighten 20% abstention; split mechanism types).
 
 ### Highest-leverage unblocked actions
-1. **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError fixes that crash extraction. Must merge before next run.
+1. ~~**Merge `claude/brave-lamport-d9zgjx` → main**~~ — **done, confirmed 2026-07-12 (SFH-2a)**: merged long before this list was last touched (23 merge-commit refs on main, PRs #134–155).
 2. **Run `alembic upgrade head`** on operator machine — migration `l8i4j0k2g713`.
 3. **Selective triage reset + Extract All** — unblocks everything downstream.
 4. **1a confirm query** — settle the applicability-row contradiction (`SELECT agent_name, COUNT(*) FROM bill_level_extractions GROUP BY agent_name`).
@@ -250,10 +250,16 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
 
 ### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
 - ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
-  vetoed) → stratified set of **12–15 laws**: ≥2 OCR-quality PDFs, ≥1
-  amendment-markup (engrossed) bill, ≥1 deepfake/likeness law, ≥1 tracker-silent
-  law, per-agent expected extractions for **all 6 clause agents**. Annotation by
-  RPR with double-annotation on 20% for agreement measurement. *(RPR, NLP)*
+  vetoed) → stratified set of **8 laws** (size ruled 2026-07-12, SFH-2c — the
+  EA amendment #4 solo-capacity floor, not the original 12–15 target below):
+  ≥2 OCR-quality PDFs, ≥1 amendment-markup (engrossed) bill, ≥1 deepfake/
+  likeness law, ≥1 tracker-silent law, per-agent expected extractions for
+  **all 6 clause agents**, prioritizing the agents that feed the PN matrix
+  (obligation, threshold_exception, enforcement_agent, applicability_agent)
+  per amendment #4. Single annotation + strong-model adjudication on
+  disagreement candidates (team-scale double-annotation dropped at 8 laws);
+  expand past 8 only if EA1-3 variance shows the set too small to detect
+  regressions. *(RPR, NLP)*
 - ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
   obligation/definition_actor/threshold_exception — rights_protection,
   compliance_mechanism, preemption + all 3 bill-level agents have **zero**
@@ -1587,14 +1593,24 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   reduction on a binary gate. (Routing threshold explicitly NOT changed — see
   operator decision 3.) *(NLP)*
 
-### Phase SFH-2 — Operator actions (not buildable in this sandbox)
-- ⏳ **SFH-2a** — merge `claude/brave-lamport-d9zgjx` → main (tasks.md top item;
-  audit P0 concurs: three NameError crash fixes sit unmerged while CI is green).
+### Phase SFH-2 — Operator actions ✅ COMPLETE (2026-07-12)
+- ✅ **SFH-2a** — merge `claude/brave-lamport-d9zgjx` → main: **confirmed already
+  merged**, and not recently — 23 merge-commit references on `origin/main`
+  (PRs #134–155, oldest well before this SFH phase started). Verified via
+  `git merge-base --is-ancestor 8ff0f2c origin/main` (the branch's merge
+  commit) → true. This branch (`claude/legal-extraction-architecture-1exlem`)
+  already carries main's history through its own `80f4750` merge-from-main
+  commit, so the BUG-7 NameError fixes have been live throughout SFH-1. No
+  action needed; the tasks.md top-item note describing it as unmerged was stale.
 - ✅ **SFH-2b** — applicability confirm query: **done 2026-07-06 via Supabase MCP**
   (169/169/169 — no backfill; see Phase 1a).
-- ⏳ **SFH-2c** — rule on eval-set size: audit says 20–30 laws; EA amendment #4
-  deliberately right-sized to 8–10 for solo annotation capacity. Decide before
-  EA1-1 annotation starts (the audit's number is not silently adopted).
+- ✅ **SFH-2c** — eval-set size ruled (2026-07-12, operator decision): **8 laws**.
+  Audit suggested 20–30; EA amendment #4 floored it to 8–10 for solo annotation
+  capacity; operator picked the floor. Unblocks EA1-1 annotation — 8 laws,
+  single annotation + strong-model adjudication on disagreement candidates,
+  prioritizing agents that feed the PN matrix (obligation, threshold_exception,
+  enforcement_agent, applicability_agent), per EA amendment #4's own criteria.
+  Expand only if EA1-3 variance shows 8 is too small to detect regressions.
 
 ### Phase SFH-3 — Trust model (🔒 gated: EA1 gold set + product ruling)
 - 🔒 **SFH-3a** — confidence re-architecture: **merge EA3 + Phase-4c weights +
@@ -1630,9 +1646,11 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   decomposition; RR2d test backfill in change-risk order. *(product, BE)*
 
 **Sequencing:** SFH-1 items are independent and land in severity order
-(1a/1b/1c/1f first) once the operator gives the go. SFH-2a/2c are operator
-week-one actions. SFH-3 stays behind EA1 — which both the audit ("the single
-highest-leverage investment") and the EA plan agree is the true long pole.
+(1a/1b/1c/1f first) once the operator gives the go. SFH-2a/2c (both ✅
+2026-07-12) were the operator week-one actions. SFH-3 stays behind EA1 —
+which both the audit ("the single highest-leverage investment") and the EA
+plan agree is the true long pole; EA1-1 is now unblocked on set size (8
+laws) and just needs the annotation pass on the operator's machine.
 SFH-4 starts only after SFH-1h and an explicit live-data sign-off.
 
 ---
@@ -1909,7 +1927,7 @@ Added to `src/schemas/extraction.py` + updated all affected prompts:
 
 ## Immediate Next Tasks (blocking Phase 1: Taxonomy)
 
-1. **BLOCKING**: Merge `claude/brave-lamport-d9zgjx` + run extraction to populate `bill_level_extractions`. See Active Tasks above.
+1. ~~**BLOCKING**: Merge `claude/brave-lamport-d9zgjx`~~ — **done** (see SFH-2a). `bill_level_extractions` population confirmed separately via SFH-2b (169/169/169).
 2. **DONE 2026-05-26** — Taxonomy doc drift reconciled. *(see completed_tasks.md)*
 3. Verify claim that `subject_area` is "hardcoded to 'artificial_intelligence'" in Policy Navigator `fact_laws` (impacts Phase 1.A normalization table design).
 4. **`alembic upgrade head`** — Apply migration `l8i4j0k2g713` (see Active Tasks).
