@@ -249,7 +249,7 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   actual lineage-diversity question. *(NLP, BE)*
 
 ### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
-- ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
+- 🔧 **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
   vetoed) → stratified set of **8 laws** (size ruled 2026-07-12, SFH-2c — the
   EA amendment #4 solo-capacity floor, not the original 12–15 target below):
   ≥2 OCR-quality PDFs, ≥1 amendment-markup (engrossed) bill, ≥1 deepfake/
@@ -260,6 +260,24 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   disagreement candidates (team-scale double-annotation dropped at 8 laws);
   expand past 8 only if EA1-3 variance shows the set too small to detect
   regressions. *(RPR, NLP)*
+  - **Progress (2026-07-13):** Stratification plan + annotation worklist
+    committed (`docs/ea1_gold_set_plan.md`) — measured current coverage
+    (35 clause fixtures / 12 statutes + 2 bill fixtures), mapped the 8 laws
+    to strata and committed sources, and turned the gaps into a
+    priority-ranked worklist (Tier-1 source-verifiable now, Tier-2 needs DB,
+    Tier-3 needs RPR). **Measured gaps:** preemption 0 positive fixtures,
+    applicability_agent 0 bill, compliance_timeline_agent 0 bill;
+    rights_protection + compliance_mechanism thin (2 laws each). Bill-level
+    enforcement expanded 1→2 laws with a **second enforcement shape**:
+    AZ SB1359 (civil, per-day) + **AR HB1877 (criminal, Class B felony** —
+    verbatim from § 5-27-603, references the committed engrossed source via
+    `bill_text_file`). Both conservatively annotated (omit unstated fields;
+    notes say why). Preemption over-firing is **already measured** — the
+    reworked harness scores the preemption agent as "should abstain" on all
+    35 clause fixtures, catching the run-label id-9 §230 misclassification
+    class without a new fixture; only a *positive* preemption fixture remains
+    (RPR, Tier-3). **Still needs a live LLM / operator DB / RPR** for the
+    rest — see plan §4.
 - ✅ **EA1-2** **[Critical]** Harness now covers all 9 agents (2026-07-13).
   **Root mismatch fixed:** `extract()` returns an `ExtractionResult` (list of
   extractions + optional abstention), but the old harness scored it as a bare

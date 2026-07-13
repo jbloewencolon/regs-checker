@@ -461,9 +461,21 @@ class TestSeededBillFixtures:
     def test_default_harness_discovers_bill_seed(self):
         harness = EvaluationHarness()
         cases = harness.load_bill_test_cases()
-        # At least the AZ SB1359 enforcement seed committed with EA1-2.
+        # Both enforcement seeds committed with EA1-2/EA1-1: AZ (civil,
+        # per-day; inline text) and AR (criminal, Class B felony; file ref).
         ids = {c["passage_id"] for c in cases}
         assert "az_sb1359_enforcement" in ids
+        assert "ar_hb1877_enforcement" in ids
+
+    def test_bill_seed_covers_two_enforcement_shapes(self):
+        """The bill-level set should not be an enforcement monoculture — AZ is
+        a civil per-day penalty, AR is a criminal felony class."""
+        harness = EvaluationHarness()
+        by_id = {c["passage_id"]: c for c in harness.load_bill_test_cases()}
+        az = by_id["az_sb1359_enforcement"]["expected_bill_extractions"]["enforcement_agent"]
+        ar = by_id["ar_hb1877_enforcement"]["expected_bill_extractions"]["enforcement_agent"]
+        assert az.get("penalty_per") == "day"
+        assert ar.get("criminal_penalties") is True
 
     def test_bill_seed_structure(self):
         harness = EvaluationHarness()
