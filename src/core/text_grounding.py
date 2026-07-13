@@ -284,8 +284,16 @@ def verify_evidence_spans(
     # only the reduced strings themselves are needed, not the index maps.
     loose_passage, _ = _loose_normalize(norm_passage)
 
-    # Precompute Tier 4 inputs once per passage
-    stripped_passage = strip_revisor_artifacts(norm_passage)
+    # Precompute Tier 4 inputs once per passage. Artifact stripping MUST see
+    # the RAW passage (Unicode-normalized only): _MARGIN_NUM and
+    # _HYPHEN_BREAK are line-anchored, so running them after whitespace
+    # collapse — which replaces every newline with a space — means they can
+    # never match. That ordering bug made Tier 4 a no-op on line-numbered
+    # bill PDFs (margin numbers ended up embedded mid-sentence in
+    # norm_passage), zeroing out span verification for entire documents.
+    stripped_passage = _normalize_whitespace(
+        strip_revisor_artifacts(_normalize_unicode(passage))
+    )
     loose_stripped_passage, _ = _loose_normalize(stripped_passage)
 
     def _raw_offsets(norm_start: int, norm_end: int) -> tuple[int | None, int | None]:
@@ -358,7 +366,12 @@ def verify_evidence_spans(
         # Tier 4 — revisor-artifact-stripped loose match, ≥ 25-char floor.
         # Same rationale as Tier 3 — coordinates live in a doubly-transformed
         # intermediate string, not translated back to the raw passage.
-        loose_stripped_span, _ = _loose_normalize(strip_revisor_artifacts(norm_span))
+        # Strip from the raw span text (same ordering as the passage side):
+        # a model quoting verbatim from a line-numbered source may carry the
+        # newline + margin number inside its quote.
+        loose_stripped_span, _ = _loose_normalize(
+            _normalize_whitespace(strip_revisor_artifacts(_normalize_unicode(span.text)))
+        )
         if len(loose_stripped_span) >= 25 and loose_stripped_span in loose_stripped_passage:
             verified.append({
                 "field_name": span.field_name,
