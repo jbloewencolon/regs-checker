@@ -463,11 +463,21 @@ class NvidiaLLMProvider(BaseLLMProvider):
         return self._model.replace("/", "-") + "-nvidia"
 
     # How long we tolerate silence between streamed chunks before treating the
-    # call as stalled. Much shorter than the old blind 300s whole-response
-    # timeout: with streaming, silence genuinely means "nothing is happening"
-    # rather than "still generating a long response" (which shows up as
-    # steady, if slow, chunk arrivals and never trips this).
+    # call as stalled. With streaming, silence normally means "nothing is
+    # happening" rather than "still generating" (which shows up as steady,
+    # if slow, chunk arrivals and never trips this) — EXCEPT for reasoning
+    # models, which can spend well over a minute "thinking" server-side
+    # before emitting a single byte, especially on dense legal passages.
+    # NVIDIA's hosted endpoint does not appear to stream any interim signal
+    # during that phase, so a short idle timeout kills calls that were
+    # working fine and would have succeeded — this is exactly what the old
+    # blind 300s whole-response wait tolerated without anyone noticing.
+    # Reasoning models get a longer allowance; everything else keeps the
+    # tighter one, since non-reasoning models should start streaming almost
+    # immediately and a stall there really does mean stuck.
     _IDLE_TIMEOUT_SECONDS = 60.0
+    _IDLE_TIMEOUT_REASONING_SECONDS = 180.0
+    _REASONING_MODEL_TAGS = ("deepseek-r1", "qwen3", "gpt-oss")
 
     def call(
         self,
@@ -522,10 +532,18 @@ class NvidiaLLMProvider(BaseLLMProvider):
             "Accept": "text/event-stream",
         }
 
+        # Reasoning models can go quiet server-side for well over a minute
+        # before their first streamed byte — give them the longer allowance
+        # so that phase isn't mistaken for a stall (see _IDLE_TIMEOUT_REASONING_SECONDS).
+        is_reasoning = any(tag in effective_model.lower() for tag in self._REASONING_MODEL_TAGS)
+        idle_timeout = (
+            self._IDLE_TIMEOUT_REASONING_SECONDS if is_reasoning else self._IDLE_TIMEOUT_SECONDS
+        )
+
         # connect/write/pool bound the request setup; read bounds each
         # individual chunk — this IS the idle-stall detector.
         timeout = httpx.Timeout(
-            connect=30.0, read=self._IDLE_TIMEOUT_SECONDS, write=30.0, pool=30.0,
+            connect=30.0, read=idle_timeout, write=30.0, pool=30.0,
         )
 
         def _sleep_cancellable(seconds: float) -> None:
