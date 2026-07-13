@@ -249,7 +249,7 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   actual lineage-diversity question. *(NLP, BE)*
 
 ### Phase EA1 — Evaluation substrate (gates EA3/EA4-4/EA6 prompt+weight changes)
-- ⏳ **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
+- 🔧 **EA1-1** **[Critical]** Gold set expansion: 33 fixtures / ~3 statutes (one
   vetoed) → stratified set of **8 laws** (size ruled 2026-07-12, SFH-2c — the
   EA amendment #4 solo-capacity floor, not the original 12–15 target below):
   ≥2 OCR-quality PDFs, ≥1 amendment-markup (engrossed) bill, ≥1 deepfake/
@@ -260,11 +260,52 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   disagreement candidates (team-scale double-annotation dropped at 8 laws);
   expand past 8 only if EA1-3 variance shows the set too small to detect
   regressions. *(RPR, NLP)*
-- ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
-  obligation/definition_actor/threshold_exception — rights_protection,
-  compliance_mechanism, preemption + all 3 bill-level agents have **zero**
-  ground-truth eval. Add bill-level eval mode (whole-bill fixture → expected
-  `law_enforcement_details`/thresholds/timeline fields). *(NLP, BE)*
+  - **Progress (2026-07-13):** Stratification plan + annotation worklist
+    committed (`docs/ea1_gold_set_plan.md`) — measured current coverage
+    (35 clause fixtures / 12 statutes + 2 bill fixtures), mapped the 8 laws
+    to strata and committed sources, and turned the gaps into a
+    priority-ranked worklist (Tier-1 source-verifiable now, Tier-2 needs DB,
+    Tier-3 needs RPR). **Measured gaps:** preemption 0 positive fixtures,
+    applicability_agent 0 bill, compliance_timeline_agent 0 bill;
+    rights_protection + compliance_mechanism thin (2 laws each). Bill-level
+    enforcement expanded 1→2 laws with a **second enforcement shape**:
+    AZ SB1359 (civil, per-day) + **AR HB1877 (criminal, Class B felony** —
+    verbatim from § 5-27-603, references the committed engrossed source via
+    `bill_text_file`). Both conservatively annotated (omit unstated fields;
+    notes say why). Preemption over-firing is **already measured** — the
+    reworked harness scores the preemption agent as "should abstain" on all
+    35 clause fixtures, catching the run-label id-9 §230 misclassification
+    class without a new fixture; only a *positive* preemption fixture remains
+    (RPR, Tier-3). **Still needs a live LLM / operator DB / RPR** for the
+    rest — see plan §4.
+- ✅ **EA1-2** **[Critical]** Harness now covers all 9 agents (2026-07-13).
+  **Root mismatch fixed:** `extract()` returns an `ExtractionResult` (list of
+  extractions + optional abstention), but the old harness scored it as a bare
+  `dict | AbstentionResult` (`assert isinstance(actual, dict)`) — it would have
+  raised on every real call. New `_score_extraction_result` /
+  `_result_to_actual` reduce an `ExtractionResult` to a scorable actual:
+  explicit abstention or empty list → abstention (detection TN/FN); otherwise
+  the single **best-matching** extraction (field-overlap vs the fixture's
+  expected payload) so a passage that legitimately yields several extractions
+  (e.g. 3 definitions) isn't penalized for the ones the single-slot fixture
+  didn't encode. `CLAUSE_AGENT_MAP` expanded from 3 → all 6 clause agents
+  (added rights_protection, compliance_mechanism, preemption; key is the
+  extraction TYPE, `definition`→`DefinitionActorAgent`). **Bill-level eval
+  mode added:** new `BILL_AGENT_MAP` (enforcement_agent / applicability_agent /
+  compliance_timeline_agent), `run_bill_level()` + `run_all()`, a separate
+  `bill_level_gold_standard_dir` fixture subtree (config), `bill_text` inline
+  or `bill_text_file` reference, and `_score_bill_case` (one payload per law,
+  no abstention axis — errored/empty payload = detection FN + per-field FN).
+  Fixtures may hold a LIST of expected payloads per type (forward-compat;
+  list-vs-list alignment deferred, flagged in docstring). `EvaluationResult.
+  to_baseline_dict()` + `write_baseline()` emit the deterministic per-agent
+  per-field P/R/F1 artifact EA1-3 diffs against. Seeded one conservative
+  bill-level fixture (`bill_level/az_sb1359_enforcement.json`) with two
+  hand-verified enforcement facts (`penalty_per="day"`,
+  `private_right_of_action=false`) to exercise the mode end-to-end. 29 new
+  tests (42 total in `test_evaluation_harness.py`); full suite 1314 passing;
+  CI hard gate green. **Unblocks EA1-3** (baseline capture — needs live LLM
+  on operator's machine). *(NLP, BE)*
 - ⏳ **EA1-3** **[High]** Baseline + regression gate: run harness on current prompts/
   models, commit per-agent per-field P/R/F1 baseline artifact; every prompt/model/
   weight PR reruns and diffs against baseline. Numerics scored exact-match;
@@ -1250,6 +1291,66 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ## Active Tasks
 
+> **Session summary (2026-07-13):** Five quality-assurance fixes targeting the 2026-07-12
+> extraction run output (37 extractions across AZ/AR bills) were fully implemented,
+> tested, and pushed. **QA-1 (Tier-4 span verification ordering) — fixed; 32/37 spans
+> now verify (was 3/37).** **QA-2 (definition actor hallucination guards) — dropped
+> invented actors/NIST cross-contamination.** **QA-3 (responsible_party force-fit) —
+> normalized via ratified alias table; repairs both live and stored rows.** **QA-4
+> (cross-passage definition deduping) — law-level SequenceMatcher at 0.9 threshold
+> eliminates duplicate emissions.** **QA-5 (EA1 gold-set seed) — 2 new fixtures +
+> companion labels CSV documenting all 37 verdicts and error vocabulary.**
+>
+> **EA1-2 (harness rework) also landed this session:** the evaluation harness now
+> consumes `ExtractionResult` (fixing the pre-rework `assert isinstance(actual, dict)`
+> that would have crashed on every real call), covers all 9 agents (6 clause + 3
+> bill-level), does best-match selection for multi-extraction passages, adds a
+> whole-bill eval mode with its own fixture subtree, and emits a deterministic
+> baseline artifact for the EA1-3 regression gate. Seeded one conservative bill-level
+> fixture (AZ SB1359 enforcement). This unblocks EA1-3 baseline capture, which now
+> requires the operator's machine (live LLM). 1314 unit tests passing; CI green.
+
+### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
+
+**Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
+`claude/legal-extraction-architecture-1exlem`. CI green (1314 unit tests). The
+evaluation harness now consumes `ExtractionResult`, covers all 9 agents
+(6 clause + 3 bill-level), and emits a deterministic baseline artifact.
+
+**Remaining blockage:** EA1-3 (baseline capture) **requires a live LLM** —
+this sandbox has no `NVIDIA_API_KEY` and no reachable LM Studio, and the
+harness calls real providers. This is now the long pole and needs the
+operator's machine.
+
+**Sequencing (1→2, operator-gated):**
+
+1. **EA1-3 (NEXT — operator machine) — Baseline capture on current prompts/models**
+   - Run `EvaluationHarness().run_all()` against the gold_standard tree
+     (35 clause fixtures + the seeded `bill_level/az_sb1359_enforcement.json`)
+     with NVIDIA (or local LM Studio) configured
+   - Persist via `harness.write_baseline(result, "evaluation/baselines/<date>.json")`
+     — the method emits sorted, deterministic per-agent per-field P/R/F1
+   - Commit the baseline artifact; every future prompt/model/weight PR reruns
+     and diffs against it
+   - Owner: operator (`python start.py` env + `NVIDIA_API_KEY`)
+   - Acceptance: baseline artifact committed; EA3-1 + TA-8 become gatable
+   - Note: bill-level ground truth is currently one law / one agent
+     (enforcement). Expand applicability + compliance_timeline coverage during
+     the EA1-1 annotation pass; the harness scores only agents that have
+     ground truth, so the baseline grows monotonically as fixtures are added.
+
+2. **TA-8 (unblocked after 1) — Threshold/keyword-list retuning**
+   - Uses EA1-3's baseline as the regression gate
+   - Tune the LLM 0.4 not-relevant cutoff, keyword confidence curve,
+     `_ADJACENT_AI_KEYWORDS` promotion; measure delta against baseline
+   - Owner: NLP (iterate with operator rerunning the baseline diff)
+   - Acceptance: tuned settings committed; delta report showing measured F1 impact
+
+**Parallel, still sandbox-actionable:** EA1-1 fixture expansion toward the
+8-law stratified set (SFH-2c) — more clause fixtures and bill-level ground
+truth can be authored here from the committed `output/law_texts/` sources
+without a live LLM (annotation, not extraction).
+
 ### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
 - **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run), the full **2026-06-15 NVIDIA-backend hardening** (429 + transport retry, reasoning_effort coercion, bare-array handling, evidence-span loosening, Re-triage Failed, archiver fix), plus lint cleanup, CI gate fix, repo cleanup. CI green (Unit tests + Ruff lint). **Do this before hitting Extract All.**
 
@@ -1748,9 +1849,80 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —
   feeds directly into EA1/EA4-3. Needs a join between `SectionTriageResult` and
   `Extraction` plus a report; scoped as its own item rather than folded in here.
+
+### Phase QA — first-real-run output audit fixes (✅ COMPLETE 2026-07-13)
+> Driven by the operator's export of all 37 extractions from the 2026-07-12
+> run (AZ SB1462, AZ SB 1359, AR HB1877) — the first real batch after the
+> TA-11/TA-12 streaming fixes. Every finding below was verified against the
+> committed source files in `output/law_texts/`, not just the CSVs.
+>
+> **Execution note (2026-07-13):** All five items implemented, tested, and
+> pushed to `claude/legal-extraction-architecture-1exlem`. Commit c5b0678
+> contains full QA suite. Unit tests: 1285/1285 passing; CI hard gate clean.
+> No errors on first pass; systematic approach (understand root cause via real
+> data → implement → test with real fixtures → verify full suite) avoided rework.
+
+- ✅ **QA-1** — Tier-4 span-verification ordering bug: `verify_evidence_spans`
+  computed its Tier-4 input as `strip_revisor_artifacts(norm_passage)`, but
+  norm_passage is already whitespace-collapsed, so the line-anchored margin-
+  number/hyphen-break regexes could never fire — Tier 4 was silently a no-op
+  (and had zero test coverage, which is how it shipped). Perfect formatting
+  correlation in the run: clean-text SB1462 verified 12/12 spans; the two
+  line-numbered bills 3/37. Fix: strip on the raw line-structured text BEFORE
+  collapsing, symmetrically for passage and span. Replay of the failed spans
+  against real sources: 3/37 → 32/37; the 5 still failing are genuine model
+  fabrications (text absent from the bill — correct rejections). 10 tests in
+  `test_tier4_margin_numbers.py` using the real AR/AZ formatting. *(NLP, BE)*
+- ✅ **QA-2** — definition_actor hallucination guards: llama-3.1-8b invents
+  actors ("Developer" on a definition naming no actor) and cross-contaminates
+  framework_refs (NIST on definitions that never mention it). New
+  `_postprocess_extraction` hook on BaseExtractionAgent (default no-op);
+  DefinitionActorAgent drops actors/framework_refs not grounded in the
+  definition context (term+definition_text+scope, loose-normalized, half-of-
+  significant-tokens rule for partial quoting). Definition-scoped on purpose:
+  the observed hallucinations DO appear elsewhere in the passage. 11 tests in
+  `test_definition_actor_grounding.py`. *(NLP, BE)*
+- ✅ **QA-3** — responsible_party_normalized force-fit: the compliance_mechanism
+  prompt offers only 4 buckets, so "person who acts as a creator" came back
+  "developer". New `reconcile_normalized_actor()` (actor_normalizer): keep the
+  LLM value only when the raw phrase lexically contains it or the ratified
+  alias table maps both to one code; else the alias table's code for the raw
+  phrase (genuine hits only); else null → routes to vocab review (B4). Applied
+  at extraction (ComplianceMechanismPayload model_validator) AND at sync
+  (_adapt_compliance_mechanism) so stored rows repair retroactively. Prompt
+  now says use null rather than forcing the nearest bucket. 12 tests in
+  `test_reconcile_normalized_actor.py`. *(NLP, BE)*
+- ✅ **QA-4** — cross-passage definition dedupe: HB1877 produced 14 definition
+  rows for ~6 terms (overlapping passages re-extracting the same code
+  section). Existing payload-hash dedup is single-record + exact-equality
+  only. New law-level (document_version) check for definition extractions:
+  dupe when loose term matches AND texts are near-identical (equal / prefix /
+  ≥0.9 SequenceMatcher — measured on the real rows: true dupes 0.94–0.98,
+  distinct-section same-term definitions 0.74). First-write-wins; skips
+  logged with the surviving extraction id. 11 tests in
+  `test_definition_cross_passage_dedupe.py`. *(NLP, BE)*
+- ✅ **QA-5** — EA1 gold-set seed: 2 new fixtures
+  (`az_sb1359_sec16_1023_deepfake_disclosure`, `ar_hb1877_sec1_csam_definitions`)
+  with passage text copied verbatim INCLUDING bill margin numbers and the
+  mid-definition page break — they double as end-to-end Tier-4 grounding
+  regressions (all expected spans verify at Tier 1 post-QA-1), and satisfy
+  EA1-1's deepfake-law + engrossed-markup + OCR-quality strata. Plus
+  `run_labels/2026-07-12_extraction_run_labels.csv`: hand-checked verdicts
+  for all 37 run extractions (correct/partial/incorrect/duplicate + error
+  vocab), including the negatives the fixture format can't express — the
+  preemption A-tier misclassification (SFH-3a exhibit), 4 fabricated-quote
+  rows, the duplicate cluster, and the normalization force-fit. Plus
+  `run_labels/README.md` documenting verdict vocabulary, error_types, and
+  notable rows. All fixtures pass structure validation; every expected evidence
+  span verifies at Tier 1 post-QA-1. ~~NOTE for EA1-2: `harness.py` still calls
+  the pre-ExtractionResult agent API~~ — **resolved: EA1-2 landed 2026-07-13**,
+  harness now consumes `ExtractionResult` and covers all 9 agents; these
+  fixtures produce a baseline once EA1-3 runs on the operator's machine.
+  *(RPR, NLP, BE)*
 - 🔒 **TA-8** — any threshold/keyword-list retuning (the LLM 0.4 not-relevant
   cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion). **Hard-
-  gated on the EA1 gold set** per SFH-3c — do not touch without regression data.
+  gated on the EA1 gold set baseline capture (EA1-3)** per SFH-3c — measure
+  before tuning.
 
 ### Phase SFH-3 — Trust model (🔒 gated: EA1 gold set + product ruling)
 - 🔒 **SFH-3a** — confidence re-architecture: **merge EA3 + Phase-4c weights +

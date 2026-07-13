@@ -437,6 +437,7 @@ class BaseExtractionAgent(ABC):
 
                     result = validated.model_dump(by_alias=True)
                     result["evidence_spans"] = verified_spans
+                    result = self._postprocess_extraction(result, passage)
                     result["_prompt_hash"] = prompt_hash
                     result["_model_id"] = response_model_id
                     result["_template_version"] = template_version
@@ -1025,6 +1026,13 @@ class BaseExtractionAgent(ABC):
         → revisor-artifact-stripped loose (≥25 chars, Tier 4 added Phase 1).
         """
         return _grounding_verify(spans, passage, agent_name=self.agent_name)
+
+    def _postprocess_extraction(self, result: dict, passage: str) -> dict:
+        """Hook for agent-specific deterministic cleanup of a validated
+        extraction, called after span verification and before metadata keys
+        are attached. Default: no-op. Override to drop or repair fields the
+        model is known to hallucinate (see DefinitionActorAgent, QA-2)."""
+        return result
 
     def _prompt_hash(self, prompt: str) -> str:
         """Hash the prompt for reproducibility tracking."""

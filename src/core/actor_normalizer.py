@@ -70,3 +70,41 @@ def is_invalid_actor(value: str | None) -> bool:
     if value is None:
         return False
     return sanitize_normalized_actor(value) is None
+
+
+def reconcile_normalized_actor(raw: str | None, normalized: str | None) -> str | None:
+    """Return a normalized actor code consistent with the raw actor phrase (QA-3).
+
+    LLM-emitted ``*_normalized`` fields can bear no relation to the raw
+    phrase they claim to normalize: the compliance_mechanism prompt offers
+    only four buckets, so ``responsible_party`` "person who acts as a
+    creator" came back normalized as "developer" (AZ SB 1359, 2026-07-12
+    run). Deterministic reconciliation:
+
+      1. Sanitize the LLM value (existing garble/non-actor filter).
+      2. Keep it when the raw phrase lexically contains it, or the ratified
+         actor alias table maps both to the same canonical code.
+      3. Otherwise substitute the alias table's code for the raw phrase —
+         but only on a genuine alias hit, never the unrecognized fallback.
+      4. Otherwise None: an honest null routes the raw term to vocab review
+         (B4) instead of storing a fabricated role.
+    """
+    from src.core.vocab_loader import _get_lookup
+
+    normalized = sanitize_normalized_actor(normalized)
+    raw_stripped = (raw or "").strip()
+    if not raw_stripped:
+        return normalized
+
+    lookup = _get_lookup("actor")
+    raw_code = lookup.get(raw_stripped.lower())
+
+    if normalized:
+        norm_lower = normalized.lower()
+        if norm_lower in raw_stripped.lower():
+            return normalized
+        norm_code = lookup.get(norm_lower, norm_lower)
+        if raw_code and raw_code == norm_code:
+            return normalized
+
+    return raw_code

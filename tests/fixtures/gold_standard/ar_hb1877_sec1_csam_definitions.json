@@ -1,0 +1,36 @@
+{
+    "passage_id": "ar_hb1877_sec1_csam_definitions",
+    "source_document": "Arkansas HB1877 (Act 977, As Engrossed) - Amendment of Arkansas CSAM Laws",
+    "jurisdiction": "AR",
+    "section_path": "SECTION 1 - Arkansas Code § 5-27-302 definitions",
+    "annotation_provenance": "EA1 gold-set seed (QA-5, 2026-07-13). Passage text copied verbatim from output/law_texts/TMP-AR-OFARKANSASCSAM.txt INCLUDING printed bill margin numbers and the mid-definition page break with engrossment header — the exact formatting that zeroed out span verification before the QA-1 Tier-4 fix. Expected values hand-checked against the engrossed text; they correspond to run extractions 20-25 of the 2026-07-12 batch (see run_labels/).",
+    "passage_text": "29           SECTION 1.       Arkansas Code § 5-27-302, concerning definitions with\n30   respect to the Arkansas Protection of Children Against Exploitation Act of\n31   1979, is amended to add additional subdivisions to read as follows:\n32                   (6)     \"Computer generated\" means produced, adapted, or modified,\n33   in whole or in part, through the use of artificial intelligence;\n34                   (7)(A)     \"Indistinguishable\" means a visual or print medium that\n35   is such that an ordinary person viewing the visual or print medium would\n36   conclude that the visual or print medium depicts an actual child engaged in\n\n     As Engrossed:       H4/7/25 S4/9/25                                         HB1877\n\n 1   the conduct depicted.\n 2                         (B)   \"Indistinguishable\" does not include a visual or print\n 3   medium that depicts a child that is a drawing, cartoon, sculpture, or\n 4   painting; and\n 5                 (8)    \"Adversarial testing\" means red teaming or another activity\n 6   or exercise conducted in a controlled environment and in collaboration with\n 7   an artificial intelligence developer to identify a potential adverse behavior\n 8   or outcome of a model or system, to determine how the potential adverse\n 9   behavior or outcome of a model or system could occur, to stress test\n10   safeguards, and to conduct other structured evaluation methods as set forth\n11   by the National Institute of Standards and Technology.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "Computer generated",
+            "definition_text": "produced, adapted, or modified, in whole or in part, through the use of artificial intelligence",
+            "scope": "Arkansas Code § 5-27-302",
+            "cross_references": [],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "definition_text", "text": "means produced, adapted, or modified,\n33   in whole or in part, through the use of artificial intelligence;"}
+            ],
+            "notes": "Sibling terms in the same passage: Indistinguishable (7)(A) — whose text spans the page break — and Adversarial testing (8), which genuinely references NIST and names an artificial intelligence developer. A complete multi-extraction returns all three. Negative examples from the 2026-07-12 run: a 'Developer' actor attached to THIS definition is a hallucination (no actor is named); a NIST framework_ref attached to Computer generated or Indistinguishable is cross-contamination from (8) (QA-2)."
+        },
+        "threshold_exception": {
+            "threshold_type": "carve_out",
+            "threshold_condition": "\"Indistinguishable\" does not include a visual or print medium that depicts a child that is a drawing, cartoon, sculpture, or painting",
+            "applies_to_obligation": "Definitions underpinning the § 5-27-3xx CSAM offenses (indistinguishable computer-generated imagery)",
+            "exceptions": [
+                {"exception_type": "carve_out", "scope": "media type", "description": "drawings, cartoons, sculptures, and paintings are excluded from \"Indistinguishable\""}
+            ],
+            "evidence_spans": [
+                {"field_name": "text", "text": "\"Indistinguishable\" does not include a visual or print\n 3   medium that depicts a child that is a drawing, cartoon, sculpture, or\n 4   painting"}
+            ],
+            "notes": "The 2026-07-12 run reworded this quote as 'a depiction of a child' instead of the source's 'a visual or print medium that depicts a child' — content right, quote not verbatim (partial). This bill is an amendment-markup (engrossed) document per EA1-1 stratification."
+        },
+        "ambiguity": null
+    }
+}

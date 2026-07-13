@@ -5,10 +5,14 @@ single pass because all are "what do the words mean" tasks operating on
 preamble/definitions sections (Recommendation #1).
 """
 
+import structlog
 from pydantic import BaseModel
 
 from src.agents.base import BaseExtractionAgent
+from src.core.text_grounding import _loose_normalize
 from src.schemas.extraction import DefinitionActorPayload
+
+logger = structlog.get_logger()
 
 
 class DefinitionActorAgent(BaseExtractionAgent):
@@ -81,3 +85,64 @@ PASSAGE:
 
     def get_output_schema(self) -> type[BaseModel]:
         return DefinitionActorPayload
+
+    def _postprocess_extraction(self, result: dict, passage: str) -> dict:
+        """QA-2: drop actors and framework_refs not grounded in the definition.
+
+        Small instruct models fill the schema's optional arrays with invented
+        content: a "Developer" actor attached to a definition that names no
+        actor, or a NIST framework_ref cross-contaminated from a *different*
+        definition in the same passage. Both patterns share one property —
+        the invented name does not appear anywhere in this definition's own
+        text. Grounding is checked against the definition context (term +
+        definition_text + scope), NOT the whole passage: the schema's
+        contract is "actor roles mentioned in this definition context", and
+        the observed hallucinations DO appear elsewhere in the passage, so a
+        passage-level check would not catch them.
+        """
+        grounding_source = " ".join(
+            str(result.get(k) or "") for k in ("term", "definition_text", "scope")
+        )
+        grounding, _ = _loose_normalize(grounding_source)
+        if not grounding:
+            return result
+
+        def _grounded(name: str) -> bool:
+            loose_name, _ = _loose_normalize(name)
+            if not loose_name:
+                return False
+            if loose_name in grounding:
+                return True
+            # Multi-word names (e.g. "National Institute of Standards and
+            # Technology") tolerate partial quoting: grounded when at least
+            # half of the significant tokens appear.
+            tokens = [t for t in loose_name.split() if len(t) >= 4]
+            if len(tokens) >= 2:
+                hits = sum(1 for t in tokens if t in grounding)
+                return hits >= (len(tokens) + 1) // 2
+            return False
+
+        kept_actors = []
+        for actor in result.get("actors") or []:
+            if _grounded(actor.get("actor_name", "")):
+                kept_actors.append(actor)
+            else:
+                logger.warning(
+                    "definition_actor_ungrounded_actor_dropped",
+                    term=result.get("term"),
+                    actor_name=actor.get("actor_name"),
+                )
+        result["actors"] = kept_actors
+
+        kept_refs = []
+        for ref in result.get("framework_refs") or []:
+            if _grounded(ref.get("framework_name", "")):
+                kept_refs.append(ref)
+            else:
+                logger.warning(
+                    "definition_actor_ungrounded_framework_ref_dropped",
+                    term=result.get("term"),
+                    framework_name=ref.get("framework_name"),
+                )
+        result["framework_refs"] = kept_refs
+        return result

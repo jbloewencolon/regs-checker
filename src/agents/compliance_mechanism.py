@@ -44,7 +44,7 @@ Return a JSON object with a top-level "extractions" array. Each element includes
 - mechanism_type: One of the types listed above
 - description: Full description of the compliance requirement
 - responsible_party: Who must perform this compliance activity
-- responsible_party_normalized: Normalized category (developer, deployer, operator, vendor)
+- responsible_party_normalized: Normalized category (developer, deployer, operator, vendor) — use null when the responsible party genuinely fits none of these; do NOT force the nearest bucket
 - audits: Array of {audit_type, frequency, assessor, scope, reporting_to, public_disclosure}
 - record_retention_period: How long records must be kept (if specified)
 - reporting_frequency: How often reports must be filed (if specified)

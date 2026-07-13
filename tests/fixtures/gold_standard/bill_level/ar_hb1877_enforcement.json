@@ -1,0 +1,20 @@
+{
+    "passage_id": "ar_hb1877_enforcement",
+    "source_document": "Arkansas HB1877 (Act 977, As Engrossed) - Amendment of Arkansas CSAM Laws",
+    "jurisdiction": "AR",
+    "annotation_provenance": "EA1-2/EA1-1 bill-level gold seed (2026-07-13). References the committed engrossed source via bill_text_file so the bill-level agent sees the exact full text the pipeline feeds it (margin numbers, engrossment headers, mid-page breaks). Expected enforcement fields hand-checked against the enacted text. Conservative: only the criminal-penalty classification stated unambiguously IN THIS BILL is asserted. Adds a second bill-level law AND a second enforcement SHAPE (criminal, vs AZ SB1359's per-day civil penalty) so the bill-level baseline isn't monoculture. This is an amendment-markup (engrossed) bill per EA1-1 stratification.",
+    "bill_text_file": "output/law_texts/TMP-AR-OFARKANSASCSAM.txt",
+    "expected_bill_extractions": {
+        "enforcement_agent": {
+            "criminal_penalties": true,
+            "private_right_of_action": false
+        }
+    },
+    "annotation_notes": {
+        "criminal_penalties": "SECTION 8 amends § 5-27-603 and states 'Possession or use of child sexual abuse material Electronic facilitation of child sexual abuse is a Class B felony.' — a criminal penalty, stated verbatim.",
+        "private_right_of_action": "This is a criminal statute amending offenses in the Arkansas Criminal Code; it creates no private cause of action, so the correct value is false, not null.",
+        "max_civil_penalty_usd_intentionally_omitted": "No civil penalty is stated — the bill sets a felony CLASS, not a dollar amount. Correct enforcement_agent behavior is max_civil_penalty_usd = null (the felony class must NOT be coerced into a dollar figure). Omitted here because null-valued expected fields are not scored; a future negative-assertion mode could pin 'must be null'.",
+        "enforcing_body_intentionally_omitted": "No enforcing agency is named — criminal enforcement runs through ordinary prosecutorial channels the bill does not enumerate. Asserting a specific body would be a hallucination target; left unscored pending EA1-1 annotation.",
+        "penalty_tiers_note": "The bill classifies one offense (Section 8) as a Class B felony; the other amended sections (2, 3, 6, 7) redefine conduct/carve-outs without stating their own new penalty amounts, so there is no numeric penalty-tier structure to encode here."
+    }
+}

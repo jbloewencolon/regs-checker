@@ -593,6 +593,19 @@ class ComplianceMechanismPayload(BaseModel):
     def _sanitize_responsible_party_normalized(cls, v: Any) -> Any:
         from src.core.actor_normalizer import sanitize_normalized_actor
         return sanitize_normalized_actor(v) if isinstance(v, str) else v
+
+    @model_validator(mode="after")
+    def _reconcile_responsible_party_normalized(self) -> "ComplianceMechanismPayload":
+        # QA-3: the prompt offers only four normalization buckets, so the
+        # model force-fits parties that match none of them ("person who acts
+        # as a creator" → "developer"). Keep the LLM value only when the raw
+        # phrase supports it; otherwise defer to the ratified alias table or
+        # null (which routes the term to vocab review).
+        from src.core.actor_normalizer import reconcile_normalized_actor
+        self.responsible_party_normalized = reconcile_normalized_actor(
+            self.responsible_party, self.responsible_party_normalized
+        )
+        return self
     audits: list[AuditRequirement] = Field(
         default_factory=list, description="Specific audit/assessment requirements"
     )
