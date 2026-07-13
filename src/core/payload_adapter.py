@@ -30,6 +30,7 @@ from typing import Any
 
 import structlog
 
+from src.core.actor_normalizer import reconcile_normalized_actor
 from src.core.pn_crosswalk import (
     derive_actor_role,
     derive_obligation_type,
@@ -384,7 +385,13 @@ def _adapt_compliance_mechanism(payload: dict[str, Any]) -> dict[str, Any]:
         "mechanism_type": payload.get("mechanism_type"),
         "description": payload.get("description"),
         "responsible_party": payload.get("responsible_party"),
-        "responsible_party_normalized": payload.get("responsible_party_normalized"),
+        # QA-3: reconcile at sync time too, so rows extracted before the
+        # schema-level guard (which force-fit e.g. a content creator into
+        # "developer") are repaired retroactively without re-extraction.
+        "responsible_party_normalized": reconcile_normalized_actor(
+            payload.get("responsible_party"),
+            payload.get("responsible_party_normalized"),
+        ),
         "record_retention_period": payload.get("record_retention_period"),
         "reporting_frequency": payload.get("reporting_frequency"),
         "reporting_recipient": payload.get("reporting_recipient"),
