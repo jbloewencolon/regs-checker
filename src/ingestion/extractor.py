@@ -947,6 +947,86 @@ def _payload_hash(payload: dict) -> str:
     ).hexdigest()
 
 
+# --- QA-4: cross-passage definition dedupe (law level) -----------------------
+#
+# Bills that amend several code sections repeat near-identical definitions,
+# and overlapping passages hand the same definition to the agent more than
+# once (AR HB1877: "Indistinguishable" x4, "Adversarial testing" x3). The
+# payload-hash dedup above is scoped to one source record and requires exact
+# equality, so these slip through: the copies differ by a truncated tail, a
+# source-doubled word, or a differently-worded scope string.
+#
+# Two definitions are duplicates when the TERM matches (loose-normalized)
+# and the definition texts are near-identical; the same term defined in
+# DIFFERENT code sections has meaningfully different text and must be kept
+# (measured on the real HB1877 rows: true dupes score 0.94-0.98 similarity,
+# distinct-section definitions 0.74 — 0.9 splits them with wide margin).
+
+_DEFINITION_DUP_SIMILARITY = 0.9
+
+
+def _is_duplicate_definition_text(text_a: str, text_b: str) -> bool:
+    """True when two definition texts are near-identical (loose-normalized
+    equality, prefix relation from a truncated quote, or ≥ 0.9 sequence
+    similarity to absorb source artifacts like doubled words)."""
+    from difflib import SequenceMatcher
+
+    from src.core.text_grounding import _loose_normalize
+
+    loose_a, _ = _loose_normalize(text_a)
+    loose_b, _ = _loose_normalize(text_b)
+    if not loose_a or not loose_b:
+        return False
+    if loose_a == loose_b:
+        return True
+    if loose_a.startswith(loose_b) or loose_b.startswith(loose_a):
+        return True
+    return SequenceMatcher(None, loose_a, loose_b).ratio() >= _DEFINITION_DUP_SIMILARITY
+
+
+def _find_cross_passage_definition_dup(
+    db, source_record, item: dict
+) -> int | None:
+    """Return the id of an existing near-duplicate definition for the same
+    law (document_version), or None.
+
+    First-write-wins: the incoming copy is skipped even if slightly more
+    complete than the stored one — superseding a stored row mid-run would
+    desync its payload_hash and evidence spans.
+    """
+    term = (item.get("term") or "").strip()
+    def_text = (item.get("definition_text") or "").strip()
+    if not term or not def_text:
+        return None
+
+    from src.core.text_grounding import _loose_normalize
+
+    loose_term, _ = _loose_normalize(term)
+
+    rows = db.execute(
+        select(Extraction.id, Extraction.payload)
+        .join(
+            NormalizedSourceRecord,
+            Extraction.source_record_id == NormalizedSourceRecord.id,
+        )
+        .where(
+            NormalizedSourceRecord.document_version_id
+            == source_record.document_version_id,
+            Extraction.extraction_type == ExtractionType.definition,
+        )
+    ).all()
+
+    for ext_id, payload in rows:
+        if not isinstance(payload, dict):
+            continue
+        other_term, _ = _loose_normalize((payload.get("term") or "").strip())
+        if other_term != loose_term:
+            continue
+        if _is_duplicate_definition_text(def_text, payload.get("definition_text") or ""):
+            return ext_id
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Agent routing — delegated to routing.py (pure, testable functions)
 # ---------------------------------------------------------------------------
@@ -1407,6 +1487,25 @@ def extract_single_record(
                                     ),
                                     {"eid": existing_dup},
                                 )
+                            continue
+
+                    # --- QA-4: cross-passage definition dedupe (law level) ---
+                    # The hash check above only catches exact copies within
+                    # one source record; near-identical definitions repeated
+                    # across a law's overlapping passages need term + text
+                    # similarity matching at document_version scope.
+                    if resolved_type == ExtractionType.definition:
+                        dup_id = _find_cross_passage_definition_dup(
+                            db, source_record, item
+                        )
+                        if dup_id is not None:
+                            logger.info(
+                                "definition_cross_passage_duplicate_skipped",
+                                agent=name,
+                                record_id=source_record.id,
+                                term=(item.get("term") or "")[:60],
+                                existing_extraction_id=dup_id,
+                            )
                             continue
 
                     # Inject provenance into each evidence span so spans carry
