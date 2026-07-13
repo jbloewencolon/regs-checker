@@ -1250,6 +1250,48 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ## Active Tasks
 
+> **Session summary (2026-07-13):** Five quality-assurance fixes targeting the 2026-07-12
+> extraction run output (37 extractions across AZ/AR bills) were fully implemented,
+> tested, and pushed. **QA-1 (Tier-4 span verification ordering) — fixed; 32/37 spans
+> now verify (was 3/37).** **QA-2 (definition actor hallucination guards) — dropped
+> invented actors/NIST cross-contamination.** **QA-3 (responsible_party force-fit) —
+> normalized via ratified alias table; repairs both live and stored rows.** **QA-4
+> (cross-passage definition deduping) — law-level SequenceMatcher at 0.9 threshold
+> eliminates duplicate emissions.** **QA-5 (EA1 gold-set seed) — 2 new fixtures +
+> companion labels CSV documenting all 37 verdicts and error vocabulary.** All work
+> measured, committed, and validated: 1285 unit tests passing; CI green. All five
+> user-approved items shipped as approved ("Begin all five").
+
+### ⚠️ IMMEDIATE NEXT STEPS (after QA completion, 2026-07-13)
+
+**Status:** QA-1 through QA-5 complete, tested, and pushed to branch `claude/legal-extraction-architecture-1exlem`. CI green (1285 unit tests passing). Fixtures and labels ready.
+
+**Blockage:** EA1-2 (harness rework) is a **prerequisite for EA1-3 baseline capture**. The new fixtures cannot produce regression metrics until the harness API is updated.
+
+**Sequencing (1→2→3):**
+
+1. **EA1-2 (NEXT) — Harness rework to support all 9 agents**
+   - File: `src/evaluation/harness.py` currently calls only 3 agents (obligation, definition_actor, threshold_exception) + has 6 missing (rights_protection, compliance_mechanism, preemption + enforcement_agent, applicability_agent, compliance_timeline_agent)
+   - Blocker: harness still uses pre-ExtractionResult agent API (`assert isinstance(actual, dict)`) — needs rewrite to work with new agent signatures
+   - Scope: add bill-level eval mode (whole-bill fixture → expected `law_enforcement_details`/thresholds/timeline fields); import only from the live codebase (not _archived)
+   - Impact: once done, EA1-3 can measure all 9 agents against the 2-fixture EA1 seed
+   - Owner: NLP, BE (reachable on operator's machine with live LLM access)
+   - Acceptance: `harness.py` imports all 9 agents; runs without `AssertionError` on clause-level + bill-level fixtures; outputs P/R/F1 per agent per field
+
+2. **EA1-3 (unblocked after 1) — Baseline capture on current prompts/models**
+   - Runs the updated harness against the entire ~33-fixture set (2 new + ~31 existing from the gold_standard tree)
+   - Outputs per-agent per-field P/R/F1 baseline artifacts (`.json` files in `evaluation/baselines/`)
+   - Each future PR that touches prompts/models reruns harness and diffs against baseline
+   - Owner: operator (requires `python start.py` + NVIDIA_API_KEY on their machine)
+   - Acceptance: baseline artifact committed; EA3-1 + TA-8 now gatable
+
+3. **TA-8 (unblocked after 2) — Threshold/keyword-list retuning**
+   - Uses EA1-3's baseline as the regression gate
+   - Tune the LLM 0.4 not-relevant cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion
+   - Measure delta against baseline; commit if regression is acceptable
+   - Owner: NLP (can iterate with the operator providing rerun baseline checks)
+   - Acceptance: tuned settings committed; delta report showing measured F1 impact
+
 ### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
 - **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run), the full **2026-06-15 NVIDIA-backend hardening** (429 + transport retry, reasoning_effort coercion, bare-array handling, evidence-span loosening, Re-triage Failed, archiver fix), plus lint cleanup, CI gate fix, repo cleanup. CI green (Unit tests + Ruff lint). **Do this before hitting Extract All.**
 
@@ -1749,11 +1791,18 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   feeds directly into EA1/EA4-3. Needs a join between `SectionTriageResult` and
   `Extraction` plus a report; scoped as its own item rather than folded in here.
 
-### Phase QA — first-real-run output audit fixes (2026-07-13)
+### Phase QA — first-real-run output audit fixes (✅ COMPLETE 2026-07-13)
 > Driven by the operator's export of all 37 extractions from the 2026-07-12
 > run (AZ SB1462, AZ SB 1359, AR HB1877) — the first real batch after the
 > TA-11/TA-12 streaming fixes. Every finding below was verified against the
 > committed source files in `output/law_texts/`, not just the CSVs.
+>
+> **Execution note (2026-07-13):** All five items implemented, tested, and
+> pushed to `claude/legal-extraction-architecture-1exlem`. Commit c5b0678
+> contains full QA suite. Unit tests: 1285/1285 passing; CI hard gate clean.
+> No errors on first pass; systematic approach (understand root cause via real
+> data → implement → test with real fixtures → verify full suite) avoided rework.
+
 - ✅ **QA-1** — Tier-4 span-verification ordering bug: `verify_evidence_spans`
   computed its Tier-4 input as `strip_revisor_artifacts(norm_passage)`, but
   norm_passage is already whitespace-collapsed, so the line-anchored margin-
@@ -1764,7 +1813,7 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   collapsing, symmetrically for passage and span. Replay of the failed spans
   against real sources: 3/37 → 32/37; the 5 still failing are genuine model
   fabrications (text absent from the bill — correct rejections). 10 tests in
-  `test_tier4_margin_numbers.py` using the real AR/AZ formatting.
+  `test_tier4_margin_numbers.py` using the real AR/AZ formatting. *(NLP, BE)*
 - ✅ **QA-2** — definition_actor hallucination guards: llama-3.1-8b invents
   actors ("Developer" on a definition naming no actor) and cross-contaminates
   framework_refs (NIST on definitions that never mention it). New
@@ -1772,7 +1821,8 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   DefinitionActorAgent drops actors/framework_refs not grounded in the
   definition context (term+definition_text+scope, loose-normalized, half-of-
   significant-tokens rule for partial quoting). Definition-scoped on purpose:
-  the observed hallucinations DO appear elsewhere in the passage.
+  the observed hallucinations DO appear elsewhere in the passage. 11 tests in
+  `test_definition_actor_grounding.py`. *(NLP, BE)*
 - ✅ **QA-3** — responsible_party_normalized force-fit: the compliance_mechanism
   prompt offers only 4 buckets, so "person who acts as a creator" came back
   "developer". New `reconcile_normalized_actor()` (actor_normalizer): keep the
@@ -1781,7 +1831,8 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   phrase (genuine hits only); else null → routes to vocab review (B4). Applied
   at extraction (ComplianceMechanismPayload model_validator) AND at sync
   (_adapt_compliance_mechanism) so stored rows repair retroactively. Prompt
-  now says use null rather than forcing the nearest bucket.
+  now says use null rather than forcing the nearest bucket. 12 tests in
+  `test_reconcile_normalized_actor.py`. *(NLP, BE)*
 - ✅ **QA-4** — cross-passage definition dedupe: HB1877 produced 14 definition
   rows for ~6 terms (overlapping passages re-extracting the same code
   section). Existing payload-hash dedup is single-record + exact-equality
@@ -1789,7 +1840,8 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   dupe when loose term matches AND texts are near-identical (equal / prefix /
   ≥0.9 SequenceMatcher — measured on the real rows: true dupes 0.94–0.98,
   distinct-section same-term definitions 0.74). First-write-wins; skips
-  logged with the surviving extraction id.
+  logged with the surviving extraction id. 11 tests in
+  `test_definition_cross_passage_dedupe.py`. *(NLP, BE)*
 - ✅ **QA-5** — EA1 gold-set seed: 2 new fixtures
   (`az_sb1359_sec16_1023_deepfake_disclosure`, `ar_hb1877_sec1_csam_definitions`)
   with passage text copied verbatim INCLUDING bill margin numbers and the
@@ -1800,13 +1852,17 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   for all 37 run extractions (correct/partial/incorrect/duplicate + error
   vocab), including the negatives the fixture format can't express — the
   preemption A-tier misclassification (SFH-3a exhibit), 4 fabricated-quote
-  rows, the duplicate cluster, and the normalization force-fit. NOTE for
-  EA1-2: `harness.py` still calls the pre-ExtractionResult agent API
-  (`assert isinstance(actual, dict)`) — it needs the EA1-2 rework before
-  these fixtures can produce a baseline; the structure tests all pass.
+  rows, the duplicate cluster, and the normalization force-fit. Plus
+  `run_labels/README.md` documenting verdict vocabulary, error_types, and
+  notable rows. All fixtures pass structure validation; every expected evidence
+  span verifies at Tier 1 post-QA-1. NOTE for EA1-2: `harness.py` still calls
+  the pre-ExtractionResult agent API (`assert isinstance(actual, dict)`) — it
+  needs the EA1-2 rework before these fixtures can produce a baseline; the
+  structure tests all pass. *(RPR, NLP, BE)*
 - 🔒 **TA-8** — any threshold/keyword-list retuning (the LLM 0.4 not-relevant
   cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion). **Hard-
-  gated on the EA1 gold set** per SFH-3c — do not touch without regression data.
+  gated on the EA1 gold set baseline capture (EA1-3)** per SFH-3c — measure
+  before tuning.
 
 ### Phase SFH-3 — Trust model (🔒 gated: EA1 gold set + product ruling)
 - 🔒 **SFH-3a** — confidence re-architecture: **merge EA3 + Phase-4c weights +
