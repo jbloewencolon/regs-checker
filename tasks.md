@@ -260,11 +260,34 @@ can land in parallel with P3-2. P3-6/P3-7 close out the phase.
   disagreement candidates (team-scale double-annotation dropped at 8 laws);
   expand past 8 only if EA1-3 variance shows the set too small to detect
   regressions. *(RPR, NLP)*
-- ⏳ **EA1-2** **[Critical]** Harness covers all 9 agents: `harness.py` imports only
-  obligation/definition_actor/threshold_exception — rights_protection,
-  compliance_mechanism, preemption + all 3 bill-level agents have **zero**
-  ground-truth eval. Add bill-level eval mode (whole-bill fixture → expected
-  `law_enforcement_details`/thresholds/timeline fields). *(NLP, BE)*
+- ✅ **EA1-2** **[Critical]** Harness now covers all 9 agents (2026-07-13).
+  **Root mismatch fixed:** `extract()` returns an `ExtractionResult` (list of
+  extractions + optional abstention), but the old harness scored it as a bare
+  `dict | AbstentionResult` (`assert isinstance(actual, dict)`) — it would have
+  raised on every real call. New `_score_extraction_result` /
+  `_result_to_actual` reduce an `ExtractionResult` to a scorable actual:
+  explicit abstention or empty list → abstention (detection TN/FN); otherwise
+  the single **best-matching** extraction (field-overlap vs the fixture's
+  expected payload) so a passage that legitimately yields several extractions
+  (e.g. 3 definitions) isn't penalized for the ones the single-slot fixture
+  didn't encode. `CLAUSE_AGENT_MAP` expanded from 3 → all 6 clause agents
+  (added rights_protection, compliance_mechanism, preemption; key is the
+  extraction TYPE, `definition`→`DefinitionActorAgent`). **Bill-level eval
+  mode added:** new `BILL_AGENT_MAP` (enforcement_agent / applicability_agent /
+  compliance_timeline_agent), `run_bill_level()` + `run_all()`, a separate
+  `bill_level_gold_standard_dir` fixture subtree (config), `bill_text` inline
+  or `bill_text_file` reference, and `_score_bill_case` (one payload per law,
+  no abstention axis — errored/empty payload = detection FN + per-field FN).
+  Fixtures may hold a LIST of expected payloads per type (forward-compat;
+  list-vs-list alignment deferred, flagged in docstring). `EvaluationResult.
+  to_baseline_dict()` + `write_baseline()` emit the deterministic per-agent
+  per-field P/R/F1 artifact EA1-3 diffs against. Seeded one conservative
+  bill-level fixture (`bill_level/az_sb1359_enforcement.json`) with two
+  hand-verified enforcement facts (`penalty_per="day"`,
+  `private_right_of_action=false`) to exercise the mode end-to-end. 29 new
+  tests (42 total in `test_evaluation_harness.py`); full suite 1314 passing;
+  CI hard gate green. **Unblocks EA1-3** (baseline capture — needs live LLM
+  on operator's machine). *(NLP, BE)*
 - ⏳ **EA1-3** **[High]** Baseline + regression gate: run harness on current prompts/
   models, commit per-agent per-field P/R/F1 baseline artifact; every prompt/model/
   weight PR reruns and diffs against baseline. Numerics scored exact-match;
@@ -1258,39 +1281,57 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > normalized via ratified alias table; repairs both live and stored rows.** **QA-4
 > (cross-passage definition deduping) — law-level SequenceMatcher at 0.9 threshold
 > eliminates duplicate emissions.** **QA-5 (EA1 gold-set seed) — 2 new fixtures +
-> companion labels CSV documenting all 37 verdicts and error vocabulary.** All work
-> measured, committed, and validated: 1285 unit tests passing; CI green. All five
-> user-approved items shipped as approved ("Begin all five").
+> companion labels CSV documenting all 37 verdicts and error vocabulary.**
+>
+> **EA1-2 (harness rework) also landed this session:** the evaluation harness now
+> consumes `ExtractionResult` (fixing the pre-rework `assert isinstance(actual, dict)`
+> that would have crashed on every real call), covers all 9 agents (6 clause + 3
+> bill-level), does best-match selection for multi-extraction passages, adds a
+> whole-bill eval mode with its own fixture subtree, and emits a deterministic
+> baseline artifact for the EA1-3 regression gate. Seeded one conservative bill-level
+> fixture (AZ SB1359 enforcement). This unblocks EA1-3 baseline capture, which now
+> requires the operator's machine (live LLM). 1314 unit tests passing; CI green.
 
-### ⚠️ IMMEDIATE NEXT STEPS (after QA completion, 2026-07-13)
+### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
-**Status:** QA-1 through QA-5 complete, tested, and pushed to branch `claude/legal-extraction-architecture-1exlem`. CI green (1285 unit tests passing). Fixtures and labels ready.
+**Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
+`claude/legal-extraction-architecture-1exlem`. CI green (1314 unit tests). The
+evaluation harness now consumes `ExtractionResult`, covers all 9 agents
+(6 clause + 3 bill-level), and emits a deterministic baseline artifact.
 
-**Blockage:** EA1-2 (harness rework) is a **prerequisite for EA1-3 baseline capture**. The new fixtures cannot produce regression metrics until the harness API is updated.
+**Remaining blockage:** EA1-3 (baseline capture) **requires a live LLM** —
+this sandbox has no `NVIDIA_API_KEY` and no reachable LM Studio, and the
+harness calls real providers. This is now the long pole and needs the
+operator's machine.
 
-**Sequencing (1→2→3):**
+**Sequencing (1→2, operator-gated):**
 
-1. **EA1-2 (NEXT) — Harness rework to support all 9 agents**
-   - File: `src/evaluation/harness.py` currently calls only 3 agents (obligation, definition_actor, threshold_exception) + has 6 missing (rights_protection, compliance_mechanism, preemption + enforcement_agent, applicability_agent, compliance_timeline_agent)
-   - Blocker: harness still uses pre-ExtractionResult agent API (`assert isinstance(actual, dict)`) — needs rewrite to work with new agent signatures
-   - Scope: add bill-level eval mode (whole-bill fixture → expected `law_enforcement_details`/thresholds/timeline fields); import only from the live codebase (not _archived)
-   - Impact: once done, EA1-3 can measure all 9 agents against the 2-fixture EA1 seed
-   - Owner: NLP, BE (reachable on operator's machine with live LLM access)
-   - Acceptance: `harness.py` imports all 9 agents; runs without `AssertionError` on clause-level + bill-level fixtures; outputs P/R/F1 per agent per field
+1. **EA1-3 (NEXT — operator machine) — Baseline capture on current prompts/models**
+   - Run `EvaluationHarness().run_all()` against the gold_standard tree
+     (35 clause fixtures + the seeded `bill_level/az_sb1359_enforcement.json`)
+     with NVIDIA (or local LM Studio) configured
+   - Persist via `harness.write_baseline(result, "evaluation/baselines/<date>.json")`
+     — the method emits sorted, deterministic per-agent per-field P/R/F1
+   - Commit the baseline artifact; every future prompt/model/weight PR reruns
+     and diffs against it
+   - Owner: operator (`python start.py` env + `NVIDIA_API_KEY`)
+   - Acceptance: baseline artifact committed; EA3-1 + TA-8 become gatable
+   - Note: bill-level ground truth is currently one law / one agent
+     (enforcement). Expand applicability + compliance_timeline coverage during
+     the EA1-1 annotation pass; the harness scores only agents that have
+     ground truth, so the baseline grows monotonically as fixtures are added.
 
-2. **EA1-3 (unblocked after 1) — Baseline capture on current prompts/models**
-   - Runs the updated harness against the entire ~33-fixture set (2 new + ~31 existing from the gold_standard tree)
-   - Outputs per-agent per-field P/R/F1 baseline artifacts (`.json` files in `evaluation/baselines/`)
-   - Each future PR that touches prompts/models reruns harness and diffs against baseline
-   - Owner: operator (requires `python start.py` + NVIDIA_API_KEY on their machine)
-   - Acceptance: baseline artifact committed; EA3-1 + TA-8 now gatable
-
-3. **TA-8 (unblocked after 2) — Threshold/keyword-list retuning**
+2. **TA-8 (unblocked after 1) — Threshold/keyword-list retuning**
    - Uses EA1-3's baseline as the regression gate
-   - Tune the LLM 0.4 not-relevant cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion
-   - Measure delta against baseline; commit if regression is acceptable
-   - Owner: NLP (can iterate with the operator providing rerun baseline checks)
+   - Tune the LLM 0.4 not-relevant cutoff, keyword confidence curve,
+     `_ADJACENT_AI_KEYWORDS` promotion; measure delta against baseline
+   - Owner: NLP (iterate with operator rerunning the baseline diff)
    - Acceptance: tuned settings committed; delta report showing measured F1 impact
+
+**Parallel, still sandbox-actionable:** EA1-1 fixture expansion toward the
+8-law stratified set (SFH-2c) — more clause fixtures and bill-level ground
+truth can be authored here from the committed `output/law_texts/` sources
+without a live LLM (annotation, not extraction).
 
 ### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
 - **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run), the full **2026-06-15 NVIDIA-backend hardening** (429 + transport retry, reasoning_effort coercion, bare-array handling, evidence-span loosening, Re-triage Failed, archiver fix), plus lint cleanup, CI gate fix, repo cleanup. CI green (Unit tests + Ruff lint). **Do this before hitting Extract All.**
@@ -1855,10 +1896,11 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   rows, the duplicate cluster, and the normalization force-fit. Plus
   `run_labels/README.md` documenting verdict vocabulary, error_types, and
   notable rows. All fixtures pass structure validation; every expected evidence
-  span verifies at Tier 1 post-QA-1. NOTE for EA1-2: `harness.py` still calls
-  the pre-ExtractionResult agent API (`assert isinstance(actual, dict)`) — it
-  needs the EA1-2 rework before these fixtures can produce a baseline; the
-  structure tests all pass. *(RPR, NLP, BE)*
+  span verifies at Tier 1 post-QA-1. ~~NOTE for EA1-2: `harness.py` still calls
+  the pre-ExtractionResult agent API~~ — **resolved: EA1-2 landed 2026-07-13**,
+  harness now consumes `ExtractionResult` and covers all 9 agents; these
+  fixtures produce a baseline once EA1-3 runs on the operator's machine.
+  *(RPR, NLP, BE)*
 - 🔒 **TA-8** — any threshold/keyword-list retuning (the LLM 0.4 not-relevant
   cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion). **Hard-
   gated on the EA1 gold set baseline capture (EA1-3)** per SFH-3c — measure

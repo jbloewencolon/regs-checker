@@ -87,6 +87,9 @@ class Settings(BaseSettings):
 
     # Evaluation
     gold_standard_dir: str = "tests/fixtures/gold_standard"
+    # Bill-level (whole-bill) gold-standard fixtures live in their own subtree so
+    # the clause-level loader's `*.json` glob never sweeps them into passage eval.
+    bill_level_gold_standard_dir: str = "tests/fixtures/gold_standard/bill_level"
 
     # NVIDIA hosted LLM (OpenAI-compatible — https://integrate.api.nvidia.com/v1)
     # NVIDIA_API_KEY has no REGS_ prefix by convention; set it directly in .env or CI secrets.
