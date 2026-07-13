@@ -1,0 +1,38 @@
+extraction_id,agent_name,law,term_or_summary,verdict,error_types,notes
+1,definition_actor,TMP-AZ-AMENDMENTOFARI,Disclose,partial,padded_actor,Definition correct with verified span; generic Person/Individual actor is schema-filling — the definition names no actor (QA-2 pattern in mild form)
+2,definition_actor,TMP-AZ-AMENDMENTOFARI,Disclosed by electronic means,partial,padded_actor,Definition correct; same padded actor pattern
+3,definition_actor,TMP-AZ-AMENDMENTOFARI,Harm,partial,padded_actor,Definition correct; same padded actor pattern
+4,definition_actor,TMP-AZ-AMENDMENTOFARI,Image,partial,padded_actor,Definition correct incl. amendment-added REALISTIC PICTORIAL REPRESENTATION; padded actor
+5,definition_actor,TMP-AZ-AMENDMENTOFARI,Reasonable expectation of privacy,partial,padded_actor,Definition correct; padded actor
+6,definition_actor,TMP-AZ-AMENDMENTOFARI,REALISTIC PICTORIAL REPRESENTATION,partial,padded_actor,Definition correct — the key new AI term of the amendment; padded actor
+7,definition_actor,TMP-AZ-AMENDMENTOFARI,Specific sexual activities,partial,padded_actor,Cross-reference definition correctly captured; padded actor
+8,definition_actor,TMP-AZ-AMENDMENTOFARI,State of nudity,partial,padded_actor,Cross-reference definition correctly captured; padded actor
+9,preemption,TMP-AZ-AMENDMENTOFARI,§230 service exemption as cross_state_conflict,incorrect,misclassified_type,KEY NEGATIVE (SFH-3a exhibit): scored 0.895/A with 4/4 verified spans but the passage is an exemption clause + federal definitional cross-refs — conflict_type cross_state_conflict is wrong. Verified quotes are not correct interpretation
+10,obligation,SB 1359,deepfake creation/distribution prohibition,correct,,Subject/action/modality/condition/enforcement all match source; gold fixture az_sb1359_sec16_1023 mirrors this
+11,obligation,SB 1359,disclosure requirement (restated),partial,restated_obligation,Accurate content but the same statutory duty as id 10 expressed as must-include rather than shall-not-without — one duty, two rows
+12,threshold_exception,SB 1359,90-day pre-election window,correct,,threshold_type date_range value 90 days — correctly typed temporal threshold from spelled-out NINETY
+13,threshold_exception,SB 1359,satire/parody carve-out,correct,,Verified Tier-1 span
+14,threshold_exception,SB 1359,§230 interactive computer service carve-out,correct,,
+15,threshold_exception,SB 1359,technology-provider exclusion,correct,,Correctly caught the definitional carve-out in CREATOR (b)
+16,compliance_mechanism,SB 1359,AI-content disclosure mechanism,partial,wrong_normalization,Mechanism/description/responsible_party correct; responsible_party_normalized=developer is a force-fit of a content creator (QA-3 negative example)
+17,definition_actor,SB 1359,CREATOR,correct,,
+18,definition_actor,SB 1359,DECEPTIVE AND FRAUDULENT DEEPFAKE,correct,,
+19,definition_actor,SB 1359,SYNTHETIC MEDIA,correct,,
+20,definition_actor,HB1877,Computer generated (¶1),partial,hallucinated_actor,Definition text correct; Developer actor invented — definition names no actor (QA-2 negative example)
+21,definition_actor,HB1877,Indistinguishable §5-27-302 (¶1),partial,truncated_quote,Definition truncated at page break — missing 'the conduct depicted' tail
+22,definition_actor,HB1877,Sexually explicit digital material (¶1),incorrect,fabricated_quote,'digitized image' and this full text appear nowhere in the bill — reconstructed from knowledge of the amended code rather than quoted (QA-1 verifier correctly rejects)
+23,definition_actor,HB1877,Computer generated image §5-27-601(16) (¶1),incorrect,fabricated_quote,'a picture or video produced...' not present in the bill text — reconstructed
+24,definition_actor,HB1877,Indistinguishable §5-27-601(17) (¶1),incorrect,fabricated_quote,'that a depiction is such that...' variant not present in the bill text — reconstructed
+25,definition_actor,HB1877,Adversarial testing (¶1),partial,truncated_quote,Definition correct but truncated before 'safeguards...NIST' tail; artificial-intelligence-developer actor IS grounded (correct to keep under QA-2)
+26,obligation,HB1877,advertise/sell/distribute CSAM prohibition,correct,,Distinct subsection from id 27 — correctly kept separate
+27,obligation,HB1877,solicit/possess/view CSAM prohibition,correct,,
+28,threshold_exception,HB1877,drawing/cartoon/sculpture/painting carve-out,partial,reworded_quote,Content correct; quote says 'a depiction of a child' where source reads 'a visual or print medium that depicts a child'
+29,threshold_exception,HB1877,adversarial-testing purpose exemption,incorrect,fabricated_quote,'Subsection (c)(2)(A)...exploitative purposes' appears nowhere in the bill — fabricated quote and subsection reference
+30,definition_actor,HB1877,Indistinguishable (¶2),duplicate,duplicate_overlapping_passage;hallucinated_framework_ref,Near-identical copy of id 21 (QA-4 true-dupe pair scoring 0.944); NIST ref cross-contaminated from Adversarial testing (QA-2 negative)
+31,definition_actor,HB1877,Computer generated (¶2),duplicate,duplicate_overlapping_passage;hallucinated_framework_ref,Copy of id 20; NIST ref cross-contaminated
+32,definition_actor,HB1877,Adversarial testing (¶2),duplicate,duplicate_overlapping_passage,Copy of id 25; the NIST ref here is genuine (kept under QA-2)
+33,definition_actor,HB1877,Sexually explicit digital material (¶2),duplicate,duplicate_overlapping_passage;fabricated_quote,Copy of id 22 with source-doubled 'that is that is' (QA-4 dupe pair scoring 0.982)
+34,definition_actor,HB1877,Computer generated image (¶3),duplicate,duplicate_overlapping_passage;fabricated_quote,Copy of id 23
+35,definition_actor,HB1877,Indistinguishable §5-27-601(17) (¶3),duplicate,duplicate_overlapping_passage;fabricated_quote,Copy of id 24
+36,definition_actor,HB1877,Adversarial testing (¶3),duplicate,duplicate_overlapping_passage,Copy of id 25/32
+37,definition_actor,HB1877,Sexually explicit digital material (¶3),duplicate,duplicate_overlapping_passage;fabricated_quote,Copy of id 22/33

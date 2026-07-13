@@ -1748,6 +1748,62 @@ PNE-3 after. PNE-4 queues behind EA1, which remains the long pole.
   across all 6 agents. Zero-yield uncertain passages are free FN/FP evidence —
   feeds directly into EA1/EA4-3. Needs a join between `SectionTriageResult` and
   `Extraction` plus a report; scoped as its own item rather than folded in here.
+
+### Phase QA — first-real-run output audit fixes (2026-07-13)
+> Driven by the operator's export of all 37 extractions from the 2026-07-12
+> run (AZ SB1462, AZ SB 1359, AR HB1877) — the first real batch after the
+> TA-11/TA-12 streaming fixes. Every finding below was verified against the
+> committed source files in `output/law_texts/`, not just the CSVs.
+- ✅ **QA-1** — Tier-4 span-verification ordering bug: `verify_evidence_spans`
+  computed its Tier-4 input as `strip_revisor_artifacts(norm_passage)`, but
+  norm_passage is already whitespace-collapsed, so the line-anchored margin-
+  number/hyphen-break regexes could never fire — Tier 4 was silently a no-op
+  (and had zero test coverage, which is how it shipped). Perfect formatting
+  correlation in the run: clean-text SB1462 verified 12/12 spans; the two
+  line-numbered bills 3/37. Fix: strip on the raw line-structured text BEFORE
+  collapsing, symmetrically for passage and span. Replay of the failed spans
+  against real sources: 3/37 → 32/37; the 5 still failing are genuine model
+  fabrications (text absent from the bill — correct rejections). 10 tests in
+  `test_tier4_margin_numbers.py` using the real AR/AZ formatting.
+- ✅ **QA-2** — definition_actor hallucination guards: llama-3.1-8b invents
+  actors ("Developer" on a definition naming no actor) and cross-contaminates
+  framework_refs (NIST on definitions that never mention it). New
+  `_postprocess_extraction` hook on BaseExtractionAgent (default no-op);
+  DefinitionActorAgent drops actors/framework_refs not grounded in the
+  definition context (term+definition_text+scope, loose-normalized, half-of-
+  significant-tokens rule for partial quoting). Definition-scoped on purpose:
+  the observed hallucinations DO appear elsewhere in the passage.
+- ✅ **QA-3** — responsible_party_normalized force-fit: the compliance_mechanism
+  prompt offers only 4 buckets, so "person who acts as a creator" came back
+  "developer". New `reconcile_normalized_actor()` (actor_normalizer): keep the
+  LLM value only when the raw phrase lexically contains it or the ratified
+  alias table maps both to one code; else the alias table's code for the raw
+  phrase (genuine hits only); else null → routes to vocab review (B4). Applied
+  at extraction (ComplianceMechanismPayload model_validator) AND at sync
+  (_adapt_compliance_mechanism) so stored rows repair retroactively. Prompt
+  now says use null rather than forcing the nearest bucket.
+- ✅ **QA-4** — cross-passage definition dedupe: HB1877 produced 14 definition
+  rows for ~6 terms (overlapping passages re-extracting the same code
+  section). Existing payload-hash dedup is single-record + exact-equality
+  only. New law-level (document_version) check for definition extractions:
+  dupe when loose term matches AND texts are near-identical (equal / prefix /
+  ≥0.9 SequenceMatcher — measured on the real rows: true dupes 0.94–0.98,
+  distinct-section same-term definitions 0.74). First-write-wins; skips
+  logged with the surviving extraction id.
+- ✅ **QA-5** — EA1 gold-set seed: 2 new fixtures
+  (`az_sb1359_sec16_1023_deepfake_disclosure`, `ar_hb1877_sec1_csam_definitions`)
+  with passage text copied verbatim INCLUDING bill margin numbers and the
+  mid-definition page break — they double as end-to-end Tier-4 grounding
+  regressions (all expected spans verify at Tier 1 post-QA-1), and satisfy
+  EA1-1's deepfake-law + engrossed-markup + OCR-quality strata. Plus
+  `run_labels/2026-07-12_extraction_run_labels.csv`: hand-checked verdicts
+  for all 37 run extractions (correct/partial/incorrect/duplicate + error
+  vocab), including the negatives the fixture format can't express — the
+  preemption A-tier misclassification (SFH-3a exhibit), 4 fabricated-quote
+  rows, the duplicate cluster, and the normalization force-fit. NOTE for
+  EA1-2: `harness.py` still calls the pre-ExtractionResult agent API
+  (`assert isinstance(actual, dict)`) — it needs the EA1-2 rework before
+  these fixtures can produce a baseline; the structure tests all pass.
 - 🔒 **TA-8** — any threshold/keyword-list retuning (the LLM 0.4 not-relevant
   cutoff, keyword confidence curve, `_ADJACENT_AI_KEYWORDS` promotion). **Hard-
   gated on the EA1 gold set** per SFH-3c — do not touch without regression data.
