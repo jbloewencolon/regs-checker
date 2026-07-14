@@ -104,6 +104,38 @@ extraction type present in the representative version.
 
 ## Phase 2 — QA-9a: restatement-scoped relevance (sandbox-actionable after ratification)
 
+> **Status 2026-07-14: engine built and tested; QA-10 landed; sync wiring
+> deliberately NOT done.** `src/core/restatement_scope.py` implements
+> steps 1-2 below and is validated against the real corpus — see
+> "Verified against real corpus" below. It is called from nowhere in
+> production yet: step 3 (wiring into `payload_adapter.py`) is withheld
+> because step 4's ratification hasn't happened and can't happen
+> autonomously. QA-10 (step 5) has no such gate — it's mechanical, like
+> QA-2/QA-6 — and is fully landed in `src/agents/definition_actor.py`.
+>
+> **Verified against real corpus (`tests/unit/test_restatement_scope.py`,
+> 29 tests):** SB 926's Penal Code § 647 — only the `(j)(4)`
+> "computer-generated image" clause reads in-scope; `(j)(1)` (window-
+> peeping), `(a)` (loitering/solicitation), and `(i)` (window-peeking
+> definition) correctly read out-of-scope. AB 2355's § 84504.2 formatting
+> rules — the white-background, Arial-type-size, and top-contributor-
+> ordering paragraphs, none of which contain an AI keyword themselves —
+> correctly read in-scope because their parent subdivision cites the
+> bill's own added § 84514 (rule 2(b)); this is the exact over-filtering
+> case fact 0.3's simulation caught. TMP-CA-EMPLOYMENTANDS never trips the
+> scope trigger at all (0 restatement passages found), so the "0% hide on
+> full-AI laws" bar is met structurally, not just by keyword luck.
+>
+> **Remaining to actually land Phase 2:** (a) RPR/product sign-off on the
+> in-scope rules per step 4 — still needed, this session cannot provide
+> it; (b) plumbing `payload_adapter.py`'s adapters to receive the
+> restatement's full passage text and the bill's added-section set
+> (today's adapter signature is `adapt_payload_for_sync(extraction_type,
+> payload)` — payload-only, no passage context — QA-6 didn't need this
+> because preemption credibility is self-contained in the payload); (c) a
+> real hide-report generated against actual stored SB 926/AB 2355 rows,
+> which needs a live DB this sandbox doesn't have.
+
 **Principle (from fact 0.3):** relevance filtering applies **only inside
 restated sections** — never law-wide. A bill that is wholly an AI act
 (AB 2355, TMP-CA-EMPLOYMENTANDS, CO SB205) is untouched by this phase.
@@ -178,7 +210,7 @@ AB 2355-style laws improves.
 |---|---|---|---|
 | 0 operator repair | QA-6/7 merged | — | no (operator) |
 | 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
-| 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | yes (code); ratification external |
+| 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10: **yes — landed 2026-07-14**; sync wiring: no (ratification + adapter plumbing external) |
 | 3 QA-9b pre-extraction scoping | Phases 1-2 + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
 | 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures yes |
 

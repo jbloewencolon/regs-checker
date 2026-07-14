@@ -5,6 +5,8 @@ single pass because all are "what do the words mean" tasks operating on
 preamble/definitions sections (Recommendation #1).
 """
 
+import re
+
 import structlog
 from pydantic import BaseModel
 
@@ -13,6 +15,37 @@ from src.core.text_grounding import _loose_normalize
 from src.schemas.extraction import DefinitionActorPayload
 
 logger = structlog.get_logger()
+
+# QA-10: California's conditional-enactment boilerplate ("Section 1.6 of
+# this bill incorporates amendments to Section 647 of the Penal Code
+# proposed by this bill, Assembly Bill 1962, and Assembly Bill 1874...")
+# reads structurally like a definition to a small model — a code-section
+# citation followed by prose about it — but it defines nothing. Two
+# independent tells, either one sufficient to drop the extraction (SB 926
+# ids 234/235 hit both): the "term" is a bare section-of-code citation, not
+# a defined word or phrase; or the "definition_text" is itself the
+# contingent-enactment boilerplate, not a definition.
+_BARE_CITATION_TERM_RE = re.compile(
+    r"^(?:section|sec\.|§)\s*\d+(?:\.\d+)*\s+of\s+the\s+.+?code$",
+    re.IGNORECASE,
+)
+
+_CONDITIONAL_ENACTMENT_PHRASES = (
+    "incorporates amendments to",
+    "shall only become operative if",
+    "proposed by this bill",
+    "is enacted after",
+    "bills are enacted and become effective",
+)
+
+
+def _is_bare_citation_term(term: str) -> bool:
+    return bool(_BARE_CITATION_TERM_RE.match((term or "").strip()))
+
+
+def _is_conditional_enactment_boilerplate(text: str) -> bool:
+    lowered = (text or "").lower()
+    return any(phrase in lowered for phrase in _CONDITIONAL_ENACTMENT_PHRASES)
 
 
 class DefinitionActorAgent(BaseExtractionAgent):
@@ -86,8 +119,9 @@ PASSAGE:
     def get_output_schema(self) -> type[BaseModel]:
         return DefinitionActorPayload
 
-    def _postprocess_extraction(self, result: dict, passage: str) -> dict:
+    def _postprocess_extraction(self, result: dict, passage: str) -> dict | None:
         """QA-2: drop actors and framework_refs not grounded in the definition.
+        QA-10: drop junk "definitions" of conditional-enactment boilerplate.
 
         Small instruct models fill the schema's optional arrays with invented
         content: a "Developer" actor attached to a definition that names no
@@ -100,6 +134,15 @@ PASSAGE:
         the observed hallucinations DO appear elsewhere in the passage, so a
         passage-level check would not catch them.
         """
+        if _is_bare_citation_term(result.get("term", "")) or (
+            _is_conditional_enactment_boilerplate(result.get("definition_text", ""))
+        ):
+            logger.warning(
+                "definition_actor_boilerplate_dropped",
+                term=result.get("term"),
+            )
+            return None
+
         grounding_source = " ".join(
             str(result.get(k) or "") for k in ("term", "definition_text", "scope")
         )

@@ -1343,10 +1343,11 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > 98.4% of TMP-CA-EMPLOYMENTANDS, a genuine ADS law — relevance must be scoped to
 > restated sections, never law-wide). Sequencing: Phase 1 (QA-8 collapse,
 > deterministic, sandbox-actionable — **landed 2026-07-14**) → Phase 2 (QA-9a
-> sync-time subdivision scoping + QA-10 junk-definition guard; needs RPR
-> ratification of in-scope rules) → Phase 3 (pre-extraction scoping; gated on
-> EA1-3 baseline) → Phase 4 (stress fixtures + optional markup-preserving
-> re-fetch of CA sources).
+> sync-time subdivision scoping — **engine landed 2026-07-14, sync wiring
+> pending RPR ratification** — + QA-10 junk-definition guard, **landed
+> 2026-07-14**) → Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) →
+> Phase 4 (stress fixtures + optional markup-preserving re-fetch of CA
+> sources).
 
 - [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
   2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
@@ -1374,18 +1375,37 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   live pipeline run is available — sandbox has no DB connection to do this
   here. Acceptance target unchanged: SB 926 ~181 rows → ~25, §647 token
   spend ÷8.
-- [ ] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
-  rules need RPR sign-off):** subdivision in-scope test applied ONLY inside
-  restated sections (AI/domain keyword, or reference to a section this bill
-  adds — what keeps AB 2355's formatting rules in scope); `ai_nexus: false` →
-  `display: false` at sync (QA-6 pattern, retroactive). Ship with per-law
-  hide-report; 0% hides on full-AI laws is the regression bar.
+- [~] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
+  rules need RPR sign-off) — ENGINE LANDED 2026-07-14, SYNC WIRING PENDING:**
+  `src/core/restatement_scope.py` implements the scope trigger (Phase-1
+  grouped, or a single-version restatement ≥6K chars) and the subdivision
+  in-scope test (AI/domain keyword; reference to a section this bill adds,
+  checked at the enclosing top-level subdivision so AB 2355's keyword-free
+  formatting paragraphs stay in scope via their parent's § 84514 citation;
+  adjacency for shared lead-in prose). Validated against the real corpus
+  (29 tests, `tests/unit/test_restatement_scope.py`): SB 926 keeps only
+  `(j)(4)` in scope out of all 12 top-level subdivisions; AB 2355's
+  formatting rules correctly stay visible (the over-filtering trap fact 0.3
+  caught); TMP-CA-EMPLOYMENTANDS never trips the scope trigger at all (0%
+  hide structurally guaranteed). **NOT wired into `payload_adapter.py`** —
+  that needs (1) RPR/product ratification of the in-scope rules (cannot
+  happen autonomously), (2) extending the adapter signature to receive
+  passage text + added-section context (today's `adapt_payload_for_sync
+  (extraction_type, payload)` is payload-only), (3) a real hide-report
+  against live DB rows. `ai_nexus: false` → `display: false` at sync
+  (QA-6 pattern, retroactive) is the intended wiring once ratified.
 - [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
   test before extraction; changes agent inputs → measure via harness with the
   SB 926/AB 2355/SB 11 stress fixtures added first.
-- [ ] **QA-10 — junk-definition micro-guard (rides with Phase 2):** drop
-  definitions whose term is a bare code-section citation or whose text is
-  conditional-enactment boilerplate (SB 926 ids 234/235).
+- [x] **QA-10 — junk-definition micro-guard (rides with Phase 2) — LANDED
+  2026-07-14:** `_is_bare_citation_term` / `_is_conditional_enactment_
+  boilerplate` in `src/agents/definition_actor.py`'s `_postprocess_extraction`
+  drop definitions whose term is a bare code-section citation ("Section 647
+  of the Penal Code") or whose text is conditional-enactment boilerplate
+  ("...incorporates amendments to Section 647 of the Penal Code proposed by
+  this bill, Assembly Bill 1962..."), matching SB 926 ids 234/235 exactly.
+  Mechanical (no ratification needed), same pattern as QA-2/QA-6. 12 new
+  tests (`tests/unit/test_definition_boilerplate_guard.py`).
 - [ ] **Operator — verify QA-1 was active + repair stored rows (Phase 0):** confirm
   the branch was merged/pulled before the next run; then
   `python -m src.scripts.reground_spans --dry-run` → apply →
