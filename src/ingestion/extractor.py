@@ -961,20 +961,51 @@ def _payload_hash(payload: dict) -> str:
 # DIFFERENT code sections has meaningfully different text and must be kept
 # (measured on the real HB1877 rows: true dupes score 0.94-0.98 similarity,
 # distinct-section definitions 0.74 — 0.9 splits them with wide margin).
+#
+# QA-7: one copy often carries a quoting preamble the other lacks — "As used
+# in this subdivision, 'loiter' means to delay or linger..." vs the bare
+# "to delay or linger..." — which lands similarity at 0.85-0.88, just under
+# the threshold (observed on the 2026-07-13 run: SB 926 'loiter' and
+# 'prostitution', SB 1120 'artificial intelligence'). Strip that preamble
+# from both texts before comparing.
 
 _DEFINITION_DUP_SIMILARITY = 0.9
 
 
-def _is_duplicate_definition_text(text_a: str, text_b: str) -> bool:
+def _strip_definition_preamble(loose_text: str, loose_term: str) -> str:
+    """Remove a leading quoting preamble from a loose-normalized definition
+    text: "as used in this subdivision <term> means ..." → "...".
+
+    Operates on _loose_normalize output (lowercase alphanumerics, single
+    spaces), so the pattern needs no punctuation handling.
+    """
+    pattern = (
+        r"^(?:(?:as used|for (?:the )?purposes?) (?:of |in )?this \w+ )?"
+        r"(?:the term )?"
+        + re.escape(loose_term)
+        + r" (?:means|includes|has the same meaning as) "
+    )
+    return re.sub(pattern, "", loose_text, count=1)
+
+
+def _is_duplicate_definition_text(
+    text_a: str, text_b: str, term: str = ""
+) -> bool:
     """True when two definition texts are near-identical (loose-normalized
     equality, prefix relation from a truncated quote, or ≥ 0.9 sequence
-    similarity to absorb source artifacts like doubled words)."""
+    similarity to absorb source artifacts like doubled words). When ``term``
+    is given, a quoting preamble naming it is stripped first (QA-7)."""
     from difflib import SequenceMatcher
 
     from src.core.text_grounding import _loose_normalize
 
     loose_a, _ = _loose_normalize(text_a)
     loose_b, _ = _loose_normalize(text_b)
+    if term:
+        loose_term, _ = _loose_normalize(term)
+        if loose_term:
+            loose_a = _strip_definition_preamble(loose_a, loose_term)
+            loose_b = _strip_definition_preamble(loose_b, loose_term)
     if not loose_a or not loose_b:
         return False
     if loose_a == loose_b:
@@ -1022,7 +1053,9 @@ def _find_cross_passage_definition_dup(
         other_term, _ = _loose_normalize((payload.get("term") or "").strip())
         if other_term != loose_term:
             continue
-        if _is_duplicate_definition_text(def_text, payload.get("definition_text") or ""):
+        if _is_duplicate_definition_text(
+            def_text, payload.get("definition_text") or "", term=term
+        ):
             return ext_id
     return None
 
