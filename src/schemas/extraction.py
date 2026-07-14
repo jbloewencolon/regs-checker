@@ -708,8 +708,10 @@ class PreemptionSignalPayload(BaseModel):
     )
     related_authority: str | None = Field(
         default=None,
-        description="The preempting authority (e.g., 'Dec 2025 Federal EO on AI', "
-        "'US Constitution Art. I § 8')",
+        description="The preempting or conflicting authority exactly as the "
+        "passage names it (a federal citation, a named federal act/EO, or "
+        "another state's law); null when the passage names none. QA-6: no "
+        "example values here — small models parroted the old ones verbatim.",
     )
     severity: str = Field(
         default="medium",
