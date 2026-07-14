@@ -922,6 +922,22 @@ def _check_jurisdiction(db, record: NormalizedSourceRecord, passage_text: str) -
         return True  # Fail open — don't block extraction on check errors
 
 
+def _check_parallel_version(record: NormalizedSourceRecord) -> bool:
+    """QA-8: skip non-representative parallel-version restatements.
+
+    California re-enacts a full code section on every amendment; a bill
+    touching the same section under multiple pending contingencies carries
+    one full restatement per contingency (see parser._AMENDING_HEADER_RE).
+    `parse_and_normalize` tags every restatement in such a group with
+    parallel_version_representative — only the last version in bill order
+    (the most-merged contingency, containing this bill's own changes either
+    way) should feed the agent battery. Returns True (proceed) unless the
+    metadata explicitly marks this record as a non-representative copy.
+    """
+    meta = record.metadata_ or {}
+    return meta.get("parallel_version_representative", True) is not False
+
+
 def _content_hash(agent_name: str, text: str) -> str:
     """Compute a deduplication hash for (agent, passage_text)."""
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
@@ -961,20 +977,51 @@ def _payload_hash(payload: dict) -> str:
 # DIFFERENT code sections has meaningfully different text and must be kept
 # (measured on the real HB1877 rows: true dupes score 0.94-0.98 similarity,
 # distinct-section definitions 0.74 — 0.9 splits them with wide margin).
+#
+# QA-7: one copy often carries a quoting preamble the other lacks — "As used
+# in this subdivision, 'loiter' means to delay or linger..." vs the bare
+# "to delay or linger..." — which lands similarity at 0.85-0.88, just under
+# the threshold (observed on the 2026-07-13 run: SB 926 'loiter' and
+# 'prostitution', SB 1120 'artificial intelligence'). Strip that preamble
+# from both texts before comparing.
 
 _DEFINITION_DUP_SIMILARITY = 0.9
 
 
-def _is_duplicate_definition_text(text_a: str, text_b: str) -> bool:
+def _strip_definition_preamble(loose_text: str, loose_term: str) -> str:
+    """Remove a leading quoting preamble from a loose-normalized definition
+    text: "as used in this subdivision <term> means ..." → "...".
+
+    Operates on _loose_normalize output (lowercase alphanumerics, single
+    spaces), so the pattern needs no punctuation handling.
+    """
+    pattern = (
+        r"^(?:(?:as used|for (?:the )?purposes?) (?:of |in )?this \w+ )?"
+        r"(?:the term )?"
+        + re.escape(loose_term)
+        + r" (?:means|includes|has the same meaning as) "
+    )
+    return re.sub(pattern, "", loose_text, count=1)
+
+
+def _is_duplicate_definition_text(
+    text_a: str, text_b: str, term: str = ""
+) -> bool:
     """True when two definition texts are near-identical (loose-normalized
     equality, prefix relation from a truncated quote, or ≥ 0.9 sequence
-    similarity to absorb source artifacts like doubled words)."""
+    similarity to absorb source artifacts like doubled words). When ``term``
+    is given, a quoting preamble naming it is stripped first (QA-7)."""
     from difflib import SequenceMatcher
 
     from src.core.text_grounding import _loose_normalize
 
     loose_a, _ = _loose_normalize(text_a)
     loose_b, _ = _loose_normalize(text_b)
+    if term:
+        loose_term, _ = _loose_normalize(term)
+        if loose_term:
+            loose_a = _strip_definition_preamble(loose_a, loose_term)
+            loose_b = _strip_definition_preamble(loose_b, loose_term)
     if not loose_a or not loose_b:
         return False
     if loose_a == loose_b:
@@ -1022,7 +1069,9 @@ def _find_cross_passage_definition_dup(
         other_term, _ = _loose_normalize((payload.get("term") or "").strip())
         if other_term != loose_term:
             continue
-        if _is_duplicate_definition_text(def_text, payload.get("definition_text") or ""):
+        if _is_duplicate_definition_text(
+            def_text, payload.get("definition_text") or "", term=term
+        ):
             return ext_id
     return None
 
@@ -1220,7 +1269,11 @@ def extract_single_record(
 ) -> int:
     """Run selected agents against a passage.
 
-    Returns extraction count. Agents are selected based on content signals.
+    Returns extraction count, or a negative sentinel for a skip the caller
+    must track separately from a legitimate zero-extraction passage:
+    -1 = jurisdiction cross-check failed, -2 = non-representative
+    parallel-version restatement (QA-8). Agents are selected based on
+    content signals.
 
     To avoid VRAM thrashing when using local models via LM Studio, agents are
     grouped by their model_override and each group runs sequentially.  Agents
@@ -1274,6 +1327,22 @@ def extract_single_record(
             extraction_count=0,
         )
         return -1
+
+    # QA-8: skip non-representative parallel-version restatements. Return -2
+    # (distinct from the jurisdiction skip's -1) so the caller can track it
+    # separately in the conservation ledger and run summary.
+    if not _check_parallel_version(record):
+        logger.info(
+            "extraction_skipped_parallel_version",
+            record_id=record.id,
+            parallel_version_group=(record.metadata_ or {}).get("parallel_version_group"),
+        )
+        monitor.record_passage_complete(
+            record_id=record.id,
+            section_path=record.section_path,
+            extraction_count=0,
+        )
+        return -2
 
     # Select agents based on passage content + triage signals
     triage = getattr(record, "triage_result", None)
@@ -2409,6 +2478,7 @@ def run_extraction(
         "records_failed": 0,
         "records_skipped_short": 0,
         "records_skipped_jurisdiction": 0,
+        "parallel_versions_skipped": 0,
         "passages_merged": 0,
         "agents_skipped_by_signal": 0,
         "token_usage": {
@@ -2459,6 +2529,7 @@ def run_extraction(
     _c_processed: set[int] = set()
     _c_failed: set[int] = set()
     _c_skipped_jurisdiction: set[int] = set()
+    _c_skipped_parallel_version: set[int] = set()
 
     # Group records by document_version for ExtractionJob tracking
     dv_records: dict[int, list[NormalizedSourceRecord]] = {}
@@ -2589,6 +2660,14 @@ def run_extraction(
                     summary["records_processed"] += len(passage.source_records)
                     _c_skipped_jurisdiction.update(r.id for r in passage.source_records)
                     continue
+                if count == -2:
+                    # QA-8: non-representative parallel-version restatement —
+                    # skipped, not failed; the representative version covers it.
+                    summary["parallel_versions_skipped"] += 1
+                    extraction_job.records_processed += len(passage.source_records)
+                    summary["records_processed"] += len(passage.source_records)
+                    _c_skipped_parallel_version.update(r.id for r in passage.source_records)
+                    continue
                 job_extractions += count
                 extraction_job.records_processed += len(passage.source_records)
                 summary["records_processed"] += len(passage.source_records)
@@ -2662,6 +2741,7 @@ def run_extraction(
             "processed": _c_processed,
             "failed": _c_failed,
             "skipped_jurisdiction": _c_skipped_jurisdiction,
+            "skipped_parallel_version": _c_skipped_parallel_version,
         },
     )
     summary["conservation"] = conservation
@@ -2705,6 +2785,7 @@ def run_extraction(
             processed=conservation["processed"],
             failed=conservation["failed"],
             skipped_jurisdiction=conservation["skipped_jurisdiction"],
+            skipped_parallel_version=conservation["skipped_parallel_version"],
             residual_count=conservation["residual_count"],
             residual_ids=conservation["residual_ids"][:20],
             double_counted_ids=conservation["double_counted_ids"][:20],
@@ -2713,7 +2794,9 @@ def run_extraction(
             f"\n⚠ RUN INTEGRITY CHECK FAILED: {conservation['selected']} passages "
             f"selected but only {conservation['selected'] - conservation['residual_count']} "
             f"accounted for (processed {conservation['processed']} + failed "
-            f"{conservation['failed']} + skipped {conservation['skipped_jurisdiction']}). "
+            f"{conservation['failed']} + skipped jurisdiction "
+            f"{conservation['skipped_jurisdiction']} + skipped parallel-version "
+            f"{conservation['skipped_parallel_version']}). "
             f"RESIDUAL: {conservation['residual_count']} passage(s) with NO outcome "
             f"record — ids: {conservation['residual_ids'][:20]}. This indicates an "
             f"untracked early-exit path; re-run these ids with recovery mode and "

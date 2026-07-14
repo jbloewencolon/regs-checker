@@ -252,11 +252,32 @@ def _build_insert_row(row, law_id: int) -> dict:
     and obligation_family already ship inside the adapted payload as
     actor_role_rc / obligation_family (PNE-2a/2b) — they are NOT insert
     columns, which don't exist on the live table (see _assert_insert_columns).
+
+    QA-9a (Phase 2): passage metadata is passed to assess_extraction_scope.
+    added_section_numbers would require fetching full bill text (deferred to
+    after RPR ratification; left empty for now so scope assessment still runs
+    but rule (b) doesn't match — non-destructive until that gate is cleared).
     """
     raw_payload = row["payload"]
     if isinstance(raw_payload, str):
         raw_payload = json.loads(raw_payload)
-    adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+
+    # Extract passage metadata for QA-9a scope assessment.
+    passage_metadata = {}
+    if row.get("passage_metadata"):
+        metadata = row["passage_metadata"]
+        if isinstance(metadata, str):
+            passage_metadata = json.loads(metadata)
+        else:
+            passage_metadata = metadata or {}
+
+    adapted_payload = adapt_payload_for_sync(
+        row["extraction_type"],
+        raw_payload or {},
+        passage_text=row.get("passage_text"),
+        passage_metadata=passage_metadata,
+        added_section_numbers=set(),  # TODO: fetch from bill after RPR sign-off
+    )
     adapted_payload["provenance"] = _build_provenance(row)
     # DI-1: stable join key, payload-only.
     adapted_payload["canonical_key"] = row["canonical_key"]
@@ -298,7 +319,8 @@ _FETCH_COLUMNS_SQL = """
         dv.source_hash,
         dv.retrieved_at,
         nsr.section_path,
-        nsr.text_content AS passage_text
+        nsr.text_content AS passage_text,
+        nsr.metadata_ AS passage_metadata
     FROM extractions e
     JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
     JOIN document_versions dv ON nsr.document_version_id = dv.id
@@ -614,7 +636,8 @@ def sync_updates(
                     dv.source_hash,
                     dv.retrieved_at,
                     nsr.section_path,
-                    nsr.text_content AS passage_text
+                    nsr.text_content AS passage_text,
+                    nsr.metadata_ AS passage_metadata
                 FROM extractions e
                 JOIN normalized_source_records nsr ON e.source_record_id = nsr.id
                 JOIN document_versions dv ON nsr.document_version_id = dv.id
@@ -672,7 +695,22 @@ def sync_updates(
             raw_payload = row["payload"]
             if isinstance(raw_payload, str):
                 raw_payload = json.loads(raw_payload)
-            adapted_payload = adapt_payload_for_sync(row["extraction_type"], raw_payload or {})
+
+            passage_metadata = {}
+            if row.get("passage_metadata"):
+                metadata = row["passage_metadata"]
+                if isinstance(metadata, str):
+                    passage_metadata = json.loads(metadata)
+                else:
+                    passage_metadata = metadata or {}
+
+            adapted_payload = adapt_payload_for_sync(
+                row["extraction_type"],
+                raw_payload or {},
+                passage_text=row.get("passage_text"),
+                passage_metadata=passage_metadata,
+                added_section_numbers=set(),  # TODO: fetch from bill after RPR sign-off
+            )
             adapted_payload["provenance"] = _build_provenance(row)
             # DI-1: stable join key, payload-only (a7f723d's column targets
             # don't exist on the live table — see _assert_insert_columns).

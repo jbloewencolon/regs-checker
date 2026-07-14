@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     # Concepts or extractions below this tier must be flagged or withheld.
     confidence_publish_min_tier: str = "C"
 
+    # QA-9a (docs/qa8_qa9_phased_plan.md Phase 2): restatement-scoped relevance
+    # filtering at sync. The engine (src/core/restatement_scope.py) and its
+    # wiring into payload_adapter.py are built and tested, but the in-scope
+    # rules are a relevance judgment over what hides from the AI-regulation
+    # product surface — the plan requires RPR/product ratification (step 4)
+    # before this can affect live sync output. Defaults to False; flip only
+    # after ratification + a reviewed hide-report (plan Phase 2 acceptance).
+    qa9a_scope_filter_enabled: bool = False
+
     # Orrick PDF Tracker
     orrick_pdf_path: str = "data/trackers/Orrick-US-AI-Law-Tracker.pdf"
 

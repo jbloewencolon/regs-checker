@@ -13,10 +13,14 @@ avoid VRAM model swapping. Runs in the GPT group alongside the other 5
 GPT-based agents.
 """
 
+import structlog
 from pydantic import BaseModel
 
 from src.agents.base import BaseExtractionAgent
+from src.core.legal_context import assess_preemption_credibility
 from src.schemas.extraction import PreemptionSignalPayload
+
+logger = structlog.get_logger()
 
 
 class PreemptionAgent(BaseExtractionAgent):
@@ -41,7 +45,7 @@ OUTPUT FORMAT:
 Return a JSON object with a top-level "extractions" array. Each element includes:
 - conflict_type: One of the types listed above
 - description: Plain-language explanation of the conflict or risk
-- related_authority: The preempting or conflicting authority (e.g., "Dec 2025 Federal EO on AI", "US Constitution Art. I Sec. 8", "EU AI Act Art. 6")
+- related_authority: The preempting or conflicting authority, EXACTLY as the passage names it (a federal statute citation, a named federal act or executive order, or another state's law). Use null if the passage names no such authority — NEVER invent one.
 - severity: high / medium / low
 - preemption_language: Verbatim preemption clause if present in the passage
 - section_reference: Section number if identifiable
@@ -59,6 +63,9 @@ CRITICAL RULES:
 - Severity "high" = direct conflict with existing federal law/EO; "medium" = plausible constitutional challenge; "low" = theoretical tension
 - Focus on LEGAL conflicts, not policy disagreements
 - Savings clauses ("this act does not preempt federal law") are themselves preemption signals worth extracting — they indicate the legislature anticipated a conflict
+- A citation to the SAME state's own codes (e.g., a California bill referencing the California Penal Code) is a cross-law reference, NOT a jurisdictional conflict — do not report it
+- A cross_state_conflict requires a specific OTHER jurisdiction's law; "may conflict with other states' laws" with no named law is speculation — abstain instead
+- If you conclude a passage does NOT conflict, that is an abstention (detected: false), not a signal to report
 
 EVIDENCE SPAN RULES (IMPORTANT — spans are verified by exact string match):
 - Copy text EXACTLY as it appears in the passage — same capitalization, same punctuation, same spacing
@@ -91,3 +98,48 @@ PASSAGE:
 
     def get_output_schema(self) -> type[BaseModel]:
         return PreemptionSignalPayload
+
+    def _postprocess_extraction(self, result: dict, passage: str) -> dict | None:
+        """QA-6: drop conflict assertions the payload cannot support.
+
+        The 2026-07-13 run produced 81 preemption signals from the 8B model,
+        dominated by three deterministic junk patterns: (1) descriptions that
+        negate themselves ("...does not appear to conflict with federal
+        law"), (2) the prompt's example authorities parroted into
+        related_authority ("Dec 2025 Federal EO on AI"), and (3) the law's
+        own state codes reported as a cross_state_conflict ("references the
+        Penal Code, which may conflict with other states' laws"). The shared
+        credibility assessment in legal_context keeps only signals anchored
+        to a verbatim preemption clause, a concrete federal citation, or a
+        named other state; the same assessment hides stored rows at sync
+        time.
+
+        One extraction-time-only strengthening: a preemption_language that
+        does not appear in the passage is a fabricated clause — null it
+        before assessing, so it cannot rubber-stamp credibility.
+        """
+        from src.core.text_grounding import _loose_normalize
+
+        pl = (result.get("preemption_language") or "").strip()
+        if pl:
+            loose_pl, _ = _loose_normalize(pl)
+            loose_passage, _ = _loose_normalize(passage)
+            if loose_pl and loose_pl not in loose_passage:
+                logger.warning(
+                    "preemption_language_not_in_passage_nulled",
+                    conflict_type=result.get("conflict_type"),
+                    preemption_language=pl[:120],
+                )
+                result["preemption_language"] = None
+
+        credibility = assess_preemption_credibility(result)
+        if not credibility["credible"]:
+            logger.warning(
+                "preemption_signal_dropped",
+                reason=credibility["reason"],
+                conflict_type=result.get("conflict_type"),
+                related_authority=result.get("related_authority"),
+                description=(result.get("description") or "")[:120],
+            )
+            return None
+        return result

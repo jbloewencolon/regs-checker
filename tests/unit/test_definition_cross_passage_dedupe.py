@@ -62,6 +62,78 @@ class TestDuplicateDefinitionText:
         assert not _is_duplicate_definition_text(INDIST_302_FULL, "")
 
 
+LOITER_BARE = (
+    "to delay or linger without a lawful purpose for being on the property "
+    "and for the purpose of committing a crime as opportunity may be "
+    "discovered"
+)
+LOITER_PREAMBLED = (
+    "As used in this subdivision, “loiter” means " + LOITER_BARE + "."
+)
+AI_BARE = (
+    "an engineered or machine-based system that varies in its level of "
+    "autonomy and that can, for explicit or implicit objectives, infer from "
+    "the input it receives how to generate outputs that can influence "
+    "physical or virtual environments"
+)
+AI_PREAMBLED = (
+    "For purposes of this subdivision, “artificial intelligence” "
+    "means " + AI_BARE + "."
+)
+
+
+class TestPreambleVariantDuplicates:
+    """QA-7: same definition, one copy carrying a quoting preamble.
+
+    Observed on the 2026-07-13 run (CA SB 926 'loiter'/'prostitution',
+    CA SB 1120 'artificial intelligence'): the preamble drops sequence
+    similarity to 0.85-0.88, under the 0.9 threshold, so QA-4 alone
+    missed these.
+    """
+
+    def test_preambled_copy_is_duplicate(self):
+        assert _is_duplicate_definition_text(
+            LOITER_BARE, LOITER_PREAMBLED, term="loiter"
+        )
+
+    def test_for_purposes_of_variant_is_duplicate(self):
+        assert _is_duplicate_definition_text(
+            AI_BARE, AI_PREAMBLED, term="artificial intelligence"
+        )
+
+    def test_includes_verb_variant_is_duplicate(self):
+        assert _is_duplicate_definition_text(
+            "any lewd act between persons for money or other consideration",
+            "As used in this subdivision, “prostitution” includes "
+            "any lewd act between persons for money or other consideration.",
+            term="prostitution",
+        )
+
+    def test_without_term_preamble_still_missed(self):
+        """Without the term, the preamble can't be stripped — documents that
+        the term parameter is what closes the QA-7 gap."""
+        assert not _is_duplicate_definition_text(LOITER_BARE, LOITER_PREAMBLED)
+
+    def test_genuinely_different_definition_kept_despite_term(self):
+        """SB 926: 'loiter' has a second, distinct statutory meaning."""
+        assert not _is_duplicate_definition_text(
+            LOITER_BARE,
+            "Who loiters, prowls, or wanders upon the private property of "
+            "another, at any time, without visible or lawful business with "
+            "the owner or occupant.",
+            term="loiter",
+        )
+
+    def test_cross_reference_definitions_kept(self):
+        """SB 11 'digital replica': two different cross-references are not
+        near-identical texts and must both survive."""
+        assert not _is_duplicate_definition_text(
+            "has the same meaning as in Section 3344.1 of the Civil Code.",
+            "includes a digital replica, as defined in Section 3344.1.",
+            term="digital replica",
+        )
+
+
 def _mock_db(rows):
     db = MagicMock()
     db.execute.return_value.all.return_value = rows
@@ -116,3 +188,10 @@ class TestFindCrossPassageDup:
         db = _mock_db([(9, None), (10, "corrupt")])
         item = {"term": "Indistinguishable", "definition_text": INDIST_302_FULL}
         assert _find_cross_passage_definition_dup(db, _record(), item) is None
+
+    def test_preamble_variant_caught_through_db_path(self):
+        """QA-7 end-to-end: the stored bare copy suppresses the incoming
+        preambled copy of the same definition."""
+        db = _mock_db([(88, {"term": "loiter", "definition_text": LOITER_BARE})])
+        item = {"term": "loiter", "definition_text": LOITER_PREAMBLED}
+        assert _find_cross_passage_definition_dup(db, _record(), item) == 88

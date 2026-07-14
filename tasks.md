@@ -1291,6 +1291,25 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ## Active Tasks
 
+> **Session summary (2026-07-14, QA round 2):** Reviewed the 2026-07-13 extraction
+> run (790 rows, 16 laws — full findings in `docs/qa_r2_run_review.md`).
+> **QA-2/QA-3/QA-4 verified clean on real output.** The run itself appears to have
+> executed **without the QA-1 grounding fix** (its failing spans verify at Tier 4
+> when replayed through current code) — operator must confirm the branch was pulled,
+> then repair stored rows via `python -m src.scripts.reground_spans` +
+> `recompute_confidence`. Two new fixes landed: **QA-6 (preemption over-firing)** —
+> 81 signals on the run, ~60% deterministic junk (own-state codes as
+> "cross_state_conflict", self-negating descriptions, prompt-example authorities
+> parroted verbatim incl. two tier-A rows); credibility guard now drops these at
+> extraction time, hides stored rows at sync time, prompt de-poisoned; replay: 49/81
+> dropped, every grounded savings clause kept. **QA-7 (preamble-variant definition
+> dupes)** — "As used in this subdivision, 'X' means…" copies scored 0.85-0.88, under
+> QA-4's 0.9 threshold; preamble now stripped before comparison. Two new failure
+> classes documented as open tasks: **QA-8** (CA parallel-version bills multiply
+> extractions — SB 926 stores §647 four times → 178 rows) and **QA-9** (non-AI
+> boilerplate flooding — 49/51 SB 926 obligations have no AI nexus; PN-matrix
+> pollution risk). 1344 unit tests passing; CI green.
+>
 > **Session summary (2026-07-13):** Five quality-assurance fixes targeting the 2026-07-12
 > extraction run output (37 extractions across AZ/AR bills) were fully implemented,
 > tested, and pushed. **QA-1 (Tier-4 span verification ordering) — fixed; 32/37 spans
@@ -1309,6 +1328,146 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > baseline artifact for the EA1-3 regression gate. Seeded one conservative bill-level
 > fixture (AZ SB1359 enforcement). This unblocks EA1-3 baseline capture, which now
 > requires the operator's machine (live LLM). 1314 unit tests passing; CI green.
+
+### QA round 2 — open items (from `docs/qa_r2_run_review.md`)
+
+> **Phased plan for QA-8/QA-9 written 2026-07-14:** `docs/qa8_qa9_phased_plan.md`.
+> Both issues share one root cause — California re-enacts whole code sections on
+> amendment (Cal. Const. art. IV §9), so SB 926 carries Penal Code §647 **eight
+> times** (2³ enactment contingencies of AB 1874/AB 1962/SB 1414). QA-8 is the
+> horizontal blowup (×8 copies), QA-9 the vertical one (whole restated section
+> extracted, one AI-relevant subdivision). Measured while planning: the
+> parallel-version detector regex finds exactly 3 affected laws corpus-wide
+> (SB 926 ×8, AB 2355 ×2, SB 11 ×2 — zero false positives on 208 other sources),
+> and a naive per-extraction AI-keyword filter is **disqualified** (would hide
+> 98.4% of TMP-CA-EMPLOYMENTANDS, a genuine ADS law — relevance must be scoped to
+> restated sections, never law-wide). Sequencing: Phase 1 (QA-8 collapse,
+> deterministic, sandbox-actionable — **landed 2026-07-14**) → Phase 2 (QA-9a
+> sync-time subdivision scoping — **engine + sync wiring landed 2026-07-14,
+> gated OFF by `settings.qa9a_scope_filter_enabled` pending RPR
+> ratification** — + QA-10 junk-definition guard, **landed 2026-07-14**) →
+> Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
+> (stress fixtures — **landed 2026-07-14** — + optional markup-preserving
+> re-fetch of CA sources, still a product decision).
+
+- [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
+  2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
+  `src/ingestion/parser.py` detect amending-header groups at parse time
+  (`Section N of the X Code[, as amended by ...], is amended to read:`),
+  keyed by `(code, section)` so different "as amended by" qualifiers on the
+  same target still group together. The last version in bill order is
+  marked `parallel_version_representative: true` in `metadata_` (CA
+  drafting convention: final restatement = most-merged contingency; every
+  version carries the bill's own changes regardless of which is kept, so
+  the choice is lossless). `_check_parallel_version()` in
+  `src/ingestion/extractor.py` skips non-representatives before agent
+  selection (sentinel -2, tracked in the conservation ledger as
+  `skipped_parallel_version` and in run summary as
+  `parallel_versions_skipped`, mirroring the existing jurisdiction-skip
+  pattern). Verified against the real committed sources: SB 926 groups all
+  8 §647 copies (indices 0-7, representative=7), AB 2355 groups its 2
+  §84504.2 copies, SB 11 groups its 2 §3344 copies; AR HB1877 (different
+  header shape entirely) produces zero groups — confirms the "3 affected
+  laws, zero false positives" measurement from the plan. 23 new unit tests
+  (`tests/unit/test_parallel_version_grouping.py`,
+  `tests/unit/test_parallel_version_extraction_skip.py`); full suite green
+  (1367 passed); `ruff check --select E9,F` clean. **Retroactive repair
+  still needs the operator:** re-extract SB 926 / AB 2355 / SB 11 once a
+  live pipeline run is available — sandbox has no DB connection to do this
+  here. Acceptance target unchanged: SB 926 ~181 rows → ~25, §647 token
+  spend ÷8.
+- [~] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
+  rules need RPR sign-off) — ENGINE + SYNC WIRING LANDED 2026-07-14, GATED
+  OFF PENDING RATIFICATION:** `src/core/restatement_scope.py` implements
+  the scope trigger (Phase-1 grouped, or a single-version restatement
+  ≥6K chars) and the subdivision in-scope test (AI/domain keyword;
+  reference to a section this bill adds, checked at the enclosing
+  top-level subdivision so AB 2355's keyword-free formatting paragraphs
+  stay in scope via their parent's § 84514 citation; adjacency for shared
+  lead-in prose). Validated against the real corpus (29 tests,
+  `tests/unit/test_restatement_scope.py`): SB 926 keeps only `(j)(4)` in
+  scope out of all 12 top-level subdivisions; AB 2355's formatting rules
+  correctly stay visible (the over-filtering trap fact 0.3 caught);
+  TMP-CA-EMPLOYMENTANDS never trips the scope trigger at all (0% hide
+  structurally guaranteed). **Now wired into `payload_adapter.py`**:
+  `adapt_payload_for_sync()` gained `passage_text` / `passage_metadata` /
+  `added_section_numbers` parameters (all optional, backward-compatible);
+  `_apply_restatement_scope()` sets `ai_nexus: false` → `display: false`
+  on out-of-scope clause-level extractions (obligation, threshold,
+  definition, rights_protection, compliance_mechanism, preemption_signal —
+  bill-level agents skipped, no verified evidence structure yet per
+  EA5-1); all six adapters now pass `ai_nexus`/`display` through instead of
+  stripping them. `sync_extractions.py`'s three call sites
+  (`_build_insert_row`, `sync_updates`, `_FETCH_COLUMNS_SQL`) fetch
+  `nsr.metadata_` and pass it through. **Deliberately kept inert**:
+  `settings.qa9a_scope_filter_enabled` (`src/core/config.py`) defaults to
+  `False` and the function no-ops immediately when unset — RPR/product
+  ratification of the in-scope rules (step 4) still hasn't happened and
+  can't happen autonomously; this is a relevance judgment over what hides
+  from the product surface, not a mechanical guard like QA-6/QA-10. A
+  human flips `REGS_QA9A_SCOPE_FILTER_ENABLED=true` post-ratification.
+  `tests/unit/test_payload_adapter_qa9a.py` (13 tests): the engine's
+  wiring correctness with the flag explicitly enabled via an autouse
+  fixture, PLUS a `TestFlagDefaultsOff` class that pins the real shipped
+  default (unset → no hide) so an accidental flip is caught by CI. Also
+  still needed before a ratified rollout: (a) a real hide-report against
+  live DB rows (needs the DB this sandbox doesn't have — run with the flag
+  temporarily enabled in a scratch/dry-run environment only); (b)
+  `added_section_numbers` — wired as a parameter but every call site
+  currently passes an empty set (marked `# TODO`), since populating it
+  needs the bill's full text at sync time and today's query only fetches
+  the single passage; that's a query-cost design decision left for the
+  ratified rollout. Full suite: 1421 passed (up from 1419);
+  `ruff check --select E9,F` clean.
+- [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
+  test before extraction; changes agent inputs → measure via harness with the
+  SB 926/AB 2355/SB 11 stress fixtures now added (see Phase 4 below) — the
+  remaining gate is capturing the EA1-3 baseline itself, which needs a live
+  LLM run the sandbox doesn't have.
+- [x] **Phase 4 — EA1 stress fixtures (sandbox-authorable) — LANDED
+  2026-07-14:** three gold-standard fixtures added to
+  `tests/fixtures/gold_standard/`, picked up automatically by
+  `EvaluationHarness.load_test_cases()`: `ca_sb926_sec647_computer_generated_
+  image.json` (Penal Code §647(j)(4)(A)(ii) — the one AI-relevant clause in
+  SB 926's restated section; expects the prohibition obligation, the
+  under-18 threshold exception, and an ambiguity finding on the undefined
+  "reasonable person would believe it authentic" standard), `ca_ab2355_
+  sec84504_2_disclosure_formatting.json` (Government Code §84504.2(a)(1)-(2)
+  — the over-filtering regression guard: a genuine formatting obligation
+  with no AI keyword of its own, in-scope only via its lead sentence's
+  citation to the bill's added §84514), and `ca_sb11_sec3344_digital_
+  replica_definition.json` (Civil Code §3344(f) — the sentence duplicated
+  verbatim across SB 11's two parallel §3344 restatements; QA-8 collapse
+  keeps exactly one). Every `passage_text` verified byte-for-byte against
+  the committed corpus files; every expected payload validated against the
+  real `ObligationPayload` / `DefinitionActorPayload` /
+  `ThresholdExceptionPayload` schemas; every fixture's scope classification
+  cross-checked against `restatement_scope.assess_extraction_scope` directly
+  (all match). One correction to the original plan text folded into
+  `docs/qa8_qa9_phased_plan.md`: "agents abstain on loitering/prostitution
+  subdivisions" isn't how the architecture works — clause agents extract
+  real obligations regardless of AI-topicality; QA-9a's in/out-of-scope
+  classification is a sync-time display decision, not an extraction-time
+  abstention, and that classification is what's already regression-locked
+  in `tests/unit/test_restatement_scope.py`. Full suite: 1411 passed, 9
+  skipped; the 7 failed + 6 errors are all pre-existing DB/API integration
+  tests (no live Postgres or auth backend in this sandbox) — confirmed
+  unrelated to this change via git-stash bisection (identical failures with
+  the new fixtures stashed out); `ruff check --select E9,F` clean.
+- [x] **QA-10 — junk-definition micro-guard (rides with Phase 2) — LANDED
+  2026-07-14:** `_is_bare_citation_term` / `_is_conditional_enactment_
+  boilerplate` in `src/agents/definition_actor.py`'s `_postprocess_extraction`
+  drop definitions whose term is a bare code-section citation ("Section 647
+  of the Penal Code") or whose text is conditional-enactment boilerplate
+  ("...incorporates amendments to Section 647 of the Penal Code proposed by
+  this bill, Assembly Bill 1962..."), matching SB 926 ids 234/235 exactly.
+  Mechanical (no ratification needed), same pattern as QA-2/QA-6. 12 new
+  tests (`tests/unit/test_definition_boilerplate_guard.py`).
+- [ ] **Operator — verify QA-1 was active + repair stored rows (Phase 0):** confirm
+  the branch was merged/pulled before the next run; then
+  `python -m src.scripts.reground_spans --dry-run` → apply →
+  `python -m src.scripts.recompute_confidence`. The 53 stale 2026-07-12 rows
+  (AZ SB 1359, AR HB1877, TMP-AZ) predate all QA fixes — re-extract or exclude.
 
 ### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
