@@ -20,7 +20,7 @@ The 8-law set must jointly satisfy:
 | S1 | ≥2 OCR-quality PDFs | margin numbers / page breaks broke Tier-4 span grounding (QA-1) | **1 of 2** (AZ SB1359) |
 | S2 | ≥1 amendment-markup (engrossed) bill | struck/underlined + mid-page engrossment headers (EA1-4) | ✅ AR HB1877 |
 | S3 | ≥1 deepfake / likeness law | fastest-moving legal category | ✅ AZ SB1359, TX HB149 |
-| S4 | ≥1 tracker-silent law | tier must not collapse for uncovered laws (SFH-3a) | **unconfirmed** — needs a `fact_laws` tracker-flag check |
+| S4 | ≥1 tracker-silent law | tier must not collapse for uncovered laws (SFH-3a) | **candidates found (QA-R2)** — the four `TMP-CA-*` laws in the 2026-07-13 run carry temp IDs (no tracker match); TMP-CA-EMPLOYMENTANDS is the strongest (see §3). Operator still confirms via `fact_laws` flags. |
 | S5 | per-agent expected extractions for all **6 clause agents** | today: obligation/definition/threshold strong; rights/mechanism thin; preemption zero | **partial** |
 | S6 | bill-level ground truth for the PN-matrix agents | enforcement now seeded (2 laws); applicability + timeline zero | **partial** |
 
@@ -90,6 +90,21 @@ Chosen to satisfy every stratum while reusing the deepest existing coverage:
 The 8th slot is deliberately open: S4 (tracker-silent) can only be filled by
 checking the `fact_laws` / tracker-alignment flags in the DB — which this
 sandbox can't reach. Operator action below.
+
+**QA-R2 update (2026-07-14):** the 2026-07-13 run surfaced four `TMP-CA-*`
+temp-ID laws (no tracker match) — the natural S4 candidate pool.
+**TMP-CA-EMPLOYMENTANDS** (employment ADS regulations) is the strongest 8th
+slot: 92 extractions, 83.5% span grounding, real federal-conflict signals
+(Title VII / ADA-GINA / ADEA savings analysis survived the QA-6 credibility
+guard), and its source is committed at
+`output/law_texts/TMP-CA-EMPLOYMENTANDS.txt` so clause fixtures can be
+authored in-sandbox once the operator confirms it is genuinely
+tracker-silent. Two more laws from that run add breadth beyond the 8-law
+floor when wanted: **CA SB 1120** (healthcare-utilization AI — a regulated
+domain the set lacks; enforcement/applicability facts source-verifiable) and
+**CA SB 926 / AB 2355** as *stress* fixtures for the open QA-8
+(parallel-version multiplication) and QA-9 (non-AI flooding) failure
+classes — see `docs/qa_r2_run_review.md` §§5-7.
 
 ## 4. Annotation worklist (prioritized)
 

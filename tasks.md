@@ -1291,6 +1291,25 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ## Active Tasks
 
+> **Session summary (2026-07-14, QA round 2):** Reviewed the 2026-07-13 extraction
+> run (790 rows, 16 laws — full findings in `docs/qa_r2_run_review.md`).
+> **QA-2/QA-3/QA-4 verified clean on real output.** The run itself appears to have
+> executed **without the QA-1 grounding fix** (its failing spans verify at Tier 4
+> when replayed through current code) — operator must confirm the branch was pulled,
+> then repair stored rows via `python -m src.scripts.reground_spans` +
+> `recompute_confidence`. Two new fixes landed: **QA-6 (preemption over-firing)** —
+> 81 signals on the run, ~60% deterministic junk (own-state codes as
+> "cross_state_conflict", self-negating descriptions, prompt-example authorities
+> parroted verbatim incl. two tier-A rows); credibility guard now drops these at
+> extraction time, hides stored rows at sync time, prompt de-poisoned; replay: 49/81
+> dropped, every grounded savings clause kept. **QA-7 (preamble-variant definition
+> dupes)** — "As used in this subdivision, 'X' means…" copies scored 0.85-0.88, under
+> QA-4's 0.9 threshold; preamble now stripped before comparison. Two new failure
+> classes documented as open tasks: **QA-8** (CA parallel-version bills multiply
+> extractions — SB 926 stores §647 four times → 178 rows) and **QA-9** (non-AI
+> boilerplate flooding — 49/51 SB 926 obligations have no AI nexus; PN-matrix
+> pollution risk). 1344 unit tests passing; CI green.
+>
 > **Session summary (2026-07-13):** Five quality-assurance fixes targeting the 2026-07-12
 > extraction run output (37 extractions across AZ/AR bills) were fully implemented,
 > tested, and pushed. **QA-1 (Tier-4 span verification ordering) — fixed; 32/37 spans
@@ -1309,6 +1328,28 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > baseline artifact for the EA1-3 regression gate. Seeded one conservative bill-level
 > fixture (AZ SB1359 enforcement). This unblocks EA1-3 baseline capture, which now
 > requires the operator's machine (live LLM). 1314 unit tests passing; CI green.
+
+### QA round 2 — open items (from `docs/qa_r2_run_review.md`)
+
+- [ ] **QA-8 — parallel-version bill dedupe (needs design):** CA bills amend the
+  same code section 2–4× in contingent versions (SB 926: Penal Code §647 ×4 →
+  8 near-identical passages → 178 extractions; AB 2355: §84504.2 ×2 → twin rows).
+  Only definitions dedupe today (QA-4/QA-7); obligations/thresholds/exceptions
+  multiply. Options: detect parallel-version headers at ingest and keep the
+  operative version, or extend law-level near-dup dedupe to the other clause
+  types. Until fixed, CA per-law extraction counts are inflated.
+- [ ] **QA-9 — non-AI boilerplate flooding (needs product input):** passage-level
+  triage admits a whole 14K-char §647 passage because one subsection is
+  AI-relevant, then clause agents extract everything — 49/51 SB 926 obligations
+  have no AI nexus ("peace officer shall place the person in civil protective
+  custody"). Options: sub-passage triage, agent-prompt scoping to AI-connected
+  items, or a law-level AI-nexus post-filter. Related: conditional-enactment
+  boilerplate extracted as definitions (SB 926 ids 234/235).
+- [ ] **Operator — verify QA-1 was active + repair stored rows:** confirm the
+  branch was merged/pulled before the next run; then
+  `python -m src.scripts.reground_spans --dry-run` → apply →
+  `python -m src.scripts.recompute_confidence`. The 53 stale 2026-07-12 rows
+  (AZ SB 1359, AR HB1877, TMP-AZ) predate all QA fixes — re-extract or exclude.
 
 ### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
