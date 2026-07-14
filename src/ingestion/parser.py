@@ -55,6 +55,73 @@ _STRIKE_TAG_NAMES = ("strike", "del", "s")
 _BRACKET_DELETION_PATTERN = re.compile(r"\[[A-Za-z][^\[\]]{1,60}\]")
 _BRACKET_AMENDMENT_MIN_COUNT = 2
 
+# QA-8: California re-enacts an entire code section on every amendment (Cal.
+# Const. art. IV § 9). When several pending bills touch the same section, the
+# bill text carries one FULL restatement per enactment-order contingency
+# ("SEC. 1.1. Section 647 of the Penal Code is amended to read: ...", then
+# "SEC. 1.2. Section 647 of the Penal Code is amended to read: ..." with the
+# same ~14K-char body, repeated per contingency — SB 926 does this 8 times for
+# Penal Code § 647). Detected empirically: this header shape, anchored at the
+# start of a segmented passage, matches every parallel-version passage in the
+# corpus (SB 926 x8, AB 2355 x2, SB 11 x2) with zero false positives on the
+# other 208 committed sources — including AR HB1877, whose amendment headers
+# use a distinct "Arkansas Code § N is amended to read as follows" shape that
+# this pattern does not match at all. The optional "as amended by Section N of
+# Chapter C of the Statutes of Y" clause (AB 2355's shape) is intentionally
+# excluded from the captured group so both of AB 2355's § 84504.2 versions
+# resolve to the same (code, section) key despite differing qualifiers.
+_AMENDING_HEADER_RE = re.compile(
+    r"^Section\s+(?P<section>\d+(?:\.\d+)*)\s+of\s+the\s+(?P<code>.+?Code)"
+    r"[^.]{0,120}?\bis\s+amended\s+to\s+read\s*:",
+)
+
+
+def _detect_amendment_target(text: str) -> tuple[str, str] | None:
+    """Return (code_name, section_number) when `text` opens with a
+    California-style full-section restatement header, else None.
+
+    Used to group parallel-version passages (QA-8) — see _AMENDING_HEADER_RE.
+    """
+    m = _AMENDING_HEADER_RE.match(text.lstrip())
+    if not m:
+        return None
+    return (m.group("code").strip(), m.group("section").strip())
+
+
+def _group_parallel_versions(
+    passages: list[tuple],
+) -> dict[int, dict]:
+    """Detect parallel-version restatement groups among segmented passages.
+
+    Returns {passage_index: {"parallel_version_group": str,
+    "parallel_version_representative": bool, "parallel_version_count": int}}
+    for indices that belong to a group of 2+ passages restating the same
+    (code, section). Passages with a singleton or no amendment-header match
+    are simply absent from the result (nothing to collapse).
+    """
+    amendment_targets: dict[int, tuple[str, str]] = {}
+    for idx, passage_tuple in enumerate(passages):
+        target = _detect_amendment_target(passage_tuple[1])
+        if target:
+            amendment_targets[idx] = target
+
+    target_groups: dict[tuple[str, str], list[int]] = {}
+    for idx, target in amendment_targets.items():
+        target_groups.setdefault(target, []).append(idx)
+
+    result: dict[int, dict] = {}
+    for (code, section), indices in target_groups.items():
+        if len(indices) < 2:
+            continue
+        last = max(indices)
+        for idx in indices:
+            result[idx] = {
+                "parallel_version_group": f"{code.lower()}:{section}",
+                "parallel_version_representative": idx == last,
+                "parallel_version_count": len(indices),
+            }
+    return result
+
 
 def _is_line_through_style(style: str) -> bool:
     normalized = style.replace(" ", "").lower()
@@ -154,6 +221,13 @@ def parse_and_normalize(
         (EA2-4) — struck/inserted HTML styling, or a cluster of bracket-style
         deletion markers. Informational; nothing is auto-published or
         blocked on this flag.
+      - parallel_version_group / parallel_version_representative /
+        parallel_version_count: set only on passages that are one of several
+        full restatements of the same code section within this document
+        (QA-8, see _AMENDING_HEADER_RE). representative marks the LAST
+        version in bill order — the CA drafting convention is that the final
+        restatement is the most-merged contingency, and every version
+        contains this bill's own changes regardless of which is kept.
     """
     content = content_bytes if content_bytes is not None else _fetch_content_from_s3(artifact.s3_key)
 
@@ -167,6 +241,10 @@ def parse_and_normalize(
     else:
         logger.warning("unsupported_content_type", content_type=artifact.content_type)
         passages = _parse_plaintext(content)
+
+    # QA-8: group passages that restate the same (code, section) more than
+    # once and mark the last one in bill order as the representative.
+    parallel_version_meta = _group_parallel_versions(passages)
 
     records = []
     for ordinal, passage_tuple in enumerate(passages):
@@ -199,6 +277,9 @@ def parse_and_normalize(
                 meta["bracket_markers_count"] = bracket_markers
             if html_markup_info and html_markup_info["struck_chars_removed"]:
                 meta["struck_chars_removed"] = html_markup_info["struck_chars_removed"]
+
+        if ordinal in parallel_version_meta:
+            meta.update(parallel_version_meta[ordinal])
 
         record = NormalizedSourceRecord(
             document_version_id=job.document_version_id,

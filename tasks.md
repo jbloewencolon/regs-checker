@@ -1342,17 +1342,38 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > and a naive per-extraction AI-keyword filter is **disqualified** (would hide
 > 98.4% of TMP-CA-EMPLOYMENTANDS, a genuine ADS law — relevance must be scoped to
 > restated sections, never law-wide). Sequencing: Phase 1 (QA-8 collapse,
-> deterministic, sandbox-actionable) → Phase 2 (QA-9a sync-time subdivision
-> scoping + QA-10 junk-definition guard; needs RPR ratification of in-scope
-> rules) → Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
-> (stress fixtures + optional markup-preserving re-fetch of CA sources).
+> deterministic, sandbox-actionable — **landed 2026-07-14**) → Phase 2 (QA-9a
+> sync-time subdivision scoping + QA-10 junk-definition guard; needs RPR
+> ratification of in-scope rules) → Phase 3 (pre-extraction scoping; gated on
+> EA1-3 baseline) → Phase 4 (stress fixtures + optional markup-preserving
+> re-fetch of CA sources).
 
-- [ ] **QA-8 — parallel-version collapse (Phase 1 of the plan; sandbox-actionable):**
-  detect amending-header groups at parse time, keep the last (most-merged)
-  version — every version contains the bill's own changes, so the choice is
-  lossless — skip the rest at extraction with `parallel_version_*` metadata.
-  Retroactive: re-extract the 3 affected laws. Acceptance: SB 926 ~181 rows →
-  ~25, §647 token spend ÷8.
+- [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
+  2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
+  `src/ingestion/parser.py` detect amending-header groups at parse time
+  (`Section N of the X Code[, as amended by ...], is amended to read:`),
+  keyed by `(code, section)` so different "as amended by" qualifiers on the
+  same target still group together. The last version in bill order is
+  marked `parallel_version_representative: true` in `metadata_` (CA
+  drafting convention: final restatement = most-merged contingency; every
+  version carries the bill's own changes regardless of which is kept, so
+  the choice is lossless). `_check_parallel_version()` in
+  `src/ingestion/extractor.py` skips non-representatives before agent
+  selection (sentinel -2, tracked in the conservation ledger as
+  `skipped_parallel_version` and in run summary as
+  `parallel_versions_skipped`, mirroring the existing jurisdiction-skip
+  pattern). Verified against the real committed sources: SB 926 groups all
+  8 §647 copies (indices 0-7, representative=7), AB 2355 groups its 2
+  §84504.2 copies, SB 11 groups its 2 §3344 copies; AR HB1877 (different
+  header shape entirely) produces zero groups — confirms the "3 affected
+  laws, zero false positives" measurement from the plan. 23 new unit tests
+  (`tests/unit/test_parallel_version_grouping.py`,
+  `tests/unit/test_parallel_version_extraction_skip.py`); full suite green
+  (1367 passed); `ruff check --select E9,F` clean. **Retroactive repair
+  still needs the operator:** re-extract SB 926 / AB 2355 / SB 11 once a
+  live pipeline run is available — sandbox has no DB connection to do this
+  here. Acceptance target unchanged: SB 926 ~181 rows → ~25, §647 token
+  spend ÷8.
 - [ ] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
   rules need RPR sign-off):** subdivision in-scope test applied ONLY inside
   restated sections (AI/domain keyword, or reference to a section this bill

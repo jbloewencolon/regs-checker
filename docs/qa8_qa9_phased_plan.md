@@ -61,6 +61,11 @@ for SB 926 drop from 36 to ≤ a handful.
 
 ## Phase 1 — QA-8: parallel-version collapse (sandbox-actionable, deterministic)
 
+> **Status: LANDED 2026-07-14.** Detection + skip logic implemented and
+> tested against the real corpus (see steps 1-4 below, all confirmed).
+> Step 5 (retroactive re-extraction of SB 926 / AB 2355 / SB 11) remains
+> operator work — needs a live pipeline run, not available in-sandbox.
+
 **Where:** `src/ingestion/parser.py` (detection at parse time) +
 `src/ingestion/extractor.py` (skip at extraction time). No LLM calls.
 
@@ -172,7 +177,7 @@ AB 2355-style laws improves.
 | Phase | Depends on | Gate | Sandbox-actionable? |
 |---|---|---|---|
 | 0 operator repair | QA-6/7 merged | — | no (operator) |
-| 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes** |
+| 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
 | 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | yes (code); ratification external |
 | 3 QA-9b pre-extraction scoping | Phases 1-2 + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
 | 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures yes |
