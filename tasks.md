@@ -1331,22 +1331,42 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ### QA round 2 — open items (from `docs/qa_r2_run_review.md`)
 
-- [ ] **QA-8 — parallel-version bill dedupe (needs design):** CA bills amend the
-  same code section 2–4× in contingent versions (SB 926: Penal Code §647 ×4 →
-  8 near-identical passages → 178 extractions; AB 2355: §84504.2 ×2 → twin rows).
-  Only definitions dedupe today (QA-4/QA-7); obligations/thresholds/exceptions
-  multiply. Options: detect parallel-version headers at ingest and keep the
-  operative version, or extend law-level near-dup dedupe to the other clause
-  types. Until fixed, CA per-law extraction counts are inflated.
-- [ ] **QA-9 — non-AI boilerplate flooding (needs product input):** passage-level
-  triage admits a whole 14K-char §647 passage because one subsection is
-  AI-relevant, then clause agents extract everything — 49/51 SB 926 obligations
-  have no AI nexus ("peace officer shall place the person in civil protective
-  custody"). Options: sub-passage triage, agent-prompt scoping to AI-connected
-  items, or a law-level AI-nexus post-filter. Related: conditional-enactment
-  boilerplate extracted as definitions (SB 926 ids 234/235).
-- [ ] **Operator — verify QA-1 was active + repair stored rows:** confirm the
-  branch was merged/pulled before the next run; then
+> **Phased plan for QA-8/QA-9 written 2026-07-14:** `docs/qa8_qa9_phased_plan.md`.
+> Both issues share one root cause — California re-enacts whole code sections on
+> amendment (Cal. Const. art. IV §9), so SB 926 carries Penal Code §647 **eight
+> times** (2³ enactment contingencies of AB 1874/AB 1962/SB 1414). QA-8 is the
+> horizontal blowup (×8 copies), QA-9 the vertical one (whole restated section
+> extracted, one AI-relevant subdivision). Measured while planning: the
+> parallel-version detector regex finds exactly 3 affected laws corpus-wide
+> (SB 926 ×8, AB 2355 ×2, SB 11 ×2 — zero false positives on 208 other sources),
+> and a naive per-extraction AI-keyword filter is **disqualified** (would hide
+> 98.4% of TMP-CA-EMPLOYMENTANDS, a genuine ADS law — relevance must be scoped to
+> restated sections, never law-wide). Sequencing: Phase 1 (QA-8 collapse,
+> deterministic, sandbox-actionable) → Phase 2 (QA-9a sync-time subdivision
+> scoping + QA-10 junk-definition guard; needs RPR ratification of in-scope
+> rules) → Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
+> (stress fixtures + optional markup-preserving re-fetch of CA sources).
+
+- [ ] **QA-8 — parallel-version collapse (Phase 1 of the plan; sandbox-actionable):**
+  detect amending-header groups at parse time, keep the last (most-merged)
+  version — every version contains the bill's own changes, so the choice is
+  lossless — skip the rest at extraction with `parallel_version_*` metadata.
+  Retroactive: re-extract the 3 affected laws. Acceptance: SB 926 ~181 rows →
+  ~25, §647 token spend ÷8.
+- [ ] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
+  rules need RPR sign-off):** subdivision in-scope test applied ONLY inside
+  restated sections (AI/domain keyword, or reference to a section this bill
+  adds — what keeps AB 2355's formatting rules in scope); `ai_nexus: false` →
+  `display: false` at sync (QA-6 pattern, retroactive). Ship with per-law
+  hide-report; 0% hides on full-AI laws is the regression bar.
+- [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
+  test before extraction; changes agent inputs → measure via harness with the
+  SB 926/AB 2355/SB 11 stress fixtures added first.
+- [ ] **QA-10 — junk-definition micro-guard (rides with Phase 2):** drop
+  definitions whose term is a bare code-section citation or whose text is
+  conditional-enactment boilerplate (SB 926 ids 234/235).
+- [ ] **Operator — verify QA-1 was active + repair stored rows (Phase 0):** confirm
+  the branch was merged/pulled before the next run; then
   `python -m src.scripts.reground_spans --dry-run` → apply →
   `python -m src.scripts.recompute_confidence`. The 53 stale 2026-07-12 rows
   (AZ SB 1359, AR HB1877, TMP-AZ) predate all QA fixes — re-extract or exclude.
