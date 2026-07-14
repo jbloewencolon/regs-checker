@@ -1,0 +1,26 @@
+{
+    "passage_id": "ca_sb11_sec3344_digital_replica_definition",
+    "source_document": "California SB 11 - AI Digital Replica / Right of Publicity Act",
+    "jurisdiction": "CA",
+    "section_path": "Civil Code Section 3344(f)",
+    "annotation_provenance": "Phase 4 stress fixture, QA-8 duplicate-definition regression guard (docs/qa8_qa9_phased_plan.md). Passage text copied verbatim from the LAST (representative) of SB 11's two parallel restatements of Civil Code Section 3344 (contingent on SB 683) in output/law_texts/US-CA-SB11.txt. This exact sentence is restated identically in BOTH versions; without QA-8 collapse it would surface as two identical definition extractions from one law. Verified against src/core/restatement_scope.assess_extraction_scope: evidence text resolves in_scope=True, subdivision='(f)', reason='keyword:digital replica'.",
+    "passage_text": "For the purposes of this section, a voice or likeness includes a digital replica, as defined in Section 3344.1.",
+    "expected_extractions": {
+        "obligation": null,
+        "definition": {
+            "term": "digital replica",
+            "definition_text": "a voice or likeness includes a digital replica, as defined in Section 3344.1",
+            "scope": "Civil Code Section 3344 (right of publicity)",
+            "cross_references": ["Section 3344.1"],
+            "actors": [],
+            "framework_refs": [],
+            "evidence_spans": [
+                {"field_name": "term", "text": "digital replica"},
+                {"field_name": "definition_text", "text": "a voice or likeness includes a digital replica, as defined in Section 3344.1"}
+            ],
+            "notes": "'Digital replica' is fully defined in Civil Code Section 3344.1, which SB 11 does not restate — this sentence only extends 'voice or likeness' to cover it by cross-reference, so definition_text is the incorporation-by-reference language actually present in this passage, not 3344.1's substantive definition. QA-4's cross-passage definition dedupe is a separate, complementary mechanism (same term extracted from genuinely different sections); QA-8 is what prevents this specific sentence from being extracted twice from the SAME section's two enactment-contingency copies."
+        },
+        "threshold_exception": null,
+        "ambiguity": null
+    }
+}

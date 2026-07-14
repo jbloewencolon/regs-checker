@@ -1346,8 +1346,8 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > sync-time subdivision scoping — **engine landed 2026-07-14, sync wiring
 > pending RPR ratification** — + QA-10 junk-definition guard, **landed
 > 2026-07-14**) → Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) →
-> Phase 4 (stress fixtures + optional markup-preserving re-fetch of CA
-> sources).
+> Phase 4 (stress fixtures — **landed 2026-07-14** — + optional
+> markup-preserving re-fetch of CA sources, still a product decision).
 
 - [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
   2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
@@ -1396,7 +1396,39 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   (QA-6 pattern, retroactive) is the intended wiring once ratified.
 - [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
   test before extraction; changes agent inputs → measure via harness with the
-  SB 926/AB 2355/SB 11 stress fixtures added first.
+  SB 926/AB 2355/SB 11 stress fixtures now added (see Phase 4 below) — the
+  remaining gate is capturing the EA1-3 baseline itself, which needs a live
+  LLM run the sandbox doesn't have.
+- [x] **Phase 4 — EA1 stress fixtures (sandbox-authorable) — LANDED
+  2026-07-14:** three gold-standard fixtures added to
+  `tests/fixtures/gold_standard/`, picked up automatically by
+  `EvaluationHarness.load_test_cases()`: `ca_sb926_sec647_computer_generated_
+  image.json` (Penal Code §647(j)(4)(A)(ii) — the one AI-relevant clause in
+  SB 926's restated section; expects the prohibition obligation, the
+  under-18 threshold exception, and an ambiguity finding on the undefined
+  "reasonable person would believe it authentic" standard), `ca_ab2355_
+  sec84504_2_disclosure_formatting.json` (Government Code §84504.2(a)(1)-(2)
+  — the over-filtering regression guard: a genuine formatting obligation
+  with no AI keyword of its own, in-scope only via its lead sentence's
+  citation to the bill's added §84514), and `ca_sb11_sec3344_digital_
+  replica_definition.json` (Civil Code §3344(f) — the sentence duplicated
+  verbatim across SB 11's two parallel §3344 restatements; QA-8 collapse
+  keeps exactly one). Every `passage_text` verified byte-for-byte against
+  the committed corpus files; every expected payload validated against the
+  real `ObligationPayload` / `DefinitionActorPayload` /
+  `ThresholdExceptionPayload` schemas; every fixture's scope classification
+  cross-checked against `restatement_scope.assess_extraction_scope` directly
+  (all match). One correction to the original plan text folded into
+  `docs/qa8_qa9_phased_plan.md`: "agents abstain on loitering/prostitution
+  subdivisions" isn't how the architecture works — clause agents extract
+  real obligations regardless of AI-topicality; QA-9a's in/out-of-scope
+  classification is a sync-time display decision, not an extraction-time
+  abstention, and that classification is what's already regression-locked
+  in `tests/unit/test_restatement_scope.py`. Full suite: 1411 passed, 9
+  skipped; the 7 failed + 6 errors are all pre-existing DB/API integration
+  tests (no live Postgres or auth backend in this sandbox) — confirmed
+  unrelated to this change via git-stash bisection (identical failures with
+  the new fixtures stashed out); `ruff check --select E9,F` clean.
 - [x] **QA-10 — junk-definition micro-guard (rides with Phase 2) — LANDED
   2026-07-14:** `_is_bare_citation_term` / `_is_conditional_enactment_
   boilerplate` in `src/agents/definition_actor.py`'s `_postprocess_extraction`

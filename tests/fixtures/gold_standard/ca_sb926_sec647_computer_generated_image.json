@@ -1,0 +1,48 @@
+{
+    "passage_id": "ca_sb926_sec647_computer_generated_image",
+    "source_document": "California SB 926 - Amendment of California CSAM Laws (Penal Code Section 647)",
+    "jurisdiction": "CA",
+    "section_path": "Penal Code Section 647(j)(4)(A)(ii)",
+    "annotation_provenance": "Phase 4 stress fixture (docs/qa8_qa9_phased_plan.md, QA-8/QA-9). Passage text copied verbatim from the LAST (representative) of SB 926's eight parallel restatements of Penal Code Section 647 in output/law_texts/TMP-CA-AMENDMENTOFCAL.txt. This is the ONLY AI-relevant clause in a ~14K-char section otherwise about loitering, prostitution, and public intoxication. Verified against src/core/restatement_scope.assess_extraction_scope: evidence text from this clause resolves in_scope=True, subdivision='(j)(4)', reason='keyword:computer-generated' — the exact acceptance bar in the phased plan's Phase 2 section.",
+    "passage_text": "A person who intentionally creates and distributes or causes to be distributed any photo realistic image, digital image, electronic image, computer image, computer-generated image, or other pictorial representation of an intimate body part or parts of another identifiable person, or an image of the person depicted engaged in an act of sexual intercourse, sodomy, oral copulation, sexual penetration, or an image of masturbation by the person depicted or in which the person depicted participates that was created in a manner that would cause a reasonable person to believe the image is an authentic image of the person depicted, under circumstances in which the person distributing the image knows or should know that distribution of the image will cause serious emotional distress, and the person depicted suffers that distress. This clause shall not apply to a person who was under 18 years of age at the time the person committed the offense.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "A person",
+            "subject_normalized": "operator",
+            "modality": "prohibited",
+            "action": "intentionally creates and distributes or causes to be distributed a computer-generated image or other pictorial representation of an intimate body part of another identifiable person, or an image depicting that person in a sexual act, created in a manner that would cause a reasonable person to believe it is authentic",
+            "object": "computer-generated image",
+            "condition": "under circumstances in which the person distributing the image knows or should know that distribution will cause serious emotional distress, and the person depicted suffers that distress",
+            "jurisdiction": "CA",
+            "section_reference": "Penal Code Section 647(j)(4)(A)(ii)",
+            "timeline": null,
+            "enforcement": null,
+            "notes": "Sibling clause (j)(4)(A)(i), not included in this passage, prohibits distributing a REAL (non-fabricated) intimate image under the same emotional-distress standard — clause (ii) here is the AI/deepfake-specific counterpart the QA-9a restatement-scope engine keys on. Enforcement is null because the 'guilty of disorderly conduct, a misdemeanor' penalty is stated in Section 647's shared preamble, not repeated within this subdivision."
+        },
+        "definition": null,
+        "threshold_exception": {
+            "threshold_sub_type": "exemption",
+            "threshold_type": "age",
+            "threshold_value": "18",
+            "threshold_unit": "years",
+            "threshold_condition": "the person was under 18 years of age at the time the person committed the offense",
+            "applies_to_obligation": "Computer-generated intimate image creation/distribution prohibition",
+            "exceptions": [
+                {
+                    "exception_type": "exemption",
+                    "description": "This clause shall not apply to a person who was under 18 years of age at the time the person committed the offense.",
+                    "conditions": "offender under 18 years of age at time of offense",
+                    "scope": "Penal Code Section 647(j)(4)(A)(ii)"
+                }
+            ]
+        },
+        "ambiguity": {
+            "ambiguous_text": "created in a manner that would cause a reasonable person to believe the image is an authentic image of the person depicted",
+            "ambiguity_type": "vague_term",
+            "severity": "medium",
+            "affected_obligations": ["Penal Code Section 647(j)(4)(A)(ii) - computer-generated intimate image prohibition"],
+            "interpretation_notes": "The statute gives no technical or perceptual test for when a computer-generated image is realistic enough to satisfy the 'reasonable person would believe it authentic' standard, leaving deepfake-realism determinations to case-by-case judgment.",
+            "suggested_clarification": "Define objective technical or perceptual criteria for assessing whether a computer-generated image would cause a reasonable person to believe it is authentic."
+        }
+    }
+}

@@ -189,12 +189,49 @@ AB 2355-style laws improves.
 
 ## Phase 4 — EA1 stress fixtures + long-term source fix
 
+> **Status: stress fixtures LANDED 2026-07-14.** All three gold-standard
+> fixtures below are in `tests/fixtures/gold_standard/`, picked up
+> automatically by `EvaluationHarness.load_test_cases()` and folded into the
+> standard EA1-3 per-agent P/R/F1 report the next time it runs against a live
+> LLM backend (not available in-sandbox — see Sequencing table). Each
+> fixture's `passage_text` is verified byte-for-byte against the committed
+> corpus file it cites, and its expected payload validated against the real
+> Pydantic schemas (`ObligationPayload` / `DefinitionActorPayload` /
+> `ThresholdExceptionPayload`). Each is also independently checked against
+> `src/core/restatement_scope.assess_extraction_scope` (see each fixture's
+> `annotation_provenance`), so a fixture and the QA-9a engine's classification
+> of the same text can never silently drift apart.
+>
+> One framing correction from the original plan text: "agents abstain on
+> loitering/prostitution subdivisions" is not how the architecture actually
+> works, and the SB 926 fixture below does not encode it. Clause agents
+> (obligation, definition_actor, etc.) extract whatever obligations/
+> definitions genuinely exist in a passage regardless of AI-topicality — an
+> obligation agent fed a loitering subdivision should correctly extract that
+> loitering obligation, not abstain. Whether it then gets *displayed* in the
+> AI-regulation matrix is QA-9a's job, applied at sync (Phase 2 step 3), not
+> the clause agent's. These stress fixtures lock in agent correctness on the
+> hard, real, AI-relevant clauses; the scope engine's in-vs-out
+> classification of the surrounding non-AI subdivisions is already
+> regression-locked separately in `tests/unit/test_restatement_scope.py`.
+
 - **Stress fixtures** for the gold set (sandbox-authorable from committed
-  sources): (1) SB 926 § 647 — expected: obligations only from (j)(4)-scope,
-  agents abstain on loitering/prostitution subdivisions; (2) AB 2355
-  § 84504.2 — expected: ONE set of formatting obligations, in-scope despite
-  no AI keywords (regression against over-filtering); (3) SB 11 § 3344 —
-  one 'digital replica' definition.
+  sources):
+  1. `ca_sb926_sec647_computer_generated_image.json` — Penal Code
+     § 647(j)(4)(A)(ii), the one AI-relevant clause in SB 926's ~14K-char
+     restated section (loitering, prostitution, public intoxication).
+     Expects the obligation (prohibition, modality `prohibited`), the
+     under-18 threshold exception, and an ambiguity finding on the
+     undefined "reasonable person would believe it authentic" standard.
+  2. `ca_ab2355_sec84504_2_disclosure_formatting.json` — Government Code
+     § 84504.2(a)(1)-(2), the over-filtering regression guard: a genuine
+     `shall`-obligation formatting rule (white background, Arial type size)
+     that names no AI keyword anywhere in its own text and stays in-scope
+     only because its lead sentence cites the bill's newly added § 84514.
+  3. `ca_sb11_sec3344_digital_replica_definition.json` — Civil Code
+     § 3344(f), the sentence duplicated verbatim across SB 11's two
+     parallel restatements of § 3344; QA-8 collapse is what keeps exactly
+     one definition-by-reference extraction instead of two identical ones.
 - **Source-quality track (needs product decision):** leginfo HTML carries
   amendment markup (strikethrough/italics) that flat-text fetching
   discards. Re-fetching CA sources with markup preserved would let the
@@ -212,7 +249,7 @@ AB 2355-style laws improves.
 | 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
 | 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10: **yes — landed 2026-07-14**; sync wiring: no (ratification + adapter plumbing external) |
 | 3 QA-9b pre-extraction scoping | Phases 1-2 + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
-| 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures yes |
+| 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures: **yes — landed 2026-07-14**; source fix: no (product decision) |
 
 ## The SB 926 strategy, end to end
 

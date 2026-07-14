@@ -1,0 +1,33 @@
+{
+    "passage_id": "ca_ab2355_sec84504_2_disclosure_formatting",
+    "source_document": "California AB 2355 - Amendment to the Political Reform Act (AI in Political Advertising)",
+    "jurisdiction": "CA",
+    "section_path": "Government Code Section 84504.2(a)(1)-(2)",
+    "annotation_provenance": "Phase 4 stress fixture, over-filtering regression guard (docs/qa8_qa9_phased_plan.md fact 0.3, Phase 2 step 2(b)). Passage text copied verbatim from the LAST (representative) of AB 2355's two parallel restatements of Government Code Section 84504.2 in output/law_texts/TMP-CA-AMENDMENTTOTHE.txt. This obligation contains no AI/domain keyword anywhere in its own text, yet must stay in-scope because its lead sentence cites Section 84514 — the AI-disclosure section AB 2355 itself adds. Verified against src/core/restatement_scope.assess_extraction_scope with added_section_numbers={'84514'}: both (a)(1) and (a)(2) evidence resolve in_scope=True, reason='references_added_section:84514'. A naive per-extraction AI-keyword filter (the design this fixture guards against) would incorrectly hide it — measured in the phased plan at ~97.7% of AB 2355's operative formatting obligations.",
+    "passage_text": "A print advertisement designed to be individually distributed, including, but not limited to, a mailer, flyer, or door hanger, that is paid for by a committee, other than a political party committee or a candidate controlled committee established for an elective office of the controlling candidate, shall include the disclosures required by Sections 84502, 84503, 84506.5, and 84514, displayed as follows: (1) The disclosure area shall have a solid white background and shall be in a printed or drawn box on the bottom of at least one page that is set apart from any other printed matter. All text in the disclosure area shall be in contrasting color and centered horizontally in the disclosure area. (2) The text shall be in standard Arial Regular type with a type size of at least 10-point.",
+    "expected_extractions": {
+        "obligation": {
+            "subject": "a committee, other than a political party committee or a candidate controlled committee established for an elective office of the controlling candidate",
+            "subject_normalized": "deployer",
+            "modality": "shall",
+            "action": "include the disclosures required by Sections 84502, 84503, 84506.5, and 84514, displayed with a solid white background in a printed or drawn box set apart from other printed matter, with all text in contrasting color and centered horizontally, in standard Arial Regular type at least 10-point",
+            "object": "print advertisement",
+            "condition": "the print advertisement is designed to be individually distributed, such as a mailer, flyer, or door hanger",
+            "jurisdiction": "CA",
+            "section_reference": "Government Code Section 84504.2(a)(1)-(2)",
+            "timeline": null,
+            "enforcement": null,
+            "notes": "This is the exact QA-9a over-filtering trap: (1) and (2) implement the disclosure Section 84514 requires (the AI-generated-ad disclosure) without repeating the AI keyword or the 84514 citation themselves — only the lead sentence of (a), included here for context, carries that citation. subject_normalized='deployer' follows the ratified crosswalk (data/lookups/actor_aliases.csv: committee/political_committee -> deployer)."
+        },
+        "definition": null,
+        "threshold_exception": null,
+        "ambiguity": {
+            "ambiguous_text": "set apart from any other printed matter",
+            "ambiguity_type": "vague_term",
+            "severity": "low",
+            "affected_obligations": ["Government Code Section 84504.2(a) - print advertisement disclosure formatting"],
+            "interpretation_notes": "The statute does not quantify how much visual separation ('set apart') is required between the disclosure box and other printed content, leaving compliance to the advertiser's judgment.",
+            "suggested_clarification": "Specify a minimum margin or whitespace buffer that satisfies the 'set apart' requirement."
+        }
+    }
+}
