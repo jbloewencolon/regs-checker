@@ -1343,11 +1343,12 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > 98.4% of TMP-CA-EMPLOYMENTANDS, a genuine ADS law — relevance must be scoped to
 > restated sections, never law-wide). Sequencing: Phase 1 (QA-8 collapse,
 > deterministic, sandbox-actionable — **landed 2026-07-14**) → Phase 2 (QA-9a
-> sync-time subdivision scoping — **engine landed 2026-07-14, sync wiring
-> pending RPR ratification** — + QA-10 junk-definition guard, **landed
-> 2026-07-14**) → Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) →
-> Phase 4 (stress fixtures — **landed 2026-07-14** — + optional
-> markup-preserving re-fetch of CA sources, still a product decision).
+> sync-time subdivision scoping — **engine + sync wiring landed 2026-07-14,
+> gated OFF by `settings.qa9a_scope_filter_enabled` pending RPR
+> ratification** — + QA-10 junk-definition guard, **landed 2026-07-14**) →
+> Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
+> (stress fixtures — **landed 2026-07-14** — + optional markup-preserving
+> re-fetch of CA sources, still a product decision).
 
 - [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
   2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
@@ -1376,24 +1377,48 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   here. Acceptance target unchanged: SB 926 ~181 rows → ~25, §647 token
   spend ÷8.
 - [~] **QA-9a — restatement-scoped relevance (Phase 2; code sandbox-actionable,
-  rules need RPR sign-off) — ENGINE LANDED 2026-07-14, SYNC WIRING PENDING:**
-  `src/core/restatement_scope.py` implements the scope trigger (Phase-1
-  grouped, or a single-version restatement ≥6K chars) and the subdivision
-  in-scope test (AI/domain keyword; reference to a section this bill adds,
-  checked at the enclosing top-level subdivision so AB 2355's keyword-free
-  formatting paragraphs stay in scope via their parent's § 84514 citation;
-  adjacency for shared lead-in prose). Validated against the real corpus
-  (29 tests, `tests/unit/test_restatement_scope.py`): SB 926 keeps only
-  `(j)(4)` in scope out of all 12 top-level subdivisions; AB 2355's
-  formatting rules correctly stay visible (the over-filtering trap fact 0.3
-  caught); TMP-CA-EMPLOYMENTANDS never trips the scope trigger at all (0%
-  hide structurally guaranteed). **NOT wired into `payload_adapter.py`** —
-  that needs (1) RPR/product ratification of the in-scope rules (cannot
-  happen autonomously), (2) extending the adapter signature to receive
-  passage text + added-section context (today's `adapt_payload_for_sync
-  (extraction_type, payload)` is payload-only), (3) a real hide-report
-  against live DB rows. `ai_nexus: false` → `display: false` at sync
-  (QA-6 pattern, retroactive) is the intended wiring once ratified.
+  rules need RPR sign-off) — ENGINE + SYNC WIRING LANDED 2026-07-14, GATED
+  OFF PENDING RATIFICATION:** `src/core/restatement_scope.py` implements
+  the scope trigger (Phase-1 grouped, or a single-version restatement
+  ≥6K chars) and the subdivision in-scope test (AI/domain keyword;
+  reference to a section this bill adds, checked at the enclosing
+  top-level subdivision so AB 2355's keyword-free formatting paragraphs
+  stay in scope via their parent's § 84514 citation; adjacency for shared
+  lead-in prose). Validated against the real corpus (29 tests,
+  `tests/unit/test_restatement_scope.py`): SB 926 keeps only `(j)(4)` in
+  scope out of all 12 top-level subdivisions; AB 2355's formatting rules
+  correctly stay visible (the over-filtering trap fact 0.3 caught);
+  TMP-CA-EMPLOYMENTANDS never trips the scope trigger at all (0% hide
+  structurally guaranteed). **Now wired into `payload_adapter.py`**:
+  `adapt_payload_for_sync()` gained `passage_text` / `passage_metadata` /
+  `added_section_numbers` parameters (all optional, backward-compatible);
+  `_apply_restatement_scope()` sets `ai_nexus: false` → `display: false`
+  on out-of-scope clause-level extractions (obligation, threshold,
+  definition, rights_protection, compliance_mechanism, preemption_signal —
+  bill-level agents skipped, no verified evidence structure yet per
+  EA5-1); all six adapters now pass `ai_nexus`/`display` through instead of
+  stripping them. `sync_extractions.py`'s three call sites
+  (`_build_insert_row`, `sync_updates`, `_FETCH_COLUMNS_SQL`) fetch
+  `nsr.metadata_` and pass it through. **Deliberately kept inert**:
+  `settings.qa9a_scope_filter_enabled` (`src/core/config.py`) defaults to
+  `False` and the function no-ops immediately when unset — RPR/product
+  ratification of the in-scope rules (step 4) still hasn't happened and
+  can't happen autonomously; this is a relevance judgment over what hides
+  from the product surface, not a mechanical guard like QA-6/QA-10. A
+  human flips `REGS_QA9A_SCOPE_FILTER_ENABLED=true` post-ratification.
+  `tests/unit/test_payload_adapter_qa9a.py` (13 tests): the engine's
+  wiring correctness with the flag explicitly enabled via an autouse
+  fixture, PLUS a `TestFlagDefaultsOff` class that pins the real shipped
+  default (unset → no hide) so an accidental flip is caught by CI. Also
+  still needed before a ratified rollout: (a) a real hide-report against
+  live DB rows (needs the DB this sandbox doesn't have — run with the flag
+  temporarily enabled in a scratch/dry-run environment only); (b)
+  `added_section_numbers` — wired as a parameter but every call site
+  currently passes an empty set (marked `# TODO`), since populating it
+  needs the bill's full text at sync time and today's query only fetches
+  the single passage; that's a query-cost design decision left for the
+  ratified rollout. Full suite: 1421 passed (up from 1419);
+  `ruff check --select E9,F` clean.
 - [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
   test before extraction; changes agent inputs → measure via harness with the
   SB 926/AB 2355/SB 11 stress fixtures now added (see Phase 4 below) — the

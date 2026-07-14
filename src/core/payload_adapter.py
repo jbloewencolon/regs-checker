@@ -79,16 +79,40 @@ def _derive_deadlines(timeline: dict[str, Any]) -> list[dict[str, Any]]:
 def adapt_payload_for_sync(
     extraction_type: str,
     payload: dict[str, Any],
+    passage_text: str | None = None,
+    passage_metadata: dict[str, Any] | None = None,
+    added_section_numbers: set[str] | None = None,
 ) -> dict[str, Any]:
     """Convert a Regs Checker extraction payload to Policy Navigator format.
+
+    QA-9a (Phase 2 step 3): when the extraction is anchored in a restatement
+    passage, assesses whether its evidence falls within in-scope subdivisions
+    (those mentioning AI/domain keywords or referencing sections the bill adds).
+    Sets ai_nexus: false and display: false for out-of-scope extractions,
+    effectively hiding them at sync time without re-extraction.
 
     Args:
         extraction_type: One of obligation, threshold, definition, ambiguity.
         payload: The raw extraction payload from Regs Checker.
+        passage_text: The full source passage text (used for scope assessment).
+        passage_metadata: Passage metadata dict from parser (parallel_version_group, etc.).
+        added_section_numbers: Set of section numbers this bill adds (e.g. {'84514'}).
+            If None, assessed as empty set — scope assessment will still run but
+            rule (b) (references_added_section) won't match.
 
     Returns:
-        Payload dict matching Policy Navigator's expected schema.
+        Payload dict matching Policy Navigator's expected schema, with ai_nexus/display
+        set to false if the extraction falls wholly outside restatement scopes.
     """
+    # Perform restatement-scoped relevance assessment if applicable
+    _apply_restatement_scope(
+        extraction_type,
+        payload,
+        passage_text=passage_text,
+        passage_metadata=passage_metadata or {},
+        added_section_numbers=added_section_numbers or set(),
+    )
+
     adapter = _ADAPTERS.get(extraction_type)
     if adapter:
         return adapter(payload)
@@ -109,6 +133,8 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
          timeline, enforcement, obligation_family}
     where timeline and enforcement are string summaries, and obligation_family is
     the canonical code for the obligation type (documentation, registration, etc.).
+
+    QA-9a: ai_nexus and display flags (set by scope filtering) are preserved.
     """
     result: dict[str, Any] = {
         "subject": payload.get("subject"),
@@ -136,6 +162,9 @@ def _adapt_obligation(payload: dict[str, Any]) -> dict[str, Any]:
         "deadlines": [],
         "enforcement": None,
         "obligation_family": payload.get("obligation_family"),
+        # QA-9a: restatement-scoped relevance filtering
+        "ai_nexus": payload.get("ai_nexus"),
+        "display": payload.get("display"),
     }
 
     # PNE-2a: derive actor role (RC code + alias-aware PN value).
@@ -209,6 +238,8 @@ def _adapt_threshold(payload: dict[str, Any]) -> dict[str, Any]:
         {threshold_type, threshold_value, threshold_unit, threshold_condition,
          applies_to_obligation, exceptions}
     where exceptions is a string summary of carve-outs.
+
+    QA-9a: ai_nexus and display flags (set by scope filtering) are preserved.
     """
     result: dict[str, Any] = {
         "threshold_type": payload.get("threshold_type"),
@@ -225,6 +256,9 @@ def _adapt_threshold(payload: dict[str, Any]) -> dict[str, Any]:
         # threshold fields — {trigger_type, trigger_operator, trigger_value,
         # trigger_condition_raw}. None when there's no threshold signal.
         "trigger": derive_trigger(payload),
+        # QA-9a: restatement-scoped relevance filtering
+        "ai_nexus": payload.get("ai_nexus"),
+        "display": payload.get("display"),
     }
 
     exceptions = payload.get("exceptions")
@@ -254,6 +288,8 @@ def _adapt_definition(payload: dict[str, Any]) -> dict[str, Any]:
     Policy Navigator expected format:
         {term, definition_text, scope, actors, cross_references, framework_refs}
     where actors/cross_references/framework_refs are string summaries.
+
+    QA-9a: ai_nexus and display flags (set by scope filtering) are preserved.
     """
     result: dict[str, Any] = {
         "term": payload.get("term"),
@@ -262,6 +298,9 @@ def _adapt_definition(payload: dict[str, Any]) -> dict[str, Any]:
         "actors": None,
         "cross_references": None,
         "framework_refs": None,
+        # QA-9a: restatement-scoped relevance filtering
+        "ai_nexus": payload.get("ai_nexus"),
+        "display": payload.get("display"),
     }
 
     # Flatten actors list
@@ -320,6 +359,95 @@ def _adapt_ambiguity(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _apply_restatement_scope(
+    extraction_type: str,
+    payload: dict[str, Any],
+    passage_text: str | None = None,
+    passage_metadata: dict[str, Any] | None = None,
+    added_section_numbers: set[str] | None = None,
+) -> None:
+    """QA-9a: hide extractions falling wholly outside restatement-scoped AI/domain provisions.
+
+    Mutates the payload in place:
+    - Sets ai_nexus: false when extraction evidence is out-of-scope
+    - Sets display: false (hides the row in PN UI)
+
+    Non-destructive: passage is stored for provenance; this just controls
+    display at sync time without re-extraction.
+
+    Scope is assessed only for clause-level extraction types. Bill-level agents
+    (applicability_agent, enforcement_agent, compliance_timeline_agent) produce
+    no evidence_spans today and are skipped.
+
+    GATED (docs/qa8_qa9_phased_plan.md Phase 2 step 4): the in-scope rules are
+    a relevance judgment, not a mechanical guard — RPR/product must ratify
+    them and review a hide-report before this can affect live sync output.
+    No-ops unless settings.qa9a_scope_filter_enabled is explicitly True.
+    """
+    from src.core.config import settings
+
+    if not settings.qa9a_scope_filter_enabled:
+        return
+
+    if not passage_text or not passage_metadata:
+        return
+
+    # Only assess clause-level extractions (those with evidence_spans).
+    # Bill-level extractions lack verified evidence structure (see EA5-1).
+    clause_types = {"obligation", "definition", "threshold", "rights_protection",
+                    "compliance_mechanism", "preemption_signal"}
+    if extraction_type not in clause_types:
+        return
+
+    from src.core.restatement_scope import (
+        assess_extraction_scope,
+        is_restatement_passage,
+    )
+
+    # Scope trigger: is this passage a restatement at all?
+    parallel_version_group = passage_metadata.get("parallel_version_group")
+    if not is_restatement_passage(passage_text, parallel_version_group=parallel_version_group):
+        return
+
+    # Restatement passage: assess the extraction's scope.
+    # Evidence is the first span's text, or fall back to payload action/term text.
+    evidence_spans = payload.get("evidence_spans", [])
+    if not evidence_spans:
+        # No evidence to anchor the scope assessment — don't guess, leave in scope.
+        return
+
+    evidence_text = None
+    for span in evidence_spans:
+        if isinstance(span, dict):
+            evidence_text = span.get("text")
+        elif hasattr(span, "text"):
+            evidence_text = span.text
+        if evidence_text:
+            break
+
+    if not evidence_text:
+        # Couldn't extract evidence text — don't guess, leave in scope.
+        return
+
+    result = assess_extraction_scope(
+        evidence_text,
+        passage_text,
+        added_section_numbers=added_section_numbers or set(),
+    )
+
+    if not result.get("in_scope"):
+        # Out of scope: hide this extraction.
+        payload["ai_nexus"] = False
+        payload["display"] = False
+        # Log the decision for debugging.
+        logger.info(
+            "qa9a_scope_hide",
+            extraction_type=extraction_type,
+            subdivision=result.get("subdivision"),
+            reason=result.get("reason"),
+        )
+
+
 def _adapt_preemption_signal(payload: dict[str, Any]) -> dict[str, Any]:
     """Adapt preemption signal payload for Policy Navigator.
 
@@ -345,7 +473,10 @@ def _adapt_preemption_signal(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _adapt_rights_protection(payload: dict[str, Any]) -> dict[str, Any]:
-    """Adapt rights_protection payload: flatten remedies list."""
+    """Adapt rights_protection payload: flatten remedies list.
+
+    QA-9a: ai_nexus and display flags (set by scope filtering) are preserved.
+    """
     result: dict[str, Any] = {
         "right_holder": payload.get("right_holder"),
         "right_holder_normalized": payload.get("right_holder_normalized"),
@@ -360,6 +491,9 @@ def _adapt_rights_protection(payload: dict[str, Any]) -> dict[str, Any]:
         # (the ambiguity agent is retired — see DI-4).
         "interpretation_risks": payload.get("interpretation_risks") or [],
         "remedies": None,
+        # QA-9a: restatement-scoped relevance filtering
+        "ai_nexus": payload.get("ai_nexus"),
+        "display": payload.get("display"),
     }
 
     remedies = payload.get("remedies")
@@ -380,7 +514,10 @@ def _adapt_rights_protection(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _adapt_compliance_mechanism(payload: dict[str, Any]) -> dict[str, Any]:
-    """Adapt compliance_mechanism payload: flatten audits, preserve matrix flags."""
+    """Adapt compliance_mechanism payload: flatten audits, preserve matrix flags.
+
+    QA-9a: ai_nexus and display flags (set by scope filtering) are preserved.
+    """
     result: dict[str, Any] = {
         "mechanism_type": payload.get("mechanism_type"),
         "description": payload.get("description"),
@@ -405,6 +542,9 @@ def _adapt_compliance_mechanism(payload: dict[str, Any]) -> dict[str, Any]:
         "assessment_frequency_months": payload.get("assessment_frequency_months"),
         "is_third_party_audit": payload.get("is_third_party_audit", False),
         "incident_reporting_hours": payload.get("incident_reporting_hours"),
+        # QA-9a: restatement-scoped relevance filtering
+        "ai_nexus": payload.get("ai_nexus"),
+        "display": payload.get("display"),
     }
 
     audits = payload.get("audits")

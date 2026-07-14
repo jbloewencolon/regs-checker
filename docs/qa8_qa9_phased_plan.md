@@ -104,14 +104,30 @@ extraction type present in the representative version.
 
 ## Phase 2 — QA-9a: restatement-scoped relevance (sandbox-actionable after ratification)
 
-> **Status 2026-07-14: engine built and tested; QA-10 landed; sync wiring
-> deliberately NOT done.** `src/core/restatement_scope.py` implements
-> steps 1-2 below and is validated against the real corpus — see
-> "Verified against real corpus" below. It is called from nowhere in
-> production yet: step 3 (wiring into `payload_adapter.py`) is withheld
-> because step 4's ratification hasn't happened and can't happen
-> autonomously. QA-10 (step 5) has no such gate — it's mechanical, like
-> QA-2/QA-6 — and is fully landed in `src/agents/definition_actor.py`.
+> **Status 2026-07-14: engine + sync plumbing built and tested; QA-10
+> landed; live effect deliberately kept OFF pending ratification.**
+> `src/core/restatement_scope.py` implements steps 1-2 below and is
+> validated against the real corpus — see "Verified against real corpus"
+> below. Step 3 (wiring into `payload_adapter.py`) is now built:
+> `adapt_payload_for_sync()` takes `passage_text` / `passage_metadata` /
+> `added_section_numbers` parameters, and `sync_extractions.py`'s three
+> call sites (`_build_insert_row`, `sync_updates`, and the SFH-1k schema
+> probe) pass the passage's `metadata_` column through. QA-10 (step 5) has
+> no such gate — it's mechanical, like QA-2/QA-6 — and is fully landed in
+> `src/agents/definition_actor.py`.
+>
+> **Gate held, not bypassed:** step 4's ratification still hasn't happened
+> and can't happen autonomously — this is a relevance judgment over what
+> hides from a legal-compliance product surface, not a mechanical guard.
+> `settings.qa9a_scope_filter_enabled` (`src/core/config.py`) defaults to
+> **False**; `_apply_restatement_scope()` no-ops immediately when unset, so
+> today's sync behavior is byte-identical to before this landed. Flipping
+> it to `True` is the ratification action, deliberately left to a human
+> (`REGS_QA9A_SCOPE_FILTER_ENABLED=true` env var once approved) rather than
+> defaulted on. `tests/unit/test_payload_adapter_qa9a.py`'s
+> `TestFlagDefaultsOff` class pins this — it asserts the default is False
+> and that a genuinely out-of-scope passage is NOT hidden under that
+> default, so a future accidental flip is caught by CI, not discovered live.
 >
 > **Verified against real corpus (`tests/unit/test_restatement_scope.py`,
 > 29 tests):** SB 926's Penal Code § 647 — only the `(j)(4)`
@@ -125,16 +141,23 @@ extraction type present in the representative version.
 > case fact 0.3's simulation caught. TMP-CA-EMPLOYMENTANDS never trips the
 > scope trigger at all (0 restatement passages found), so the "0% hide on
 > full-AI laws" bar is met structurally, not just by keyword luck.
+> `tests/unit/test_payload_adapter_qa9a.py` (13 tests) exercises the same
+> engine through the actual sync adapter call path — obligation, threshold,
+> definition, rights_protection, compliance_mechanism payloads, the
+> added-section-reference rule, the no-evidence safe default, the
+> non-restatement no-op, and bill-level agents being skipped entirely.
 >
-> **Remaining to actually land Phase 2:** (a) RPR/product sign-off on the
-> in-scope rules per step 4 — still needed, this session cannot provide
-> it; (b) plumbing `payload_adapter.py`'s adapters to receive the
-> restatement's full passage text and the bill's added-section set
-> (today's adapter signature is `adapt_payload_for_sync(extraction_type,
-> payload)` — payload-only, no passage context — QA-6 didn't need this
-> because preemption credibility is self-contained in the payload); (c) a
-> real hide-report generated against actual stored SB 926/AB 2355 rows,
-> which needs a live DB this sandbox doesn't have.
+> **Remaining to actually flip Phase 2 live:** (a) RPR/product sign-off on
+> the in-scope rules per step 4 — still needed, this session cannot provide
+> it; (b) a real hide-report generated against actual stored SB 926/AB 2355
+> rows, which needs a live DB this sandbox doesn't have — run with the flag
+> temporarily enabled in a scratch/dry-run environment, never against
+> production sync without sign-off; (c) `added_section_numbers` is wired
+> as a parameter but every call site currently passes an empty set (a
+> `# TODO` marks each) — populating it requires fetching the bill's full
+> text at sync time (today's query only has the single passage), a design
+> decision left for whoever does the ratified rollout since it affects
+> query cost per synced row.
 
 **Principle (from fact 0.3):** relevance filtering applies **only inside
 restated sections** — never law-wide. A bill that is wholly an AI act
@@ -247,7 +270,7 @@ AB 2355-style laws improves.
 |---|---|---|---|
 | 0 operator repair | QA-6/7 merged | — | no (operator) |
 | 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
-| 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10: **yes — landed 2026-07-14**; sync wiring: no (ratification + adapter plumbing external) |
+| 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10 + sync plumbing: **yes — landed 2026-07-14, flag OFF by default**; flipping live: no (ratification + hide-report external) |
 | 3 QA-9b pre-extraction scoping | Phases 1-2 + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
 | 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures: **yes — landed 2026-07-14**; source fix: no (product decision) |
 
