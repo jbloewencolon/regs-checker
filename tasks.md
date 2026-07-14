@@ -1346,9 +1346,13 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > sync-time subdivision scoping — **engine + sync wiring landed 2026-07-14,
 > gated OFF by `settings.qa9a_scope_filter_enabled` pending RPR
 > ratification** — + QA-10 junk-definition guard, **landed 2026-07-14**) →
-> Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
-> (stress fixtures — **landed 2026-07-14** — + optional markup-preserving
-> re-fetch of CA sources, still a product decision).
+> Phase 2b (QA-9c parse-time scope annotation — **planned 2026-07-14**,
+> mechanical/ungated: computes the scope map at ingest where the whole
+> document is in hand, closing QA-9a's empty `added_section_numbers` TODO
+> and becoming QA-9b's input) → Phase 3 (pre-extraction scoping; gated on
+> EA1-3 baseline) → Phase 4 (stress fixtures — **landed 2026-07-14** — +
+> optional markup-preserving re-fetch of CA sources, still a product
+> decision).
 
 - [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
   2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
@@ -1416,14 +1420,54 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   `added_section_numbers` — wired as a parameter but every call site
   currently passes an empty set (marked `# TODO`), since populating it
   needs the bill's full text at sync time and today's query only fetches
-  the single passage; that's a query-cost design decision left for the
-  ratified rollout. Full suite: 1421 passed (up from 1419);
-  `ruff check --select E9,F` clean.
+  the single passage; **resolution: QA-9c below** (parse-time annotation —
+  compute the scope map at ingest and let sync read stored metadata).
+  Full suite: 1421 passed (up from 1419); `ruff check --select E9,F` clean.
+- [ ] **QA-9c — parse-time scope annotation (Phase 2b of the plan;
+  sandbox-actionable, mechanical/ungated) — PLANNED 2026-07-14:** move the
+  scope *computation* (not consumption) to `parse_and_normalize`, the only
+  pipeline stage holding the whole document — which is exactly the context
+  the rules need and sync lacks. Full plan in `docs/qa8_qa9_phased_plan.md`
+  Phase 2b; steps: (1) refactor `restatement_scope.py` — new
+  `annotate_restatement_scope()` classifying the whole subdivision tree
+  once (top-level/second-level/lead-in regions + shared preamble) +
+  `scope_for_offset()`; reimplement `assess_extraction_scope` on top so
+  one implementation of rules (a)-(c) exists — the existing 29 tests
+  passing unmodified is the refactor's parity proof; export
+  `SCOPE_ENGINE_VERSION`. (2) In `parse_and_normalize` (next to the QA-8
+  merge): compute `added_section_numbers` once per document from the
+  joined passage texts; write `metadata_["restatement_scope"]`
+  ({engine_version, added_section_numbers, regions[]} with offsets into
+  `text_content` as stored) on every passage where
+  `is_restatement_passage()` is True — all parallel-version members, not
+  just representatives, plus ≥6K single-version restatements. Same JSONB
+  column QA-8 writes; no migration; no import cycle (verified —
+  `section_triage`/`text_grounding` don't touch `src.ingestion`). (3)
+  `_apply_restatement_scope` (still flag-gated) prefers a stored
+  annotation with current engine_version; absent/stale falls back to
+  today's on-the-fly path, so pre-annotation rows keep working. Closes
+  the QA-9a `added_section_numbers=set()` TODO for re-ingested docs. (4)
+  Staleness: bump SCOPE_ENGINE_VERSION on any rule/vocabulary change
+  (ratification may tweak keywords); version-mismatched annotations are
+  treated as absent — never silently applied stale. Backfill script
+  deferred (re-ingest covers the 3 affected laws, already operator work).
+  (5) Tests against the real corpus: parser writes the annotation on all
+  8 SB 926 §647 passages with only (j)(4)-connected regions in-scope;
+  AB 2355 carries added_section_numbers={'84514'} with formatting
+  subdivisions in-scope via the reference rule; AR HB1877 +
+  TMP-CA-EMPLOYMENTANDS get zero annotations; sync prefers/falls back
+  correctly; flag-off stays a no-op regardless of annotation presence;
+  the 3 gold fixtures' `annotation_provenance` verdicts match the
+  annotation path. **Not gated on ratification**: inert metadata changes
+  no agent input and hides no row (annotation ≠ activation — QA-9a's
+  flag and QA-9b's baseline gate stay where the effects are).
 - [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
-  test before extraction; changes agent inputs → measure via harness with the
-  SB 926/AB 2355/SB 11 stress fixtures now added (see Phase 4 below) — the
-  remaining gate is capturing the EA1-3 baseline itself, which needs a live
-  LLM run the sandbox doesn't have.
+  test before extraction — reading `metadata_["restatement_scope"]` from
+  QA-9c rather than re-running the engine in the extract loop; changes
+  agent inputs → measure via harness with the SB 926/AB 2355/SB 11 stress
+  fixtures now added (see Phase 4 below) — the remaining gate is capturing
+  the EA1-3 baseline itself, which needs a live LLM run the sandbox
+  doesn't have.
 - [x] **Phase 4 — EA1 stress fixtures (sandbox-authorable) — LANDED
   2026-07-14:** three gold-standard fixtures added to
   `tests/fixtures/gold_standard/`, picked up automatically by
