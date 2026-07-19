@@ -270,7 +270,7 @@ def parse_conditions_for_extraction(
     if not fields:
         return 0
 
-    payload = extraction.payload or {}
+    payload = extraction.current_payload or {}
     total_nodes = 0
 
     for field_name in fields:

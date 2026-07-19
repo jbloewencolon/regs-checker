@@ -9,7 +9,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS current_active_obligations AS
 SELECT
     e.id AS extraction_id,
     e.extraction_type,
-    e.payload,
+    COALESCE(e.effective_payload, e.payload) AS payload,
     e.evidence_spans,
     e.confidence_score,
     e.confidence_tier,
@@ -43,7 +43,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS served_obligations AS
 SELECT
     e.id AS extraction_id,
     e.extraction_type,
-    e.payload,
+    COALESCE(e.effective_payload, e.payload) AS payload,
     e.evidence_spans,
     e.confidence_score,
     e.confidence_tier,
@@ -85,8 +85,8 @@ SELECT
     s.jurisdiction_name,
     df.subject_area,
     e.extraction_type,
-    e.payload->>'modality' AS modality,
-    e.payload->>'subject_normalized' AS subject_normalized,
+    COALESCE(e.effective_payload, e.payload)->>'modality' AS modality,
+    COALESCE(e.effective_payload, e.payload)->>'subject_normalized' AS subject_normalized,
     COUNT(*) AS obligation_count,
     AVG(e.confidence_score) AS avg_confidence
 FROM extractions e
@@ -102,8 +102,8 @@ GROUP BY
     s.jurisdiction_name,
     df.subject_area,
     e.extraction_type,
-    e.payload->>'modality',
-    e.payload->>'subject_normalized'
+    COALESCE(e.effective_payload, e.payload)->>'modality',
+    COALESCE(e.effective_payload, e.payload)->>'subject_normalized'
 WITH DATA;
 """
 
@@ -176,7 +176,7 @@ WITH RECURSIVE dep_tree AS (
 SELECT
     dt.*,
     e.extraction_type,
-    e.payload,
+    COALESCE(e.effective_payload, e.payload) AS payload,
     e.confidence_tier
 FROM dep_tree dt
 JOIN extractions e ON e.id = dt.child_extraction_id

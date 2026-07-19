@@ -48,6 +48,8 @@ from src.db.models import (
     Extraction,
     ExtractionFieldEdit,
     FieldEditStatus,
+    ReviewAction,
+    ReviewStatus,
 )
 
 _UNSET = object()
@@ -108,6 +110,30 @@ def _extraction_type_model_name(extraction: Extraction) -> str:
         else str(extraction.extraction_type)
     )
     return mapping.get(ext_type, ext_type)
+
+
+def extraction_canonical_key(extraction: Extraction) -> str | None:
+    """Resolve the canonical_key an edit to this extraction should be filed
+    under. Returns None when the law hasn't been assigned one yet (DI-1's
+    canonical_key is nullable) — callers must handle that case explicitly
+    (reject the edit with a clear message) rather than filing it under an
+    empty-string key, which would violate DI-1's stable-identifier intent.
+
+    Shared by every route that proposes an edit (src/api/routes/internal.py,
+    review_routes.py, law_card_api.py) so the traversal is written once.
+    """
+    record = extraction.source_record
+    version = record.document_version if record else None
+    family = version.family if version else None
+    return family.canonical_key if family else None
+
+
+def extraction_identity_string(extraction: Extraction) -> str:
+    """Build the extraction_identity fingerprint stored on ExtractionFieldEdit
+    (D-5): "{extraction_type}:{agent_name}:{payload_hash-at-edit-time}"."""
+    ext_type = extraction.extraction_type
+    ext_type_str = ext_type.value if hasattr(ext_type, "value") else ext_type
+    return f"{ext_type_str}:{extraction.agent_name}:{extraction.payload_hash}"
 
 
 def _resolve_field_entry(extraction: Extraction, field_path: str) -> FieldCatalogEntry:
@@ -392,6 +418,11 @@ def apply_edit(
 
     _recompute_effective_payload(db, extraction)
     extraction.human_review_state = "edited"
+    _log_review_action(
+        db, extraction,
+        comment=f"Edited {edit.field_path}: {edit.reason}",
+        corrections={edit.field_path: edit.new_value},
+    )
     db.flush()
 
     return ApplyResult(success=True, edit=edit, validation=report)
@@ -422,9 +453,46 @@ def revert_edit(db: Session, edit_id: int) -> RevertResult:
         )
     ).all()
     extraction.human_review_state = "edited" if remaining_applied else "unedited"
+    _log_review_action(
+        db, extraction,
+        comment=f"Reverted edit to {edit.field_path}",
+        corrections=None,
+    )
     db.flush()
 
     return RevertResult(success=True)
+
+
+def _log_review_action(
+    db: Session, extraction: Extraction, comment: str, corrections: dict | None,
+) -> None:
+    """Write an audit-trail ReviewAction for an edit apply/revert.
+
+    Every Extraction gets exactly one ReviewQueueItem at extraction time
+    (unique constraint on review_queue.extraction_id) — this attaches to
+    that row. Skips silently (never raises) if the extraction somehow has
+    none: the edit itself already succeeded and must not be rolled back
+    over a missing audit-convenience row. Reviewer identity comes from the
+    most recent ExtractionFieldEdit.editor for this extraction — the
+    apply/revert caller already set that before this runs.
+    """
+    queue_item = extraction.review_queue_items[0] if extraction.review_queue_items else None
+    if queue_item is None:
+        return
+    latest_edit = db.scalars(
+        select(ExtractionFieldEdit)
+        .where(ExtractionFieldEdit.extraction_id == extraction.id)
+        .order_by(ExtractionFieldEdit.updated_at.desc())
+        .limit(1)
+    ).first()
+    reviewer = latest_edit.editor if latest_edit else "unknown"
+    db.add(ReviewAction(
+        queue_item_id=queue_item.id,
+        action=ReviewStatus.pending,  # an edit is not an approve/reject decision
+        reviewer=reviewer,
+        comment=comment,
+        corrections=corrections,
+    ))
 
 
 def _recompute_effective_payload(db: Session, extraction: Extraction) -> None:

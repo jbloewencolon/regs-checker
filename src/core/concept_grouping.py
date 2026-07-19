@@ -393,7 +393,7 @@ def group_concepts_for_dv(
 
     for ext in extractions:
         et = ext.extraction_type
-        payload = ext.payload or {}
+        payload = ext.current_payload or {}
 
         # --- Supporting: enforcement (standalone + embedded) ---
         if et == ExtractionType.enforcement:

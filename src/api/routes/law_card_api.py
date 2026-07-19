@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from src.core.edit_service import (
     EditServiceError,
     apply_edit,
+    extraction_identity_string,
     propose_edit,
     revert_edit,
     validate_edit,
@@ -190,14 +191,11 @@ def save_edit_route(
 ) -> dict[str, Any]:
     """Propose + apply an edit in one call — the "Save" action."""
     extraction = _load_extraction_for_law(db, canonical_key, extraction_id)
-    ext_type = extraction.extraction_type
-    ext_type_str = ext_type.value if hasattr(ext_type, "value") else ext_type
-    extraction_identity = f"{ext_type_str}:{extraction.agent_name}:{extraction.payload_hash}"
     try:
         edit = propose_edit(
             db, extraction,
             canonical_key=canonical_key,
-            extraction_identity=extraction_identity,
+            extraction_identity=extraction_identity_string(extraction),
             field_path=body.field_path,
             new_value=body.new_value,
             reason=body.reason,

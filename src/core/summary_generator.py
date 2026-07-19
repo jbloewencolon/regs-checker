@@ -417,7 +417,7 @@ def generate_summaries_batch(
             jur = src.jurisdiction_code if src else None
 
             ext_type = ext.extraction_type.value if hasattr(ext.extraction_type, "value") else str(ext.extraction_type)
-            summary = generate_summary(ext_type, ext.payload or {}, jur)
+            summary = generate_summary(ext_type, ext.current_payload or {}, jur)
 
             # Store in metadata
             meta = dict(ext.metadata_) if ext.metadata_ else {}

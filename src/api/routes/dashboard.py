@@ -2332,7 +2332,7 @@ def export_low_confidence_extractions_csv(
         jurisdiction = doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown"
 
         # Build payload summary (first 300 chars of JSON representation)
-        payload_json = _json.dumps(ext.payload, default=str)
+        payload_json = _json.dumps(ext.current_payload, default=str)
         payload_summary = payload_json[:300] + ("..." if len(payload_json) > 300 else "")
 
         # Format evidence spans
@@ -2418,7 +2418,7 @@ def export_low_confidence_extractions_jsonl(
                     "confidence_tier": ext.confidence_tier.value,
                     "review_status": ext.review_status.value,
                     "created_at": ext.created_at.isoformat() if ext.created_at else None,
-                    "payload": ext.payload,
+                    "payload": ext.current_payload,
                 },
                 "law": {
                     "jurisdiction": doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown",
@@ -2529,7 +2529,7 @@ def export_admitted_extractions_csv(
             verified_count,
             len(spans),
             (rec.text_content or "")[:500],
-            _json.dumps(ext.payload, default=str),
+            _json.dumps(ext.current_payload, default=str),
             ext.created_at.isoformat() if ext.created_at else "",
         ])
 
@@ -2600,7 +2600,7 @@ def export_admitted_extractions_jsonl(
                     "total_spans": len(spans),
                     "review_status": ext.review_status.value,
                     "created_at": ext.created_at.isoformat() if ext.created_at else None,
-                    "payload": ext.payload,
+                    "payload": ext.current_payload,
                 },
                 "law": {
                     "jurisdiction": (

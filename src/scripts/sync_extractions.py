@@ -310,7 +310,7 @@ _FETCH_COLUMNS_SQL = """
     SELECT
         e.id AS extraction_id,
         e.extraction_type,
-        e.payload,
+        COALESCE(e.effective_payload, e.payload) AS payload,
         e.evidence_spans,
         e.confidence_score,
         e.confidence_tier,
@@ -627,7 +627,7 @@ def sync_updates(
                 SELECT
                     e.id AS extraction_id,
                     e.extraction_type,
-                    e.payload,
+                    COALESCE(e.effective_payload, e.payload) AS payload,
                     e.evidence_spans,
                     e.confidence_score,
                     e.confidence_tier,
@@ -931,7 +931,7 @@ def sync_law_summaries(
                 SELECT
                     dv.family_id            AS family_id,
                     e.extraction_type       AS extraction_type,
-                    e.payload               AS payload,
+                    COALESCE(e.effective_payload, e.payload) AS payload,
                     df.canonical_title      AS title,
                     df.primary_source_url   AS source_url,
                     dv.bill_number          AS bill_number,
