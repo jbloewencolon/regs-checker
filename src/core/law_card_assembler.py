@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.core.field_catalog import get_entry
@@ -39,6 +39,7 @@ from src.db.models import (
     DocumentVersion,
     Extraction,
     ExtractionRun,
+    LawCardState,
     NormalizedSourceRecord,
 )
 
@@ -317,6 +318,81 @@ def _compute_gaps(
     if extraction_count > 0 and not any(e["type"] == "preemption_signal" for e in extractions):
         gaps.append("no_preemption_extractions")
     return gaps
+
+
+# ---------------------------------------------------------------------------
+# List — shared by the JSON API (law_card_api.py) and the HTML page
+# (law_card_routes.py) so the query logic exists in exactly one place.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class LawSummary:
+    """One row of the law-card list — cheap to build (no full card assembly)."""
+
+    canonical_key: str
+    title: str
+    short_cite: str | None
+    jurisdiction: str | None
+    extraction_count: int | None
+    edited_count: int | None
+    tier_counts: dict[str, int] | None
+    human_review_state: str | None
+
+
+def list_law_summaries(
+    db: Session,
+    q: str | None = None,
+    page: int = 1,
+    per_page: int = 25,
+) -> tuple[list[LawSummary], int]:
+    """List laws with canonical_key set (the ones a card can be built for).
+
+    Prefers law_card_states rollup counts when available (avoids assembling
+    every card just to show a list); falls back to bare family info when no
+    rollup row exists yet for a law (LC-6a's backfill hasn't run, or this is
+    a freshly-ingested law) — the list still shows it, just without counts.
+
+    Returns (summaries_for_this_page, total_matching_count).
+    """
+    base_query = select(DocumentFamily).where(DocumentFamily.canonical_key.isnot(None))
+    if q:
+        like = f"%{q}%"
+        base_query = base_query.where(
+            (DocumentFamily.canonical_title.ilike(like)) | (DocumentFamily.short_cite.ilike(like))
+        )
+
+    total = db.scalar(select(func.count()).select_from(base_query.subquery())) or 0
+
+    page_query = (
+        base_query.order_by(DocumentFamily.canonical_title)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    families = db.scalars(page_query).all()
+
+    keys = [f.canonical_key for f in families]
+    rollups = {
+        r.canonical_key: r
+        for r in db.scalars(
+            select(LawCardState).where(LawCardState.canonical_key.in_(keys))
+        ).all()
+    } if keys else {}
+
+    summaries = []
+    for family in families:
+        rollup = rollups.get(family.canonical_key)
+        summaries.append(LawSummary(
+            canonical_key=family.canonical_key,
+            title=family.canonical_title,
+            short_cite=family.short_cite,
+            jurisdiction=family.source.jurisdiction_code if family.source else None,
+            extraction_count=rollup.extraction_count if rollup else None,
+            edited_count=rollup.edited_count if rollup else None,
+            tier_counts=rollup.tier_counts if rollup else None,
+            human_review_state=rollup.human_review_state if rollup else None,
+        ))
+    return summaries, total
 
 
 # ---------------------------------------------------------------------------

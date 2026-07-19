@@ -19,8 +19,9 @@ from sqlalchemy import func, select, text
 from starlette.templating import Jinja2Templates
 
 from src.api.middleware.auth import verify_api_key
-from src.api.routes import dashboard, internal, law_card_api, v1
+from src.api.routes import dashboard, internal, law_card_api, law_card_routes, v1
 from src.core.config import settings
+from src.core.law_card_labels import humanize_review_state, humanize_status, is_enforcement_visible
 from src.db.engine import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,12 @@ app = FastAPI(
 # Static files and templates
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+# LC-2b: Law Card status/review-state humanization (design Rule 5) — a
+# single Python source of truth, not a duplicated Jinja dict, so LC-2c's
+# exhaustiveness test can import the same tables the templates render from.
+app.state.templates.env.globals["humanize_status"] = humanize_status
+app.state.templates.env.globals["humanize_review_state"] = humanize_review_state
+app.state.templates.env.globals["is_enforcement_visible"] = is_enforcement_visible
 
 # Mount route groups
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
@@ -125,6 +132,9 @@ app.include_router(internal.router, prefix="/internal", tags=["Internal Review"]
 # LC-1d: Law Card JSON API — a new module, not folded into dashboard.py
 # (that file is deliberately never grown further; see docs/law_card_dashboard_plan.md).
 app.include_router(law_card_api.router, tags=["Law Cards"])
+# LC-2a: Law Card HTML pages — gated behind settings.law_cards_enabled
+# (404s when disabled; see law_card_routes.py's module docstring).
+app.include_router(law_card_routes.router, tags=["Law Cards UI"])
 app.include_router(
     v1.router,
     prefix="/v1",

@@ -36,9 +36,9 @@ from src.core.edit_service import (
     revert_edit,
     validate_edit,
 )
-from src.core.law_card_assembler import assemble_card
+from src.core.law_card_assembler import assemble_card, list_law_summaries
 from src.db.engine import get_db
-from src.db.models import DocumentFamily, Extraction, LawCardState, NormalizedSourceRecord
+from src.db.models import DocumentFamily, Extraction, NormalizedSourceRecord
 
 router = APIRouter()
 
@@ -57,46 +57,23 @@ def list_laws(
 ) -> dict[str, Any]:
     """List laws with canonical_key set (the ones a card can be built for).
 
-    Prefers law_card_states rollup counts when available (avoids assembling
-    every card just to show a list); falls back to bare family info when no
-    rollup row exists yet for a law (LC-6a's backfill hasn't run, or this is
-    a freshly-ingested law) — the list still shows it, just without counts.
+    Query logic lives in law_card_assembler.list_law_summaries — shared with
+    the HTML page (law_card_routes.py) so there's exactly one implementation.
     """
-    query = select(DocumentFamily).where(DocumentFamily.canonical_key.isnot(None))
-    if q:
-        like = f"%{q}%"
-        query = query.where(
-            (DocumentFamily.canonical_title.ilike(like)) | (DocumentFamily.short_cite.ilike(like))
-        )
-    query = (
-        query.order_by(DocumentFamily.canonical_title)
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-    )
-    families = db.scalars(query).all()
-
-    keys = [f.canonical_key for f in families]
-    rollups = {
-        r.canonical_key: r
-        for r in db.scalars(
-            select(LawCardState).where(LawCardState.canonical_key.in_(keys))
-        ).all()
-    } if keys else {}
-
-    items = []
-    for family in families:
-        rollup = rollups.get(family.canonical_key)
-        items.append({
-            "canonical_key": family.canonical_key,
-            "title": family.canonical_title,
-            "short_cite": family.short_cite,
-            "jurisdiction": family.source.jurisdiction_code if family.source else None,
-            "extraction_count": rollup.extraction_count if rollup else None,
-            "edited_count": rollup.edited_count if rollup else None,
-            "human_review_state": rollup.human_review_state if rollup else None,
-        })
-
-    return {"items": items, "page": page, "per_page": per_page}
+    summaries, total = list_law_summaries(db, q=q, page=page, per_page=per_page)
+    items = [
+        {
+            "canonical_key": s.canonical_key,
+            "title": s.title,
+            "short_cite": s.short_cite,
+            "jurisdiction": s.jurisdiction,
+            "extraction_count": s.extraction_count,
+            "edited_count": s.edited_count,
+            "human_review_state": s.human_review_state,
+        }
+        for s in summaries
+    ]
+    return {"items": items, "page": page, "per_page": per_page, "total": total}
 
 
 # ---------------------------------------------------------------------------

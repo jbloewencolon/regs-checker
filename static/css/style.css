@@ -1889,6 +1889,195 @@ select.edit-field-input {
 .triage-quality-mid { color: var(--warning); }
 
 /* ================================================================== */
+/* Law Cards (LC-2)                                                    */
+/* ================================================================== */
+
+/* Additional status-chip states beyond the pipeline dashboard's original
+   active/dead/pending trio (TemporalStatus has more values than the tracker
+   status used elsewhere) — Rule 5, humanized label + color pairing. */
+.status-chip.status-future_effective, .status-chip.status-stayed,
+.status-chip.status-passed_one_chamber {
+  background: var(--warning-bg);
+  border-color: var(--warning);
+  color: #854d0e;
+}
+.status-chip.status-repealed, .status-chip.status-withdrawn {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: #991b1b;
+}
+
+/* Hollow tier badge — "no signal yet", never the same fill as a real tier
+   (Rule 1, assertion LC-2c-2). */
+.tier-badge.tier-none {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+}
+
+/* Data-gap badge — explicit "not extracted / not available" marker so a
+   null field is never rendered as blank or a dash (Rule 1). */
+.gap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-style: italic;
+  padding: 1px 8px;
+  border-radius: 100px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.repaired-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--info-bg);
+  color: #155e75;
+  border: 1px solid #67e8f9;
+  white-space: nowrap;
+  margin-left: 4px;
+  cursor: help;
+}
+
+.edited-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--auto-bg);
+  color: var(--auto-text);
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+/* Evidence — Rule 3, verbatim-vs-paraphrase honesty. Only verified,
+   Tier-1/2 spans get real quote styling; everything else is deliberately
+   plainer so a reader can't mistake it for a confirmed quote. */
+.lc-evidence-quote {
+  border-left: 3px solid var(--primary);
+  background: var(--primary-light);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-style: italic;
+  margin: 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.lc-evidence-near-match {
+  border-left: 3px solid var(--warning);
+  background: var(--warning-bg);
+  padding: 6px 10px;
+  font-size: 12px;
+  margin: 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.lc-evidence-near-match .lc-near-match-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #854d0e;
+  margin-right: 6px;
+}
+
+.lc-evidence-unverified {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.lc-evidence-unverified .lc-unverified-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--danger);
+  margin-right: 6px;
+}
+
+/* Paced-disclosure toggle buttons (Rule 4) — real <button> elements, styled
+   to look like the existing .tab affordance rather than introducing a new
+   pattern. */
+.lc-disclosure-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.lc-disclosure-btn:hover { background: var(--primary-light); }
+
+.lc-disclosure-btn[aria-expanded="true"] .lc-disclosure-caret { transform: rotate(90deg); }
+
+.lc-disclosure-caret {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  font-size: 10px;
+}
+
+.lc-disclosure-body[hidden] { display: none; }
+
+/* Stub card (Rule 7) — dashed border, visually distinct from a genuinely
+   populated card so "nothing extracted" never reads as "checked, found
+   nothing." */
+.lc-stub-card {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.lc-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lc-field-label {
+  flex: 0 0 220px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.lc-field-value {
+  flex: 1 1 300px;
+  font-size: 13px;
+}
+
+.lc-law-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lc-law-list-row:last-child { border-bottom: none; }
+
+.lc-law-list-title { flex: 1 1 auto; font-weight: 500; font-size: 13px; }
+
+.lc-law-list-title a { color: var(--text); text-decoration: none; }
+.lc-law-list-title a:hover { color: var(--primary); text-decoration: underline; }
+
+/* ================================================================== */
 /* Responsive                                                          */
 /* ================================================================== */
 

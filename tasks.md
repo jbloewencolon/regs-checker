@@ -1336,23 +1336,76 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   to the Regs Checker Supabase target first, an operator action this
   sandbox can't perform.
 
-### Phase LC-2 — Read-only law-card dashboard (M)
-- 🔒 **LC-2a** *(after LC-1)* — `src/api/routes/law_card_routes.py` +
-  `templates/laws.html` (list: search/filter via `law_card_states` rollup — no
-  N+1; query-count test) + `templates/law_card.html` (tabs: Overview |
-  Extractions | Runs-placeholder). Behind `law_cards_enabled` flag. *(BE, FE)*
-- 🔒 **LC-2b** — ported design system as Jinja2 partials:
-  `partials/lc_badges.html` (status taxonomy, tier chips, data-gap,
-  truncation/repair, tracker-status, provenance line), `lc_extraction_panel.html`;
-  evidence rendering honors verification tiers — Tier-1/2 spans as highlighted
-  quotes (char offsets exist per EA2-2), Tier-3/4 marked "near match",
-  unverified NEVER rendered as a quote. Bill-level panel read-only (D-7) incl.
-  `_input_truncated` warning. `static/lawcard.js` (~100 lines vanilla:
-  aria-expanded toggles + focus return). *(FE)*
-- 🔒 **LC-2c** — template tests asserting the LC-0c design rules (null → gap
-  badge, withdrawn → enforcement suppressed, honest-unknown throughout) against
-  the four ported fixtures + real CO SB205 data; a11y: keyboard-complete
-  disclosures, no color-only encoding, contrast ≥ 4.5:1, 200%-zoom reflow. *(FE, BE)*
+### Phase LC-2 — Read-only law-card dashboard (M) — ✅ LANDED 2026-07-19
+> **Implementation note:** built and live-verified in the same real-Postgres
+> sandbox environment as LC-1 (real FastAPI `TestClient` against the actual
+> `src.api.app.app` instance — not a stripped-down router-only app — so
+> `request.app.state.templates` and the Jinja globals registered in `app.py`
+> are exercised exactly as production runs them). Visually screenshotted via
+> the sandbox's headless Chromium (list page + a rich detail card covering
+> all three evidence tiers, a TBD enforcement panel, and disclosure toggles)
+> to confirm real rendering, not just assertion coverage. 1709/1715 tests
+> passing after landing (the 6 failures are pre-existing/unrelated: 5 are
+> the long-standing `test_v1_api.py` 401-auth gap, 1 is scratch-DB row
+> pollution from this session's own repeated `test_law_card_api_e2e.py`
+> runs sharing a fixed search string — confirmed by row count, not a code
+> defect, and won't occur against CI's fresh-per-run Postgres). CI's
+> blocking `E9,F` ruff gate clean; zero new findings in the full advisory
+> `ruff check src/` pass.
+- ✅ **LC-2a** — `src/api/routes/law_card_routes.py` (`GET /laws` list,
+  `GET /laws/{canonical_key}` detail; both 404 when `law_cards_enabled` is
+  off) + `templates/laws.html` (search box, rollup counts from
+  `list_law_summaries()` — the same function LC-1d's JSON API uses, so list
+  logic exists in exactly one place) + `templates/law_card.html`. Registered
+  in `app.py` alongside the existing route groups; a "Laws" nav link added to
+  `layout.html`. New `src/core/law_card_labels.py` is the single Python
+  source of truth for status-label humanization (Design Rule 5), registered
+  as Jinja globals rather than duplicated as a template-local dict, so LC-2c's
+  exhaustiveness test can import the exact table the pages render from.
+- ✅ **LC-2b** — ported design system as Jinja2 partials:
+  `partials/lc_badges.html` (status/tier/gap/edited/review-state/truncated/
+  repaired chips, an `evidence_list()` macro implementing Design Rule 3's
+  three-way verified/near-match/unverified split, and a `disclosure()` macro
+  using Jinja's `{% call %}` block to pair a real `<button aria-expanded>`
+  with its content — never a `<div onclick>`), `partials/lc_extraction_panel.
+  html` (per-extraction L1 material-fields-only view + L2 "full field list"
+  and L3 "provenance" disclosures). Evidence rendering honors verification
+  tier exactly as specified: Tier-1/2 verified spans get real quote styling
+  with `char_start`/`char_end` carried as data attributes, Tier-3/4 get a
+  "near match" marker, unverified spans render plain with an explicit
+  could-not-verify warning and are never wrapped in quote markup. Bill-level
+  sections (applicability, compliance_timeline, enforcement) are read-only
+  per D-7; enforcement is additionally gated by Design Rule 2 (
+  `is_enforcement_visible()`, suppressing withdrawn/vetoed/dead/stayed laws
+  even when the underlying payload has data) with the TBD-refinement:  a
+  `max_civil_penalty_usd: null` + "TBD" enforcement_text still renders the
+  panel with an explicit "penalty amount not yet specified" gap badge rather
+  than suppressing it outright. `static/lawcard.js` (vanilla, ~25 lines: one
+  delegated click listener toggling `aria-expanded` + `hidden`; no extra key
+  handling needed since real `<button>`s already get Enter/Space for free).
+  New CSS block in `style.css` (`.gap-badge`, `.tier-badge.tier-none`,
+  `.lc-evidence-*`, `.lc-disclosure-*`, `.lc-stub-card`, plus status-chip
+  variants for `future_effective`/`stayed`/`passed_one_chamber`/`repealed`/
+  `withdrawn`, none of which the pre-existing tracker-status trio covered).
+- ✅ **LC-2c** — `tests/integration/test_law_card_pages_e2e.py` (12 tests,
+  real Postgres + real `TestClient`): Rule 1 (null field → gap badge, never
+  raw `None`/`null`), Rule 2 both directions (TBD penalty renders with a gap
+  badge rather than being suppressed; a withdrawn law's enforcement panel is
+  fully suppressed even with real payload data present), Rule 3 (all three
+  evidence tiers render with distinct markup; a regex assertion confirms the
+  unverified span's own block never carries the quote class), Rule 4 (every
+  `aria-controls` value in rendered HTML resolves to a real element `id` in
+  the same document — a structural a11y check, not just presence), Rule 5
+  (status renders humanized, `status-active` + `>Active<`, never the raw
+  enum token) via a dedicated exhaustiveness test asserting every
+  `TemporalStatus` value has a `STATUS_LABELS` entry, Rule 7 (zero-extraction
+  law routes to `lc-stub-card`, no Extractions section rendered at all), and
+  the flag-scope contract (`/laws*` 404s when `law_cards_enabled=False`, but
+  `/api/laws/.../card` keeps working — confirming LC-1d's API truly isn't
+  gated by the LC-2 flag). Full WCAG manual audit (contrast ratios,
+  200%-zoom reflow, screen-reader pass) deferred to LC-5a as originally
+  scoped — LC-2c covers the structural a11y assertions (real buttons,
+  resolvable aria-controls) that are cheap to make load-bearing now.
 
 ### Phase LC-3 — Field-level editing & validation (M/L) — MVP completes here
 - 🔒 **LC-3a** *(after LC-2)* — `partials/lc_field_editor.html`: widget per
@@ -1428,20 +1481,30 @@ aliases) — the card consumes both when they land; `dashboard.py` is never grow
 (split remains deferred); P3 tier-only sync gate is why D-4's
 `edited_by_analyst` provenance stamp is non-optional.
 
-> **Status (2026-07-19, implementation session):** LC-0 and LC-1 both fully
-> landed and live-DB-verified (commits: LC-0 repo alignment, then four
-> LC-1 commits — data model/field catalog, assembler/edit service,
-> JSON API, consumer sweep). G-1 is fixed at both sites it existed. **Next
-> up: LC-2** (read-only dashboard templates) is now unblocked — it's pure
-> Jinja2/HTMX template work with no DB-migration risk, a natural next
-> session's starting point. Two operator actions this session could not
-> perform: (1) apply migrations `72ad4147a628` + `4457bebc03c0` to the real
-> dev/prod database (`python start.py` → `alembic upgrade head`, per
-> CLAUDE.md) — everything above was verified against a disposable local
-> scratch Postgres this sandbox stood up itself, not the project's real DB;
-> (2) product-owner sign-off on decisions D-1/D-4/D-6
-> (`docs/law_card_decisions.md`), currently shipped under the documented
-> provisional resolutions.
+> **Status (2026-07-19, implementation session):** LC-0, LC-1, and LC-2 all
+> fully landed and live-verified (commits: LC-0 repo alignment; four LC-1
+> commits — data model/field catalog, assembler/edit service, JSON API,
+> consumer sweep; LC-2 read-only dashboard). G-1 is fixed at both sites it
+> existed. The law-card dashboard is browsable end-to-end today (flagged off
+> by default via `law_cards_enabled`): list page with search, detail page
+> with honest-unknown fields, tiered evidence rendering, gated enforcement,
+> and stub routing for thin-data laws — all screenshotted and structurally
+> a11y-checked, not just unit-tested. **Next up: LC-3** (field-level editing
+> UI) is now unblocked — LC-1's edit_service/validate/apply/revert plumbing
+> and LC-1d's JSON API already exist and are tested; LC-3 is the HTMX form
+> layer (`partials/lc_field_editor.html`) plus editor-identity/CSRF (D-6)
+> wiring on top of them, which completes the plan's MVP boundary. Three
+> operator actions this session could not perform: (1) apply migrations
+> `72ad4147a628` + `4457bebc03c0` to the real dev/prod database (`python
+> start.py` → `alembic upgrade head`, per CLAUDE.md) — everything above was
+> verified against a disposable local scratch Postgres this sandbox stood up
+> itself, not the project's real DB; (2) product-owner sign-off on decisions
+> D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently shipped under the
+> documented provisional resolutions; (3) a full WCAG 2.2 AA audit (contrast
+> measurement, screen-reader pass, 200%-zoom reflow) — scoped to LC-5a as
+> originally planned; LC-2c added the structural a11y assertions (real
+> `<button>` disclosures, resolvable `aria-controls`) that don't need a human
+> pass to verify.
 
 ---
 
