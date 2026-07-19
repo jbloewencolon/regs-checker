@@ -1172,6 +1172,189 @@ $/law in `run_summary.json` before/after so the trade is explicit.
 
 ---
 
+## Law Card Dashboard Plan (LC) — Editable Per-Law Cards (2026-07-19)
+
+> Full plan: [`docs/law_card_dashboard_plan.md`](docs/law_card_dashboard_plan.md)
+> (bundle review, lifecycle trace, data model, per-phase a11y/testing/acceptance,
+> decision table D-1…D-7). **Reactivates** the Run-1 plan's deferred "law-card data
+> model" line item as a concrete feature: one editable dashboard card per extracted
+> law — review the full extraction, edit fields with validation, compare phased
+> runs, preserve source ↔ original ↔ edited lineage, usable by non-specialists.
+> Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Effort in **( )**.
+>
+> **Bundle verdict (`Law Card Copy/`, reviewed 2026-07-19):** a read-only React 18
+> component snapshot from ai-ethics-evaluator. It contributes a **design contract**
+> (honest-unknown rules, paced disclosure, verbatim-vs-paraphrase semantics, status
+> taxonomy, data-gap badges), **design tokens** (`lawcard-tokens.css`), and a
+> **4-law test-fixture matrix** — but it has ZERO editing/validation/comparison
+> code, does not run as shipped (broken internal imports: `../data/constants`,
+> `../services/normalize`, missing `CoverageCard` + `supabase.js`;
+> `priority.js` imports constants the bundle doesn't export), and its data shapes
+> don't match ours. Decision D-2: port the design system into the existing
+> Jinja2/HTMX stack; do NOT introduce a React island for one page.
+>
+> **Two pre-existing defects this plan owns fixing:**
+> - **G-1 (Critical):** `POST /api/review/{queue_id}/edit` (`review_routes.py`)
+>   mutates `extraction.payload` in place — the model's original output is
+>   destroyed on first edit; `payload_hash` desyncs the dedup unique index; no
+>   schema validation; spans never re-verified; edits sync to PN as if
+>   model-produced. Fixed in LC-1 (immutable base + edit overlay).
+> - **G-2 (Critical):** full runs purge all extractions (`run_extraction(purge=
+>   True)`), which makes cross-run comparison impossible AND would delete human
+>   edits. `run_id` + `is_serving` already exist for retention (Run-1 1b deferred
+>   the query refactor). Fixed in LC-4 behind decision D-1.
+>
+> **Blocking decisions (LC-0 resolves; recommendations in the doc):** D-1 run
+> retention (recommend: keep last 3, serving-run scoping) · D-2 stack (HTMX port)
+> · D-3 edit storage (immutable base + `ExtractionFieldEdit` overlay +
+> `effective_payload`) · D-4 edits never alter confidence tier (separate
+> `human_review_state`; precedence applied at sync, human > orrick) · D-5 edit
+> survival across runs (hash-match carry-forward, else orphan + review item) ·
+> D-6 interim editor identity + CSRF (full auth stays Run-1 6a) · D-7 bill-level
+> payloads read-only in MVP.
+
+### Phase LC-0 — Repository alignment & technical discovery (S)
+- ⏳ **LC-0a** — decision record `docs/law_card_decisions.md`: ratify D-1…D-7
+  (product owner signs D-1, D-4, D-6). D-1 is the only decision gating a whole
+  phase (LC-4); LC-1…LC-3 proceed regardless. *(product owner, BE)*
+- ⏳ **LC-0b** — relocate `Law Card Copy/` → `reference/law_card_bundle/`
+  (space-free path, reference-only, excluded from lint/test globs); extract
+  `lawcard-tokens.css` → `static/`; convert `fixtures/refLaws.js` →
+  `tests/fixtures/law_cards/*.json` (REF_CO/CT/NM/NY span the render matrix:
+  enacted/effective/withdrawn × curated/stub × 1–3 roles × enforcement
+  null/present/TBD). *(BE)*
+- ⏳ **LC-0c** — design-rules spec `docs/law_card_design_rules.md`: honest-unknown,
+  enforcement gating, verbatim semantics, disclosure levels — written as testable
+  assertions (they become LC-2 template tests). Contrast-check the `--lc-*`
+  palette + resolve the dark-scheme question (bundle is light-only; dashboard is
+  dark). *(FE, BE)*
+- ⏳ **LC-0d** — card-JSON spike: hand-assemble one real law's card (CO SB205)
+  from the DB to validate the assembler contract before writing it; measure
+  extractions-table growth per run × 3 (D-1 sizing evidence). *(BE)*
+
+### Phase LC-1 — Law-card data model & API foundation (M) — the keystone; fixes G-1
+- ⏳ **LC-1a** — migration: `extraction_field_edits` (extraction_id +
+  canonical_key + extraction_identity for run survival, field_path, old/new
+  JSONB, required reason, status proposed|applied|reverted|superseded|orphaned,
+  validation_report, editor, lock_token), `law_card_states` (per law × run
+  rollup + card cache), `extractions.effective_payload` (nullable overlay;
+  base `payload` becomes write-once). *(BE, SDPA)*
+- ⏳ **LC-1b** — `src/core/field_catalog.py`: every payload field of all 6 clause
+  schemas → plain-language label, help text, widget type, vocab source,
+  material-field flag, glossary entry. CI test: schema field without a catalog
+  entry fails. (EAR-5-1's alias tables plug in here when they land.) *(NLP, FE)*
+- ⏳ **LC-1c** — `src/core/law_card_assembler.py` (pure read-model: law + run +
+  bill-level + extractions w/ fields, evidence, flags, gaps) +
+  `src/core/edit_service.py` (propose → dry-run validate via existing Pydantic
+  schemas / `normalize_date` / vocab / `check_numeric_grounding` /
+  span re-verification → apply w/ optimistic lock → revert; recomputes
+  `effective_payload`; writes `ReviewAction`). *(BE, NLP)*
+- ⏳ **LC-1d** — `src/api/routes/law_card_api.py`: GET /api/laws, GET
+  /api/laws/{key}/card?run_id=, POST edit propose/validate/apply/revert. New
+  module — `dashboard.py` (6,424 lines) is never grown. *(BE)*
+- ⏳ **LC-1e** — **kill the destructive edit path**: reimplement
+  `POST /api/review/{queue_id}/edit` on `edit_service` (same form, non-destructive
+  engine); add `Extraction.current_payload` property
+  (`COALESCE(effective_payload, payload)`) and switch `sync_extractions.py`,
+  `rollup_matrix.py`, `concept_grouping.py` to it; grep-audit every other
+  `.payload` consumer; integrity assertion that base payload never mutates
+  post-creation. Approved-edited rows sync with `edited_by_analyst` provenance
+  (P3-gate coordination). *(BE)*
+
+### Phase LC-2 — Read-only law-card dashboard (M)
+- 🔒 **LC-2a** *(after LC-1)* — `src/api/routes/law_card_routes.py` +
+  `templates/laws.html` (list: search/filter via `law_card_states` rollup — no
+  N+1; query-count test) + `templates/law_card.html` (tabs: Overview |
+  Extractions | Runs-placeholder). Behind `law_cards_enabled` flag. *(BE, FE)*
+- 🔒 **LC-2b** — ported design system as Jinja2 partials:
+  `partials/lc_badges.html` (status taxonomy, tier chips, data-gap,
+  truncation/repair, tracker-status, provenance line), `lc_extraction_panel.html`;
+  evidence rendering honors verification tiers — Tier-1/2 spans as highlighted
+  quotes (char offsets exist per EA2-2), Tier-3/4 marked "near match",
+  unverified NEVER rendered as a quote. Bill-level panel read-only (D-7) incl.
+  `_input_truncated` warning. `static/lawcard.js` (~100 lines vanilla:
+  aria-expanded toggles + focus return). *(FE)*
+- 🔒 **LC-2c** — template tests asserting the LC-0c design rules (null → gap
+  badge, withdrawn → enforcement suppressed, honest-unknown throughout) against
+  the four ported fixtures + real CO SB205 data; a11y: keyboard-complete
+  disclosures, no color-only encoding, contrast ≥ 4.5:1, 200%-zoom reflow. *(FE, BE)*
+
+### Phase LC-3 — Field-level editing & validation (M/L) — MVP completes here
+- 🔒 **LC-3a** *(after LC-2)* — `partials/lc_field_editor.html`: widget per
+  field_catalog (vocab selects w/ unknown → vocab-review enqueue, date input w/
+  normalize-on-blur, number+unit, textarea; nested timeline/enforcement as
+  grouped sub-forms — NO raw JSON for cataloged fields). HTMX flows: Check
+  (dry-run → inline plain-language messages), Save (required reason, edited
+  chip, view-original/revert), numeric-vs-span warning shows the quote. *(FE, NLP)*
+- 🔒 **LC-3b** — editor identity + safety: reviewer-name session (D-6), CSRF on
+  all mutating routes, optimistic-lock conflict UX ("someone else changed
+  this…"), unsaved-edit navigation guard. `review.html` gains an "edited"
+  filter; approval of an edited extraction records it covers the edited state.
+  *(BE)*
+- 🔒 **LC-3c** — acceptance gate: a non-specialist corrects a penalty amount, a
+  date, a modality, and a nested enforcement field on real data using only
+  on-screen guidance; originals recoverable; audit trail carries identity.
+  Validation-message copy externally read-through. *(RPR/operator, FE)*
+
+### Phase LC-4 — Phased-run comparison & change visualization (M/L; 🔒 gated on D-1)
+- 🔒 **LC-4a** — retention refactor: full runs stop purging; serving-run scoping
+  on dashboard stats / review / concepts / sync; `prune_runs(keep=3)`; behind
+  `multi_run_retention` flag with pre/post count-audit script (highest-risk
+  change in the plan — flips the "all rows are current" invariant). Finishes
+  Run-1 1b's deferred query refactor. *(BE, DevOps, operator)*
+- 🔒 **LC-4b** — `src/core/run_comparison.py`: cross-run extraction matching
+  (type + canonicalized material fields; reuse `_payload_hash` canonicalization
+  + QA-4 similarity) → added/removed/changed with field-level deltas; compares
+  BASE payloads, edits overlaid as a separate annotation (model-change vs
+  human-edit never conflated); match confidence surfaced, not overclaimed
+  ("possibly the same requirement, reworded"). Adversarial tests: split 1→2,
+  merged 2→1, reworded, retagged. *(NLP, BE)*
+- 🔒 **LC-4c** — edit carry-forward (D-5) on run finalize: payload_hash match →
+  carry edits to new row; changed → status=orphaned + review item ("law text
+  changed — re-apply?"). Never silent-drop, never silent-apply. *(BE)*
+- 🔒 **LC-4d** — Runs tab UI: run picker (date, model summary, serving badge),
+  per-law change summary, `partials/lc_diff_row.html` in three states (icon +
+  text + color, never color-only), "only changes" default, side-by-side values
+  stacking at narrow widths. *(FE)*
+
+### Phase LC-5 — Accessibility & non-specialist usability hardening (M)
+- 🔒 **LC-5a** *(after LC-2/3)* — full WCAG 2.2 AA manual audit (keyboard, screen
+  reader, zoom/reflow, contrast) with recorded checklist + fix list; `aria-live`
+  validation announcements, focus-to-first-error, `prefers-reduced-motion` /
+  color-scheme resolution per LC-0c. *(FE, operator)*
+- 🔒 **LC-5b** — glossary layer from field_catalog (every specialist term gets a
+  hover/expand definition; "What am I looking at?" panel per tab); plain-language
+  pass over every label/help/error/empty state with external read-through; undo
+  toast after apply (calls revert). *(FE, RPR)*
+
+### Phase LC-6 — Testing, migration, rollout, monitoring (M)
+- 🔒 **LC-6a** *(MVP rollout after LC-3)* — `src/scripts/backfill_law_cards.py`
+  (idempotent `law_card_states` for serving run, all 232 laws); flag-on bake
+  period with the analyst doing real review work in LC UI (≥3 laws end-to-end);
+  legacy review edit form redirected to LC editor; then default-on. *(BE, operator)*
+- 🔒 **LC-6b** — monitoring: edits/day, validation-failure rate by field (rising
+  rate on one field = catalog or model problem), orphaned-edit count per run,
+  card-assembly latency, lock conflicts — existing dashboard-stats pattern +
+  `run_summary.json` where run-coupled. Data-integrity sweeps in CI: no
+  `effective_payload` without applied edits, no applied edit without overlay,
+  every edit resolvable to a law via canonical_key. *(BE, DevOps)*
+- 🔒 **LC-6c** — docs: analyst guide (non-specialist voice), operator runbook
+  (retention/prune/backfill), `architecture.md` section. *(BE)*
+
+**Sequencing & MVP boundary:** LC-0 → LC-1 → LC-2 → LC-3 = **MVP** (every law
+browsable + editable with validation/identity/audit/revert, serving run only) →
+LC-6a rollout → LC-4 (comparison; needs D-1 + an operator run under retention) →
+LC-5 polish → LC-6 full. **LC-1 is worth shipping even if the UI slips** — it
+fixes the active G-1 destructive-edit defect. Deferred past MVP: run comparison,
+bill-level editing (waits on EA5-1/EAR-2-3 per-field spans), triage-engine port,
+role-based filtering, concept-layer cards, full authn/z (Run-1 6a).
+**Coordination:** don't duplicate EAR-0-4 (provenance stamps) or EAR-5-1 (vocab
+aliases) — the card consumes both when they land; `dashboard.py` is never grown
+(split remains deferred); P3 tier-only sync gate is why D-4's
+`edited_by_analyst` provenance stamp is non-optional.
+
+---
+
 ## Repository Cleanup Plan (RC) — from 2026-07-03 audit report
 
 > Source: external cleanup-audit report (backups, archived code, docs sprawl,
