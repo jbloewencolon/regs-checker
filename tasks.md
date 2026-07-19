@@ -1713,18 +1713,68 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   EA0/EA2/SFH-1): 53 new tests, full suite 1526/1526 passing;
   `ruff check --select E9,F` clean on every touched file.
 
-### Phase NIM-1 — Client-side pacing (sandbox code; operator-verified)
-- ⏳ **NIM-1a** — shared per-model sliding-window rate limiter in the provider layer,
-  config-driven (`REGS_NVIDIA_RPM_LIMIT`, default ~35 for headroom, 0 = disabled),
-  process-wide **below** the ThreadPoolExecutor fan-out and `triage_concurrency` so
-  concurrency can't silently defeat pacing. Distinct control from
-  `max_concurrent_agents_per_model` (concurrency ≠ rate; both stay). Purpose per the
-  live evidence: enables safely *raising* parallelism toward the cap. *(BE)*
-- ⏳ **NIM-1b** — pacing-wait visibility: record time-spent-waiting-on-limiter per
-  model into NIM-0a telemetry so pacing's throughput cost is a number, not a vibe. *(BE)*
+### Phase NIM-1 — Client-side pacing (sandbox code; operator-verified) ✅ LANDED 2026-07-19
+- ✅ **NIM-1a** — new `src/core/llm_rate_limiter.py`: `RateLimiter`, a
+  process-wide, per-model sliding-window limiter. `acquire(model, cap_rpm,
+  sleep_fn)` blocks (if needed) until one more request for that model fits
+  under `cap_rpm` in the trailing 60s window, then **atomically reserves
+  the slot** before returning — the reservation happens inside the same
+  lock acquisition as the capacity check, so concurrent callers can't all
+  pass a check before any of them records a request (the standard
+  check-then-act race a naive limiter would have). Config-driven via new
+  `settings.nvidia_rpm_limit` (default `35.0`; `<= 0` disables pacing
+  entirely, e.g. for a controlled benchmark). Wired into
+  `NvidiaLLMProvider.call()`'s retry loop, called before **every** attempt
+  (including retries, since each is a real HTTP request against the
+  account's budget) — passes the existing `_sleep_cancellable` closure as
+  `sleep_fn` so a pacing wait is interrupted within ~0.5s of a cancelled
+  run, the same guarantee backoff waits already had. Reset alongside
+  `ExtractionMonitor.start_run()` (own singleton/lock, kept independent of
+  `LLMRateTelemetry`'s). Deliberately a **separate** deque from NIM-0a's
+  telemetry — not merged — so NIM-0a's shipped "no behavior change,
+  observability only" contract stays true; enforcement is opt-in-only via
+  this new module. 8 unit tests on the limiter directly (reservation
+  semantics, per-model independence, reset, disable-at-zero, a 20-thread
+  concurrency test using a short *real* window + real `time.sleep` rather
+  than a mocked clock — a no-op sleep with unmocked `time.time()` would
+  have spun for up to 60s waiting for the window to age out) + 4 tests
+  against the real `NvidiaLLMProvider.call()` (consults the limiter with
+  the configured model/cap, disabled-at-zero never sleeps, cancellation
+  during a pacing wait propagates `OperationCancelled`). *(BE)*
+- ✅ **NIM-1b** — `pacing_wait_seconds_total` added to
+  `llm_rate_telemetry.py`'s per-model stats + `record_pacing_wait()`;
+  `NvidiaLLMProvider.call()` feeds the limiter's returned wait time into it
+  whenever `> 0`. Surfaced in both the live dashboard table (NIM-visibility
+  item below) and the persisted `llm_throttle_telemetry` block — pacing's
+  throughput cost is now a measured number per model, not a guess. 3 new
+  tests (accumulation, zero/negative no-op, per-model independence). *(BE)*
+- ✅ **NIM-visibility** *(found while landing NIM-1; not in the original
+  plan text)* — `get_extraction_monitor()`'s dashboard fragment
+  (`src/api/routes/dashboard.py`, the "Live Extraction Monitor" HTML the
+  2026-07-19 screenshot came from) rendered `HealthSnapshot.to_dict()` by
+  hand-picking specific keys — meaning NIM-0a's `llm_rate_telemetry` and
+  NIM-0d's `duplicate_warnings_suppressed` existed in the snapshot dict but
+  were **never rendered anywhere an operator could see them**; all this
+  session's new telemetry would have been invisible on the very next live
+  run. Added: a new "LLM Rate Telemetry (per model)" table (requests, RPM
+  current/peak against the configured cap — color-graded green/amber/red
+  by proximity to the cap, or "N (pacing off)" when `nvidia_rpm_limit<=0`,
+  tokens, 429 seen/exhausted, cumulative pacing wait) placed between Agent
+  Performance and Issues; a "N duplicate warnings collapsed" info badge in
+  the Issues row so a low Warnings count doesn't misread as "few problems"
+  when many were actually deduped. `get_extraction_monitor()` has no
+  FastAPI dependencies, so tests call it directly (no test client needed) —
+  8 new tests in `test_dashboard_extraction_monitor.py` (this route had
+  **zero** test coverage before this session, a gap this closes alongside
+  the feature). Manually rendered the fragment against live-run-shaped data
+  to confirm well-formed HTML (screenshot-equivalent verification — no
+  browser in this sandbox per CLAUDE.md). *(BE, FE)*
 - Note: pacing/concurrency changes alter timing, not model/prompt/inputs — they do
   **not** invalidate the EA1-3 quality baseline (step-back amendment #1 gates
   *behavior* changes, and these aren't).
+- All landed as pure code/config, no live LLM required: 23 new tests, full
+  suite 1549/1549 passing; `ruff check --select E9,F` clean on every
+  touched file.
 
 ### Phase NIM-2 — Load-shape decision 🔒 (gated on NIM-0 telemetry from a real run)
 - 🔒 **NIM-2a** — operator runs an extraction batch with NIM-0/1 in place; telemetry

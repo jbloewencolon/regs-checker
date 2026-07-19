@@ -247,12 +247,15 @@ class ExtractionMonitor:
             self._dedup_seen_counts = {}
             self._duplicate_warnings_suppressed = 0
 
-        # NIM-0a: per-model request/429/token telemetry is a separate
-        # singleton (llm_provider.py's chokepoint writes to it directly,
-        # independent of agent-level stats above) — reset it alongside so a
-        # new run's rate-limit picture isn't polluted by a prior run's.
+        # NIM-0a/1a: the per-model telemetry and rate limiter are separate
+        # singletons (llm_provider.py's chokepoint writes to them directly,
+        # independent of agent-level stats above) — reset both alongside so
+        # a new run's rate-limit picture and pacing state aren't shaped by
+        # a prior run's request history.
+        from src.core.llm_rate_limiter import get_rate_limiter
         from src.core.llm_rate_telemetry import get_llm_rate_telemetry
         get_llm_rate_telemetry().reset_all()
+        get_rate_limiter().reset_all()
 
         self.emit(
             EventCategory.run_start,

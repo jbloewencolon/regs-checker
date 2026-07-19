@@ -377,6 +377,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = ""
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         with pytest.raises(ValueError, match="NVIDIA_API_KEY is not set"):
             NvidiaLLMProvider()
 
@@ -385,6 +386,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test-key"
         mock_settings.nvidia_base_url = ""
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         with pytest.raises(ValueError, match="REGS_NVIDIA_BASE_URL"):
             NvidiaLLMProvider()
 
@@ -393,6 +395,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         provider = NvidiaLLMProvider()
         assert provider.model_id == "openai-gpt-oss-120b-nvidia"
         assert "local" not in provider.model_id
@@ -437,6 +440,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"content": '{"a": 1}'}, "finish_reason": "stop"}]},
@@ -457,6 +461,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-secret-key"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"content": "hello"}, "finish_reason": "stop"}]},
@@ -475,6 +480,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"content": '{"extracted": true}'}, "finish_reason": "stop"}]},
@@ -498,6 +504,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]},
@@ -516,6 +523,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {}, "finish_reason": "length"}]},
@@ -532,6 +540,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-bad-key"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         response = self._FakeResponse(401, [], body_text="Unauthorized")
 
@@ -545,6 +554,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 5
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -570,6 +580,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 5
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -595,6 +606,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 0  # exhaust immediately
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -613,6 +625,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 0
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -632,6 +645,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"reasoning_content": "Let me think through this..."}, "finish_reason": None}]},
@@ -651,6 +665,7 @@ class TestNvidiaLLMProvider:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
 
         chunks = self._sse_lines(
             {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]},

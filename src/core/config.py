@@ -132,6 +132,17 @@ class Settings(BaseSettings):
     # throttled together don't all retry in the same instant.
     nvidia_retry_jitter_fraction: float = 0.25
 
+    # NIM-1a — client-side requests-per-minute cap, enforced by
+    # src/core/llm_rate_limiter.py before every NVIDIA call attempt (shared
+    # across threads, per model). The 2026-07-19 live-run evidence showed
+    # the pipeline using only ~2.4 calls/min of a reported ~40 RPM/model
+    # cap — this isn't a defense against current throttling, it's the
+    # guardrail that lets concurrency be raised into that unused headroom
+    # without reproducing the throttling problem faster. Default leaves
+    # headroom under the reported cap; set to 0 to disable pacing entirely
+    # (e.g. for a controlled benchmark).
+    nvidia_rpm_limit: float = 35.0
+
     model_config = {"env_prefix": "REGS_", "env_file": ".env", "extra": "ignore"}
 
 

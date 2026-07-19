@@ -3105,6 +3105,58 @@ def get_extraction_monitor() -> HTMLResponse:
         </div>
         """
 
+    # --- NIM-0a/1b: LLM rate telemetry (per-model RPM, 429s, pacing) ---
+    # NVIDIA exposes no balance or usage API, so this is the run's own record
+    # of how close it is to its rate-limit ceiling — the number that answers
+    # "are we about to 429" instead of guessing from a credits figure that
+    # doesn't exist. Only rendered once at least one LLM call has landed.
+    rate_telemetry_html = ""
+    if d.get("llm_rate_telemetry"):
+        from src.core.config import settings as _settings
+
+        rpm_cap = _settings.nvidia_rpm_limit
+        rate_rows = ""
+        for model, stats in sorted(d["llm_rate_telemetry"].items()):
+            rpm_current = stats["rpm_current"]
+            if rpm_cap > 0:
+                rpm_pct = rpm_current / rpm_cap
+                rpm_color = (
+                    "var(--success)" if rpm_pct < 0.7
+                    else "var(--warning)" if rpm_pct < 1.0
+                    else "var(--danger)"
+                )
+                rpm_label = f"{rpm_current:g} / {rpm_cap:g}"
+            else:
+                rpm_color = "var(--text-muted)"
+                rpm_label = f"{rpm_current:g} (pacing off)"
+            exhausted = stats["rate_limited_exhausted"]
+            exhausted_color = "var(--danger)" if exhausted > 0 else "var(--text-muted)"
+            pacing_wait = stats.get("pacing_wait_seconds_total", 0.0)
+            rate_rows += f"""
+            <tr>
+              <td><code>{html_escape(model)}</code></td>
+              <td>{stats['requests_total']}</td>
+              <td style="color:{rpm_color};">{rpm_label}</td>
+              <td>{stats['rpm_peak']:g}</td>
+              <td>{stats['tokens_total']:,}</td>
+              <td>{stats['rate_limited_seen']}</td>
+              <td style="color:{exhausted_color};">{exhausted}</td>
+              <td>{pacing_wait:.1f}s</td>
+            </tr>
+            """
+        rate_telemetry_html = f"""
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;">LLM Rate Telemetry (per model)</div>
+          <table class="data-table" style="font-size:12px;">
+            <thead><tr>
+              <th>Model</th><th>Requests</th><th>RPM (cur/cap)</th><th>RPM Peak</th>
+              <th>Tokens</th><th>429 Seen</th><th>429 Exhausted</th><th>Pacing Wait</th>
+            </tr></thead>
+            <tbody>{rate_rows}</tbody>
+          </table>
+        </div>
+        """
+
     # --- Issue summary badges ---
     issue_badges = ""
     if d["criticals"] > 0:
@@ -3113,6 +3165,16 @@ def get_extraction_monitor() -> HTMLResponse:
         issue_badges += f'<span class="badge badge-warning">{d["errors_count"]} Errors</span> '
     if d["warnings"] > 0:
         issue_badges += f'<span class="badge badge-info">{d["warnings"]} Warnings</span> '
+    # NIM-0d: repeated tier-D/truncation feed lines for the same
+    # (agent, record) are collapsed to one — shown so a low Warnings count
+    # doesn't read as "few problems" when many were actually deduped.
+    dup_suppressed = d.get("duplicate_warnings_suppressed", 0)
+    if dup_suppressed > 0:
+        issue_badges += (
+            f'<span class="badge badge-info" title="Repeated warnings for the same '
+            f'agent+record collapsed to one feed line each">'
+            f'{dup_suppressed} duplicate warnings collapsed</span> '
+        )
     if not issue_badges:
         issue_badges = '<span style="color:var(--success);font-size:12px;">No issues detected</span>'
 
@@ -3172,7 +3234,7 @@ def get_extraction_monitor() -> HTMLResponse:
         )
 
     return HTMLResponse(
-        f"{gauges_html}{doc_html}{conf_html}{agent_html}{issue_html}{feed_html}"
+        f"{gauges_html}{doc_html}{conf_html}{agent_html}{rate_telemetry_html}{issue_html}{feed_html}"
     )
 
 

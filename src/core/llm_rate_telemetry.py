@@ -33,6 +33,9 @@ class ModelRateStats:
     rate_limited_seen: int = 0
     rate_limited_recovered: int = 0
     rate_limited_exhausted: int = 0
+    # NIM-1b: cumulative seconds spent blocked on the NIM-1a rate limiter —
+    # makes pacing's throughput cost a measured number instead of a guess.
+    pacing_wait_seconds_total: float = 0.0
     recent_request_times: deque = field(default_factory=lambda: deque(maxlen=5000))
 
 
@@ -86,6 +89,15 @@ class LLMRateTelemetry:
         with self._lock:
             self._stats_for(model).rate_limited_exhausted += 1
 
+    def record_pacing_wait(self, model: str, seconds: float) -> None:
+        """NIM-1b: accumulate time spent blocked on the NIM-1a rate limiter
+        for this model. Callers should only call this for wait > 0 (no need
+        to record a zero wait), though a zero is harmless either way."""
+        if seconds <= 0:
+            return
+        with self._lock:
+            self._stats_for(model).pacing_wait_seconds_total += seconds
+
     def _rpm_locked(self, stats: ModelRateStats, now: float) -> float:
         """Caller must hold self._lock. Prunes timestamps older than the
         rolling window and returns the current trailing-window rate,
@@ -110,6 +122,7 @@ class LLMRateTelemetry:
                     "rate_limited_seen": stats.rate_limited_seen,
                     "rate_limited_recovered": stats.rate_limited_recovered,
                     "rate_limited_exhausted": stats.rate_limited_exhausted,
+                    "pacing_wait_seconds_total": round(stats.pacing_wait_seconds_total, 2),
                 }
             return out
 

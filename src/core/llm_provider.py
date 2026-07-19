@@ -638,9 +638,11 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 time.sleep(min(step, seconds - elapsed))
                 elapsed += step
 
+        from src.core.llm_rate_limiter import get_rate_limiter
         from src.core.llm_rate_telemetry import get_llm_rate_telemetry
 
         telemetry = get_llm_rate_telemetry()
+        rate_limiter = get_rate_limiter()
         was_rate_limited_this_call = False
 
         _max_retries = settings.nvidia_max_retries
@@ -649,6 +651,17 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 raise OperationCancelled("Extraction cancelled by operator.")
 
             try:
+                # NIM-1a: block here (not just react to a 429 afterward) if
+                # this model is already at its configured RPM cap — the
+                # guardrail that lets concurrency be raised into the
+                # headroom NIM-0a's telemetry measures, without reproducing
+                # the throttling problem faster. A cancellable sleep so a
+                # cancelled run doesn't sit through a full pacing wait.
+                pacing_wait_s = rate_limiter.acquire(
+                    effective_model, settings.nvidia_rpm_limit, sleep_fn=_sleep_cancellable,
+                )
+                if pacing_wait_s > 0:
+                    telemetry.record_pacing_wait(effective_model, pacing_wait_s)
                 telemetry.record_request(effective_model)
                 result = self._stream_chat_completion(
                     payload, headers, timeout, effective_model,

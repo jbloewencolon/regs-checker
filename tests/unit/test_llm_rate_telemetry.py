@@ -78,6 +78,31 @@ class TestLLMRateTelemetryBasics:
         t.reset_all()
         assert t.snapshot() == {}
 
+    def test_pacing_wait_accumulates(self):
+        """NIM-1b: cumulative time spent blocked on the NIM-1a rate limiter,
+        so pacing's throughput cost is a measured number."""
+        t = self._make()
+        model = "openai/gpt-oss-120b"
+        t.record_pacing_wait(model, 2.5)
+        t.record_pacing_wait(model, 1.25)
+        assert t.snapshot()[model]["pacing_wait_seconds_total"] == 3.75
+
+    def test_zero_or_negative_pacing_wait_not_recorded(self):
+        t = self._make()
+        model = "openai/gpt-oss-120b"
+        t.record_pacing_wait(model, 0.0)
+        t.record_pacing_wait(model, -1.0)
+        # No model entry should even be created for a no-op wait.
+        assert t.snapshot() == {}
+
+    def test_pacing_wait_independent_per_model(self):
+        t = self._make()
+        t.record_pacing_wait("openai/gpt-oss-120b", 5.0)
+        t.record_pacing_wait("meta/llama-3.1-8b-instruct", 1.0)
+        snap = t.snapshot()
+        assert snap["openai/gpt-oss-120b"]["pacing_wait_seconds_total"] == 5.0
+        assert snap["meta/llama-3.1-8b-instruct"]["pacing_wait_seconds_total"] == 1.0
+
     def test_rpm_current_reflects_rolling_window(self):
         t = self._make()
         model = "openai/gpt-oss-120b"
@@ -159,6 +184,7 @@ class TestNvidiaProviderWritesTelemetry:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 5
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -185,6 +211,7 @@ class TestNvidiaProviderWritesTelemetry:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 5
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
@@ -214,6 +241,7 @@ class TestNvidiaProviderWritesTelemetry:
         mock_settings.nvidia_api_key = "nvapi-test"
         mock_settings.nvidia_base_url = "https://integrate.api.nvidia.com/v1"
         mock_settings.nvidia_extraction_model = "openai/gpt-oss-120b"
+        mock_settings.nvidia_rpm_limit = 0  # NIM-1a: pacing disabled unless a test opts in
         mock_settings.nvidia_max_retries = 0  # exhaust on first 429
         mock_settings.nvidia_retry_backoff_cap_seconds = 30.0
         mock_settings.nvidia_retry_jitter_fraction = 0.25
