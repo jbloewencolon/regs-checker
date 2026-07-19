@@ -19,7 +19,7 @@ from sqlalchemy import func, select, text
 from starlette.templating import Jinja2Templates
 
 from src.api.middleware.auth import verify_api_key
-from src.api.routes import dashboard, internal, v1
+from src.api.routes import dashboard, internal, law_card_api, v1
 from src.core.config import settings
 from src.db.engine import SessionLocal
 
@@ -122,6 +122,9 @@ app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 # Mount route groups
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(internal.router, prefix="/internal", tags=["Internal Review"])
+# LC-1d: Law Card JSON API — a new module, not folded into dashboard.py
+# (that file is deliberately never grown further; see docs/law_card_dashboard_plan.md).
+app.include_router(law_card_api.router, tags=["Law Cards"])
 app.include_router(
     v1.router,
     prefix="/v1",
