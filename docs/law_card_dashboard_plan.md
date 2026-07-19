@@ -701,6 +701,49 @@ character diffs (legal prose diffs read poorly inline at non-specialist level).
 
 ---
 
+## Part 4a — LC-0d spike findings (2026-07-19, implementation session)
+
+Hand-assembled CO SB205's card JSON from real committed data — `data/fact_laws.csv`
+row 48 + 11 `tests/fixtures/gold_standard/co_sb205_*.json` fixtures (real extracted
+obligation/definition/threshold_exception/enforcement payloads) — since no live
+Postgres is reachable in this sandbox. 12 extraction entries assembled (6
+obligation, 4 definition, 2 threshold_exception) across all 11 CO SB205 gold
+fixtures. Confirms the §3.2 card-JSON contract is assemblable from real data
+shapes; three concrete findings feed directly into LC-1c:
+
+1. **`status_id` is blank for real, in-force laws** — confirmed via `csv.DictReader`
+   on the actual row (an initial eyeballed `grep` misread the row because
+   `key_requirements_raw` contains embedded commas inside quotes — a reminder that
+   `law_card_assembler.py` must never hand-parse this CSV; it reads the DB's typed
+   columns). CO SB205's `status_id` is empty, `effective_date` is populated. This
+   is exactly the gap the bundle's own `isEnacted()` heuristic
+   (`LawCard.jsx:76-84`) was built for: "the snapshot leaves status blank for most
+   in-force laws... treat those as enacted [when they carry] an effective date."
+   **Action for LC-1c:** port this inference (blank/missing status + effective
+   date present → treat as enacted) rather than trusting a raw status column
+   alone — directly informs how `DocumentVersion.temporal_status` should be
+   read for the card's status chip (Design Rule 5).
+2. **`iapp_scope`/`iapp_section` are separate, populated fields** (`"D"` /
+   `"LAWS SIGNED"` for this law) not previously highlighted in §3.2's law object
+   sketch — confirms these belong in the card's tracker-status surface alongside
+   `orrick_source` (already in `_build_context()`), not folded into a generic
+   metadata blob.
+3. **The clause-level "obligation with an embedded enforcement sub-object" shape
+   (`co_sb205_sec7_enforcement.json`) is structurally distinct from the
+   bill-level `enforcement_agent`'s payload shape.** The gold fixtures only
+   cover the former. This confirms §3.4's design choice — clause-level and
+   bill-level enforcement are genuinely separate data paths in the card, not one
+   filtered over the other — and sharpens why EAR-2-2 (clause/bill enforcement
+   separation) matters: a card naively merging "any extraction with an
+   `enforcement` field" would conflate a single clause's local enforcement
+   mention with the bill-level agent's authoritative rollup.
+
+No live-DB fields (confidence tier/score, review status, run id, evidence_spans)
+could be validated this way — those remain to be confirmed against real
+`Extraction` rows by the operator once LC-1c's assembler runs against Postgres.
+Spike script and output were throwaway (`/tmp/lc0d_spike.py`,
+`/tmp/lc0d_co_sb205_card.json`) per the plan; not committed.
+
 ## Part 5 — Final Recommendation
 
 **Implementation sequence:** LC-0 → LC-1 → LC-2 → LC-3 (**MVP**) → LC-6-lite

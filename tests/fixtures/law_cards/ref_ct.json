@@ -1,0 +1,199 @@
+{
+  "id": 61,
+  "identifier": "SB 2",
+  "canonical_law_id": "US-CT-SB2",
+  "name": "Connecticut Artificial Intelligence Act — SB 2",
+  "title": "Connecticut Artificial Intelligence Act — SB 2",
+  "level": "state",
+  "jurisdiction": "Connecticut",
+  "stateCode": "CT",
+  "status": "effective",
+  "priority": "P1",
+  "is_stub": false,
+  "relevance_score": 7,
+  "government_only": false,
+  "effectiveDate": null,
+  "enforcementNote": "Attorney General; penalty structure TBD; no private right of action specified",
+  "coveredEntities": [
+    "deployer",
+    "developer"
+  ],
+  "domainTags": [
+    "automated_decisioning",
+    "generative_ai",
+    "synthetic_media"
+  ],
+  "description": "Comprehensive AI governance law covering high-risk AI systems. Imposes obligations on developers, deployers, and providers including risk management, impact assessment, training, transparency, and consumer rights.",
+  "fullSummary": "Large omnibus AI bill covering automated decision-making, generative AI, and synthetic media. Requires governance programs, impact assessments, staff training, responsible individual designation, consumer notice and labeling, developer risk disclosure, consumer appeal rights. Provider obligations include responsible individual designation and labeling.",
+  "sourceUrl": null,
+  "obligations": [
+    {
+      "id": 648,
+      "type": "risk_management",
+      "requirement_type": "risk_management",
+      "description": "Governance Program",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 649,
+      "type": "risk_management",
+      "requirement_type": "risk_management",
+      "description": "[analyst_curated] Developer must implement risk-management program for high-risk AI systems. Large omnibus AI bill.",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 650,
+      "type": "assessment",
+      "requirement_type": "assessment",
+      "description": "[analyst_curated] Deployer must complete impact assessment and maintain governance records for high-risk AI",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 651,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 652,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 653,
+      "type": "human_oversight",
+      "requirement_type": "human_oversight",
+      "description": "Responsible Individual",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 654,
+      "type": "human_oversight",
+      "requirement_type": "human_oversight",
+      "description": "Responsible Individual",
+      "actorRole": "provider",
+      "actorTags": [
+        "provider"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 655,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "General Notice",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 656,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "Labeling/Notification",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 657,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "Labeling/Notification",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 658,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "Labeling/Notification",
+      "actorRole": "provider",
+      "actorTags": [
+        "provider"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 873,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "[analyst_curated] Developer must disclose material risk information to deployers/regulator promptly after discovery",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 874,
+      "type": "opt_out",
+      "requirement_type": "opt_out",
+      "description": "[analyst_curated] Deployer must provide notice and means for review, contest, appeal, or human oversight",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    },
+    {
+      "id": 875,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "[analyst_curated] Government agency must issue public reports, inventories, or governance standards for agency AI use on recurring schedule",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 61
+    }
+  ]
+}

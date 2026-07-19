@@ -1,0 +1,161 @@
+{
+  "id": 167,
+  "identifier": "HB 60",
+  "canonical_law_id": "US-NM-HB60",
+  "name": "New Mexico Artificial Intelligence Act — HB 60 (2025)",
+  "title": "New Mexico Artificial Intelligence Act — HB 60 (2025)",
+  "level": "state",
+  "jurisdiction": "New Mexico",
+  "stateCode": "NM",
+  "status": "withdrawn",
+  "priority": "P2",
+  "is_stub": false,
+  "relevance_score": 4,
+  "government_only": false,
+  "effectiveDate": null,
+  "enforcementNote": "Attorney General; penalty structure TBD; no private right of action specified",
+  "coveredEntities": [
+    "deployer",
+    "developer"
+  ],
+  "domainTags": [
+    "automated_decisioning"
+  ],
+  "description": "Comprehensive AI governance: governance program, assessments, training, transparency, responsible individual — private sector deployers and developers. Bill died in House Judiciary Committee Feb 25, 2025.",
+  "fullSummary": "AI disclosure in covered interactions; documentation; explanation on request",
+  "sourceUrl": "https://www.nmlegis.gov/Legislation/Legislation?chamber=H&legtype=B&legno=60&year=25",
+  "obligations": [
+    {
+      "id": 779,
+      "type": "risk_management",
+      "requirement_type": "risk_management",
+      "description": "Governance Program",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 780,
+      "type": "assessment",
+      "requirement_type": "assessment",
+      "description": "Assessments",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 781,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 782,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 783,
+      "type": "human_oversight",
+      "requirement_type": "human_oversight",
+      "description": "Responsible Individual",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 784,
+      "type": "human_oversight",
+      "requirement_type": "human_oversight",
+      "description": "Responsible Individual",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 785,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "General Notice",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 786,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "General Notice",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 787,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "Labeling/Notification",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 788,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "Explanation/Incident Reporting",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    },
+    {
+      "id": 789,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "Explanation/Incident Reporting",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 167
+    }
+  ]
+}
