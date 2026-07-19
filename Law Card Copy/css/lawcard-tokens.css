@@ -1,0 +1,156 @@
+/* ─── LawCard design tokens (Direction A v2 — paced disclosure) ───────────── */
+:root {
+  --lc-ink-900: #1a1714;
+  --lc-ink-800: #2a2520;
+  --lc-ink-700: #3d362f;
+  --lc-ink-600: #5a5048;
+  --lc-ink-500: #7a6f66;
+  --lc-ink-400: #9c9189;
+  --lc-ink-300: #c4bbb3;
+  --lc-ink-200: #e3ddd6;
+  --lc-ink-150: #ece6df;
+  --lc-ink-100: #f3efea;
+  --lc-ink-50:  #faf8f5;
+  --lc-paper:   #fdfbf7;
+
+  --lc-signal:        oklch(0.55 0.16 28);
+  --lc-signal-bg:     oklch(0.96 0.025 28);
+  --lc-signal-border: oklch(0.85 0.06 28);
+
+  --lc-match:         oklch(0.50 0.10 200);
+  --lc-match-bg:      oklch(0.96 0.02 200);
+  --lc-match-border:  oklch(0.85 0.04 200);
+
+  --lc-p0: oklch(0.50 0.16 28);
+  --lc-p1: oklch(0.60 0.13 50);
+  --lc-p2: oklch(0.70 0.10 80);
+  --lc-p3: oklch(0.65 0.02 80);
+
+  --lc-font-serif: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+}
+
+.lc-card {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.lc-card * {
+  box-sizing: border-box;
+}
+.lc-serif {
+  font-family: var(--lc-font-serif);
+  letter-spacing: -0.01em;
+}
+.lc-meta {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lc-ink-500);
+}
+.lc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--lc-ink-100);
+  color: var(--lc-ink-700);
+  border: 1px solid var(--lc-ink-200);
+  white-space: nowrap;
+}
+.lc-status {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: transparent;
+  color: var(--lc-ink-600);
+  border: 1px solid var(--lc-ink-200);
+}
+.lc-status[data-s="enacted"],
+.lc-status[data-s="effective"]  { color: oklch(0.45 0.10 145); border-color: oklch(0.85 0.05 145); background: oklch(0.97 0.02 145); }
+.lc-status[data-s="introduced"] { color: var(--lc-ink-500); border-color: var(--lc-ink-200); background: var(--lc-ink-100); }
+.lc-status[data-s="withdrawn"]  { color: var(--lc-ink-500); text-decoration: line-through; text-decoration-color: var(--lc-ink-300); }
+
+.lc-triage-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.lc-triage-dot[data-level="P0"] { background: var(--lc-p0); box-shadow: 0 0 0 4px oklch(0.5 0.16 28 / 0.15); }
+.lc-triage-dot[data-level="P1"] { background: var(--lc-p1); }
+.lc-triage-dot[data-level="P2"] { background: var(--lc-p2); }
+.lc-triage-dot[data-level="P3"] { background: var(--lc-p3); opacity: 0.6; }
+/* Honest-unknown: no priority derived (React omits a null/undefined
+   data-level attribute entirely) — a hollow ring, not a colored fill, so
+   "not yet triaged" never reads as a low-key affirmative tier. */
+.lc-triage-dot:not([data-level]) {
+  background: transparent;
+  border: 1.5px solid var(--lc-ink-300);
+  box-sizing: border-box;
+}
+
+.lc-verified {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px;
+  color: var(--lc-ink-500);
+}
+.lc-verified-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: oklch(0.65 0.13 145);
+}
+
+.lc-btn {
+  appearance: none;
+  border: 1px solid var(--lc-ink-200);
+  background: var(--lc-paper);
+  color: var(--lc-ink-700);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lc-btn:hover { background: var(--lc-ink-100); color: var(--lc-ink-900); }
+
+.lc-other-roles {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--lc-ink-150);
+}
+.lc-other-roles summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--lc-ink-600);
+}
+.lc-other-roles summary::-webkit-details-marker { display: none; }
+.lc-other-roles summary:hover { color: var(--lc-ink-800); }
+.lc-other-roles summary:focus-visible {
+  outline: 2px solid var(--lc-match);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.lc-other-roles-chev { color: var(--lc-ink-400); transition: transform 0.15s; flex-shrink: 0; }
+.lc-other-roles[open] > summary .lc-other-roles-chev { transform: rotate(90deg); }
+.lc-other-roles-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lc-ink-500);
+  margin: 10px 0 2px;
+}
