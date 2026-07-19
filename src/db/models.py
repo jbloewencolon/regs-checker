@@ -387,7 +387,20 @@ class Extraction(Base):
         Integer, ForeignKey("normalized_source_records.id"), nullable=False, index=True
     )
     extraction_type = Column(Enum(ExtractionType), nullable=False, index=True)
+    # LC-1: `payload` is the model's original output and is write-once after
+    # creation (never mutated again — see src/core/edit_service.py). Human
+    # corrections live in ExtractionFieldEdit rows and are materialized here
+    # as an overlay; NULL means "no edits, read `payload`." Every consumer
+    # should read `current_payload` (below), not `payload`, unless it
+    # specifically needs the untouched model output (e.g. re-verification,
+    # audit display of "what the model originally said").
     payload = Column(JSONB, nullable=False)
+    effective_payload = Column(JSONB, nullable=True)
+    human_review_state = Column(String(20), nullable=False, default="unedited")
+    # "unedited" | "edited" | "verified" — LC-1/D-4: never derived from or
+    # blended into confidence_score/confidence_tier. Tier keeps meaning
+    # "model+pipeline confidence"; this tracks human review state as a
+    # separate axis. See docs/law_card_decisions.md D-4.
     evidence_spans = Column(JSONB, nullable=False, default=list)
     confidence_score = Column(Float, nullable=False)
     confidence_tier = Column(Enum(ConfidenceTier), nullable=False)
@@ -412,6 +425,22 @@ class Extraction(Base):
     extraction_job = relationship("ExtractionJob", back_populates="extractions")
     extraction_run = relationship("ExtractionRun", back_populates="extractions")
     review_queue_items = relationship("ReviewQueueItem", back_populates="extraction")
+    field_edits = relationship(
+        "ExtractionFieldEdit", back_populates="extraction",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def current_payload(self) -> dict:
+        """LC-1e: the payload every consumer should read.
+
+        Returns the edit-overlaid `effective_payload` when one exists,
+        otherwise falls back to the untouched model output. Centralizing
+        this here means switching sync/rollup/concept-grouping over to
+        edit-aware reads is a one-line change per call site instead of a
+        payload-shape decision duplicated at each consumer.
+        """
+        return self.effective_payload if self.effective_payload is not None else self.payload
 
     __table_args__ = (
         Index("ix_extractions_type_status", "extraction_type", "review_status"),
@@ -1285,3 +1314,131 @@ class SyncRun(Base):
 # The columns below (session_year, retrieved_at, bill_number, source_hash)
 # were added by migration v8w4x0y2z023.  They live on the existing
 # DocumentVersion model; the model definition is extended by the migration.
+
+
+# ---------------------------------------------------------------------------
+# LC-1 — Law Card data model (editable per-law dashboard cards)
+#
+# See docs/law_card_dashboard_plan.md for the full design and
+# docs/law_card_decisions.md for D-1..D-7. Key invariant (D-3, fixes the
+# pre-existing G-1 destructive-edit defect): Extraction.payload is
+# write-once after creation. A human correction is proposed, validated, and
+# applied as an ExtractionFieldEdit row; the applied overlay is materialized
+# onto Extraction.effective_payload. The base model output is never mutated
+# again — it stays reconstructable for audit at any point in an edit's
+# lifecycle, which the old in-place-mutation edit endpoint did not preserve.
+# ---------------------------------------------------------------------------
+
+
+class FieldEditStatus(str, enum.Enum):
+    proposed = "proposed"      # created, not yet applied (may still be validating)
+    applied = "applied"        # validated and merged into effective_payload
+    reverted = "reverted"      # was applied, then explicitly undone
+    superseded = "superseded"  # a later edit to the same field_path replaced this one
+    orphaned = "orphaned"      # D-5: base payload changed under a new run; needs re-apply decision
+
+
+class ExtractionFieldEdit(Base):
+    """One proposed-or-applied human edit to one field of one extraction.
+
+    `canonical_key` and `extraction_identity` (not just `extraction_id`) let
+    an edit survive a future run that replaces the underlying Extraction row
+    (D-5) — `extraction_id` alone would silently orphan the edit history the
+    moment retention/purge behavior changes. `extraction_identity` is a
+    stable fingerprint of (extraction_type, agent_name, payload_hash at edit
+    time) used to detect whether a new run's base payload for the same law
+    is byte-identical (auto-carry the edit forward) or has changed
+    (orphan the edit, route to review — never silently apply an edit meant
+    for different underlying text).
+
+    `lock_token` implements optimistic concurrency: the editor must send back
+    the extraction's `updated_at` (or a monotonic version stamp) they last
+    saw; a mismatch at apply time means someone else changed the row first.
+    """
+
+    __tablename__ = "extraction_field_edits"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    extraction_id = Column(
+        Integer, ForeignKey("extractions.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    canonical_key = Column(String(200), nullable=False, index=True)
+    # Stable fingerprint: "{extraction_type}:{agent_name}:{payload_hash-at-edit-time}"
+    extraction_identity = Column(String(120), nullable=False)
+
+    # Dotted path, e.g. "enforcement.max_civil_penalty_usd"
+    field_path = Column(String(200), nullable=False)
+    old_value = Column(JSONB, nullable=True)
+    new_value = Column(JSONB, nullable=True)
+    # Required — never an unexplained edit in the audit trail
+    reason = Column(Text, nullable=False)
+
+    status = Column(
+        Enum(FieldEditStatus), nullable=False, default=FieldEditStatus.proposed, index=True,
+    )
+    # Schema/grounding/vocab validation results at validate/apply time
+    validation_report = Column(JSONB, default=dict)
+
+    # D-6: interim free-text identity; full auth stays Run-1 Phase 6a
+    editor = Column(String(200), nullable=False)
+    # extraction.updated_at (or a version stamp) as last seen by the editor
+    lock_token = Column(String(64), nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    applied_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    extraction = relationship("Extraction", back_populates="field_edits")
+
+    __table_args__ = (
+        Index("ix_field_edits_extraction_status", "extraction_id", "status"),
+        Index("ix_field_edits_canonical_key", "canonical_key"),
+        # One non-superseded, non-reverted edit per (extraction, field_path) at
+        # a time — a second proposal for the same field must first supersede
+        # the prior one, so history stays a clean chain rather than an
+        # ambiguous fan-out. Partial index (not a full unique constraint) so
+        # reverted/superseded/orphaned rows for the same field can coexist.
+        Index(
+            "uq_field_edits_active_field",
+            "extraction_id", "field_path",
+            unique=True,
+            postgresql_where=text("status IN ('proposed', 'applied')"),
+        ),
+    )
+
+
+class LawCardState(Base):
+    """Per-(law, run) rollup so the law-card list page doesn't re-assemble
+    every law's full card on every request.
+
+    Keyed on `canonical_key` (DocumentFamily's stable join key, DI-1) rather
+    than `document_family_id` so the rollup identity is stable across the
+    same kind of row-reassignment risk DI-1 was built to fix. `card_cache` is
+    invalidated (set to NULL, not deleted — keeps the row for list-page
+    counts) whenever an edit is applied/reverted or a verification pass
+    updates confidence for any extraction under this law.
+    """
+
+    __tablename__ = "law_card_states"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    canonical_key = Column(String(200), nullable=False, index=True)
+    run_id = Column(Integer, ForeignKey("extraction_runs.id"), nullable=True, index=True)
+
+    extraction_count = Column(Integer, nullable=False, default=0)
+    edited_count = Column(Integer, nullable=False, default=0)
+    tier_counts = Column(JSONB, default=dict)  # {"A": 3, "B": 5, "C": 1, "D": 0}
+
+    human_review_state = Column(String(20), nullable=False, default="none")
+    # "none" | "in_progress" | "complete" — law-level rollup of member
+    # Extraction.human_review_state values, not a separately-tracked field.
+
+    card_cache = Column(JSONB, nullable=True)  # assembled card JSON; NULL = needs (re)assembly
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index(
+            "uq_law_card_states_key_run", "canonical_key", "run_id", unique=True,
+        ),
+    )
