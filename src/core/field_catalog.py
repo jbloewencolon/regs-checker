@@ -787,3 +787,23 @@ def material_fields_for(model_name: str) -> frozenset[str]:
     return frozenset(
         name for name, entry in CATALOG.get(model_name, {}).items() if entry.material
     )
+
+
+def nested_model_name(model_name: str, field_name: str) -> str | None:
+    """Return the catalog model name a NESTED/LIST_NESTED field points to.
+
+    Used by src/core/edit_service.py to resolve a dotted field_path like
+    "enforcement.max_civil_penalty_usd": the leaf ("max_civil_penalty_usd")
+    is looked up against whatever this returns for ("ObligationPayload",
+    "enforcement") — i.e. "EnforcementInfo" — not against the parent model.
+    Returns None if the field isn't NESTED/LIST_NESTED or isn't found.
+    """
+    model = iter_schema_models().get(model_name)
+    if model is None:
+        return None
+    hints = get_type_hints(model)
+    annotation = hints.get(field_name)
+    if annotation is None:
+        return None
+    nested = _unwrap_model(annotation)
+    return nested.__name__ if nested is not None else None
