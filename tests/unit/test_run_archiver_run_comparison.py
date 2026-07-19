@@ -23,6 +23,7 @@ from datetime import datetime
 import pytest
 
 from src.core.extraction_monitor import get_monitor
+from src.core.llm_rate_telemetry import get_llm_rate_telemetry
 from src.core.run_archiver import RunArchiver
 
 
@@ -152,6 +153,30 @@ class TestBuildRunComparisonSummary:
         )
         assert comparison["failures"]["circuit_breaker_tripped"] is True
         assert comparison["failures"]["circuit_breaker_detail"] == "10 consecutive failures"
+
+    def test_llm_throttle_telemetry_block_present(self, tmp_path):
+        """NIM-0a: per-model request-rate/429/token telemetry from the
+        llm_provider.py chokepoint should ride alongside the rest of the
+        comparison summary — populated here via the real telemetry
+        singleton's public API, mirroring how NvidiaLLMProvider.call()
+        actually drives it."""
+        get_llm_rate_telemetry().record_request("openai/gpt-oss-120b")
+        get_llm_rate_telemetry().record_tokens("openai/gpt-oss-120b", input_tokens=100, output_tokens=50)
+        get_llm_rate_telemetry().record_rate_limited("openai/gpt-oss-120b")
+        get_llm_rate_telemetry().record_rate_limited_recovered("openai/gpt-oss-120b")
+
+        archiver = RunArchiver(run_dir=tmp_path, run_type="extract", started_at=datetime.utcnow())
+        comparison = archiver._build_run_comparison_summary(
+            {"total_extractions": 0}, duration_seconds=10.0
+        )
+
+        telemetry = comparison["llm_throttle_telemetry"]
+        assert "openai/gpt-oss-120b" in telemetry
+        model_stats = telemetry["openai/gpt-oss-120b"]
+        assert model_stats["requests_total"] == 1
+        assert model_stats["tokens_total"] == 150
+        assert model_stats["rate_limited_seen"] == 1
+        assert model_stats["rate_limited_recovered"] == 1
 
 
 class TestFinalizeWritesConsistentTimestamps:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from src.ingestion.extractor import _classify_llm_error
+from src.ingestion.extractor import _classify_429_detail, _classify_llm_error
 
 
 class _FakeResponse:
@@ -77,3 +77,35 @@ class TestPrecedence:
         # 429 status but a message that also mentions json — status takes priority
         err = _FakeHTTPError(429, "could not parse json")
         assert _classify_llm_error(err) == "quota_error"
+
+
+class TestClassify429Detail:
+    """NIM-0b: the finer-grained transient-vs-allowance read carried
+    alongside (not instead of) the existing "quota_error" bucket, so
+    dashboard color-coding and the test contract above are unaffected."""
+
+    def test_reads_classification_attribute_when_present(self):
+        err = _FakeHTTPError(429, "rate limited")
+        err.nvidia_429_classification = "rate_limited_transient"
+        assert _classify_429_detail(err) == "rate_limited_transient"
+
+    def test_none_when_attribute_absent(self):
+        # Plain 429 error with no classification attached (e.g. the local
+        # provider, which never goes through NVIDIA's 429 path).
+        err = _FakeHTTPError(429, "rate limited")
+        assert _classify_429_detail(err) is None
+
+    def test_none_for_non_429_error(self):
+        err = _FakeHTTPError(401, "unauthorized")
+        assert _classify_429_detail(err) is None
+
+    def test_none_for_plain_string(self):
+        assert _classify_429_detail("429 too many requests") is None
+
+    def test_does_not_change_quota_error_bucket(self):
+        # The coarse dashboard-facing classification stays "quota_error"
+        # regardless of the finer-grained detail.
+        err = _FakeHTTPError(429, "allowance exhausted")
+        err.nvidia_429_classification = "allowance_exhausted"
+        assert _classify_llm_error(err) == "quota_error"
+        assert _classify_429_detail(err) == "allowance_exhausted"

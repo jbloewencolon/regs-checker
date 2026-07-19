@@ -404,18 +404,97 @@ class LocalLLMProvider(BaseLLMProvider):
 # ---------------------------------------------------------------------------
 
 import json as _json
+import random
+
+# NIM-0b — NVIDIA does not publish a documented 429 body format (per the NIM
+# throughput review), so this is a best-effort keyword read, not an
+# authoritative parse. Rate-limited markers are checked first and a bare
+# "quota" mention is deliberately NOT treated as decisive on its own: RPM
+# throttling is commonly phrased as "queries per minute quota", so that word
+# alone can't distinguish transient throttling from a harder allowance wall.
+_RATE_LIMITED_429_MARKERS = (
+    "per minute", "per second", "per hour", "rpm", "requests per",
+    "too many requests", "retry after", "slow down", "throttle",
+)
+_ALLOWANCE_EXHAUSTED_429_MARKERS = (
+    "credit", "balance", "quota exhausted", "quota depleted",
+    "trial has ended", "trial period has ended", "monthly limit",
+    "plan limit", "no longer available", "exceeded your plan",
+)
+
+
+def _classify_429_body(body: str) -> str:
+    """Classify a 429 body as transient RPM throttling vs. a harder
+    allowance/quota wall vs. genuinely unclear.
+
+    Returns "rate_limited_transient", "allowance_exhausted", or
+    "429_unclassified" — the last is the honest default when the body gives
+    no decisive signal either way, rather than guessing.
+    """
+    if not body:
+        return "429_unclassified"
+    text = body.lower()
+    if any(marker in text for marker in _RATE_LIMITED_429_MARKERS):
+        return "rate_limited_transient"
+    if any(marker in text for marker in _ALLOWANCE_EXHAUSTED_429_MARKERS):
+        return "allowance_exhausted"
+    return "429_unclassified"
+
+
+def _parse_retry_after_seconds(response: Any) -> float | None:
+    """Parse a numeric Retry-After header (seconds) if present and valid.
+
+    NVIDIA does not always send this header (per the NIM throughput review),
+    and the HTTP-date form isn't handled here — an absent or unparseable
+    header just falls back to the jittered exponential backoff below."""
+    raw = response.headers.get("retry-after") if hasattr(response, "headers") else None
+    if not raw:
+        return None
+    try:
+        seconds = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return seconds if seconds > 0 else None
+
+
+def _compute_backoff_seconds(attempt: int, retry_after: float | None = None) -> float:
+    """Exponential backoff with jitter, capped, honoring Retry-After when given.
+
+    A server-supplied Retry-After takes precedence over our own guess (it's
+    the more authoritative signal of when to retry); jitter keeps several
+    agents throttled at the same instant from all retrying in lockstep."""
+    base = retry_after if retry_after is not None else float(2 ** attempt)
+    capped = min(base, settings.nvidia_retry_backoff_cap_seconds)
+    jitter_fraction = settings.nvidia_retry_jitter_fraction
+    jitter = capped * random.uniform(-jitter_fraction, jitter_fraction)
+    return max(0.0, capped + jitter)
 
 
 class _RateLimited(Exception):
     """Internal signal for a 429 response — carries the request/response so
     the retry loop can build the existing HTTPStatusError message on final
     exhaustion, without httpx.stream()'s context manager having already
-    closed the response by the time the retry loop's except clause runs."""
+    closed the response by the time the retry loop's except clause runs.
 
-    def __init__(self, request: Any, response: Any) -> None:
+    Also carries the NIM-0b classification and a short body excerpt, so
+    logs and downstream telemetry can distinguish transient RPM throttling
+    from a harder allowance wall instead of collapsing both into one
+    "quota exhausted" label."""
+
+    def __init__(
+        self,
+        request: Any,
+        response: Any,
+        classification: str = "429_unclassified",
+        body_excerpt: str = "",
+        retry_after_seconds: float | None = None,
+    ) -> None:
         super().__init__("NVIDIA rate limited (429)")
         self.request = request
         self.response = response
+        self.classification = classification
+        self.body_excerpt = body_excerpt
+        self.retry_after_seconds = retry_after_seconds
 
 
 class NvidiaLLMProvider(BaseLLMProvider):
@@ -559,15 +638,39 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 time.sleep(min(step, seconds - elapsed))
                 elapsed += step
 
-        _max_retries = 5
+        from src.core.llm_rate_limiter import get_rate_limiter
+        from src.core.llm_rate_telemetry import get_llm_rate_telemetry
+
+        telemetry = get_llm_rate_telemetry()
+        rate_limiter = get_rate_limiter()
+        was_rate_limited_this_call = False
+
+        _max_retries = settings.nvidia_max_retries
         for attempt in range(_max_retries + 1):
             if is_cancelled():
                 raise OperationCancelled("Extraction cancelled by operator.")
 
             try:
+                # NIM-1a: block here (not just react to a 429 afterward) if
+                # this model is already at its configured RPM cap — the
+                # guardrail that lets concurrency be raised into the
+                # headroom NIM-0a's telemetry measures, without reproducing
+                # the throttling problem faster. A cancellable sleep so a
+                # cancelled run doesn't sit through a full pacing wait.
+                pacing_wait_s = rate_limiter.acquire(
+                    effective_model, settings.nvidia_rpm_limit, sleep_fn=_sleep_cancellable,
+                )
+                if pacing_wait_s > 0:
+                    telemetry.record_pacing_wait(effective_model, pacing_wait_s)
+                telemetry.record_request(effective_model)
                 result = self._stream_chat_completion(
                     payload, headers, timeout, effective_model,
                 )
+                telemetry.record_tokens(
+                    effective_model, result.usage.input_tokens, result.usage.output_tokens,
+                )
+                if was_rate_limited_this_call:
+                    telemetry.record_rate_limited_recovered(effective_model)
                 return result
             except OperationCancelled:
                 raise
@@ -576,14 +679,15 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 # timeout, DNS/connect errors) — including the idle-stall
                 # ReadTimeout above, since httpx.ReadTimeout is itself a
                 # TransportError subclass. These are transient, so retry with
-                # exponential backoff, same as before.
+                # jittered exponential backoff (NIM-0c: jitter keeps several
+                # concurrently-throttled agents from retrying in lockstep).
                 if attempt < _max_retries:
-                    wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
+                    wait_s = _compute_backoff_seconds(attempt)
                     logger.warning(
                         "nvidia_transport_error_retrying",
                         model=effective_model,
                         attempt=attempt + 1,
-                        wait_s=wait_s,
+                        wait_s=round(wait_s, 2),
                         error=str(exc)[:200],
                     )
                     _sleep_cancellable(wait_s)
@@ -595,27 +699,46 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 )
                 raise
             except _RateLimited as exc:
+                was_rate_limited_this_call = True
+                telemetry.record_rate_limited(effective_model)
                 if attempt < _max_retries:
-                    wait_s = 2 ** attempt  # 1 s, 2 s, 4 s, 8 s, 16 s
+                    wait_s = _compute_backoff_seconds(attempt, retry_after=exc.retry_after_seconds)
                     logger.warning(
                         "nvidia_rate_limited_retrying",
                         model=effective_model,
                         attempt=attempt + 1,
-                        wait_s=wait_s,
+                        wait_s=round(wait_s, 2),
+                        classification=exc.classification,
+                        retry_after_honored=exc.retry_after_seconds is not None,
                     )
                     _sleep_cancellable(wait_s)
                     continue
+                # NIM-0b: was "nvidia_quota_exhausted" — that name asserted an
+                # exhausted balance we never verified. Every retry-exhausted
+                # 429 lands here whether it's sustained RPM throttling or a
+                # genuine allowance wall; `classification` is our best-effort
+                # read of which (see _classify_429_body), not a claim either
+                # way is confirmed.
+                telemetry.record_rate_limited_exhausted(effective_model)
                 logger.warning(
-                    "nvidia_quota_exhausted",
+                    "nvidia_429_exhausted",
                     model=effective_model,
                     status=429,
+                    classification=exc.classification,
+                    body_excerpt=exc.body_excerpt,
                 )
-                raise httpx.HTTPStatusError(
+                http_err = httpx.HTTPStatusError(
                     "NVIDIA rate/quota limit hit (429).  Check credits and RPM limits "
                     "in your NVIDIA account before retrying.",
                     request=exc.request,
                     response=exc.response,
-                ) from None
+                )
+                # Carried through as a plain attribute (not part of httpx's
+                # constructor) so extractor.py's error classifier can surface
+                # the finer-grained read without changing its existing
+                # "quota_error" bucket — see _classify_429_detail.
+                http_err.nvidia_429_classification = exc.classification
+                raise http_err from None
 
         raise RuntimeError(f"NVIDIA call exhausted all {_max_retries} retries for {effective_model}")
 
@@ -658,7 +781,14 @@ class NvidiaLLMProvider(BaseLLMProvider):
                 )
             if response.status_code == 429:
                 response.read()
-                raise _RateLimited(request=response.request, response=response)
+                body = response.text[:500] if response.text else ""
+                raise _RateLimited(
+                    request=response.request,
+                    response=response,
+                    classification=_classify_429_body(body),
+                    body_excerpt=body[:300],
+                    retry_after_seconds=_parse_retry_after_seconds(response),
+                )
             if response.status_code >= 400:
                 response.read()
                 body = response.text[:500] if response.text else ""

@@ -1530,6 +1530,303 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   `python -m src.scripts.recompute_confidence`. The 53 stale 2026-07-12 rows
   (AZ SB 1359, AR HB1877, TMP-AZ) predate all QA fixes — re-extract or exclude.
 
+---
+
+## Run Output Visibility Plan (ROV) — Timestamping & Run Comparison Summary (2026-07-19)
+
+> **Goal:** Enable analysts to compare extraction runs without manual cross-referencing of
+> multiple output files. Every run export (CSV, JSONL, JSON) now carries a distinct
+> date/time stamp and each run summary includes failures, per-agent performance metrics,
+> total time, throughput, and other key signals needed to detect regressions.
+>
+> **Session summary (2026-07-19):** Run output timestamp and comparison summary feature
+> fully implemented, tested, and pushed to branch `claude/legal-extraction-architecture-1exlem`.
+> All 1473 unit tests passing; CI green.
+
+### ROV-1 — Run header line (distinct timestamp on every export file) ✅ LANDED
+- **Implementation:** `_run_header_line()` in `src/core/run_archiver.py` generates
+  `# RUN: <date> <time> UTC | type=<run_type> | run_summary.json at <start> (started <date>)`
+  — emitted as the first line of every CSV/JSONL export file so analysts can identify
+  which run a sample came from at a glance.
+- **Applied to:** `extractions.csv`, `by_agent/<agent>.csv`, `bill_level_extractions.csv`,
+  `low_confidence_extractions.csv`, `low_confidence_extractions.jsonl`
+- **Tests:** 4 tests in `test_run_archiver_run_comparison.py::TestRunHeaderLine` verify
+  timestamp format, distinctness, and applicability across run types.
+
+### ROV-2 — Run comparison summary block ✅ LANDED
+- **Implementation:** `_build_run_comparison_summary()` in `src/core/run_archiver.py`
+  computes and returns a consolidated block with:
+  - `run_timestamp` (ISO 8601 + Z)
+  - `run_type` (extract/retry/recover)
+  - `total_duration_seconds`
+  - `total_extractions`
+  - `extractions_per_minute` (throughput metric)
+  - `failures` object: `total_agent_errors`, `per_agent_errors` dict, `circuit_breaker_tripped`, optional `circuit_breaker_detail`
+  - `avg_duration_ms_per_agent` (per-agent performance)
+  - `avg_duration_ms_overall` (weighted average, precise via stored `total_duration_ms` in monitor)
+  - `token_usage_total`
+  - `conservation_ok` (boolean)
+  - `confidence_tier_distribution` (A/B/C/D counts)
+  
+- **Wiring:** `finalize()` calls `_build_run_comparison_summary()` once and passes it to:
+  - `run_summary.json` as `run_comparison_summary` block (peer to `started_at`)
+  - `agent_stats.json` as `run_summary` block (same object for consistency)
+  - Each CSV header line via `_run_header_line()`
+
+- **No-divide-by-zero guards:** zero-duration and zero-extraction runs compute
+  cleanly to 0.0 without raising exceptions.
+
+### ROV-3 — Monitor enhancement (precise duration tracking) ✅ LANDED
+- **Implementation:** `src/core/extraction_monitor.py` `AgentStats` class now carries
+  `total_duration_ms` (cumulative, precise) in addition to `avg_duration_ms` (computed
+  per-call). The snapshot dict includes both so consumers computing a weighted overall
+  average can avoid rounding loss: `overall_avg = sum(agent.total_duration_ms) / sum(agent.calls)`.
+
+### ROV-4 — Integration & validation ✅ LANDED
+- **Test coverage:** 13 tests in `tests/unit/test_run_archiver_run_comparison.py`
+  - 4 header-line tests (format, distinctness, multi-run tracking)
+  - 5 comparison-summary tests (failures, per-agent errors, duration averaging, zero-division guards, circuit-breaker detail)
+  - 4 end-to-end finalize tests (JSON consistency across run_summary/agent_stats, CSV headers on different output types)
+  
+- **Real integration:** populated via the real `ExtractionMonitor` singleton
+  (not a mock), proving the actual run-to-summary flow works end-to-end.
+
+- **Backward-compat:** existing output files unchanged except for the new header line
+  prepended; `run_summary.json` gains a new top-level key (`run_comparison_summary`),
+  non-breaking for consumers that ignore unknown keys; `agent_stats.json` mirrors the
+  block as `run_summary` (new key, backward-compatible).
+
+### ROV sequencing & next steps
+1. **Live validation (operator machine):** Next extraction run will emit all new outputs
+   with timestamps and comparison blocks. Operator should confirm:
+   - Header lines are human-readable and appear on first line of all CSV/JSONL exports
+   - `run_summary.json` and `agent_stats.json` contain the comparison block
+   - Two runs at different times produce different timestamp values
+   - Timestamp precision is sufficient for correlation (ISO 8601 second resolution)
+
+2. **Dashboard integration (optional, Phase 2):** A future panel could render the
+   comparison block to surface throughput, per-agent error rates, and run health in
+   the UI — but the data is now queryable via the JSON exports for any consumer.
+
+---
+
+## NVIDIA Throughput & Provider Plan (NIM) — from NIM briefing review (2026-07-19)
+
+> Source: operator-supplied briefing on NVIDIA `build.nvidia.com` free-tier limits,
+> model options, monitoring, and alternative providers. Every load-bearing claim was
+> verified against this branch before planning (same discipline as the RC/SFH plans).
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+>
+> **Verification corrections to the briefing (read before acting on it):**
+> (1) The "3-attempt / 4-second retry" claim is **stale** — `llm_provider.py` already
+> does 6 attempts with 1/2/4/8/16s exponential backoff (2026-06-15 hardening, merged).
+> Remaining real gaps: no jitter, no `Retry-After` honoring, ~31s cumulative cap.
+> (2) "Spread agents across distinct models" is **largely already done** — three
+> distinct NVIDIA models are assigned (8B: triage/definition_actor/preemption;
+> `gpt-oss-120b`: 4 clause + 3 bill-level agents; 70B: CV/gap per SFH-1m). The real
+> issue is **skew** (7 heavy agents on one model's budget), not absence of spreading.
+> (3) The mislabel is **confirmed**: `llm_provider.py:609` logs `nvidia_quota_exhausted`
+> for any retry-exhausted 429 without ever inspecting the body; `extractor.py:190`
+> maps every 429 to `quota_error`. (4) **No proactive pacing exists** — only reactive
+> backoff; `max_concurrent_agents_per_model` (RR6b) caps *concurrency* (VRAM), not
+> *rate*. (5) The ~40 RPM figure and the §4 model catalog are blog-sourced, not NVIDIA
+> docs — treat as configurable hypotheses to measure, never hardcoded constants.
+> (6) **Tension with EA4-4**: EA4-4 consolidates definition_actor + preemption ONTO
+> the strong model for accuracy; the briefing spreads across models for throughput.
+> Synthesis: move them to a strong model that is *not* `gpt-oss-120b` (accuracy lift
+> AND a separate per-model rate budget) — still EA1-gated like any model change.
+>
+> **Live-run evidence (2026-07-19 monitor snapshot, run in progress, 81/806
+> passages):** the pipeline is **not currently rate-limited** — 1,294 agent calls
+> over ~9h elapsed ≈ 2.4 calls/min aggregate against a reported ~40 RPM/model cap
+> (~94% of the rate budget unused; `gpt-oss-120b` lane ~1.8 RPM, 8B lane ~0.6 RPM).
+> Zero 429s observed; failure rate 0.2%. The binding constraint is **per-call
+> latency × serialization** (obligation avg 195.7s/call, 462 calls ≈ 25h cumulative),
+> projecting **~3.7 days** for the full 806-passage run. This reframes NIM-1: pacing
+> is the *guardrail that lets concurrency be raised into the unused budget*, not a
+> defense against current throttling.
+
+### Phase NIM-0 — Measure and label honestly (sandbox-actionable; land first) ✅ LANDED 2026-07-19
+- ✅ **NIM-0a** — new `src/core/llm_rate_telemetry.py`: thread-safe per-model
+  `LLMRateTelemetry` singleton tracking `requests_total`, rolling trailing-60s
+  RPM (`rpm_current` + all-time `rpm_peak`), `tokens_total`, and
+  `rate_limited_seen` / `rate_limited_recovered` / `rate_limited_exhausted`
+  counters. Written from the actual chokepoint — `NvidiaLLMProvider.call()`'s
+  retry loop — so retries that are transparently absorbed (never surfacing as
+  an exception to extractor.py) are still counted, not just terminal
+  failures. Reset alongside `ExtractionMonitor.start_run()` (own singleton,
+  own lock — read outside `ExtractionMonitor`'s lock to keep them
+  independent). Surfaced in two places per the plan: (1) `ExtractionMonitor.
+  HealthSnapshot.llm_rate_telemetry` for the live 2s-poll dashboard: (2) a new
+  `llm_throttle_telemetry` key in `RunArchiver._build_run_comparison_summary()`
+  or the persisted run comparison. No behavior change — pure observability;
+  `LocalLLMProvider` left unwired (rate limits are NVIDIA-specific, no 429
+  path exists locally). 14 tests in `test_llm_rate_telemetry.py` (rolling-
+  window aging, peak tracking, reset, singleton, plus 3 tests against the
+  real `NvidiaLLMProvider.call()` proving success/429-recovery/429-exhaustion
+  all write through) + 1 wiring test in
+  `test_run_archiver_run_comparison.py`. *(BE)*
+- ✅ **NIM-0b** — new `_classify_429_body()` in `llm_provider.py`: keyword-reads
+  a 429 body into `rate_limited_transient` / `allowance_exhausted` /
+  `429_unclassified`. Deliberately does **not** treat a bare "quota" mention as
+  decisive (RPM throttling is commonly phrased "queries per minute quota" too)
+  — only specific phrases (`per minute`, `too many requests`, `credit`,
+  `trial has ended`, etc.) tip the classification; ambiguous bodies honestly
+  land unclassified rather than guessing. Replaced the `nvidia_quota_exhausted`
+  log label (which asserted an exhausted balance never verified) with
+  `nvidia_429_exhausted` carrying the classification + a body excerpt.
+  `_classify_llm_error`'s existing `"quota_error"` bucket is **unchanged**
+  (dashboard color-coding intact) — the finer-grained read is carried
+  separately via a `nvidia_429_classification` attribute on the raised
+  `httpx.HTTPStatusError`, read by new `_classify_429_detail()` in
+  `extractor.py` and threaded into the `agent_error` pipeline-event details as
+  `throttle_classification` (additive key, only present for NVIDIA 429s). 10
+  tests for `_classify_429_body`, 5 for `_classify_429_detail`
+  (`test_error_classification.py`), 4 for the `_RateLimited` exception's new
+  fields, plus 2 end-to-end 429-classification tests against the real
+  provider. *(BE)*
+- ✅ **NIM-0c** — retry loop now reads `settings.nvidia_max_retries` (was
+  hardcoded `_max_retries = 5`); new `_compute_backoff_seconds()` adds jitter
+  (`settings.nvidia_retry_jitter_fraction`, default 0.25) and a hard ceiling
+  (`settings.nvidia_retry_backoff_cap_seconds`, default 30.0) to the
+  exponential curve, applied to both the transport-error and rate-limited
+  retry branches. New `_parse_retry_after_seconds()` honors a numeric
+  `Retry-After` header when NVIDIA sends one (takes precedence over the
+  exponential guess, still capped); unparseable/absent header falls back to
+  jittered exponential, since NVIDIA doesn't always send it. 5 new settings
+  in `config.py`. 11 new tests covering exponential growth, cap, Retry-After
+  precedence, jitter bounds, non-negativity, plus a retry-then-succeed
+  end-to-end test proving the loop still recovers within budget. *(BE)*
+- ✅ **NIM-0d** *(found via the live snapshot; rides with ROV)* — new
+  `ExtractionMonitor._emit_deduped()`: collapses repeated `low_confidence`/
+  `truncation` feed events for the same `(category, agent, record_id)` to one
+  line per run instead of one per extraction item (root cause: `extractor.py`
+  calls `record_agent_result` once per extraction item on the success path,
+  so a 30-extraction passage previously wrote 30 near-identical feed lines).
+  Repeats past the first are still counted in the severity total (`warnings`)
+  and in a new `duplicate_warnings_suppressed` counter — the information
+  isn't lost, just not flooding the bounded event ring buffer. Errors are
+  untouched (never deduped) since the live-run problem was specifically
+  hundreds of duplicate warnings burying 2 real errors. 7 new tests in
+  `test_extraction_monitor.py`. *(BE)*
+- All landed as pure code/config, no live LLM required (same discipline as
+  EA0/EA2/SFH-1): 53 new tests, full suite 1526/1526 passing;
+  `ruff check --select E9,F` clean on every touched file.
+
+### Phase NIM-1 — Client-side pacing (sandbox code; operator-verified) ✅ LANDED 2026-07-19
+- ✅ **NIM-1a** — new `src/core/llm_rate_limiter.py`: `RateLimiter`, a
+  process-wide, per-model sliding-window limiter. `acquire(model, cap_rpm,
+  sleep_fn)` blocks (if needed) until one more request for that model fits
+  under `cap_rpm` in the trailing 60s window, then **atomically reserves
+  the slot** before returning — the reservation happens inside the same
+  lock acquisition as the capacity check, so concurrent callers can't all
+  pass a check before any of them records a request (the standard
+  check-then-act race a naive limiter would have). Config-driven via new
+  `settings.nvidia_rpm_limit` (default `35.0`; `<= 0` disables pacing
+  entirely, e.g. for a controlled benchmark). Wired into
+  `NvidiaLLMProvider.call()`'s retry loop, called before **every** attempt
+  (including retries, since each is a real HTTP request against the
+  account's budget) — passes the existing `_sleep_cancellable` closure as
+  `sleep_fn` so a pacing wait is interrupted within ~0.5s of a cancelled
+  run, the same guarantee backoff waits already had. Reset alongside
+  `ExtractionMonitor.start_run()` (own singleton/lock, kept independent of
+  `LLMRateTelemetry`'s). Deliberately a **separate** deque from NIM-0a's
+  telemetry — not merged — so NIM-0a's shipped "no behavior change,
+  observability only" contract stays true; enforcement is opt-in-only via
+  this new module. 8 unit tests on the limiter directly (reservation
+  semantics, per-model independence, reset, disable-at-zero, a 20-thread
+  concurrency test using a short *real* window + real `time.sleep` rather
+  than a mocked clock — a no-op sleep with unmocked `time.time()` would
+  have spun for up to 60s waiting for the window to age out) + 4 tests
+  against the real `NvidiaLLMProvider.call()` (consults the limiter with
+  the configured model/cap, disabled-at-zero never sleeps, cancellation
+  during a pacing wait propagates `OperationCancelled`). *(BE)*
+- ✅ **NIM-1b** — `pacing_wait_seconds_total` added to
+  `llm_rate_telemetry.py`'s per-model stats + `record_pacing_wait()`;
+  `NvidiaLLMProvider.call()` feeds the limiter's returned wait time into it
+  whenever `> 0`. Surfaced in both the live dashboard table (NIM-visibility
+  item below) and the persisted `llm_throttle_telemetry` block — pacing's
+  throughput cost is now a measured number per model, not a guess. 3 new
+  tests (accumulation, zero/negative no-op, per-model independence). *(BE)*
+- ✅ **NIM-visibility** *(found while landing NIM-1; not in the original
+  plan text)* — `get_extraction_monitor()`'s dashboard fragment
+  (`src/api/routes/dashboard.py`, the "Live Extraction Monitor" HTML the
+  2026-07-19 screenshot came from) rendered `HealthSnapshot.to_dict()` by
+  hand-picking specific keys — meaning NIM-0a's `llm_rate_telemetry` and
+  NIM-0d's `duplicate_warnings_suppressed` existed in the snapshot dict but
+  were **never rendered anywhere an operator could see them**; all this
+  session's new telemetry would have been invisible on the very next live
+  run. Added: a new "LLM Rate Telemetry (per model)" table (requests, RPM
+  current/peak against the configured cap — color-graded green/amber/red
+  by proximity to the cap, or "N (pacing off)" when `nvidia_rpm_limit<=0`,
+  tokens, 429 seen/exhausted, cumulative pacing wait) placed between Agent
+  Performance and Issues; a "N duplicate warnings collapsed" info badge in
+  the Issues row so a low Warnings count doesn't misread as "few problems"
+  when many were actually deduped. `get_extraction_monitor()` has no
+  FastAPI dependencies, so tests call it directly (no test client needed) —
+  8 new tests in `test_dashboard_extraction_monitor.py` (this route had
+  **zero** test coverage before this session, a gap this closes alongside
+  the feature). Manually rendered the fragment against live-run-shaped data
+  to confirm well-formed HTML (screenshot-equivalent verification — no
+  browser in this sandbox per CLAUDE.md). *(BE, FE)*
+- Note: pacing/concurrency changes alter timing, not model/prompt/inputs — they do
+  **not** invalidate the EA1-3 quality baseline (step-back amendment #1 gates
+  *behavior* changes, and these aren't).
+- All landed as pure code/config, no live LLM required: 23 new tests, full
+  suite 1549/1549 passing; `ruff check --select E9,F` clean on every
+  touched file.
+
+### Phase NIM-2 — Load-shape decision 🔒 (gated on NIM-0 telemetry from a real run)
+- 🔒 **NIM-2a** — operator runs an extraction batch with NIM-0/1 in place; telemetry
+  answers which lane saturates as concurrency rises, and whether any 429s classify
+  as allowance rather than throttle.
+- 🔒 **NIM-2b** — rebalance: pure pacing/concurrency knob changes land freely; any
+  **model reassignment** stays EA1-3-gated (EA4-4's standing rule). Preferred shape
+  to evaluate when the gate opens: definition_actor + preemption → a strong model
+  that is not `gpt-oss-120b` (the EA4-4 synthesis above).
+- 🔒 **NIM-2c** — briefing catalog names (`nemotron-3-super-120b`, `qwen3.5-122b`,
+  etc.) verified against `build.nvidia.com/models` at decision time and benchmarked
+  through the existing EA1 harness on the gold set — no model string wired in from
+  a blog post.
+- 🔒 **NIM-2d** — if allowance (not throttle) turns out to be the wall, pacing can't
+  fix it → triggers NIM-3 immediately.
+
+### Phase NIM-3 — Provider portability 🔒 (gated on NIM-2 outcome + operator sign-off)
+- 🔒 **NIM-3a** — portability inventory (doc only): the provider layer is already
+  OpenAI-compatible, but document the NVIDIA-specific assumptions in
+  `NvidiaLLMProvider` (base-URL-includes-`/v1` quirk, `reasoning_effort` coercion,
+  `_REASONING_MODEL_TAGS` idle-timeout heuristic, `reasoning_content` stripping,
+  SSE stream shape) — that list is the real migration checklist.
+- 🔒 **NIM-3b** — decision memo: stay free tier vs. per-token provider. Candidates
+  per briefing: OpenRouter (routing/failover), Together (batch), Fireworks (guided
+  decoding — directly serves **EA6-2**'s structured-outputs goal), Deep Infra
+  (cheap triage). **Hard requirement, not tiebreaker:** contractual training-use
+  exclusion + SOC 2/ISO 27001 + zero-retention terms — this is a compliance product.
+  Adoption requires EA1 gold-set benchmark on the candidate + operator sign-off.
+- 🔒 **NIM-3c** — cost accounting: NIM-0a per-model token totals make the EA plan's
+  required "$/law in run_summary.json" computable the moment a price sheet exists.
+  Live-run input: ~209k tokens/passage observed → **~170M tokens projected** for a
+  full 806-passage run.
+
+### Phase NIM-4 — Self-host / hybrid (flag only; no action)
+- The briefing's "hybrid" already half-exists (LM Studio local fallback via
+  `provider: "local"`). Self-hosted NIM containers (free ≤16 GPUs for
+  developer-program members) recorded as a deferred option contingent on operator
+  GPU capacity. GPU clouds (CoreWeave/Bitdeer/Lightning) ignored per the briefing's
+  own advice.
+
+### Explicitly not adopted from the briefing
+- No "credits remaining" display (credits are retired; no balance exists to show).
+- No immediate model swaps to catalog picks — EA1-gated.
+- No RAG/vector-store work (the Vultr angle) — no RAG layer exists or is planned.
+- "Eigen AI" — briefing itself couldn't identify the vendor; dropped.
+
+**Sequencing:** NIM-0 → NIM-1 (both sandbox-actionable now); NIM-2 needs an operator
+run; NIM-3 gates on NIM-2's outcome; NIM-4 is a standing note. NIM-0/1 can proceed in
+parallel with EA1-1 fixture work without touching the EA1-3 baseline's validity.
+
+---
+
 ### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
 **Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
