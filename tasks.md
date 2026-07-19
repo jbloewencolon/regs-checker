@@ -1346,9 +1346,14 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > sync-time subdivision scoping — **engine + sync wiring landed 2026-07-14,
 > gated OFF by `settings.qa9a_scope_filter_enabled` pending RPR
 > ratification** — + QA-10 junk-definition guard, **landed 2026-07-14**) →
-> Phase 3 (pre-extraction scoping; gated on EA1-3 baseline) → Phase 4
-> (stress fixtures — **landed 2026-07-14** — + optional markup-preserving
-> re-fetch of CA sources, still a product decision).
+> Phase 2b (QA-9c parse-time scope annotation — **landed 2026-07-14**,
+> mechanical/ungated: computes the scope map at ingest where the whole
+> document is in hand, closing QA-9a's empty `added_section_numbers` TODO
+> and becoming QA-9b's input) → Phase 3 (QA-9b pre-extraction scoping —
+> **code landed 2026-07-14, gated OFF by `qa9b_prescope_enabled` pending
+> the EA1-3 baseline measurement**) → Phase 4 (stress fixtures — **landed
+> 2026-07-14** — + optional markup-preserving re-fetch of CA sources,
+> still a product decision).
 
 - [x] **QA-8 — parallel-version collapse (Phase 1 of the plan) — LANDED
   2026-07-14:** `_AMENDING_HEADER_RE` + `_group_parallel_versions()` in
@@ -1416,14 +1421,70 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   `added_section_numbers` — wired as a parameter but every call site
   currently passes an empty set (marked `# TODO`), since populating it
   needs the bill's full text at sync time and today's query only fetches
-  the single passage; that's a query-cost design decision left for the
-  ratified rollout. Full suite: 1421 passed (up from 1419);
-  `ruff check --select E9,F` clean.
-- [ ] **QA-9b — pre-extraction scoping (Phase 3; gated on EA1-3 baseline):** same
-  test before extraction; changes agent inputs → measure via harness with the
-  SB 926/AB 2355/SB 11 stress fixtures now added (see Phase 4 below) — the
-  remaining gate is capturing the EA1-3 baseline itself, which needs a live
-  LLM run the sandbox doesn't have.
+  the single passage; **resolution: QA-9c below** (parse-time annotation —
+  compute the scope map at ingest and let sync read stored metadata).
+  Full suite: 1421 passed (up from 1419); `ruff check --select E9,F` clean.
+- [x] **QA-9c — parse-time scope annotation (Phase 2b of the plan;
+  mechanical/ungated) — LANDED 2026-07-14** (planned and implemented same
+  day): the scope *computation* (not consumption) moved to
+  `parse_and_normalize`, the only pipeline stage holding the whole
+  document — which is exactly the context rule 2(b) needs and sync lacks.
+  (1) Engine refactor (`restatement_scope.py`): new
+  `annotate_restatement_scope()` classifies the whole subdivision tree in
+  one pass (top-level/second-level/lead-in regions + shared preamble),
+  plus `scope_for_offset()`, `annotation_is_current()`,
+  `assess_with_annotation()`; `assess_extraction_scope` is now a thin
+  wrapper over the annotation machinery, so exactly one implementation of
+  rules (a)-(c) exists — the pre-refactor 29 tests passing unmodified is
+  the parity proof. Keyword iteration made deterministic (sorted) so
+  stored annotations are reproducible across processes. (2) Parser:
+  `_restatement_scope_meta()` computes the document-level
+  `added_section_numbers` once from the joined passage texts and writes
+  `metadata_["restatement_scope"]` ({engine_version,
+  added_section_numbers, regions[]} with offsets valid against
+  `text_content` as stored) on every `is_restatement_passage()` hit — all
+  parallel-version members plus ≥6K single-version restatements. Same
+  JSONB column QA-8 writes; no migration. (3) Sync
+  (`_apply_restatement_scope`, still flag-gated): prefers a current
+  stored annotation via `assess_with_annotation`; absent/stale falls
+  back to the on-the-fly path, so pre-annotation rows keep working.
+  Closes the QA-9a `added_section_numbers=set()` TODO for re-ingested
+  docs. (4) Staleness: `SCOPE_ENGINE_VERSION` stamped into every
+  annotation; bump it on any rule/vocabulary change — version-mismatched
+  annotations are treated as absent, never silently applied. Backfill
+  script deferred (re-ingest covers the 3 affected laws, already operator
+  work). (5) 39 tests in `tests/unit/test_restatement_annotation.py`
+  against the real corpus: all 8 SB 926 §647 passages annotated with only
+  (j)(4)-connected regions in-scope; AB 2355 carries
+  added_section_numbers=['84514'] with formatting subdivisions in-scope
+  via the reference rule; AR HB1877 + TMP-CA-EMPLOYMENTANDS get zero
+  annotations (structurally untouched); parity of stored-vs-on-the-fly
+  verdicts; sync prefer/fallback/flag-off; and the TODO-closure demo
+  (on-the-fly with empty set over-hides the AB 2355 formatting rule, the
+  stored annotation keeps it visible). **Not gated on ratification**:
+  inert metadata changes no agent input and hides no row (annotation ≠
+  activation — QA-9a's flag and QA-9b's baseline gate stay where the
+  effects are). Full suite 1460 passing.
+- [~] **QA-9b — pre-extraction scoping (Phase 3) — CODE LANDED 2026-07-14,
+  GATED OFF pending EA1-3 baseline:** `build_inscope_excerpt()`
+  (`restatement_scope.py`) builds the reduced agent input from a QA-9c
+  annotation — one-line context header naming the section, in-scope
+  regions verbatim in document order, `[...]` elision markers; returns
+  None when nothing to trim or nothing in scope (conservative fallback to
+  full text). `_prescope_agent_input()` (`extractor.py`) applies it in
+  `extract_single_record` behind `settings.qa9b_prescope_enabled`
+  (default False): routing still sees the FULL text, span verification
+  still runs against the full stored passage (kept chunks are verbatim
+  slices, so excerpt quotes still string-verify), offsets-vs-text
+  mismatch disables prescoping rather than slicing wrong, and the
+  retry/recovery paths deliberately keep full-context inputs. Extractions
+  from a prescoped input carry `extraction_meta["prescoped_input"]` +
+  `prescoped_chars_dropped` (EA0-4's input-honesty pattern). On the real
+  SB 926 representative the excerpt is under half the full restatement.
+  **Remaining gate is the measurement, not code**: capture the EA1-3
+  baseline on full-passage inputs (live LLM, operator machine), flip the
+  flag, rerun the harness with the SB 926/AB 2355/SB 11 stress fixtures,
+  require no F1 regression before keeping it on.
 - [x] **Phase 4 — EA1 stress fixtures (sandbox-authorable) — LANDED
   2026-07-14:** three gold-standard fixtures added to
   `tests/fixtures/gold_standard/`, picked up automatically by

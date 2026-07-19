@@ -88,6 +88,16 @@ class Settings(BaseSettings):
     # after ratification + a reviewed hide-report (plan Phase 2 acceptance).
     qa9a_scope_filter_enabled: bool = False
 
+    # QA-9b (plan Phase 3): pre-extraction scoping — feed clause agents only
+    # a restatement's in-scope subdivisions (from the QA-9c parse-time
+    # annotation) instead of the whole restated section. Changes agent
+    # INPUTS, so it is gated on the EA1-3 evaluation baseline: capture the
+    # baseline on full-passage inputs first, flip this on, rerun the
+    # harness, and require no F1 regression before keeping it. Defaults to
+    # False; span verification always runs against the full stored passage
+    # regardless of this flag.
+    qa9b_prescope_enabled: bool = False
+
     # Orrick PDF Tracker
     orrick_pdf_path: str = "data/trackers/Orrick-US-AI-Law-Tracker.pdf"
 

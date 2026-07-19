@@ -400,14 +400,27 @@ def _apply_restatement_scope(
         return
 
     from src.core.restatement_scope import (
+        annotation_is_current,
         assess_extraction_scope,
+        assess_with_annotation,
         is_restatement_passage,
     )
 
-    # Scope trigger: is this passage a restatement at all?
-    parallel_version_group = passage_metadata.get("parallel_version_group")
-    if not is_restatement_passage(passage_text, parallel_version_group=parallel_version_group):
-        return
+    # QA-9c: prefer the parse-time annotation. Its presence IS the
+    # restatement-trigger verdict (the parser only writes it on passages
+    # that tripped is_restatement_passage), and its region verdicts already
+    # bake in the document-level added-section set that this sync-time code
+    # path can't see. A stale engine_version (rules/vocabulary changed
+    # since annotation) is treated as absent — never silently applied.
+    stored_annotation = passage_metadata.get("restatement_scope")
+    use_stored = annotation_is_current(stored_annotation)
+
+    if not use_stored:
+        # Fallback for rows ingested before QA-9c: recompute the trigger
+        # and (below) the assessment on the fly.
+        parallel_version_group = passage_metadata.get("parallel_version_group")
+        if not is_restatement_passage(passage_text, parallel_version_group=parallel_version_group):
+            return
 
     # Restatement passage: assess the extraction's scope.
     # Evidence is the first span's text, or fall back to payload action/term text.
@@ -429,11 +442,14 @@ def _apply_restatement_scope(
         # Couldn't extract evidence text — don't guess, leave in scope.
         return
 
-    result = assess_extraction_scope(
-        evidence_text,
-        passage_text,
-        added_section_numbers=added_section_numbers or set(),
-    )
+    if use_stored:
+        result = assess_with_annotation(evidence_text, passage_text, stored_annotation)
+    else:
+        result = assess_extraction_scope(
+            evidence_text,
+            passage_text,
+            added_section_numbers=added_section_numbers or set(),
+        )
 
     if not result.get("in_scope"):
         # Out of scope: hide this extraction.

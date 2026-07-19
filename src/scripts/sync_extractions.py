@@ -253,10 +253,13 @@ def _build_insert_row(row, law_id: int) -> dict:
     actor_role_rc / obligation_family (PNE-2a/2b) — they are NOT insert
     columns, which don't exist on the live table (see _assert_insert_columns).
 
-    QA-9a (Phase 2): passage metadata is passed to assess_extraction_scope.
-    added_section_numbers would require fetching full bill text (deferred to
-    after RPR ratification; left empty for now so scope assessment still runs
-    but rule (b) doesn't match — non-destructive until that gate is cleared).
+    QA-9a/QA-9c (Phases 2/2b): passage metadata rides along for scope
+    assessment. For rows ingested after QA-9c, metadata_["restatement_scope"]
+    carries the parse-time scope map with the document-level added-section
+    set already baked into its region verdicts, so the empty
+    added_section_numbers below is only the fallback path (pre-QA-9c rows,
+    where rule (b) simply doesn't fire — false-negative-safe: it can only
+    under-hide, never over-hide).
     """
     raw_payload = row["payload"]
     if isinstance(raw_payload, str):
@@ -276,7 +279,7 @@ def _build_insert_row(row, law_id: int) -> dict:
         raw_payload or {},
         passage_text=row.get("passage_text"),
         passage_metadata=passage_metadata,
-        added_section_numbers=set(),  # TODO: fetch from bill after RPR sign-off
+        added_section_numbers=set(),  # fallback only — stored annotation preferred (QA-9c)
     )
     adapted_payload["provenance"] = _build_provenance(row)
     # DI-1: stable join key, payload-only.
@@ -709,7 +712,7 @@ def sync_updates(
                 raw_payload or {},
                 passage_text=row.get("passage_text"),
                 passage_metadata=passage_metadata,
-                added_section_numbers=set(),  # TODO: fetch from bill after RPR sign-off
+                added_section_numbers=set(),  # fallback only — stored annotation preferred (QA-9c)
             )
             adapted_payload["provenance"] = _build_provenance(row)
             # DI-1: stable join key, payload-only (a7f723d's column targets

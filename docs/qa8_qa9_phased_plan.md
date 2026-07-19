@@ -154,10 +154,11 @@ extraction type present in the representative version.
 > temporarily enabled in a scratch/dry-run environment, never against
 > production sync without sign-off; (c) `added_section_numbers` is wired
 > as a parameter but every call site currently passes an empty set (a
-> `# TODO` marks each) — populating it requires fetching the bill's full
-> text at sync time (today's query only has the single passage), a design
-> decision left for whoever does the ratified rollout since it affects
-> query cost per synced row.
+> `# TODO` marks each) — populating it requires the bill's full text,
+> which the sync query doesn't have. **Resolution path for (c): Phase 2b
+> (QA-9c) below** — compute the scope map at parse time, where the whole
+> document is in hand, and store it in `metadata_`; sync then reads the
+> stored annotation instead of recomputing with missing context.
 
 **Principle (from fact 0.3):** relevance filtering applies **only inside
 restated sections** — never law-wide. A bill that is wholly an AI act
@@ -195,16 +196,147 @@ restated sections** — never law-wide. A bill that is wholly an AI act
 (j)(4)-connected rows displayed (~5-8); AB 2355 / TMP-CA-EMPLOYMENTANDS /
 CO SB205 hide-rate 0%; hide-report reviewed and ratified.
 
+## Phase 2b — QA-9c: parse-time scope annotation (sandbox-actionable, mechanical)
+
+> **Status: LANDED 2026-07-14** (planned and implemented the same day).
+> Engine refactor: `annotate_restatement_scope()` + `scope_for_offset()` +
+> `annotation_is_current()` + `assess_with_annotation()` in
+> `src/core/restatement_scope.py`, with `assess_extraction_scope` now a
+> thin wrapper over the annotation machinery — the pre-refactor 29 tests
+> passing unmodified is the parity proof. Parser:
+> `_restatement_scope_meta()` in `src/ingestion/parser.py`, merged into
+> `metadata_["restatement_scope"]` next to the QA-8 flags. Sync:
+> `_apply_restatement_scope` prefers a current stored annotation
+> (`assess_with_annotation`), falls back on absence/staleness. 39 tests in
+> `tests/unit/test_restatement_annotation.py` including the real-corpus
+> matrix and the added-section TODO-closure demo (on-the-fly with empty
+> set over-hides AB 2355's formatting rule; the stored annotation keeps it
+> visible). Full suite 1460 passing.
+>
+> Original rationale: parse time is the only pipeline stage that holds
+> the *whole document* — which is exactly the context the scope rules need
+> and the sync path lacks (its query fetches one passage, which is why every
+> QA-9a call site passed `added_section_numbers=set()`, `# TODO`-marked).
+> Move the scope *computation* to ingest; leave scope *consumption* where it
+> is (QA-9a at sync, QA-9b at extraction), each behind its existing gate.
+
+**Why parse time is the right home for the computation:**
+
+1. **Document-level context is free there.** `find_added_section_numbers`
+   needs the full bill text to find "Section X is added to …" targets —
+   `parse_and_normalize` iterates every passage of the document in one call,
+   so the added-section set is one pass over the joined passage texts. This
+   is the fact that keeps AB 2355's keyword-free formatting rules in scope
+   (rule 2(b)); computed at sync it would cost an extra full-text query per
+   synced row.
+2. **The result is stable and cheap to store.** The classification is
+   deterministic over `(passage_text, added_section_numbers)`, both fixed at
+   ingest. Computing once and storing beats recomputing per extraction row —
+   SB 926 alone produced 181 rows over the same 8 restatements.
+3. **Both consumers become metadata reads.** QA-9a's sync hide and QA-9b's
+   pre-extraction slicing read the same stored map instead of each invoking
+   the engine — one implementation of the rules, no drift between the
+   sync-time and extraction-time verdicts on the same text.
+
+**Not gated on ratification — and why that's not a loophole:** writing inert
+metadata changes no agent input and hides no row; it has exactly the risk
+profile of QA-8's grouping flags (mechanical, tested, reversible). The
+ratification gate stays where the *effects* are: `qa9a_scope_filter_enabled`
+still defaults to False at sync, and QA-9b still can't flip agent inputs
+without the EA1-3 baseline. Annotation ≠ activation.
+
+**Steps:**
+
+1. **Engine refactor** (`src/core/restatement_scope.py`): new
+   `annotate_restatement_scope(restatement_text, added_section_numbers)
+   -> dict` classifying the whole subdivision tree in one pass — top-level
+   spans, second-level spans, lead-in regions (with the existing
+   lead-in-scored-alone + adjacency-to-in-scope-sibling semantics), and the
+   shared preamble (always in scope). Companion
+   `scope_for_offset(annotation, offset)` resolves a character offset to its
+   region's verdict. **Reimplement `assess_extraction_scope` as
+   locate-evidence + `scope_for_offset` over a freshly computed annotation**
+   so there is one implementation of rules (a)-(c), not two that drift; the
+   existing 29 tests in `test_restatement_scope.py` must pass byte-identical
+   — they are the parity proof for the refactor. Add
+   `SCOPE_ENGINE_VERSION` (int) exported from the module.
+2. **Parser integration** (`src/ingestion/parser.py`, in
+   `parse_and_normalize` next to the QA-8 merge at the `parallel_version_meta`
+   step): compute `added_section_numbers` once per document from the joined
+   passage texts; for every passage where `is_restatement_passage()` is True
+   (parallel-version member — *all* members, not just the representative,
+   so provenance rows stay resolvable — or single-version amending header
+   ≥6K chars), write `metadata_["restatement_scope"]`:
+   `{"engine_version": N, "added_section_numbers": [...], "regions":
+   [{"label", "start", "end", "in_scope", "reason"}, ...]}` with offsets
+   into `text_content` exactly as stored. No migration — same JSONB column
+   QA-8 already writes. No import cycle: `restatement_scope`'s module-level
+   imports (`section_triage`, `text_grounding`) don't touch `src.ingestion`
+   (verified), and its own parser import is already function-level.
+3. **Sync consumption** (`payload_adapter._apply_restatement_scope`, still
+   flag-gated): when `passage_metadata["restatement_scope"]` is present with
+   a current `engine_version`, use its stored `added_section_numbers` and
+   region map (evidence offset → `scope_for_offset`) instead of recomputing;
+   when absent or version-stale, fall back to today's on-the-fly path —
+   rows ingested before this lands keep working unchanged. This closes the
+   empty-set TODO for all re-ingested documents.
+4. **Staleness rule:** ratification may tweak `SCOPE_KEYWORDS` or the rules;
+   bump `SCOPE_ENGINE_VERSION` whenever they change. Consumers treat a
+   version-mismatched annotation as absent (fall back / recompute), so a
+   vocabulary change can never silently apply stale verdicts. Re-annotation
+   of stored rows = re-ingest (only 3 laws carry restatements today; their
+   re-ingest is already Phase 0/1 operator work) — a dedicated backfill
+   script is deliberately deferred until a vocabulary change actually
+   happens.
+5. **Tests** (all against the real committed corpus, per the Phase-1/2
+   pattern): (i) refactor parity — existing 29 engine tests unmodified;
+   (ii) parser — SB 926 source yields the annotation on all 8 § 647
+   passages with only (j)(4)-connected regions in-scope, AB 2355 carries
+   `added_section_numbers == {"84514"}` with the formatting subdivisions
+   in-scope via the reference rule, AR HB1877 and TMP-CA-EMPLOYMENTANDS
+   yield zero annotations; (iii) sync — stored annotation preferred,
+   absent/stale falls back, flag-off remains a no-op regardless of
+   annotation presence; (iv) fixture cross-check — the three Phase-4 gold
+   fixtures' `annotation_provenance` verdicts match the annotation path,
+   not just `assess_extraction_scope`.
+
+**Acceptance:** re-ingesting the three affected laws produces stored scope
+maps matching the engine's ad-hoc verdicts exactly; the QA-9a TODO
+(`added_section_numbers=set()`) is closed for annotated rows; with the flag
+off, live behavior is byte-identical before/after (annotation is inert);
+QA-9b's Phase-3 implementation consumes `metadata_["restatement_scope"]`
+rather than re-running the engine.
+
 ## Phase 3 — QA-9b: pre-extraction scoping (token savings; gated on EA1-3 baseline)
+
+> **Status: code LANDED 2026-07-14, gated OFF by
+> `settings.qa9b_prescope_enabled` (default False).**
+> `build_inscope_excerpt()` (`restatement_scope.py`) builds the reduced
+> input — context header naming the section, in-scope regions verbatim,
+> `[...]` elision markers — returning None when there's nothing to trim or
+> nothing in scope (conservative fallback to full text).
+> `_prescope_agent_input()` (`extractor.py`) applies it in
+> `extract_single_record` only: routing still sees the full text, span
+> verification still runs against the full stored passage (kept chunks are
+> verbatim slices, so quotes from the excerpt still string-verify), and
+> the retry/recovery paths deliberately keep full-context inputs.
+> Extractions from a prescoped input carry
+> `extraction_meta["prescoped_input"]` + `prescoped_chars_dropped`
+> (EA0-4's input-honesty pattern). On the real SB 926 representative the
+> excerpt is under half the full restatement's size. **Flipping the flag
+> remains gated on the EA1-3 baseline**: capture baseline on full-passage
+> inputs → enable → rerun harness → require no F1 regression on the gold
+> fixtures (the Phase-4 stress fixtures exist precisely to catch this).
 
 Apply the Phase-2 in-scope test **before** extraction instead of after:
 for restatement passages, feed clause agents only the in-scope subdivisions
-(with a one-line context header naming the section). This changes agent
-*inputs*, so unlike Phases 1-2 it must be measured by the evaluation
-harness — capture the EA1-3 baseline first, and add the SB 926 § 647
-stress fixture (below) before flipping it on. Side benefit: smaller
-passages reduce the AB 2355-style neighbor-context quoting that misattributes
-extractions and deflates grounding.
+(with a one-line context header naming the section) — read from the
+Phase-2b `restatement_scope` annotation, not by re-running the engine in
+the extract loop. This changes agent *inputs*, so unlike Phases 1-2 it must
+be measured by the evaluation harness — capture the EA1-3 baseline first,
+and add the SB 926 § 647 stress fixture (below) before flipping it on.
+Side benefit: smaller passages reduce the AB 2355-style neighbor-context
+quoting that misattributes extractions and deflates grounding.
 
 **Acceptance:** baseline diff shows no F1 regression on gold fixtures;
 SB 926 extraction call volume drops further; misattribution/grounding on
@@ -271,7 +403,8 @@ AB 2355-style laws improves.
 | 0 operator repair | QA-6/7 merged | — | no (operator) |
 | 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
 | 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10 + sync plumbing: **yes — landed 2026-07-14, flag OFF by default**; flipping live: no (ratification + hide-report external) |
-| 3 QA-9b pre-extraction scoping | Phases 1-2 + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
+| 2b QA-9c parse-time scope annotation | Phase 2 engine | tests only (inert metadata — annotation ≠ activation; consumers keep their own gates) | **yes — landed 2026-07-14** |
+| 3 QA-9b pre-extraction scoping | Phases 1-2b + **EA1-3 baseline** | harness diff, no F1 regression | code: **yes — landed 2026-07-14, flag OFF by default**; measurement: operator |
 | 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures: **yes — landed 2026-07-14**; source fix: no (product decision) |
 
 ## The SB 926 strategy, end to end

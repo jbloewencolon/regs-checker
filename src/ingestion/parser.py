@@ -123,6 +123,48 @@ def _group_parallel_versions(
     return result
 
 
+def _restatement_scope_meta(
+    passages: list[tuple],
+    parallel_version_meta: dict[int, dict],
+) -> dict[int, dict]:
+    """QA-9c: parse-time scope annotation for restatement passages.
+
+    Returns {passage_index: annotation} for every passage that trips the
+    restatement trigger (a QA-8 parallel-version member — ALL members, not
+    just the representative, so provenance rows stay resolvable — or a
+    single-version amending-header restatement over the size threshold).
+    Non-restatement passages are absent from the result, so a wholly-AI
+    bill gets zero annotations and is structurally untouched by scoping.
+
+    The document-level added-section set (rule 2(b)'s input) is computed
+    here, once, from the joined passage texts — parse time is the only
+    pipeline stage that holds the whole document, which is why the scope
+    computation lives here rather than at sync (see the empty-set TODO
+    this closes in src/scripts/sync_extractions.py).
+    """
+    # Function-level import: restatement_scope's is_restatement_passage
+    # imports this module (deferred, for _detect_amendment_target) —
+    # keeping this side function-level too makes the non-cycle obvious
+    # rather than dependent on import order.
+    from src.core.restatement_scope import (
+        annotate_restatement_scope,
+        find_added_section_numbers,
+        is_restatement_passage,
+    )
+
+    added_sections = find_added_section_numbers(
+        "\n\n".join(p[1] for p in passages)
+    )
+
+    result: dict[int, dict] = {}
+    for idx, passage_tuple in enumerate(passages):
+        text = passage_tuple[1]
+        group = parallel_version_meta.get(idx, {}).get("parallel_version_group")
+        if is_restatement_passage(text, parallel_version_group=group):
+            result[idx] = annotate_restatement_scope(text, added_sections)
+    return result
+
+
 def _is_line_through_style(style: str) -> bool:
     normalized = style.replace(" ", "").lower()
     return "text-decoration:line-through" in normalized
@@ -228,6 +270,17 @@ def parse_and_normalize(
         version in bill order — the CA drafting convention is that the final
         restatement is the most-merged contingency, and every version
         contains this bill's own changes regardless of which is kept.
+      - restatement_scope (QA-9c): set only on restatement passages (QA-8
+        parallel-version members, or single-version amending-header
+        restatements over the size threshold) — the parse-time subdivision
+        scope map {engine_version, added_section_numbers, regions[]}, with
+        region offsets valid against text_content exactly as stored. Inert
+        metadata: computing it hides nothing and changes no agent input;
+        the consumers (sync-time hiding behind qa9a_scope_filter_enabled,
+        QA-9b pre-extraction slicing behind its EA1-3 baseline gate) carry
+        the gates. Computed at parse time because this is the only stage
+        holding the whole document — which rule 2(b) (references to
+        sections this bill adds) needs.
     """
     content = content_bytes if content_bytes is not None else _fetch_content_from_s3(artifact.s3_key)
 
@@ -245,6 +298,9 @@ def parse_and_normalize(
     # QA-8: group passages that restate the same (code, section) more than
     # once and mark the last one in bill order as the representative.
     parallel_version_meta = _group_parallel_versions(passages)
+
+    # QA-9c: parse-time scope annotation for restatement passages.
+    restatement_scope_meta = _restatement_scope_meta(passages, parallel_version_meta)
 
     records = []
     for ordinal, passage_tuple in enumerate(passages):
@@ -280,6 +336,9 @@ def parse_and_normalize(
 
         if ordinal in parallel_version_meta:
             meta.update(parallel_version_meta[ordinal])
+
+        if ordinal in restatement_scope_meta:
+            meta["restatement_scope"] = restatement_scope_meta[ordinal]
 
         record = NormalizedSourceRecord(
             document_version_id=job.document_version_id,
