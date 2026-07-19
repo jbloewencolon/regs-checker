@@ -132,6 +132,18 @@ database. Three files:
 | `extractions.csv` | One row per extracted fact (the agent-generated data itself) |
 | `agent_stats.json` | Per-agent call/success/abstention counts and a live-monitor snapshot |
 
+> **Added 2026-07-19: every output file now stamps its own run.** Each CSV/JSONL
+> export opens with a `# RUN: <date> <time> UTC | type=<run_type> | ...` header line,
+> and `run_summary.json` / `agent_stats.json` both carry a `run_comparison_summary`
+> (or `agent_stats.json`'s `run_summary`, same object) block with `run_timestamp`,
+> `total_duration_seconds`, `total_extractions`, `extractions_per_minute`,
+> `failures` (`total_agent_errors`, `per_agent_errors`, `circuit_breaker_tripped`),
+> `avg_duration_ms_per_agent` / `avg_duration_ms_overall`, `confidence_tier_distribution`,
+> and `token_usage_total` — one place to answer "did this run regress against the
+> last one" without cross-referencing every file by hand. `run_archiver.py`'s
+> `_build_run_comparison_summary()` is the single source of truth for that block;
+> see `tests/unit/test_run_archiver_run_comparison.py`.
+
 ### Run of record (`run_summary.json`)
 - **Type:** `extract` · ran **2026-05-10 → 2026-05-11** (~23.4 hours)
 - **660 passages processed, 0 marked failed** — but this covers only **138 unique laws**

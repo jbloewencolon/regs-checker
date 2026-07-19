@@ -417,6 +417,10 @@ class ExtractionMonitor:
                     "failure_rate": round(stats.failure_rate, 3),
                     "tokens": stats.total_input_tokens + stats.total_output_tokens,
                     "avg_duration_ms": round(stats.avg_duration_ms),
+                    # Precise total, so a consumer computing a weighted overall
+                    # average across agents doesn't have to reverse it out of
+                    # avg_duration_ms * calls (rounding-lossy).
+                    "total_duration_ms": stats.total_duration_ms,
                 }
 
             total_calls = sum(s.calls for s in self._agent_stats.values())

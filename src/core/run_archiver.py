@@ -111,16 +111,25 @@ class RunArchiver:
             Path to the run folder.
         """
         finished_at = datetime.utcnow()
+        duration_seconds = round((finished_at - self.started_at).total_seconds(), 1)
+
+        # Every output file this method writes carries this same run's
+        # timestamp — either as a structured field (JSON) or a header
+        # comment line (CSV/JSONL) — so a file can be identified and compared
+        # against another run's output without cross-referencing a second
+        # file. Computed once so every output shows the identical stamp.
+        run_comparison = self._build_run_comparison_summary(summary, duration_seconds)
 
         # 1. Write run summary
         run_meta = {
             "run_type": self.run_type,
             "started_at": self.started_at.isoformat(),
             "finished_at": finished_at.isoformat(),
-            "duration_seconds": round((finished_at - self.started_at).total_seconds(), 1),
+            "duration_seconds": duration_seconds,
             "folder": str(self.run_dir),
             "run_id": run_id,
             **summary,
+            "run_comparison_summary": run_comparison,
         }
         summary_path = self.run_dir / "run_summary.json"
         with open(summary_path, "w") as f:
@@ -139,7 +148,7 @@ class RunArchiver:
         self._export_low_confidence(db)
 
         # 5. Write agent stats if available from the monitor
-        self._export_agent_stats()
+        self._export_agent_stats(run_comparison)
 
         # Add folder path to the summary so callers can reference it
         summary["folder"] = str(self.run_dir)
@@ -173,6 +182,79 @@ class RunArchiver:
             )
         except Exception as e:
             logger.warning("run_archiver_snapshot_failed", run_id=run_id, error=str(e))
+
+    def _run_header_line(self) -> str:
+        """Timestamped comment line prepended to every CSV/JSONL export.
+
+        Every output file in the run folder carries this same line so a
+        file can be identified — and compared against a different run's
+        output — without opening a second file to find out when it was
+        produced. self.started_at is the one timestamp all outputs in this
+        finalize() call share, matching run_summary.json's `started_at` and
+        `run_comparison_summary.run_timestamp` exactly.
+        """
+        return (
+            f"# RUN: {self.started_at.strftime('%Y-%m-%d %H:%M:%S')} UTC "
+            f"| type={self.run_type} "
+            f"| full run comparison stats: run_summary.json -> run_comparison_summary\n"
+        )
+
+    def _build_run_comparison_summary(
+        self, summary: dict[str, Any], duration_seconds: float
+    ) -> dict[str, Any]:
+        """One consolidated block answering "how does this run compare to
+        the next one" — written into run_summary.json and echoed into
+        agent_stats.json, so neither file requires the other to answer it.
+
+        Combines the live ExtractionMonitor snapshot (per-agent call/error/
+        duration counters — reset at the start of run_extraction(), so this
+        reflects only the run just finished) with the run-level `summary`
+        dict already assembled by run_extraction() (conservation, token
+        usage, confidence tiers aren't tracked there — pulled from the
+        monitor instead).
+        """
+        from src.core.extraction_monitor import get_monitor
+
+        snapshot = get_monitor().snapshot(recent_count=0)
+        agent_stats = snapshot.agent_stats  # {name: {calls, errors, avg_duration_ms, ...}}
+
+        total_calls = sum(a["calls"] for a in agent_stats.values())
+        total_duration_ms = sum(a.get("total_duration_ms", 0) for a in agent_stats.values())
+        avg_duration_ms_overall = (
+            round(total_duration_ms / total_calls) if total_calls else 0
+        )
+
+        total_extractions = summary.get("total_extractions", 0)
+        extractions_per_minute = (
+            round(total_extractions / (duration_seconds / 60), 2)
+            if duration_seconds > 0 else 0.0
+        )
+
+        return {
+            "run_timestamp": self.started_at.isoformat() + "Z",
+            "run_type": self.run_type,
+            "total_duration_seconds": duration_seconds,
+            "total_records_processed": summary.get("records_processed", 0),
+            "total_extractions": total_extractions,
+            "extractions_per_minute": extractions_per_minute,
+            "failures": {
+                "total_records_failed": summary.get("records_failed", 0),
+                "circuit_breaker_tripped": summary.get("circuit_breaker_tripped", False),
+                "circuit_breaker_detail": summary.get("circuit_breaker_detail"),
+                "total_agent_errors": snapshot.total_errors,
+                "overall_agent_failure_rate": round(snapshot.failure_rate, 3),
+                "per_agent_errors": {
+                    name: stats["errors"] for name, stats in agent_stats.items()
+                },
+            },
+            "avg_duration_ms_overall": avg_duration_ms_overall,
+            "avg_duration_ms_per_agent": {
+                name: stats["avg_duration_ms"] for name, stats in agent_stats.items()
+            },
+            "confidence_tier_distribution": snapshot.confidence_tiers,
+            "token_usage_total": summary.get("token_usage", {}).get("total_tokens", 0),
+            "conservation_ok": summary.get("conservation", {}).get("conserved"),
+        }
 
     def _export_extractions(
         self,
@@ -233,6 +315,7 @@ class RunArchiver:
         ]
 
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            f.write(self._run_header_line())
             f.write(
                 "# DISCLAIMER: Informational only — not legal advice. "
                 "Produced by an AI extraction pipeline; may be incomplete, outdated, or incorrect. "
@@ -343,6 +426,7 @@ class RunArchiver:
         for agent_name, agent_rows in grouped.items():
             csv_path = by_agent_dir / f"{agent_name}.csv"
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                f.write(self._run_header_line())
                 f.write(disclaimer)
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
@@ -428,6 +512,7 @@ class RunArchiver:
                 "payload_json", "created_at",
             ]
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                f.write(self._run_header_line())
                 f.write(
                     "# DISCLAIMER: Informational only — not legal advice. "
                     "AI-extracted; verify against current official statutory text.\n"
@@ -532,11 +617,16 @@ class RunArchiver:
                 open(csv_path, "w", newline="", encoding="utf-8") as csv_f,
                 open(jsonl_path, "w", encoding="utf-8") as jsonl_f,
             ):
+                csv_f.write(self._run_header_line())
                 csv_f.write(_disclaimer)
                 jsonl_f.write(
-                    json.dumps({"_record_type": "disclaimer",
-                                "text": "Informational only — not legal advice. "
-                                        "AI-extracted; verify against current official statutory text."})
+                    json.dumps({
+                        "_record_type": "disclaimer",
+                        "run_timestamp": self.started_at.isoformat() + "Z",
+                        "run_type": self.run_type,
+                        "text": "Informational only — not legal advice. "
+                                "AI-extracted; verify against current official statutory text.",
+                    })
                     + "\n"
                 )
                 writer = csv.DictWriter(csv_f, fieldnames=csv_fieldnames)
@@ -600,8 +690,16 @@ class RunArchiver:
             logger.warning("run_archiver_low_confidence_export_failed", error=str(e))
             return None
 
-    def _export_agent_stats(self) -> Path | None:
-        """Export agent performance stats from the extraction monitor."""
+    def _export_agent_stats(self, run_comparison: dict[str, Any] | None = None) -> Path | None:
+        """Export agent performance stats from the extraction monitor.
+
+        Args:
+            run_comparison: The same run_comparison_summary block written to
+                run_summary.json. Echoed here (under "run_summary") so this
+                file also carries its own run timestamp / failures / avg
+                duration and doesn't require opening run_summary.json to
+                answer "when was this, and how did it do."
+        """
         try:
             from src.core.extraction_monitor import get_monitor
             monitor = get_monitor()
@@ -617,6 +715,8 @@ class RunArchiver:
                 "compare to run_summary.json token_usage which records result "
                 "tokens only (excludes retries)"
             )
+            if run_comparison is not None:
+                stats_dict["run_summary"] = run_comparison
 
             stats_path = self.run_dir / "agent_stats.json"
             with open(stats_path, "w") as f:
