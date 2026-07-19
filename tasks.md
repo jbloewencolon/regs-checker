@@ -1213,53 +1213,128 @@ $/law in `run_summary.json` before/after so the trade is explicit.
 > D-6 interim editor identity + CSRF (full auth stays Run-1 6a) · D-7 bill-level
 > payloads read-only in MVP.
 
-### Phase LC-0 — Repository alignment & technical discovery (S)
-- ⏳ **LC-0a** — decision record `docs/law_card_decisions.md`: ratify D-1…D-7
-  (product owner signs D-1, D-4, D-6). D-1 is the only decision gating a whole
-  phase (LC-4); LC-1…LC-3 proceed regardless. *(product owner, BE)*
-- ⏳ **LC-0b** — relocate `Law Card Copy/` → `reference/law_card_bundle/`
-  (space-free path, reference-only, excluded from lint/test globs); extract
-  `lawcard-tokens.css` → `static/`; convert `fixtures/refLaws.js` →
-  `tests/fixtures/law_cards/*.json` (REF_CO/CT/NM/NY span the render matrix:
-  enacted/effective/withdrawn × curated/stub × 1–3 roles × enforcement
-  null/present/TBD). *(BE)*
-- ⏳ **LC-0c** — design-rules spec `docs/law_card_design_rules.md`: honest-unknown,
-  enforcement gating, verbatim semantics, disclosure levels — written as testable
-  assertions (they become LC-2 template tests). Contrast-check the `--lc-*`
-  palette + resolve the dark-scheme question (bundle is light-only; dashboard is
-  dark). *(FE, BE)*
-- ⏳ **LC-0d** — card-JSON spike: hand-assemble one real law's card (CO SB205)
-  from the DB to validate the assembler contract before writing it; measure
-  extractions-table growth per run × 3 (D-1 sizing evidence). *(BE)*
+### Phase LC-0 — Repository alignment & technical discovery (S) — ✅ LANDED 2026-07-19
+- ✅ **LC-0a** — `docs/law_card_decisions.md`: D-1…D-7 ratified with working
+  resolutions; D-1/D-4/D-6 explicitly flagged as provisional pending
+  product-owner sign-off (none present in the implementation session), with
+  the rework blast-radius of each spelled out.
+- ✅ **LC-0b** — `Law Card Copy/` → `reference/law_card_bundle/`;
+  `lawcard-tokens.css` → `static/css/`; `fixtures/refLaws.js` → `tests/fixtures/
+  law_cards/*.json` (converted via a Node dump script, byte-identical to
+  source, not hand-transcribed).
+- ✅ **LC-0c** — `docs/law_card_design_rules.md` written as 9 numbered,
+  testable assertions. Corrects the plan's dark-scheme assumption: the real
+  dashboard theme (`static/css/style.css`) is light, not dark — no
+  reconciliation needed.
+- ✅ **LC-0d** — card-JSON spike run against real committed data (`fact_laws
+  .csv` row 48 + 11 CO SB205 gold-standard fixtures; no live DB reachable in
+  the planning session). Findings folded into the plan doc and directly
+  informed LC-1c: `status_id` blank for real in-force laws (confirms
+  `DocumentVersion.temporal_status`'s own non-null default already solves
+  this at the DB layer — no CSV-side inference needed in the assembler),
+  `iapp_scope`/`iapp_section` need their own card surface, clause- vs.
+  bill-level enforcement confirmed as genuinely separate data paths.
 
-### Phase LC-1 — Law-card data model & API foundation (M) — the keystone; fixes G-1
-- ⏳ **LC-1a** — migration: `extraction_field_edits` (extraction_id +
-  canonical_key + extraction_identity for run survival, field_path, old/new
-  JSONB, required reason, status proposed|applied|reverted|superseded|orphaned,
-  validation_report, editor, lock_token), `law_card_states` (per law × run
-  rollup + card cache), `extractions.effective_payload` (nullable overlay;
-  base `payload` becomes write-once). *(BE, SDPA)*
-- ⏳ **LC-1b** — `src/core/field_catalog.py`: every payload field of all 6 clause
-  schemas → plain-language label, help text, widget type, vocab source,
-  material-field flag, glossary entry. CI test: schema field without a catalog
-  entry fails. (EAR-5-1's alias tables plug in here when they land.) *(NLP, FE)*
-- ⏳ **LC-1c** — `src/core/law_card_assembler.py` (pure read-model: law + run +
-  bill-level + extractions w/ fields, evidence, flags, gaps) +
-  `src/core/edit_service.py` (propose → dry-run validate via existing Pydantic
-  schemas / `normalize_date` / vocab / `check_numeric_grounding` /
-  span re-verification → apply w/ optimistic lock → revert; recomputes
-  `effective_payload`; writes `ReviewAction`). *(BE, NLP)*
-- ⏳ **LC-1d** — `src/api/routes/law_card_api.py`: GET /api/laws, GET
-  /api/laws/{key}/card?run_id=, POST edit propose/validate/apply/revert. New
-  module — `dashboard.py` (6,424 lines) is never grown. *(BE)*
-- ⏳ **LC-1e** — **kill the destructive edit path**: reimplement
-  `POST /api/review/{queue_id}/edit` on `edit_service` (same form, non-destructive
-  engine); add `Extraction.current_payload` property
-  (`COALESCE(effective_payload, payload)`) and switch `sync_extractions.py`,
-  `rollup_matrix.py`, `concept_grouping.py` to it; grep-audit every other
-  `.payload` consumer; integrity assertion that base payload never mutates
-  post-creation. Approved-edited rows sync with `edited_by_analyst` provenance
-  (P3-gate coordination). *(BE)*
+### Phase LC-1 — Law-card data model & API foundation (M) — ✅ LANDED 2026-07-19 (the keystone; fixes G-1)
+> **Implementation note:** this phase was built and verified with a full
+> local dev environment (venv + pinned deps + a real Postgres 16 instance)
+> that no prior session in this repo's history had access to — every
+> migration and every DB-touching code path below was verified against a
+> live database (up/down/re-up round trips, real seeded data, real FastAPI
+> `TestClient` calls), not just unit-tested with mocks. 1686/1686 tests
+> passing across the phase (baseline 1549 + 137 new); CI's blocking `E9,F`
+> ruff gate clean throughout.
+- ✅ **LC-1a** — migration `72ad4147a628`: `extraction_field_edits`
+  (canonical_key + extraction_identity for run survival, field_path,
+  old/new JSONB, required reason, status proposed|applied|reverted|
+  superseded|orphaned with a partial unique index enforcing one active
+  edit per field, validation_report, editor, lock_token),
+  `law_card_states` (per law × run rollup + invalidatable card cache),
+  `extractions.effective_payload` + `human_review_state` (base `payload`
+  now write-once) + `Extraction.current_payload` property. Live-verified:
+  full 40-migration chain applied clean to a scratch DB, then this
+  migration's own upgrade/downgrade/re-upgrade round-trip — which caught
+  and fixed a real SQLAlchemy postgres-ENUM double-create bug
+  (`create_type=False` needed when an enum is both pre-created and
+  referenced in the same `create_table`). 20 tests.
+- ✅ **LC-1b** — `src/core/field_catalog.py`: plain-language label/help/
+  widget/material-flag registry for all 19 Pydantic models (6 clause
+  payloads + nested) via schema reflection (`iter_schema_models`/
+  `iter_schema_fields` walk `EXTRACTION_TYPE_SCHEMAS` through Pydantic's
+  own `model_fields`, so coverage tracks the real schemas, not a mirror
+  list). The reflection-based coverage test caught two real bugs while
+  authoring: `EvidenceSpan`'s own fields weren't cataloged (added a new
+  `READONLY` widget — evidence quotes are proof, never hand-edited to
+  match a corrected fact) and `ObligationPayload.object_`'s alias mismatch
+  (Pydantic exposes the Python attribute name, but `model_dump(by_alias=
+  True)` — what's actually persisted — writes the key as `"object"`;
+  `iter_schema_fields` now resolves each field's storage alias). Verified
+  against real gold-standard extraction payloads with zero unresolved
+  fields. `material_fields_for()` implements the EAR-2-1 material-field
+  spec. 25 tests.
+- ✅ **LC-1c** — `src/core/law_card_assembler.py` (assembles law + run +
+  bill-level + extractions w/ field_catalog-annotated fields, per-field
+  evidence honoring verification tier, `render_hint` computed server-side
+  per Design Rule 7) + `src/core/edit_service.py` (propose → dry-run
+  validate per-widget incl. `check_numeric_grounding` warnings → apply w/
+  optimistic lock → revert; `effective_payload` always rebuilt from the
+  immutable base + every applied edit replayed in order). Live-DB
+  verification caught a real bug: `SessionLocal` runs with `autoflush=
+  False` project-wide, so the recompute's own query for "applied" edits
+  was running against pre-update DB state and silently missing the edit
+  just applied in the same call — `apply_edit` reported `success=True`
+  while the payload underneath never changed. Fixed with an explicit
+  `db.flush()`; a unit-test-only (mocked-session) suite would not have
+  caught this. 32 tests (19 unit incl. a parametrized drift-check pinning
+  edit_service's and the assembler's independent
+  `ExtractionType → catalog-model` mappings to agreement; 13 integration
+  against real Postgres).
+- ✅ **LC-1d** — `src/api/routes/law_card_api.py`: `GET /api/laws`, `GET
+  /api/laws/{key}/card`, `POST .../extractions/{id}/validate` (dry-run
+  "Check"), `POST .../extractions/{id}/edits` (propose+apply in one call —
+  "Save"), `POST /api/edits/{id}/revert`. New module, mounted directly in
+  `app.py` — `dashboard.py` (6,424 lines) was not touched.
+  `_load_extraction_for_law` guards against a cross-law extraction id
+  mismatch (400, not a silent wrong-law write). 12 integration tests
+  against a real `TestClient` + live Postgres; required a fixture fix
+  mid-authoring (unique canonical_key per test run, since the routes
+  correctly `db.commit()` and a fixed key collided with the prior run's
+  committed row).
+- ✅ **LC-1e** — **both destructive edit paths killed** (a grep-audit found
+  a second one beyond the plan's named target): `review_routes.py`'s
+  `POST /api/review/{id}/edit` AND `internal.py`'s `POST /review/queue/
+  {id}/action` (approve-with-corrections) both reimplemented on
+  edit_service — same external contracts, zero prior test coverage on
+  either before this. `apply_edit`/`revert_edit` now write the audit
+  `ReviewAction` centrally (using the previously-unused `corrections`
+  JSONB column) instead of each call site remembering to. Consumer sweep
+  went beyond the three named targets after a full grep-audit of every
+  `.payload` site in `src/`: `sync_extractions.py`'s 3 raw-SQL SELECTs →
+  `COALESCE(effective_payload, payload)`; the 3 product-serving
+  materialized views + dependency-tree query (`src/db/views.py` +
+  migration `4457bebc03c0` — materialized views can't `CREATE OR REPLACE`,
+  so this needed a real drop+recreate, live-verified end-to-end including
+  firing the actual `trg_refresh_on_review` trigger and confirming
+  `served_obligations` showed a corrected value with the stale original
+  gone); `concept_grouping.py`, `condition_parser.py`,
+  `summary_generator.py` (one-line `current_payload` switches);
+  `enforcement_normalizer.py` (`func.coalesce()`, a raw-column SELECT not
+  an ORM instance); `dashboard.py`'s 4 export/display sites. Explicitly
+  scoped out and documented, not silently skipped: `verification_runner
+  .py`'s CV/gap-detection reads (touches confidence-recompute semantics —
+  a separate decision), `extractor.py`'s live dedup and `run_archiver.py`'s
+  export snapshots (both are point-in-time records of what the pipeline
+  produced, same reasoning as why `payload` itself stays write-once),
+  `manual_extraction.py`'s CLI dedup check. `rollup_matrix.py` needed no
+  direct fix — it reads Policy Navigator's own `rollup_eligible_extractions`
+  view (lives entirely outside this repo, fed by `sync_extractions.py`),
+  so the sync fix already makes it edit-aware transitively. 8 new
+  integration tests (`test_g1_fix_e2e.py`).
+  **Deferred to product/operator, not done here:** `edited_by_analyst`
+  sync provenance stamp (P3-gate coordination) — the remote
+  `sync_extractions.py` COALESCE fix requires the LC-1a migration applied
+  to the Regs Checker Supabase target first, an operator action this
+  sandbox can't perform.
 
 ### Phase LC-2 — Read-only law-card dashboard (M)
 - 🔒 **LC-2a** *(after LC-1)* — `src/api/routes/law_card_routes.py` +
@@ -1352,6 +1427,21 @@ role-based filtering, concept-layer cards, full authn/z (Run-1 6a).
 aliases) — the card consumes both when they land; `dashboard.py` is never grown
 (split remains deferred); P3 tier-only sync gate is why D-4's
 `edited_by_analyst` provenance stamp is non-optional.
+
+> **Status (2026-07-19, implementation session):** LC-0 and LC-1 both fully
+> landed and live-DB-verified (commits: LC-0 repo alignment, then four
+> LC-1 commits — data model/field catalog, assembler/edit service,
+> JSON API, consumer sweep). G-1 is fixed at both sites it existed. **Next
+> up: LC-2** (read-only dashboard templates) is now unblocked — it's pure
+> Jinja2/HTMX template work with no DB-migration risk, a natural next
+> session's starting point. Two operator actions this session could not
+> perform: (1) apply migrations `72ad4147a628` + `4457bebc03c0` to the real
+> dev/prod database (`python start.py` → `alembic upgrade head`, per
+> CLAUDE.md) — everything above was verified against a disposable local
+> scratch Postgres this sandbox stood up itself, not the project's real DB;
+> (2) product-owner sign-off on decisions D-1/D-4/D-6
+> (`docs/law_card_decisions.md`), currently shipped under the documented
+> provisional resolutions.
 
 ---
 
