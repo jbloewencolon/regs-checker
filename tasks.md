@@ -1530,6 +1530,86 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
   `python -m src.scripts.recompute_confidence`. The 53 stale 2026-07-12 rows
   (AZ SB 1359, AR HB1877, TMP-AZ) predate all QA fixes — re-extract or exclude.
 
+---
+
+## Run Output Visibility Plan (ROV) — Timestamping & Run Comparison Summary (2026-07-19)
+
+> **Goal:** Enable analysts to compare extraction runs without manual cross-referencing of
+> multiple output files. Every run export (CSV, JSONL, JSON) now carries a distinct
+> date/time stamp and each run summary includes failures, per-agent performance metrics,
+> total time, throughput, and other key signals needed to detect regressions.
+>
+> **Session summary (2026-07-19):** Run output timestamp and comparison summary feature
+> fully implemented, tested, and pushed to branch `claude/legal-extraction-architecture-1exlem`.
+> All 1473 unit tests passing; CI green.
+
+### ROV-1 — Run header line (distinct timestamp on every export file) ✅ LANDED
+- **Implementation:** `_run_header_line()` in `src/core/run_archiver.py` generates
+  `# RUN: <date> <time> UTC | type=<run_type> | run_summary.json at <start> (started <date>)`
+  — emitted as the first line of every CSV/JSONL export file so analysts can identify
+  which run a sample came from at a glance.
+- **Applied to:** `extractions.csv`, `by_agent/<agent>.csv`, `bill_level_extractions.csv`,
+  `low_confidence_extractions.csv`, `low_confidence_extractions.jsonl`
+- **Tests:** 4 tests in `test_run_archiver_run_comparison.py::TestRunHeaderLine` verify
+  timestamp format, distinctness, and applicability across run types.
+
+### ROV-2 — Run comparison summary block ✅ LANDED
+- **Implementation:** `_build_run_comparison_summary()` in `src/core/run_archiver.py`
+  computes and returns a consolidated block with:
+  - `run_timestamp` (ISO 8601 + Z)
+  - `run_type` (extract/retry/recover)
+  - `total_duration_seconds`
+  - `total_extractions`
+  - `extractions_per_minute` (throughput metric)
+  - `failures` object: `total_agent_errors`, `per_agent_errors` dict, `circuit_breaker_tripped`, optional `circuit_breaker_detail`
+  - `avg_duration_ms_per_agent` (per-agent performance)
+  - `avg_duration_ms_overall` (weighted average, precise via stored `total_duration_ms` in monitor)
+  - `token_usage_total`
+  - `conservation_ok` (boolean)
+  - `confidence_tier_distribution` (A/B/C/D counts)
+  
+- **Wiring:** `finalize()` calls `_build_run_comparison_summary()` once and passes it to:
+  - `run_summary.json` as `run_comparison_summary` block (peer to `started_at`)
+  - `agent_stats.json` as `run_summary` block (same object for consistency)
+  - Each CSV header line via `_run_header_line()`
+
+- **No-divide-by-zero guards:** zero-duration and zero-extraction runs compute
+  cleanly to 0.0 without raising exceptions.
+
+### ROV-3 — Monitor enhancement (precise duration tracking) ✅ LANDED
+- **Implementation:** `src/core/extraction_monitor.py` `AgentStats` class now carries
+  `total_duration_ms` (cumulative, precise) in addition to `avg_duration_ms` (computed
+  per-call). The snapshot dict includes both so consumers computing a weighted overall
+  average can avoid rounding loss: `overall_avg = sum(agent.total_duration_ms) / sum(agent.calls)`.
+
+### ROV-4 — Integration & validation ✅ LANDED
+- **Test coverage:** 13 tests in `tests/unit/test_run_archiver_run_comparison.py`
+  - 4 header-line tests (format, distinctness, multi-run tracking)
+  - 5 comparison-summary tests (failures, per-agent errors, duration averaging, zero-division guards, circuit-breaker detail)
+  - 4 end-to-end finalize tests (JSON consistency across run_summary/agent_stats, CSV headers on different output types)
+  
+- **Real integration:** populated via the real `ExtractionMonitor` singleton
+  (not a mock), proving the actual run-to-summary flow works end-to-end.
+
+- **Backward-compat:** existing output files unchanged except for the new header line
+  prepended; `run_summary.json` gains a new top-level key (`run_comparison_summary`),
+  non-breaking for consumers that ignore unknown keys; `agent_stats.json` mirrors the
+  block as `run_summary` (new key, backward-compatible).
+
+### ROV sequencing & next steps
+1. **Live validation (operator machine):** Next extraction run will emit all new outputs
+   with timestamps and comparison blocks. Operator should confirm:
+   - Header lines are human-readable and appear on first line of all CSV/JSONL exports
+   - `run_summary.json` and `agent_stats.json` contain the comparison block
+   - Two runs at different times produce different timestamp values
+   - Timestamp precision is sufficient for correlation (ISO 8601 second resolution)
+
+2. **Dashboard integration (optional, Phase 2):** A future panel could render the
+   comparison block to surface throughput, per-agent error rates, and run health in
+   the UI — but the data is now queryable via the JSON exports for any consumer.
+
+---
+
 ### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
 **Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
