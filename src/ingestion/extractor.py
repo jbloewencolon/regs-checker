@@ -938,6 +938,49 @@ def _check_parallel_version(record: NormalizedSourceRecord) -> bool:
     return meta.get("parallel_version_representative", True) is not False
 
 
+def _prescope_agent_input(
+    record: NormalizedSourceRecord, passage_text: str
+) -> str | None:
+    """QA-9b (plan Phase 3, GATED OFF by default): reduced agent input for
+    restatement passages, built from the QA-9c parse-time scope annotation.
+
+    Returns the excerpt (in-scope subdivisions + shared preamble, with a
+    one-line context header and "[...]" elision markers), or None to use
+    the full passage text. No-ops unless settings.qa9b_prescope_enabled is
+    True — flipping that flag is gated on the EA1-3 evaluation baseline:
+    this changes agent INPUTS, which must be measured by the harness (no
+    F1 regression on the gold fixtures), never assumed safe.
+
+    Span verification is untouched either way: it always runs against the
+    full stored passage (compute_confidence receives passage.text below),
+    and every kept chunk is a verbatim slice of it, so quotes from the
+    excerpt still string-verify. Offsets in the annotation are only valid
+    against text_content exactly as stored, so any mismatch between the
+    in-flight passage text and the stored record text disables prescoping
+    for that passage rather than slicing at wrong offsets.
+
+    Deliberately NOT applied on the retry/recovery paths
+    (run_retry_failed, run_recovery_extraction): those re-run previously
+    FAILED extractions, where maximum context is worth the tokens —
+    prescoping is a volume-path optimization, not a correctness rule.
+    """
+    if not settings.qa9b_prescope_enabled:
+        return None
+    from src.core.restatement_scope import (
+        annotation_is_current,
+        build_inscope_excerpt,
+    )
+
+    annotation = (record.metadata_ or {}).get("restatement_scope")
+    if not annotation_is_current(annotation):
+        return None
+    if passage_text != (record.text_content or ""):
+        return None
+    return build_inscope_excerpt(
+        passage_text, annotation, section_label=record.section_path
+    )
+
+
 def _content_hash(agent_name: str, text: str) -> str:
     """Compute a deduplication hash for (agent, passage_text)."""
     return hashlib.sha256(f"{agent_name}:{text}".encode()).hexdigest()[:24]
@@ -1377,11 +1420,28 @@ def extract_single_record(
         _skip_attempt(db, record.id, excluded_name, run_id=run_id,
                       input_text_hash=passage_text_hash)
 
+    # QA-9b (gated off by default): for restatement passages carrying a
+    # QA-9c annotation, feed agents only the in-scope subdivisions. Routing
+    # above deliberately stays on the FULL text (signal detection should
+    # see everything); span verification below also stays on the full text
+    # (passage.text flows into compute_confidence unchanged). Only the
+    # prompt input shrinks.
+    prescoped_input = _prescope_agent_input(record, passage.text)
+    agent_input = prescoped_input if prescoped_input is not None else passage.text
+    if prescoped_input is not None:
+        logger.info(
+            "prescoped_restatement_input",
+            record_id=record.id,
+            full_chars=len(passage.text),
+            excerpt_chars=len(agent_input),
+        )
+
     # Calculate per-passage token budget.  Short passages never produce
     # large outputs — scaling down avoids wasted GPU time waiting for tokens
     # the model would never fill.  The base budget comes from each agent's
-    # max_tokens_override (pre-doubling for reasoning models).
-    passage_len = len(passage.text)
+    # max_tokens_override (pre-doubling for reasoning models). Uses the
+    # (possibly prescoped) agent input length — that's what the model sees.
+    passage_len = len(agent_input)
 
     # Group agents by model to minimise LM Studio VRAM model swaps.
     # Each group runs sequentially; agents within a group run concurrently.
@@ -1418,7 +1478,7 @@ def extract_single_record(
                 attempt_id = _begin_attempt(db, record.id, agent_name, run_id=run_id,
                                             input_text_hash=passage_text_hash)
                 future = executor.submit(
-                    _run_agent, agent_name, agent, passage.text, ctx,
+                    _run_agent, agent_name, agent, agent_input, ctx,
                     call_max_tokens=scaled_tokens,
                 )
                 futures[future] = (agent_name, passage_text_hash, attempt_id)
@@ -1620,6 +1680,14 @@ def extract_single_record(
                             extraction_meta["items_dropped_by_repair"] = (
                                 result.items_dropped_by_repair
                             )
+                    # QA-9b: record that this extraction came from a prescoped
+                    # (in-scope-subdivisions-only) input, not the full passage —
+                    # same input-honesty pattern as EA0-4's _input_truncated.
+                    if prescoped_input is not None:
+                        extraction_meta["prescoped_input"] = True
+                        extraction_meta["prescoped_chars_dropped"] = (
+                            len(passage.text) - len(prescoped_input)
+                        )
                     # SFH-1d (SF-02): on recall-sampled passages, tag extractions
                     # from agents routing would have skipped — the false-narrowing
                     # evidence the 5% sampling exists to produce.

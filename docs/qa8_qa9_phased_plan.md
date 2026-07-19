@@ -198,11 +198,25 @@ CO SB205 hide-rate 0%; hide-report reviewed and ratified.
 
 ## Phase 2b — QA-9c: parse-time scope annotation (sandbox-actionable, mechanical)
 
-> **Status: planned 2026-07-14.** Added after the Phase-2 sync wiring landed,
-> from the observation that parse time is the only pipeline stage that holds
+> **Status: LANDED 2026-07-14** (planned and implemented the same day).
+> Engine refactor: `annotate_restatement_scope()` + `scope_for_offset()` +
+> `annotation_is_current()` + `assess_with_annotation()` in
+> `src/core/restatement_scope.py`, with `assess_extraction_scope` now a
+> thin wrapper over the annotation machinery — the pre-refactor 29 tests
+> passing unmodified is the parity proof. Parser:
+> `_restatement_scope_meta()` in `src/ingestion/parser.py`, merged into
+> `metadata_["restatement_scope"]` next to the QA-8 flags. Sync:
+> `_apply_restatement_scope` prefers a current stored annotation
+> (`assess_with_annotation`), falls back on absence/staleness. 39 tests in
+> `tests/unit/test_restatement_annotation.py` including the real-corpus
+> matrix and the added-section TODO-closure demo (on-the-fly with empty
+> set over-hides AB 2355's formatting rule; the stored annotation keeps it
+> visible). Full suite 1460 passing.
+>
+> Original rationale: parse time is the only pipeline stage that holds
 > the *whole document* — which is exactly the context the scope rules need
 > and the sync path lacks (its query fetches one passage, which is why every
-> QA-9a call site passes `added_section_numbers=set()` today, `# TODO`-marked).
+> QA-9a call site passed `added_section_numbers=set()`, `# TODO`-marked).
 > Move the scope *computation* to ingest; leave scope *consumption* where it
 > is (QA-9a at sync, QA-9b at extraction), each behind its existing gate.
 
@@ -295,6 +309,25 @@ rather than re-running the engine.
 
 ## Phase 3 — QA-9b: pre-extraction scoping (token savings; gated on EA1-3 baseline)
 
+> **Status: code LANDED 2026-07-14, gated OFF by
+> `settings.qa9b_prescope_enabled` (default False).**
+> `build_inscope_excerpt()` (`restatement_scope.py`) builds the reduced
+> input — context header naming the section, in-scope regions verbatim,
+> `[...]` elision markers — returning None when there's nothing to trim or
+> nothing in scope (conservative fallback to full text).
+> `_prescope_agent_input()` (`extractor.py`) applies it in
+> `extract_single_record` only: routing still sees the full text, span
+> verification still runs against the full stored passage (kept chunks are
+> verbatim slices, so quotes from the excerpt still string-verify), and
+> the retry/recovery paths deliberately keep full-context inputs.
+> Extractions from a prescoped input carry
+> `extraction_meta["prescoped_input"]` + `prescoped_chars_dropped`
+> (EA0-4's input-honesty pattern). On the real SB 926 representative the
+> excerpt is under half the full restatement's size. **Flipping the flag
+> remains gated on the EA1-3 baseline**: capture baseline on full-passage
+> inputs → enable → rerun harness → require no F1 regression on the gold
+> fixtures (the Phase-4 stress fixtures exist precisely to catch this).
+
 Apply the Phase-2 in-scope test **before** extraction instead of after:
 for restatement passages, feed clause agents only the in-scope subdivisions
 (with a one-line context header naming the section) — read from the
@@ -370,8 +403,8 @@ AB 2355-style laws improves.
 | 0 operator repair | QA-6/7 merged | — | no (operator) |
 | 1 QA-8 collapse | — | tests only (deterministic, no input change to agents on kept passages) | **yes — landed 2026-07-14** |
 | 2 QA-9a sync scoping + QA-10 | Phase 1 (grouping metadata) | RPR/product ratification of in-scope rules + hide-report | engine + QA-10 + sync plumbing: **yes — landed 2026-07-14, flag OFF by default**; flipping live: no (ratification + hide-report external) |
-| 2b QA-9c parse-time scope annotation | Phase 2 engine | tests only (inert metadata — annotation ≠ activation; consumers keep their own gates) | **yes — planned 2026-07-14** |
-| 3 QA-9b pre-extraction scoping | Phases 1-2b + **EA1-3 baseline** | harness diff, no F1 regression | code yes; measurement operator |
+| 2b QA-9c parse-time scope annotation | Phase 2 engine | tests only (inert metadata — annotation ≠ activation; consumers keep their own gates) | **yes — landed 2026-07-14** |
+| 3 QA-9b pre-extraction scoping | Phases 1-2b + **EA1-3 baseline** | harness diff, no F1 regression | code: **yes — landed 2026-07-14, flag OFF by default**; measurement: operator |
 | 4 fixtures + source fix | Phase 2 learnings | product decision on re-fetch | fixtures: **yes — landed 2026-07-14**; source fix: no (product decision) |
 
 ## The SB 926 strategy, end to end

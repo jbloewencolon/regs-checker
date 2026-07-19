@@ -1,16 +1,30 @@
-"""QA-9a: restatement-scoped relevance (plan Phase 2, docs/qa8_qa9_phased_plan.md).
+"""QA-9a/QA-9c: restatement-scoped relevance (plan Phases 2/2b,
+docs/qa8_qa9_phased_plan.md).
 
 STATUS: engine implemented and tested against the real corpus (SB 926, AB
-2355). NOT YET WIRED into the live sync path (src/core/payload_adapter.py).
-Unlike QA-6/QA-7's mechanical guards, the in-scope rules below are a
-relevance judgment — they decide which parts of a bill's own text get
-treated as "about AI" — and the plan requires RPR/product ratification
-before they can start hiding real extraction rows (see the plan's Phase 2
-step 4). This module is the ready-to-wire engine; wiring it into
-payload_adapter.py (setting ai_nexus/display the way QA-6's
-classify_legal_context() does for preemption_signal) is the remaining step,
-gated on that sign-off plus generating and reviewing the per-law hide-report
-the plan calls for.
+2355). WIRED into the sync path (src/core/payload_adapter.py) behind
+``settings.qa9a_scope_filter_enabled``, which defaults to False — unlike
+QA-6/QA-7's mechanical guards, the in-scope rules below are a relevance
+judgment (they decide which parts of a bill's own text get treated as
+"about AI"), and the plan requires RPR/product ratification before they can
+start hiding real extraction rows (Phase 2 step 4). A human flips the flag
+post-ratification; until then every consumer of this module is a no-op in
+production.
+
+QA-9c (Phase 2b) moves the scope *computation* to parse time:
+``annotate_restatement_scope()`` classifies a restatement's whole
+subdivision tree in one pass and the parser stores the result in
+``NormalizedSourceRecord.metadata_["restatement_scope"]``. Parse time is
+the only pipeline stage holding the whole document — which is exactly the
+context rule 2(b) (references to sections this bill adds) needs and the
+sync path lacks. Consumers (sync-time hiding, QA-9b pre-extraction
+slicing) read the stored annotation; ``assess_extraction_scope`` remains
+as the on-the-fly fallback for rows ingested before annotation existed,
+reimplemented on top of the annotation machinery so there is exactly one
+implementation of the rules. Stored annotations carry
+``SCOPE_ENGINE_VERSION``; a version mismatch (rules/vocabulary changed
+since annotation) makes consumers treat the annotation as absent rather
+than silently applying stale verdicts.
 
 Principle (plan fact 0.3, the naive-keyword-filter simulation that hid 98%
 of two genuine AI laws): relevance filtering applies ONLY inside a
@@ -49,6 +63,17 @@ _DOMAIN_TERMS: set[str] = {
 }
 
 SCOPE_KEYWORDS: set[str] = _BASE_AI_KEYWORDS | _DOMAIN_TERMS
+
+# QA-9c: bump whenever SCOPE_KEYWORDS or the in-scope rules change. Stored
+# annotations stamped with an older version are treated as absent by
+# consumers (annotation_is_current() → fall back to on-the-fly assessment),
+# so a rule/vocabulary change can never silently apply stale verdicts.
+SCOPE_ENGINE_VERSION = 1
+
+# Deterministic iteration order so the keyword named in a region's `reason`
+# is stable across processes (set iteration order varies with string hash
+# randomization) — stored annotations must be reproducible.
+_SORTED_SCOPE_KEYWORDS = sorted(SCOPE_KEYWORDS)
 
 # Scope trigger (plan Phase 2 step 1): a single-version restatement this
 # large plausibly buries unrelated content the way SB 926's parallel
@@ -163,6 +188,194 @@ def find_evidence_offset(evidence_text: str, restatement_text: str) -> int | Non
     return index_map[idx]
 
 
+def _keyword_hit(text_lower: str) -> str | None:
+    """First matching scope keyword, in deterministic (sorted) order."""
+    for kw in _SORTED_SCOPE_KEYWORDS:
+        if kw in text_lower:
+            return kw
+    return None
+
+
+def _added_section_hit(top_text: str, added_section_numbers: set[str]) -> str | None:
+    """Rule (b): does this TOP-LEVEL span cite a section this bill adds?
+
+    Checked against the whole top-level span, not just a leaf: AB 2355's
+    § 84504.2(a) cites the added § 84514 once in its lead sentence ("shall
+    include the disclosures required by ... Section 84514"), and every
+    formatting paragraph beneath it — (a)(1)'s "solid white background",
+    (a)(2)'s type size, etc. — implements that cited disclosure without
+    repeating the citation itself. Checking only the leaf would silently
+    hide exactly the "operative body of the AI-disclosure regime" the
+    plan's fact 0.3 identified as the over-filtering trap.
+    """
+    for sec_num in sorted(added_section_numbers):
+        if re.search(rf"\bSection\s+{re.escape(sec_num)}\b", top_text):
+            return sec_num
+    return None
+
+
+def _classify(scoped_text: str, added_reference: str | None) -> tuple[bool, str]:
+    """Rules (a) then (b) on one region's own text.
+
+    `added_reference` is the enclosing top-level span's rule-(b) hit (or
+    None) — precomputed by the caller because it applies to every region
+    inside that span.
+    """
+    kw = _keyword_hit(scoped_text.lower())
+    if kw:
+        return True, f"keyword:{kw}"
+    if added_reference:
+        return True, f"references_added_section:{added_reference}"
+    return False, "no_ai_domain_signal"
+
+
+def annotate_restatement_scope(
+    restatement_text: str,
+    added_section_numbers: set[str] | None = None,
+) -> dict:
+    """QA-9c: classify a restatement's whole subdivision tree in one pass.
+
+    Returns a JSON-serializable annotation:
+        {"engine_version": SCOPE_ENGINE_VERSION,
+         "added_section_numbers": sorted list,
+         "regions": [{"label", "start", "end", "in_scope", "reason"}, ...]}
+
+    Regions partition [0, len(restatement_text)) in document order, with
+    character offsets valid against `restatement_text` exactly as passed
+    (the parser calls this with `text_content` as stored, so offsets stay
+    valid against the DB row). `scope_for_offset()` over these regions
+    reproduces `assess_extraction_scope`'s per-evidence verdicts exactly —
+    the pre-refactor tests in tests/unit/test_restatement_scope.py are the
+    parity proof.
+    """
+    added = added_section_numbers or set()
+    regions: list[dict] = []
+
+    top_spans = parse_top_level_subdivisions(restatement_text)
+    if not top_spans:
+        regions.append({
+            "label": None, "start": 0, "end": len(restatement_text),
+            "in_scope": True, "reason": "no_subdivision_structure",
+        })
+        return {
+            "engine_version": SCOPE_ENGINE_VERSION,
+            "added_section_numbers": sorted(added),
+            "regions": regions,
+        }
+
+    if top_spans[0].start > 0:
+        # Before the first top-level marker — the shared lead-in ("647.
+        # Except as provided ... is guilty of a misdemeanor:") that every
+        # subdivision depends on. Always in scope.
+        regions.append({
+            "label": None, "start": 0, "end": top_spans[0].start,
+            "in_scope": True, "reason": "shared_preamble",
+        })
+
+    for top in top_spans:
+        top_text = restatement_text[top.start : top.end]
+        top_label = f"({top.label})"
+        added_reference = _added_section_hit(top_text, added)
+        second_spans = parse_second_level_subdivisions(top_text)
+
+        if not second_spans:
+            in_scope, reason = _classify(top_text, added_reference)
+            regions.append({
+                "label": top_label, "start": top.start, "end": top.end,
+                "in_scope": in_scope, "reason": reason,
+            })
+            continue
+
+        # Lead-in before the first child marker — scored against ONLY the
+        # lead-in text, not the whole top-level span (which would smuggle a
+        # child's keyword into a sentence that never mentions it, and make
+        # the adjacency rule below unreachable).
+        lead_text = top_text[: second_spans[0].start]
+        in_scope, reason = _classify(lead_text, added_reference)
+        if not in_scope:
+            # Rule (c) adjacency: the shared lead-in of a top-level
+            # subdivision stays in scope if ANY of that subdivision's own
+            # children carry a keyword — siblings are judged independently
+            # and never swept in by this rule.
+            if any(
+                _keyword_hit(top_text[c.start : c.end].lower())
+                for c in second_spans
+            ):
+                in_scope, reason = True, "adjacent_to_in_scope_sibling"
+        regions.append({
+            "label": top_label,
+            "start": top.start, "end": top.start + second_spans[0].start,
+            "in_scope": in_scope, "reason": reason,
+        })
+
+        for child in second_spans:
+            child_text = top_text[child.start : child.end]
+            in_scope, reason = _classify(child_text, added_reference)
+            regions.append({
+                "label": f"{top_label}({child.label})",
+                "start": top.start + child.start,
+                "end": top.start + child.end,
+                "in_scope": in_scope, "reason": reason,
+            })
+
+    return {
+        "engine_version": SCOPE_ENGINE_VERSION,
+        "added_section_numbers": sorted(added),
+        "regions": regions,
+    }
+
+
+def scope_for_offset(annotation: dict, offset: int) -> dict:
+    """Resolve a character offset to its region's verdict.
+
+    Returns {"in_scope": bool, "subdivision": str | None, "reason": str} —
+    the same shape assess_extraction_scope returns. An offset outside every
+    region (malformed annotation, or text changed since annotation — which
+    engine_version bumps should prevent) gets the safe in-scope default.
+    """
+    for region in annotation.get("regions", []):
+        if region["start"] <= offset < region["end"]:
+            return {
+                "in_scope": region["in_scope"],
+                "subdivision": region["label"],
+                "reason": region["reason"],
+            }
+    return {"in_scope": True, "subdivision": None, "reason": "offset_out_of_annotation"}
+
+
+def annotation_is_current(annotation: object) -> bool:
+    """Is this a well-formed annotation from the CURRENT engine version?
+
+    A stale or malformed annotation must be treated as absent (fall back to
+    on-the-fly assessment), never silently applied.
+    """
+    return (
+        isinstance(annotation, dict)
+        and annotation.get("engine_version") == SCOPE_ENGINE_VERSION
+        and isinstance(annotation.get("regions"), list)
+    )
+
+
+def assess_with_annotation(
+    evidence_text: str,
+    restatement_text: str,
+    annotation: dict,
+) -> dict:
+    """Verdict for one evidence span, using a stored (parse-time) annotation.
+
+    Same contract as assess_extraction_scope; the caller is responsible for
+    checking annotation_is_current() first.
+    """
+    offset = find_evidence_offset(evidence_text, restatement_text)
+    if offset is None:
+        # Can't locate the evidence in this restatement — don't guess.
+        # Leaving it in scope is the safe default: a false "in scope"
+        # costs nothing extra (the status quo before this engine existed),
+        # a false "out of scope" would silently hide a real row.
+        return {"in_scope": True, "subdivision": None, "reason": "evidence_not_located"}
+    return scope_for_offset(annotation, offset)
+
+
 def assess_extraction_scope(
     evidence_text: str,
     restatement_text: str,
@@ -173,83 +386,60 @@ def assess_extraction_scope(
     restatement's AI/domain provisions?
 
     Returns {"in_scope": bool, "subdivision": str | None, "reason": str}.
-    NOT WIRED INTO SYNC — see module docstring.
+
+    On-the-fly path: computes a fresh annotation and resolves the evidence
+    against it. Callers holding a stored parse-time annotation (QA-9c)
+    should use assess_with_annotation() instead and skip the recompute.
     """
-    added_section_numbers = added_section_numbers or set()
+    return assess_with_annotation(
+        evidence_text,
+        restatement_text,
+        annotate_restatement_scope(restatement_text, added_section_numbers or set()),
+    )
 
-    offset = find_evidence_offset(evidence_text, restatement_text)
-    if offset is None:
-        # Can't locate the evidence in this restatement — don't guess.
-        # Leaving it in scope is the safe default: a false "in scope"
-        # costs nothing extra (the status quo before this engine existed),
-        # a false "out of scope" would silently hide a real row.
-        return {"in_scope": True, "subdivision": None, "reason": "evidence_not_located"}
 
-    top_spans = parse_top_level_subdivisions(restatement_text)
-    if not top_spans:
-        return {"in_scope": True, "subdivision": None, "reason": "no_subdivision_structure"}
+def build_inscope_excerpt(
+    restatement_text: str,
+    annotation: dict,
+    *,
+    section_label: str | None = None,
+) -> str | None:
+    """QA-9b (plan Phase 3, gated on the EA1-3 baseline): reduced agent
+    input built from a restatement's in-scope regions.
 
-    top = next((s for s in top_spans if s.start <= offset < s.end), None)
-    if top is None:
-        # Falls before the first top-level marker — the shared lead-in
-        # ("647. Except as provided ... is guilty of a misdemeanor:") that
-        # every subdivision depends on. Always in scope.
-        return {"in_scope": True, "subdivision": None, "reason": "shared_preamble"}
+    Returns the excerpt — a one-line context header, then the in-scope
+    regions verbatim in document order with "[...]" markers where
+    out-of-scope text was elided — or None when there is nothing useful to
+    do: annotation not current, everything already in scope (full text is
+    fine), or nothing in scope at all (feeding agents an empty shell is
+    worse than the status quo; conservative fallback to full text).
 
-    top_text = restatement_text[top.start : top.end]
-    second_spans = parse_second_level_subdivisions(top_text)
-    rel_offset = offset - top.start
-    second = None
-    if second_spans:
-        second = next((s for s in second_spans if s.start <= rel_offset < s.end), None)
-        if second is not None:
-            scoped_text = top_text[second.start : second.end]
-        else:
-            # Evidence falls in the lead-in before the first child marker —
-            # score it against ONLY that lead-in, not the whole top-level
-            # span (which would smuggle a child's keyword into a sentence
-            # that never mentions it, and make the adjacency rule below
-            # unreachable).
-            scoped_text = top_text[: second_spans[0].start]
-    else:
-        scoped_text = top_text
+    Every kept chunk is a verbatim slice of `restatement_text`, so evidence
+    spans quoted from the excerpt still string-verify against the full
+    stored passage — span verification MUST keep running against the full
+    text, only the agent prompt input shrinks.
+    """
+    if not annotation_is_current(annotation):
+        return None
+    regions = annotation["regions"]
+    kept = [r for r in regions if r.get("in_scope")]
+    if len(kept) == len(regions) or not kept:
+        return None
 
-    label = f"({top.label})" + (f"({second.label})" if second else "")
-    lowered = scoped_text.lower()
-
-    for kw in SCOPE_KEYWORDS:
-        if kw in lowered:
-            return {"in_scope": True, "subdivision": label, "reason": f"keyword:{kw}"}
-
-    # Rule (b) is checked against the whole TOP-LEVEL span, not just the
-    # leaf: AB 2355's § 84504.2(a) cites the added § 84514 once in its lead
-    # sentence ("shall include the disclosures required by ... Section
-    # 84514"), and every formatting paragraph beneath it — (a)(1)'s "solid
-    # white background", (a)(2)'s type size, etc. — implements that cited
-    # disclosure without repeating the citation itself. Checking only the
-    # leaf would silently hide exactly the "operative body of the
-    # AI-disclosure regime" the plan's fact 0.3 identified as the
-    # over-filtering trap.
-    for sec_num in added_section_numbers:
-        if re.search(rf"\bSection\s+{re.escape(sec_num)}\b", top_text):
-            return {
-                "in_scope": True,
-                "subdivision": label,
-                "reason": f"references_added_section:{sec_num}",
-            }
-
-    # Rule (c) adjacency: evidence in the shared lead-in of a top-level
-    # subdivision (before its first numbered/lettered clause) stays in
-    # scope if ANY of that subdivision's own children are in-scope —
-    # siblings are judged independently and never swept in by this rule.
-    if second is None and second_spans and rel_offset < second_spans[0].start:
-        for child in second_spans:
-            child_text = top_text[child.start : child.end].lower()
-            if any(kw in child_text for kw in SCOPE_KEYWORDS):
-                return {
-                    "in_scope": True,
-                    "subdivision": f"({top.label})",
-                    "reason": "adjacent_to_in_scope_sibling",
-                }
-
-    return {"in_scope": False, "subdivision": label, "reason": "no_ai_domain_signal"}
+    header = (
+        f"[Restatement excerpt — {section_label or 'restated code section'}: "
+        "subdivisions outside this bill's AI/domain scheme are omitted; "
+        "omitted text restates existing law unchanged.]"
+    )
+    parts: list[str] = [header]
+    prev_end: int | None = None
+    for region in kept:
+        if prev_end is not None and region["start"] > prev_end:
+            parts.append("[...]")
+        elif prev_end is None and region["start"] > 0:
+            parts.append("[...]")
+        parts.append(restatement_text[region["start"] : region["end"]])
+        prev_end = region["end"]
+    if prev_end is not None and prev_end < len(restatement_text):
+        parts.append("[...]")
+    return "\n".join(parts)
