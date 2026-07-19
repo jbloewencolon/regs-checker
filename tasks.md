@@ -1610,6 +1610,125 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 
 ---
 
+## NVIDIA Throughput & Provider Plan (NIM) — from NIM briefing review (2026-07-19)
+
+> Source: operator-supplied briefing on NVIDIA `build.nvidia.com` free-tier limits,
+> model options, monitoring, and alternative providers. Every load-bearing claim was
+> verified against this branch before planning (same discipline as the RC/SFH plans).
+> Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+>
+> **Verification corrections to the briefing (read before acting on it):**
+> (1) The "3-attempt / 4-second retry" claim is **stale** — `llm_provider.py` already
+> does 6 attempts with 1/2/4/8/16s exponential backoff (2026-06-15 hardening, merged).
+> Remaining real gaps: no jitter, no `Retry-After` honoring, ~31s cumulative cap.
+> (2) "Spread agents across distinct models" is **largely already done** — three
+> distinct NVIDIA models are assigned (8B: triage/definition_actor/preemption;
+> `gpt-oss-120b`: 4 clause + 3 bill-level agents; 70B: CV/gap per SFH-1m). The real
+> issue is **skew** (7 heavy agents on one model's budget), not absence of spreading.
+> (3) The mislabel is **confirmed**: `llm_provider.py:609` logs `nvidia_quota_exhausted`
+> for any retry-exhausted 429 without ever inspecting the body; `extractor.py:190`
+> maps every 429 to `quota_error`. (4) **No proactive pacing exists** — only reactive
+> backoff; `max_concurrent_agents_per_model` (RR6b) caps *concurrency* (VRAM), not
+> *rate*. (5) The ~40 RPM figure and the §4 model catalog are blog-sourced, not NVIDIA
+> docs — treat as configurable hypotheses to measure, never hardcoded constants.
+> (6) **Tension with EA4-4**: EA4-4 consolidates definition_actor + preemption ONTO
+> the strong model for accuracy; the briefing spreads across models for throughput.
+> Synthesis: move them to a strong model that is *not* `gpt-oss-120b` (accuracy lift
+> AND a separate per-model rate budget) — still EA1-gated like any model change.
+>
+> **Live-run evidence (2026-07-19 monitor snapshot, run in progress, 81/806
+> passages):** the pipeline is **not currently rate-limited** — 1,294 agent calls
+> over ~9h elapsed ≈ 2.4 calls/min aggregate against a reported ~40 RPM/model cap
+> (~94% of the rate budget unused; `gpt-oss-120b` lane ~1.8 RPM, 8B lane ~0.6 RPM).
+> Zero 429s observed; failure rate 0.2%. The binding constraint is **per-call
+> latency × serialization** (obligation avg 195.7s/call, 462 calls ≈ 25h cumulative),
+> projecting **~3.7 days** for the full 806-passage run. This reframes NIM-1: pacing
+> is the *guardrail that lets concurrency be raised into the unused budget*, not a
+> defense against current throttling.
+
+### Phase NIM-0 — Measure and label honestly (sandbox-actionable; land first)
+- ⏳ **NIM-0a** — per-model request telemetry at the provider chokepoint: requests,
+  rolling trailing-60s RPM (peak recorded), 429s seen / retry-recovered / post-retry
+  failed, cumulative tokens per model. Surface in the `ExtractionMonitor` snapshot +
+  a new `llm_throttle_telemetry` block in the ROV `run_comparison_summary`. No
+  behavior change — observability only. *(BE)*
+- ⏳ **NIM-0b** — split the 429 label: read a body excerpt on 429 and classify
+  `rate_limited_transient` / `allowance_exhausted` (quota language in body) /
+  `429_unclassified`; replace the single `nvidia_quota_exhausted` label and split
+  `_classify_llm_error`'s `quota_error` accordingly. *(BE)*
+- ⏳ **NIM-0c** — retry polish: jitter on the existing exponential backoff, honor
+  `Retry-After` when present (jittered fallback when absent), attempts/cap
+  settings-driven instead of hardcoded `_max_retries = 5`. Unit-testable against
+  mocked httpx. *(BE)*
+- ⏳ **NIM-0d** *(new, from the live snapshot; rides with ROV)* — monitor feed
+  signal-to-noise: tier-D warnings are emitted per chunk/call, flooding the feed
+  (842 warnings burying 2 real errors in the observed run). Dedupe per
+  (agent, record) or summarize per passage so errors stay visible. *(BE)*
+
+### Phase NIM-1 — Client-side pacing (sandbox code; operator-verified)
+- ⏳ **NIM-1a** — shared per-model sliding-window rate limiter in the provider layer,
+  config-driven (`REGS_NVIDIA_RPM_LIMIT`, default ~35 for headroom, 0 = disabled),
+  process-wide **below** the ThreadPoolExecutor fan-out and `triage_concurrency` so
+  concurrency can't silently defeat pacing. Distinct control from
+  `max_concurrent_agents_per_model` (concurrency ≠ rate; both stay). Purpose per the
+  live evidence: enables safely *raising* parallelism toward the cap. *(BE)*
+- ⏳ **NIM-1b** — pacing-wait visibility: record time-spent-waiting-on-limiter per
+  model into NIM-0a telemetry so pacing's throughput cost is a number, not a vibe. *(BE)*
+- Note: pacing/concurrency changes alter timing, not model/prompt/inputs — they do
+  **not** invalidate the EA1-3 quality baseline (step-back amendment #1 gates
+  *behavior* changes, and these aren't).
+
+### Phase NIM-2 — Load-shape decision 🔒 (gated on NIM-0 telemetry from a real run)
+- 🔒 **NIM-2a** — operator runs an extraction batch with NIM-0/1 in place; telemetry
+  answers which lane saturates as concurrency rises, and whether any 429s classify
+  as allowance rather than throttle.
+- 🔒 **NIM-2b** — rebalance: pure pacing/concurrency knob changes land freely; any
+  **model reassignment** stays EA1-3-gated (EA4-4's standing rule). Preferred shape
+  to evaluate when the gate opens: definition_actor + preemption → a strong model
+  that is not `gpt-oss-120b` (the EA4-4 synthesis above).
+- 🔒 **NIM-2c** — briefing catalog names (`nemotron-3-super-120b`, `qwen3.5-122b`,
+  etc.) verified against `build.nvidia.com/models` at decision time and benchmarked
+  through the existing EA1 harness on the gold set — no model string wired in from
+  a blog post.
+- 🔒 **NIM-2d** — if allowance (not throttle) turns out to be the wall, pacing can't
+  fix it → triggers NIM-3 immediately.
+
+### Phase NIM-3 — Provider portability 🔒 (gated on NIM-2 outcome + operator sign-off)
+- 🔒 **NIM-3a** — portability inventory (doc only): the provider layer is already
+  OpenAI-compatible, but document the NVIDIA-specific assumptions in
+  `NvidiaLLMProvider` (base-URL-includes-`/v1` quirk, `reasoning_effort` coercion,
+  `_REASONING_MODEL_TAGS` idle-timeout heuristic, `reasoning_content` stripping,
+  SSE stream shape) — that list is the real migration checklist.
+- 🔒 **NIM-3b** — decision memo: stay free tier vs. per-token provider. Candidates
+  per briefing: OpenRouter (routing/failover), Together (batch), Fireworks (guided
+  decoding — directly serves **EA6-2**'s structured-outputs goal), Deep Infra
+  (cheap triage). **Hard requirement, not tiebreaker:** contractual training-use
+  exclusion + SOC 2/ISO 27001 + zero-retention terms — this is a compliance product.
+  Adoption requires EA1 gold-set benchmark on the candidate + operator sign-off.
+- 🔒 **NIM-3c** — cost accounting: NIM-0a per-model token totals make the EA plan's
+  required "$/law in run_summary.json" computable the moment a price sheet exists.
+  Live-run input: ~209k tokens/passage observed → **~170M tokens projected** for a
+  full 806-passage run.
+
+### Phase NIM-4 — Self-host / hybrid (flag only; no action)
+- The briefing's "hybrid" already half-exists (LM Studio local fallback via
+  `provider: "local"`). Self-hosted NIM containers (free ≤16 GPUs for
+  developer-program members) recorded as a deferred option contingent on operator
+  GPU capacity. GPU clouds (CoreWeave/Bitdeer/Lightning) ignored per the briefing's
+  own advice.
+
+### Explicitly not adopted from the briefing
+- No "credits remaining" display (credits are retired; no balance exists to show).
+- No immediate model swaps to catalog picks — EA1-gated.
+- No RAG/vector-store work (the Vultr angle) — no RAG layer exists or is planned.
+- "Eigen AI" — briefing itself couldn't identify the vendor; dropped.
+
+**Sequencing:** NIM-0 → NIM-1 (both sandbox-actionable now); NIM-2 needs an operator
+run; NIM-3 gates on NIM-2's outcome; NIM-4 is a standing note. NIM-0/1 can proceed in
+parallel with EA1-1 fixture work without touching the EA1-3 baseline's validity.
+
+---
+
 ### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
 
 **Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
