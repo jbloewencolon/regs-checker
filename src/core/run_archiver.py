@@ -214,6 +214,7 @@ class RunArchiver:
         monitor instead).
         """
         from src.core.extraction_monitor import get_monitor
+        from src.core.llm_rate_telemetry import get_llm_rate_telemetry
 
         snapshot = get_monitor().snapshot(recent_count=0)
         agent_stats = snapshot.agent_stats  # {name: {calls, errors, avg_duration_ms, ...}}
@@ -254,6 +255,12 @@ class RunArchiver:
             "confidence_tier_distribution": snapshot.confidence_tiers,
             "token_usage_total": summary.get("token_usage", {}).get("total_tokens", 0),
             "conservation_ok": summary.get("conservation", {}).get("conserved"),
+            # NIM-0a: per-model request-rate/429/token telemetry from the
+            # llm_provider.py chokepoint (see llm_rate_telemetry.py) —
+            # NVIDIA exposes no balance or usage API, so this is the run's
+            # own record of how close it came to its rate-limit ceiling,
+            # keyed by model so a shared-model skew is visible run over run.
+            "llm_throttle_telemetry": get_llm_rate_telemetry().snapshot(),
         }
 
     def _export_extractions(

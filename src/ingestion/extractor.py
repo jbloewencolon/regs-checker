@@ -208,6 +208,21 @@ def _classify_llm_error(exc: Exception | str) -> str:
     return "llm_error"
 
 
+def _classify_429_detail(exc: Exception | str) -> str | None:
+    """NIM-0b: read NvidiaLLMProvider's best-effort 429 classification off
+    an exception, without changing `_classify_llm_error`'s coarse
+    "quota_error" bucket that the dashboard already color-codes on.
+
+    Returns "rate_limited_transient", "allowance_exhausted",
+    "429_unclassified" when the exception carries the classification
+    `llm_provider.py` attaches on a retry-exhausted 429, or None when it
+    doesn't apply (not a 429, or a plain string/exception with no such
+    attribute — e.g. local-provider errors, which don't go through NVIDIA's
+    429 path at all).
+    """
+    return getattr(exc, "nvidia_429_classification", None)
+
+
 def _record_failed_attempt(
     db,
     source_record_id: int,
@@ -1502,6 +1517,14 @@ def extract_single_record(
                 section_path=record.section_path,
             )
             error_type = _classify_llm_error(result)
+            event_details: dict[str, Any] = {"error_type": error_type}
+            throttle_classification = _classify_429_detail(result)
+            if throttle_classification is not None:
+                # NIM-0b: carries the transient-vs-allowance read alongside
+                # the existing "quota_error" bucket, so a run's pipeline
+                # events distinguish RPM throttling from a harder wall
+                # instead of the previous single "quota exhausted" label.
+                event_details["throttle_classification"] = throttle_classification
             _finish_attempt(db, attempt_id, "failed", error_message=str(result))
             _persist_pipeline_event(
                 db, "agent_error",
@@ -1509,7 +1532,7 @@ def extract_single_record(
                 source_record_id=record.id,
                 agent_name=name,
                 error_message=str(result),
-                details={"error_type": error_type},
+                details=event_details,
             )
             # Record for retry, tagged with the classified error type so the
             # dashboard can distinguish auth/quota failures from model errors.

@@ -1646,24 +1646,72 @@ fallbacks are already gone; run `alembic current` locally to confirm head).
 > is the *guardrail that lets concurrency be raised into the unused budget*, not a
 > defense against current throttling.
 
-### Phase NIM-0 — Measure and label honestly (sandbox-actionable; land first)
-- ⏳ **NIM-0a** — per-model request telemetry at the provider chokepoint: requests,
-  rolling trailing-60s RPM (peak recorded), 429s seen / retry-recovered / post-retry
-  failed, cumulative tokens per model. Surface in the `ExtractionMonitor` snapshot +
-  a new `llm_throttle_telemetry` block in the ROV `run_comparison_summary`. No
-  behavior change — observability only. *(BE)*
-- ⏳ **NIM-0b** — split the 429 label: read a body excerpt on 429 and classify
-  `rate_limited_transient` / `allowance_exhausted` (quota language in body) /
-  `429_unclassified`; replace the single `nvidia_quota_exhausted` label and split
-  `_classify_llm_error`'s `quota_error` accordingly. *(BE)*
-- ⏳ **NIM-0c** — retry polish: jitter on the existing exponential backoff, honor
-  `Retry-After` when present (jittered fallback when absent), attempts/cap
-  settings-driven instead of hardcoded `_max_retries = 5`. Unit-testable against
-  mocked httpx. *(BE)*
-- ⏳ **NIM-0d** *(new, from the live snapshot; rides with ROV)* — monitor feed
-  signal-to-noise: tier-D warnings are emitted per chunk/call, flooding the feed
-  (842 warnings burying 2 real errors in the observed run). Dedupe per
-  (agent, record) or summarize per passage so errors stay visible. *(BE)*
+### Phase NIM-0 — Measure and label honestly (sandbox-actionable; land first) ✅ LANDED 2026-07-19
+- ✅ **NIM-0a** — new `src/core/llm_rate_telemetry.py`: thread-safe per-model
+  `LLMRateTelemetry` singleton tracking `requests_total`, rolling trailing-60s
+  RPM (`rpm_current` + all-time `rpm_peak`), `tokens_total`, and
+  `rate_limited_seen` / `rate_limited_recovered` / `rate_limited_exhausted`
+  counters. Written from the actual chokepoint — `NvidiaLLMProvider.call()`'s
+  retry loop — so retries that are transparently absorbed (never surfacing as
+  an exception to extractor.py) are still counted, not just terminal
+  failures. Reset alongside `ExtractionMonitor.start_run()` (own singleton,
+  own lock — read outside `ExtractionMonitor`'s lock to keep them
+  independent). Surfaced in two places per the plan: (1) `ExtractionMonitor.
+  HealthSnapshot.llm_rate_telemetry` for the live 2s-poll dashboard: (2) a new
+  `llm_throttle_telemetry` key in `RunArchiver._build_run_comparison_summary()`
+  or the persisted run comparison. No behavior change — pure observability;
+  `LocalLLMProvider` left unwired (rate limits are NVIDIA-specific, no 429
+  path exists locally). 14 tests in `test_llm_rate_telemetry.py` (rolling-
+  window aging, peak tracking, reset, singleton, plus 3 tests against the
+  real `NvidiaLLMProvider.call()` proving success/429-recovery/429-exhaustion
+  all write through) + 1 wiring test in
+  `test_run_archiver_run_comparison.py`. *(BE)*
+- ✅ **NIM-0b** — new `_classify_429_body()` in `llm_provider.py`: keyword-reads
+  a 429 body into `rate_limited_transient` / `allowance_exhausted` /
+  `429_unclassified`. Deliberately does **not** treat a bare "quota" mention as
+  decisive (RPM throttling is commonly phrased "queries per minute quota" too)
+  — only specific phrases (`per minute`, `too many requests`, `credit`,
+  `trial has ended`, etc.) tip the classification; ambiguous bodies honestly
+  land unclassified rather than guessing. Replaced the `nvidia_quota_exhausted`
+  log label (which asserted an exhausted balance never verified) with
+  `nvidia_429_exhausted` carrying the classification + a body excerpt.
+  `_classify_llm_error`'s existing `"quota_error"` bucket is **unchanged**
+  (dashboard color-coding intact) — the finer-grained read is carried
+  separately via a `nvidia_429_classification` attribute on the raised
+  `httpx.HTTPStatusError`, read by new `_classify_429_detail()` in
+  `extractor.py` and threaded into the `agent_error` pipeline-event details as
+  `throttle_classification` (additive key, only present for NVIDIA 429s). 10
+  tests for `_classify_429_body`, 5 for `_classify_429_detail`
+  (`test_error_classification.py`), 4 for the `_RateLimited` exception's new
+  fields, plus 2 end-to-end 429-classification tests against the real
+  provider. *(BE)*
+- ✅ **NIM-0c** — retry loop now reads `settings.nvidia_max_retries` (was
+  hardcoded `_max_retries = 5`); new `_compute_backoff_seconds()` adds jitter
+  (`settings.nvidia_retry_jitter_fraction`, default 0.25) and a hard ceiling
+  (`settings.nvidia_retry_backoff_cap_seconds`, default 30.0) to the
+  exponential curve, applied to both the transport-error and rate-limited
+  retry branches. New `_parse_retry_after_seconds()` honors a numeric
+  `Retry-After` header when NVIDIA sends one (takes precedence over the
+  exponential guess, still capped); unparseable/absent header falls back to
+  jittered exponential, since NVIDIA doesn't always send it. 5 new settings
+  in `config.py`. 11 new tests covering exponential growth, cap, Retry-After
+  precedence, jitter bounds, non-negativity, plus a retry-then-succeed
+  end-to-end test proving the loop still recovers within budget. *(BE)*
+- ✅ **NIM-0d** *(found via the live snapshot; rides with ROV)* — new
+  `ExtractionMonitor._emit_deduped()`: collapses repeated `low_confidence`/
+  `truncation` feed events for the same `(category, agent, record_id)` to one
+  line per run instead of one per extraction item (root cause: `extractor.py`
+  calls `record_agent_result` once per extraction item on the success path,
+  so a 30-extraction passage previously wrote 30 near-identical feed lines).
+  Repeats past the first are still counted in the severity total (`warnings`)
+  and in a new `duplicate_warnings_suppressed` counter — the information
+  isn't lost, just not flooding the bounded event ring buffer. Errors are
+  untouched (never deduped) since the live-run problem was specifically
+  hundreds of duplicate warnings burying 2 real errors. 7 new tests in
+  `test_extraction_monitor.py`. *(BE)*
+- All landed as pure code/config, no live LLM required (same discipline as
+  EA0/EA2/SFH-1): 53 new tests, full suite 1526/1526 passing;
+  `ruff check --select E9,F` clean on every touched file.
 
 ### Phase NIM-1 — Client-side pacing (sandbox code; operator-verified)
 - ⏳ **NIM-1a** — shared per-model sliding-window rate limiter in the provider layer,

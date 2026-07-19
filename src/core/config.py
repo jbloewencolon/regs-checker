@@ -117,6 +117,21 @@ class Settings(BaseSettings):
     nvidia_extraction_model: str = "openai/gpt-oss-120b"
     nvidia_discovery_model: str = "openai/gpt-oss-120b"
 
+    # NIM-0c — retry tuning for NvidiaLLMProvider.call(). Previously hardcoded
+    # at 5 retries with a flat 2**attempt backoff; the NIM throughput review
+    # flagged this as too shallow for sustained rate-limit windows and
+    # vulnerable to synchronized retries when several agents get throttled
+    # in the same instant (no jitter). Settings-driven so the cap can be
+    # raised without a code change once real throttling behavior is measured.
+    nvidia_max_retries: int = 5
+    # Ceiling on any single computed backoff wait (exponential growth or a
+    # server-supplied Retry-After), so a generous max_retries can't produce
+    # an unreasonably long single sleep.
+    nvidia_retry_backoff_cap_seconds: float = 30.0
+    # Randomizes each wait by +/- this fraction so concurrent agents
+    # throttled together don't all retry in the same instant.
+    nvidia_retry_jitter_fraction: float = 0.25
+
     model_config = {"env_prefix": "REGS_", "env_file": ".env", "extra": "ignore"}
 
 

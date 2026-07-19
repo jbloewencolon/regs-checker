@@ -142,6 +142,17 @@ class HealthSnapshot:
     errors_count: int
     criticals: int
 
+    # NIM-0d: repeat low_confidence/truncation events for the same
+    # (agent, record_id) are collapsed to one feed entry each — this is how
+    # many were suppressed, so the count isn't silently lost, just not
+    # flooding the feed one line per extraction item.
+    duplicate_warnings_suppressed: int
+
+    # NIM-0a: per-model request-rate/429/token telemetry from the
+    # llm_provider.py chokepoint — see llm_rate_telemetry.py. Keyed by
+    # model name; empty until at least one LLM call has been made this run.
+    llm_rate_telemetry: dict[str, dict[str, Any]]
+
     # Recent events (last N)
     recent_events: list[dict[str, Any]]
 
@@ -161,8 +172,10 @@ class HealthSnapshot:
             "total_tokens": self.total_tokens,
             "tokens_per_minute": round(self.tokens_per_minute, 1),
             "warnings": self.warnings,
+            "duplicate_warnings_suppressed": self.duplicate_warnings_suppressed,
             "errors_count": self.errors_count,
             "criticals": self.criticals,
+            "llm_rate_telemetry": self.llm_rate_telemetry,
             "recent_events": self.recent_events,
         }
 
@@ -204,6 +217,11 @@ class ExtractionMonitor:
         self._severity_counts: dict[str, int] = {
             "warning": 0, "error": 0, "critical": 0,
         }
+        # NIM-0d: (category, agent_name, record_id) -> times seen this run,
+        # so a passage with dozens of tier-D extractions from one agent
+        # emits one feed line instead of one per extraction item.
+        self._dedup_seen_counts: dict[tuple[str, str, int], int] = {}
+        self._duplicate_warnings_suppressed = 0
 
     @property
     def is_running(self) -> bool:
@@ -226,6 +244,15 @@ class ExtractionMonitor:
             self._agent_stats = {}
             self._total_tokens = 0
             self._severity_counts = {"warning": 0, "error": 0, "critical": 0}
+            self._dedup_seen_counts = {}
+            self._duplicate_warnings_suppressed = 0
+
+        # NIM-0a: per-model request/429/token telemetry is a separate
+        # singleton (llm_provider.py's chokepoint writes to it directly,
+        # independent of agent-level stats above) — reset it alongside so a
+        # new run's rate-limit picture isn't polluted by a prior run's.
+        from src.core.llm_rate_telemetry import get_llm_rate_telemetry
+        get_llm_rate_telemetry().reset_all()
 
         self.emit(
             EventCategory.run_start,
@@ -338,22 +365,59 @@ class ExtractionMonitor:
                 error=error,
             )
         elif truncated:
-            self.emit(
+            self._emit_deduped(
                 EventCategory.truncation,
                 EventSeverity.warning,
+                agent_name,
+                record_id,
                 f"[{agent_name}] Output truncated on record {record_id}",
-                agent=agent_name,
-                record_id=record_id,
             )
         elif confidence_tier == "D":
-            self.emit(
+            self._emit_deduped(
                 EventCategory.low_confidence,
                 EventSeverity.warning,
+                agent_name,
+                record_id,
                 f"[{agent_name}] Low confidence (tier D) on record {record_id}",
-                agent=agent_name,
-                record_id=record_id,
                 tier="D",
             )
+
+    def _emit_deduped(
+        self,
+        category: EventCategory,
+        severity: EventSeverity,
+        agent_name: str,
+        record_id: int,
+        message: str,
+        **extra_details: Any,
+    ) -> None:
+        """Emit an event, but only the first time this (category, agent,
+        record) combination is seen this run.
+
+        A passage that yields dozens of extraction items from one agent
+        (e.g. a dense regulatory section) previously emitted one identical
+        feed line per item — 842 warnings for a handful of actually-distinct
+        situations, burying the few real errors in the same feed. Repeats
+        past the first still count toward the severity total (the run really
+        did produce that many low-confidence items) but no longer add a
+        duplicate line to the bounded event ring buffer.
+        """
+        details = {"agent": agent_name, "record_id": record_id, **extra_details}
+        key = (category.value, agent_name, record_id)
+        with self._lock:
+            seen = self._dedup_seen_counts.get(key, 0) + 1
+            self._dedup_seen_counts[key] = seen
+            if seen > 1:
+                self._duplicate_warnings_suppressed += 1
+                is_first = False
+            else:
+                is_first = True
+
+        if is_first:
+            self.emit(category, severity, message, **details)
+        elif severity.value in self._severity_counts:
+            with self._lock:
+                self._severity_counts[severity.value] += 1
 
     def record_document_start(self, label: str, passage_count: int) -> None:
         """Record starting extraction for a new document."""
@@ -392,6 +456,12 @@ class ExtractionMonitor:
 
     def snapshot(self, recent_count: int = 20) -> HealthSnapshot:
         """Return a point-in-time health snapshot."""
+        # NIM-0a: a separate singleton with its own lock — read outside
+        # self._lock to keep the two independent (llm_provider.py writes to
+        # it directly and never touches ExtractionMonitor's lock).
+        from src.core.llm_rate_telemetry import get_llm_rate_telemetry
+        rate_telemetry = get_llm_rate_telemetry().snapshot()
+
         with self._lock:
             elapsed = (
                 time.time() - self._start_time
@@ -444,6 +514,8 @@ class ExtractionMonitor:
                 warnings=self._severity_counts["warning"],
                 errors_count=self._severity_counts["error"],
                 criticals=self._severity_counts["critical"],
+                duplicate_warnings_suppressed=self._duplicate_warnings_suppressed,
+                llm_rate_telemetry=rate_telemetry,
                 recent_events=recent_dicts,
             )
 

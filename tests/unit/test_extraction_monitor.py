@@ -10,7 +10,6 @@ from src.core.extraction_monitor import (
     EventSeverity,
     ExtractionEvent,
     ExtractionMonitor,
-    HealthSnapshot,
     get_monitor,
 )
 
@@ -287,3 +286,113 @@ class TestExtractionMonitor:
         snap = m.snapshot()
         assert not snap.is_running
         assert snap.warnings >= 1  # Cancellation emits a warning
+
+
+class TestDuplicateWarningDedup:
+    """NIM-0d: a passage with many tier-D/truncated extraction items from the
+    same agent previously emitted one identical feed line per item — 842
+    warnings burying 2 real errors in the observed live-run snapshot that
+    prompted this fix. Repeats past the first are suppressed from the feed
+    but still counted, both in the severity total and in a dedicated
+    duplicate counter, so the information isn't silently lost."""
+
+    def _make_monitor(self) -> ExtractionMonitor:
+        return ExtractionMonitor()
+
+    def test_repeated_low_confidence_same_agent_record_collapses_to_one_event(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        for _ in range(5):
+            m.record_agent_result(
+                "preemption", 674, success=True, extraction_count=1,
+                confidence_tier="D",
+            )
+        snap = m.snapshot()
+        low_conf_events = [
+            e for e in snap.recent_events
+            if e["category"] == "low_confidence" and e["details"].get("record_id") == 674
+        ]
+        assert len(low_conf_events) == 1
+        assert snap.duplicate_warnings_suppressed == 4
+
+    def test_severity_count_still_reflects_every_occurrence(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        for _ in range(5):
+            m.record_agent_result(
+                "preemption", 674, success=True, extraction_count=1,
+                confidence_tier="D",
+            )
+        snap = m.snapshot()
+        # The feed collapses to one line, but the warning total (used
+        # elsewhere for health signals) still reflects all 5 occurrences.
+        assert snap.warnings == 5
+
+    def test_different_records_are_not_deduped(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        m.record_agent_result("preemption", 1, success=True, extraction_count=1, confidence_tier="D")
+        m.record_agent_result("preemption", 2, success=True, extraction_count=1, confidence_tier="D")
+        snap = m.snapshot()
+        low_conf_events = [e for e in snap.recent_events if e["category"] == "low_confidence"]
+        assert len(low_conf_events) == 2
+        assert snap.duplicate_warnings_suppressed == 0
+
+    def test_different_agents_same_record_are_not_deduped(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        m.record_agent_result("preemption", 674, success=True, extraction_count=1, confidence_tier="D")
+        m.record_agent_result("compliance_mechanism", 674, success=True, extraction_count=1, confidence_tier="D")
+        snap = m.snapshot()
+        low_conf_events = [e for e in snap.recent_events if e["category"] == "low_confidence"]
+        assert len(low_conf_events) == 2
+        assert snap.duplicate_warnings_suppressed == 0
+
+    def test_truncation_dedup_independent_of_low_confidence_dedup(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        for _ in range(3):
+            m.record_agent_result(
+                "definition_actor", 672, success=True, extraction_count=1,
+                confidence_tier="B", truncated=True,
+            )
+        for _ in range(2):
+            m.record_agent_result(
+                "definition_actor", 672, success=True, extraction_count=1,
+                confidence_tier="D",
+            )
+        snap = m.snapshot()
+        truncation_events = [e for e in snap.recent_events if e["category"] == "truncation"]
+        low_conf_events = [e for e in snap.recent_events if e["category"] == "low_confidence"]
+        assert len(truncation_events) == 1
+        assert len(low_conf_events) == 1
+        assert snap.duplicate_warnings_suppressed == 3  # 2 truncation + 1 low-confidence repeat
+
+    def test_start_run_resets_dedup_state(self):
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        m.record_agent_result("preemption", 674, success=True, extraction_count=1, confidence_tier="D")
+        m.record_agent_result("preemption", 674, success=True, extraction_count=1, confidence_tier="D")
+        assert m.snapshot().duplicate_warnings_suppressed == 1
+
+        m.start_run(total_passages=5)
+        m.record_agent_result("preemption", 674, success=True, extraction_count=1, confidence_tier="D")
+        snap = m.snapshot()
+        # Fresh run: the same (agent, record) pair emits again, uncounted
+        # as a duplicate of the prior run.
+        low_conf_events = [e for e in snap.recent_events if e["category"] == "low_confidence"]
+        assert len(low_conf_events) == 1
+        assert snap.duplicate_warnings_suppressed == 0
+
+    def test_errors_are_never_deduped(self):
+        """Errors bypass _emit_deduped entirely — every one must stay
+        visible, per the live-run finding that 2 real errors were being
+        buried by hundreds of duplicate low-confidence lines."""
+        m = self._make_monitor()
+        m.start_run(total_passages=5)
+        for _ in range(3):
+            m.record_agent_result("obligation", 1, error="Connection refused")
+        snap = m.snapshot()
+        error_events = [e for e in snap.recent_events if e["category"] == "agent_error"]
+        assert len(error_events) == 3
+        assert snap.duplicate_warnings_suppressed == 0
