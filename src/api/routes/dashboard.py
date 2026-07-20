@@ -2441,6 +2441,172 @@ def export_low_confidence_extractions_jsonl(
 
 
 # ---------------------------------------------------------------------------
+# Phase 3 — Tier-D extractions (permanently ineligible under confidence-only gate)
+# ---------------------------------------------------------------------------
+
+@router.get("/api/tier-d/export.csv")
+def export_tier_d_extractions_csv(
+    db: Session = Depends(get_db),
+    agent: str | None = None,
+) -> StreamingResponse:
+    """Download Tier-D extractions (permanently ineligible under the confidence-only gate).
+
+    Analysts use this to prioritize re-extraction or model/prompt tuning to reach C+.
+    Tier-D is assigned when an extraction fails tracker alignment or falls below the
+    evidence-grounding confidence floor — it's the signal that something fundamental
+    needs re-work, not just confidence score tweaking.
+
+    Query params:
+      - agent: comma-separated agent name(s) to filter (e.g. 'obligation' or
+               'obligation,threshold_exception'). Default: all agents.
+    """
+    import csv
+    import io
+    import json as _json
+
+    from src.db.models import ConfidenceTier, NormalizedSourceRecord
+
+    agent_names = [a.strip() for a in agent.split(",")] if agent else []
+
+    # Fetch all Tier-D extractions with context
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .where(Extraction.confidence_tier == ConfidenceTier.D)
+        .order_by(Extraction.confidence_score.desc(), Extraction.created_at.desc())
+    )
+    if agent_names:
+        query = query.where(Extraction.agent_name.in_(agent_names))
+
+    rows = db.execute(query).all()
+
+    filename = (
+        f"tier_d_{'_'.join(agent_names)}.csv" if agent_names
+        else "tier_d_extractions.csv"
+    )
+    buf = io.StringIO()
+    buf.write(
+        "# DISCLAIMER: Tier-D extractions are permanently ineligible for automatic sync.\n"
+        "# They indicate extraction issues requiring re-work, not confidence tuning.\n"
+        "# Use this queue to prioritize re-extraction or model/prompt improvements.\n"
+        "# AI-extracted; verify against current official statutory text.\n"
+    )
+    writer = csv.writer(buf)
+    writer.writerow([
+        "extraction_id",
+        "agent_name",
+        "law_jurisdiction",
+        "law_title",
+        "extraction_type",
+        "confidence_score",
+        "confidence_tier",
+        "review_status",
+        "passage_text",
+        "evidence_spans",
+        "payload_summary",
+        "full_payload_json",
+        "created_at",
+    ])
+
+    for ext, rec, dv in rows:
+        doc_family = dv.family
+        jurisdiction = doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown"
+
+        # Build payload summary
+        payload_json = _json.dumps(ext.current_payload, default=str)
+        payload_summary = payload_json[:300] + ("..." if len(payload_json) > 300 else "")
+
+        # Format evidence spans
+        spans_str = "; ".join([
+            f"{s.get('text', '')[:50]}... (conf: {s.get('confidence_score', 0):.2f})"
+            for s in (ext.evidence_spans or [])
+        ]) if ext.evidence_spans else "No evidence spans"
+
+        writer.writerow([
+            ext.id,
+            ext.agent_name or "",
+            jurisdiction,
+            doc_family.canonical_title if doc_family else "",
+            ext.extraction_type.value,
+            f"{ext.confidence_score:.3f}",
+            ext.confidence_tier.value,
+            ext.review_status.value,
+            (rec.normalized_text or "")[:500],
+            spans_str[:200],
+            payload_summary,
+            payload_json,
+            ext.created_at.isoformat() if ext.created_at else "",
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/api/tier-d/export.jsonl")
+def export_tier_d_extractions_jsonl(
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Download Tier-D extractions as JSONL for batch processing/re-extraction.
+
+    Each line is a complete JSON object with full context for re-work prioritization.
+    """
+    import json as _json
+
+    from src.db.models import ConfidenceTier, NormalizedSourceRecord
+
+    query = (
+        select(Extraction, NormalizedSourceRecord, DocumentVersion)
+        .join(NormalizedSourceRecord, Extraction.source_record_id == NormalizedSourceRecord.id)
+        .join(DocumentVersion, NormalizedSourceRecord.document_version_id == DocumentVersion.id)
+        .where(Extraction.confidence_tier == ConfidenceTier.D)
+        .order_by(Extraction.confidence_score.desc(), Extraction.created_at.desc())
+    )
+
+    rows = db.execute(query).all()
+
+    def generate():
+        yield _json.dumps({"_record_type": "disclaimer",
+                           "text": "Tier-D extractions: permanently ineligible for automatic sync. "
+                                   "Indicate extraction issues requiring re-work, not confidence tuning. "
+                                   "AI-extracted; verify against official statutory text."}) + "\n"
+        for ext, rec, dv in rows:
+            doc_family = dv.family
+            obj = {
+                "extraction": {
+                    "id": ext.id,
+                    "type": ext.extraction_type.value,
+                    "confidence_score": float(ext.confidence_score),
+                    "confidence_tier": ext.confidence_tier.value,
+                    "review_status": ext.review_status.value,
+                    "created_at": ext.created_at.isoformat() if ext.created_at else None,
+                    "payload": ext.current_payload,
+                },
+                "law": {
+                    "jurisdiction": doc_family.source.jurisdiction_code if doc_family and doc_family.source else "Unknown",
+                    "title": doc_family.canonical_title if doc_family else "",
+                    "bill_number": doc_family.metadata_.get("bill_number", "") if doc_family and doc_family.metadata_ else "",
+                },
+                "passage": {
+                    "text": rec.normalized_text,
+                    "source_record_id": rec.id,
+                },
+                "evidence_spans": ext.evidence_spans or [],
+            }
+            yield _json.dumps(obj, default=str) + "\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=tier_d_extractions.jsonl"},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Phase 4 — Admitted extractions export (accepted set, separate from review queue)
 # ---------------------------------------------------------------------------
 

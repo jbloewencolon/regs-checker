@@ -127,15 +127,20 @@ Law-card data model, applicability product, API, productionization — resume on
   `is_eligible` now checks `confidence_tier in eligible_tiers and review_status != 'rejected'`.
   Docstring updated to reflect tier-only + rejection-gate design (no longer
   "RC leads, PN backs up" approval-gated). Paired with P3-1 in same commit. *(sync strategy finalized)*
-- ⏳ **P3-4** — Dashboard: new panel/route for **Tier-D extractions** (permanently
-  ineligible under the tier-only gate) so analysts have a queue of what still needs
-  re-extraction or prompt/model tuning to reach C+. Mirror the existing
-  `/api/low-confidence/export.csv` pattern in `src/api/routes/dashboard.py`.
-- ⏳ **P3-5** — Dashboard: new **audit panel** listing `synced_extractions` rows in
+- ✅ **P3-4** **[Done 2026-07-20]** Dashboard: new panel/route for **Tier-D extractions**
+  (permanently ineligible under the tier-only gate) so analysts have a queue of what
+  still needs re-extraction or prompt/model tuning to reach C+. Implemented as dual
+  `/api/tier-d/export.csv` and `/api/tier-d/export.jsonl` endpoints mirroring the
+  low-confidence export pattern, with detailed docstrings explaining Tier-D semantics
+  (failures in tracker alignment or evidence grounding, not just confidence score
+  tuning). UI integration deferred to a session with live app/database access for
+  browser testing per project guidelines. *(BE)*
+- 🔒 **P3-5** — Dashboard: new **audit panel** listing `synced_extractions` rows in
   Policy Navigator whose `review_status` is not `approved`/`verified` — i.e., rows now
   live in the product without RC human sign-off. This is the visibility backstop for
   removing the P2 review gate; without it there's no way to see what shipped
-  unreviewed.
+  unreviewed. **Blocked on P3-2**: requires SyncedExtraction table + synced_extractions
+  view from the live PN migration. *(deferred until P3-2)*
 - ✅ **P3-6** **[Done 2026-07-06]** Unit tests for P3 eligibility logic added to
   `tests/unit/test_sync_extractions.py`. 22 tests covering: tier-eligible helper,
   sync eligibility logic (tier + rejection gate), regression tests showing
