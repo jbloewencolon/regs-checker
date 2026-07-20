@@ -21,7 +21,12 @@ from starlette.templating import Jinja2Templates
 from src.api.middleware.auth import verify_api_key
 from src.api.routes import dashboard, internal, law_card_api, law_card_routes, v1
 from src.core.config import settings
-from src.core.law_card_labels import humanize_review_state, humanize_status, is_enforcement_visible
+from src.core.law_card_labels import (
+    humanize_extracted_at,
+    humanize_review_state,
+    humanize_status,
+    is_enforcement_visible,
+)
 from src.db.engine import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -125,6 +130,7 @@ app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.state.templates.env.globals["humanize_status"] = humanize_status
 app.state.templates.env.globals["humanize_review_state"] = humanize_review_state
 app.state.templates.env.globals["is_enforcement_visible"] = is_enforcement_visible
+app.state.templates.env.globals["humanize_extracted_at"] = humanize_extracted_at
 
 # Mount route groups
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])

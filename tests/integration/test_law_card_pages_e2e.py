@@ -153,6 +153,65 @@ def withdrawn_law_with_enforcement_data(db):
 
 
 @pytest.fixture
+def criminal_only_enforcement_law(db):
+    """Real-shape regression fixture (audit finding, 2026-07-20): a bill
+    whose enforcement is purely criminal — no civil-penalty fields at all,
+    matching AR HB1877's real enforcement_agent gold-standard payload
+    ({"criminal_penalties": true, "private_right_of_action": false}, no
+    max_civil_penalty_usd/enforcing_body/penalty_tiers keys present). This
+    used to crash the whole card: Jinja's dot-access on a dict returns its
+    Undefined sentinel (not None) for a missing key, so `enf.payload.
+    max_civil_penalty_usd is not none` was True even though the key didn't
+    exist, and `"{:,}".format(Undefined)` raised."""
+    family, version = _make_family(
+        db, jurisdiction="AR", temporal_status=TemporalStatus.enacted, title_suffix="CriminalOnly",
+    )
+    bill_enf = BillLevelExtraction(
+        document_version_id=version.id, agent_name="enforcement_agent",
+        payload={"criminal_penalties": True, "private_right_of_action": False},
+        confidence_score=0.8, model_id="test-model", truncated=False,
+    )
+    db.add(bill_enf)
+    db.flush()
+    db.commit()
+    return family.canonical_key
+
+
+@pytest.fixture
+def nested_bill_level_shapes_law(db):
+    """Regression fixture for the second audit finding: applicability's
+    size_thresholds (nested dict) and enforcement's penalty_tiers (list of
+    dicts) used to either silently drop values (dict misclassified as a
+    string-joinable sequence, joining just its keys) or crash outright
+    (`value | join(", ")` on a list of dicts)."""
+    family, version = _make_family(
+        db, jurisdiction="CA", temporal_status=TemporalStatus.active, title_suffix="NestedShapes",
+    )
+    db.add(BillLevelExtraction(
+        document_version_id=version.id, agent_name="applicability_agent",
+        payload={
+            "covered_entity_types": ["developer", "deployer"],
+            "size_thresholds": {"revenue_usd": 25000000, "employee_count": None},
+        },
+        confidence_score=0.7, model_id="test-model", truncated=False,
+    ))
+    db.add(BillLevelExtraction(
+        document_version_id=version.id, agent_name="enforcement_agent",
+        payload={
+            "enforcing_body": "Attorney General",
+            "penalty_tiers": [
+                {"condition": "negligent violation", "amount_usd": 10000},
+                {"condition": "willful violation", "amount_usd": 50000},
+            ],
+        },
+        confidence_score=0.7, model_id="test-model", truncated=False,
+    ))
+    db.flush()
+    db.commit()
+    return family.canonical_key
+
+
+@pytest.fixture
 def stub_law(db):
     family, _version = _make_family(
         db, jurisdiction="TX", temporal_status=TemporalStatus.active, title_suffix="Stub",
@@ -233,6 +292,66 @@ class TestFlagScope:
         settings.law_cards_enabled = False
         resp = client.get(f"/api/laws/{rich_law}/card")
         assert resp.status_code == 200
+
+
+class TestLastExtractedDate:
+    def test_detail_page_shows_last_extracted(self, client, rich_law):
+        resp = client.get(f"/laws/{rich_law}")
+        assert resp.status_code == 200
+        assert "Last extracted:" in resp.text
+        assert "Never extracted" not in resp.text  # rich_law has a real extraction
+
+    def test_list_page_shows_never_extracted_for_stub(self, client, stub_law):
+        resp = client.get("/laws", params={"q": "LC Page Test Stub"})
+        assert resp.status_code == 200
+        assert "Never extracted" in resp.text  # stub_law has zero extractions
+
+    def test_api_card_exposes_last_extracted_at(self, client, rich_law):
+        resp = client.get(f"/api/laws/{rich_law}/card")
+        assert resp.status_code == 200
+        assert resp.json()["law"]["last_extracted_at"] is not None
+
+    def test_api_list_exposes_last_extracted_at_and_exclusion_flag(self, client, rich_law):
+        resp = client.get("/api/laws", params={"q": "LC Page Test Rich"})
+        assert resp.status_code == 200
+        item = resp.json()["items"][0]
+        assert "last_extracted_at" in item
+        assert item["excluded_from_extraction"] is False
+
+
+class TestBillLevelRenderingRegressions:
+    """Audit findings (2026-07-20), caught by seeding real gold-standard
+    payload shapes rather than only hand-typed ones: the bill-level sections
+    assumed a scalar-only, civil-penalty-shaped schema that doesn't match
+    every real agent output."""
+
+    def test_criminal_only_enforcement_does_not_crash_and_shows_criminal_fields(
+        self, client, criminal_only_enforcement_law,
+    ):
+        resp = client.get(f"/laws/{criminal_only_enforcement_law}")
+        assert resp.status_code == 200
+        assert "<h3>Enforcement</h3>" in resp.text
+        assert "Criminal penalties" in resp.text
+        # No civil penalty stated — must be the honest-unknown gap badge, not a crash.
+        assert "gap-badge" in resp.text
+
+    def test_nested_dict_field_values_render_not_dropped(
+        self, client, nested_bill_level_shapes_law,
+    ):
+        resp = client.get(f"/laws/{nested_bill_level_shapes_law}")
+        assert resp.status_code == 200
+        assert "Revenue usd" in resp.text
+        assert "25000000" in resp.text or "25,000,000" in resp.text
+
+    def test_list_of_dicts_field_renders_not_crash(
+        self, client, nested_bill_level_shapes_law,
+    ):
+        resp = client.get(f"/laws/{nested_bill_level_shapes_law}")
+        assert resp.status_code == 200
+        assert "negligent violation" in resp.text
+        assert "willful violation" in resp.text
+        assert "10000" in resp.text
+        assert "50000" in resp.text
 
 
 class TestStatusLabelExhaustiveness:

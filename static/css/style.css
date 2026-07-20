@@ -1955,6 +1955,17 @@ select.edit-field-input {
   margin-left: 4px;
 }
 
+.excluded-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
 /* Evidence — Rule 3, verbatim-vs-paraphrase honesty. Only verified,
    Tier-1/2 spans get real quote styling; everything else is deliberately
    plainer so a reader can't mistake it for a confirmed quote. */

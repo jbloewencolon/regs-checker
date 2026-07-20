@@ -1470,6 +1470,112 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   required reason, all audited via `ReviewAction`/`ExtractionFieldEdit`.
   Flip `law_cards_enabled` on, pick 3 real laws, and this phase can close.
 
+### Phase LC-Audit — Dashboard audit + re-extraction exclusion (2026-07-20) — ✅ LANDED
+> User request: "Do a full review and audit of the 'law card' dashboard
+> elements so that we know they are functioning properly, and that the data
+> being extracted is sent there, reviewable, and editable (and dated with
+> its most recent extraction). Then add a checkbox to determine whether
+> that law needs to be included in future extractions."
+
+- ✅ **Audit method** — rather than re-testing LC-1/2/3's already-covered
+  code paths, seeded the DB with genuinely **real** data: `data/fact_laws
+  .csv`'s actual row for Arkansas HB1877, the real bill text file
+  (`output/law_texts/TMP-AR-OFARKANSASCSAM.txt`), and real gold-standard
+  extraction payloads from `tests/fixtures/gold_standard/` (AR HB1877's
+  definition/threshold_exception + bill-level enforcement fixtures, CO
+  SB205's obligation/enforcement/definition fixtures) — not hand-typed
+  synthetic fixtures. This surfaced three real defects synthetic fixtures
+  had never exercised:
+  - **Bug 1 (crash)** — `law_card.html`'s bill-level Enforcement panel was
+    built against the wrong schema: it hardcoded `penalty_type`/
+    `penalty_description` (fields that belong to the per-clause
+    `EnforcementInfo` nested model, `src/core/field_catalog.py`) instead of
+    the real bill-level `enforcement_agent` schema (`enforcing_body`,
+    `max_civil_penalty_usd`, `penalty_tiers`, `penalty_per`,
+    `cure_period_days`, `private_right_of_action`, `criminal_penalties`,
+    `criminal_penalty_description`, `enforcement_text` —
+    `src/agents/enforcement_agent.py`). AR HB1877's real enforcement data is
+    criminal-only (`{"criminal_penalties": true, "private_right_of_action":
+    false}`, no civil-penalty fields at all) and crashed the whole card:
+    Jinja's dot-access on a dict returns its `Undefined` sentinel (not
+    `None`) for a genuinely absent key, so `enf.payload.max_civil_penalty_usd
+    is not none` was `True` even though the key didn't exist, and
+    `"{:,}".format(Undefined)` raised `TypeError`. Fixed by rendering every
+    real field generically and switching the two still-special-cased fields
+    (`max_civil_penalty_usd`'s TBD handling, `enforcement_text`'s quote
+    styling) to `.get()`.
+  - **Bug 2 (silent data loss / crash)** — the bill-level sections'
+    scalar-only rendering couldn't handle a nested dict (applicability's
+    `size_thresholds`) or a list of dicts (enforcement's `penalty_tiers`,
+    timeline's `key_deadlines`): a dict was misclassified as a
+    string-joinable sequence (`value | join(", ")` on a dict joins its
+    *keys*, silently dropping every value), and a list of dicts crashed
+    outright. Fixed with a new recursive `render_value()` macro
+    (`partials/lc_badges.html`) used generically across all three bill-level
+    sections.
+  - **Bug 3 (real data hidden)** — `render_hint` (Design Rule 7's stub
+    routing) keyed off clause-level extraction count alone, so a law with
+    real bill-level enforcement/applicability/timeline data but zero clause
+    extractions (bill-level agents run independently of clause-level ones)
+    was routed to the stub card — "no AI-relevant provisions extracted" —
+    hiding real data behind the exact failure mode Rule 7 exists to
+    prevent, just from the other direction. Fixed:
+    `law_card_assembler.py`'s `render_hint` is now `"stub"` only when
+    *both* `extractions` and `bill_rows` are empty.
+  - All three fixes are covered by regression tests using the real-shaped
+    payloads that caught them (`TestBillLevelRenderingRegressions` in
+    `test_law_card_pages_e2e.py`), not just the ad-hoc audit script.
+- ✅ **"Dated with its most recent extraction"** — confirmed via the audit
+  that no extraction timestamp was surfaced anywhere on the card (a real
+  gap, not just an oversight to double-check). Added: `Extraction.created_at`
+  → `provenance.extracted_at` per clause-level extraction;
+  `BillLevelExtraction.created_at` → `extracted_at` per bill-level section;
+  a law-level `law.last_extracted_at` (max across both) computed in
+  `assemble_card()`; the same figure computed per-page (two aggregate
+  queries, not per-family reassembly) in `list_law_summaries()` for the list
+  view. `src/core/law_card_labels.py` gained `humanize_extracted_at()`
+  (absolute + relative, "2026-07-20 04:32 UTC (57m ago)" — mirrors
+  `_dashboard_helpers.py`'s existing `_format_last_updated` convention so
+  this dating reads consistently with the pipeline dashboard's own "last
+  run" indicators), registered as a Jinja global. Rendered on both
+  `law_card.html`'s L0 header and each `laws.html` list row.
+- ✅ **Re-extraction exclusion checkbox (LC-4a-lite)** — a durable,
+  law-level opt-out distinct from LC-4a's (still-gated-on-D-1) full run-
+  retention refactor: `DocumentFamily.excluded_from_extraction` (+
+  `excluded_reason`/`excluded_by`/`excluded_at`, migration `195d64f44ff2`,
+  live-verified up/down/re-up). Consumed at the source: both
+  `run_triage()` and `run_extraction()` in `src/ingestion/extractor.py` now
+  skip passages whose law is excluded, via a shared
+  `_excluded_document_version_ids()` subquery — so a re-extraction pass
+  spends LLM calls only on laws that still need work, not every law in the
+  corpus. Verified two ways: a direct query-construction test against real
+  seeded data, and an end-to-end `run_triage()` call (real Postgres, only
+  the one genuinely-external dependency — the LLM triage call — mocked,
+  matching `test_pipeline_e2e.py`'s own "real data flow, mock LLM
+  responses" convention) proving an excluded law's passage is never
+  triaged while a control law's is. Surfaced as an actual `<input
+  type="checkbox">` (per the request) on `law_card.html` (both the stub and
+  full card branches) via a new `partials/lc_exclusion.html` fragment,
+  HTMX-posted to a CSRF-protected route in `law_card_routes.py`
+  (`POST /laws/{key}/exclusion`, same double-submit-cookie pattern as
+  LC-3b) and mirrored as an ungated JSON endpoint in `law_card_api.py`
+  (`POST /api/laws/{key}/exclusion`). An EXCLUDED badge shows on
+  `laws.html`'s list rows. Un-excluding clears reason/by/at rather than
+  leaving them as stale history (Rule 1's honest-unknown spirit). Reuses
+  the LC-3b editor-name cookie so the name field pre-fills.
+- 29 new integration tests across 3 new files (`test_law_card_exclusion_e2e
+  .py` — 13, `test_extraction_exclusion_filter_e2e.py` — 3, plus 6 bill-
+  level-regression + 4 last-extracted-date tests added to
+  `test_law_card_pages_e2e.py`) plus the ad-hoc real-data audit script
+  (not committed — scratch verification, superseded by the regression
+  tests it motivated). Full suite: 1734 passed (same 6 pre-existing/
+  unrelated `test_v1_api.py` + scratch-DB-pollution failures as every prior
+  LC phase); blocking `E9,F` ruff gate clean.
+- **Not done, explicitly out of scope for this pass**: filtering `LIST_NESTED`
+  fields (e.g. exceptions) still render as read-only lists, not individually
+  editable — matches `edit_service`'s own documented scope limit, not a new
+  gap. Full WCAG audit remains LC-5a's job, unchanged by this pass.
+
 ### Phase LC-4 — Phased-run comparison & change visualization (M/L; 🔒 gated on D-1)
 - 🔒 **LC-4a** — retention refactor: full runs stop purging; serving-run scoping
   on dashboard stats / review / concepts / sync; `prune_runs(keep=3)`; behind

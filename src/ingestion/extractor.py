@@ -68,6 +68,8 @@ from src.core.orrick_validation import validate_extraction_against_orrick
 from src.db.models import (
     ApplicabilityCondition,
     ConfidenceTier,
+    DocumentFamily,
+    DocumentVersion,
     Extraction,
     ExtractionAttempt,
     ExtractionJob,
@@ -1900,6 +1902,21 @@ def _get_neighbor_texts(
     return texts
 
 
+def _excluded_document_version_ids():
+    """Subquery: DocumentVersion ids belonging to a law an analyst has
+    opted out of future extraction/triage runs (LC-4a-lite,
+    DocumentFamily.excluded_from_extraction). Shared by run_triage() and
+    run_extraction() so a law flagged "done, don't touch again" is skipped
+    at both stages, not just extraction — triaging it again would be
+    wasted LLM spend for a passage set that's never going to be extracted.
+    """
+    return (
+        select(DocumentVersion.id)
+        .join(DocumentFamily, DocumentFamily.id == DocumentVersion.family_id)
+        .where(DocumentFamily.excluded_from_extraction.is_(True))
+    )
+
+
 def run_triage(
     db,
     on_progress: Callable[[str], None] | None = None,
@@ -1932,6 +1949,7 @@ def run_triage(
                     IngestionJob.status.in_(["completed", "fetched"])
                 )
             ),
+            NormalizedSourceRecord.document_version_id.notin_(_excluded_document_version_ids()),
         )
     ).all()
 
@@ -2550,10 +2568,15 @@ def run_extraction(
             TriageDecision.uncertain,
         ]))
     )
+    # LC-4a-lite: skip passages belonging to a law an analyst has flagged
+    # "already verified, don't re-extract" (DocumentFamily.
+    # excluded_from_extraction) — lets a re-extraction pass spend LLM calls
+    # only on laws that actually need another look.
     query = (
         select(NormalizedSourceRecord)
         .where(
             NormalizedSourceRecord.id.in_(triaged_relevant_ids),
+            NormalizedSourceRecord.document_version_id.notin_(_excluded_document_version_ids()),
         )
         .distinct()
     )

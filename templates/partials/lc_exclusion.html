@@ -1,0 +1,36 @@
+{# LC-4a-lite: opt a law out of future extraction/triage runs — a
+   re-extraction pass then skips it, spending LLM calls only on laws that
+   still need work. Same HTMX-fragment + CSRF pattern as lc_field_editor.html
+   (LC-3b): the form posts to /laws/{key}/exclusion and swaps this whole
+   section back in with the updated state. #}
+{% macro exclusion_panel(canonical_key, law, csrf_token="", editor_name="") %}
+<section class="section" id="exclusion-section">
+  <div class="section-header"><h3>Re-extraction</h3></div>
+  <form hx-post="/laws/{{ canonical_key }}/exclusion" hx-target="#exclusion-section" hx-swap="outerHTML">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
+      <input type="checkbox" name="excluded" value="true" {% if law.excluded_from_extraction %}checked{% endif %}>
+      Exclude this law from future extraction/triage runs
+    </label>
+    <div style="font-size:11px;color:var(--text-muted);margin:4px 0 8px;">
+      Check this once the law has been reviewed and verified, so a
+      re-extraction pass skips it and spends time only on laws that still
+      need work.
+    </div>
+    {% if law.excluded_from_extraction %}
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">
+        Excluded by {{ law.excluded_by or "unknown" }} on {{ humanize_extracted_at(law.excluded_at) }}{% if law.excluded_reason %} &mdash; &ldquo;{{ law.excluded_reason }}&rdquo;{% endif %}
+      </div>
+    {% endif %}
+    <div style="display:flex;gap:8px;">
+      <input type="text" name="reason" placeholder="Reason (optional)"
+             style="flex:1 1 auto;font-size:12px;padding:4px 6px;">
+      <input type="text" name="editor" placeholder="Your name (required)" required
+             value="{{ editor_name }}" style="flex:0 0 160px;font-size:12px;padding:4px 6px;">
+    </div>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div style="margin-top:8px;">
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+    </div>
+  </form>
+</section>
+{% endmacro %}

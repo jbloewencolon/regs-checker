@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dc_field
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -132,6 +133,12 @@ def _build_law_section(family: DocumentFamily, version: DocumentVersion) -> dict
             "iapp_status": meta.get("iapp_status"),
             "iapp_ai_topic": meta.get("iapp_ai_topic"),
         },
+        # LC-4a-lite: re-extraction opt-out (see docs/law_card_decisions.md
+        # and src/ingestion/extractor.py's _excluded_document_version_ids).
+        "excluded_from_extraction": bool(family.excluded_from_extraction),
+        "excluded_reason": family.excluded_reason,
+        "excluded_by": family.excluded_by,
+        "excluded_at": family.excluded_at.isoformat() if family.excluded_at else None,
     }
 
 
@@ -343,6 +350,7 @@ def _extraction_card_entry(extraction: Extraction) -> dict[str, Any]:
             "template_version": extraction.template_version,
             "prompt_hash": extraction.prompt_hash,
             "run_id": extraction.run_id,
+            "extracted_at": extraction.created_at.isoformat() if extraction.created_at else None,
         },
         "fields": _fields_for_extraction(extraction),
     }
@@ -372,6 +380,7 @@ def _build_bill_level_section(rows: list[BillLevelExtraction]) -> dict[str, Any]
             "model_id": row.model_id,
             "truncated": row.truncated,
             "input_truncated": bool(payload.get("_input_truncated")),
+            "extracted_at": row.created_at.isoformat() if row.created_at else None,
         }
     return section
 
@@ -416,6 +425,8 @@ class LawSummary:
     edited_count: int | None
     tier_counts: dict[str, int] | None
     human_review_state: str | None
+    last_extracted_at: str | None
+    excluded_from_extraction: bool
 
 
 def list_law_summaries(
@@ -457,9 +468,42 @@ def list_law_summaries(
         ).all()
     } if keys else {}
 
+    # "Last extracted" per family — two aggregate queries (clause-level via
+    # NormalizedSourceRecord/DocumentVersion, bill-level directly on
+    # DocumentVersion), combined in Python. Deliberately not scoped to each
+    # family's single "current" version (see _resolve_current_version) —
+    # pre-LC-4 there's normally only one version per family anyway, and a
+    # list page showing the max across all versions is a reasonable
+    # approximation; the detail page (assemble_card) computes the precise
+    # current-version figure.
+    family_ids = [f.id for f in families]
+    last_extracted_by_family_id: dict[int, datetime] = {}
+    if family_ids:
+        clause_rows = db.execute(
+            select(DocumentVersion.family_id, func.max(Extraction.created_at))
+            .select_from(Extraction)
+            .join(NormalizedSourceRecord, NormalizedSourceRecord.id == Extraction.source_record_id)
+            .join(DocumentVersion, DocumentVersion.id == NormalizedSourceRecord.document_version_id)
+            .where(DocumentVersion.family_id.in_(family_ids))
+            .group_by(DocumentVersion.family_id)
+        ).all()
+        bill_rows = db.execute(
+            select(DocumentVersion.family_id, func.max(BillLevelExtraction.created_at))
+            .select_from(BillLevelExtraction)
+            .join(DocumentVersion, DocumentVersion.id == BillLevelExtraction.document_version_id)
+            .where(DocumentVersion.family_id.in_(family_ids))
+            .group_by(DocumentVersion.family_id)
+        ).all()
+        for fid, ts in [*clause_rows, *bill_rows]:
+            if ts is None:
+                continue
+            if fid not in last_extracted_by_family_id or ts > last_extracted_by_family_id[fid]:
+                last_extracted_by_family_id[fid] = ts
+
     summaries = []
     for family in families:
         rollup = rollups.get(family.canonical_key)
+        last_extracted = last_extracted_by_family_id.get(family.id)
         summaries.append(LawSummary(
             canonical_key=family.canonical_key,
             title=family.canonical_title,
@@ -469,6 +513,8 @@ def list_law_summaries(
             edited_count=rollup.edited_count if rollup else None,
             tier_counts=rollup.tier_counts if rollup else None,
             human_review_state=rollup.human_review_state if rollup else None,
+            last_extracted_at=last_extracted.isoformat() if last_extracted else None,
+            excluded_from_extraction=bool(family.excluded_from_extraction),
         ))
     return summaries, total
 
@@ -520,6 +566,11 @@ def assemble_card(
                         "iapp": family.iapp_reference_url,
                     },
                     "tracker": {},
+                    "last_extracted_at": None,
+                    "excluded_from_extraction": bool(family.excluded_from_extraction),
+                    "excluded_reason": family.excluded_reason,
+                    "excluded_by": family.excluded_by,
+                    "excluded_at": family.excluded_at.isoformat() if family.excluded_at else None,
                 },
                 "run": None,
                 "bill_level": _build_bill_level_section([]),
@@ -548,6 +599,18 @@ def assemble_card(
         bill_query = bill_query.where(BillLevelExtraction.run_id == run_id)
     bill_rows = db.scalars(bill_query).all()
 
+    # "Last extracted" — the most recent Extraction/BillLevelExtraction
+    # created_at for this law, across both clause- and bill-level agents.
+    # Surfaced so a reviewer can tell whether the card reflects last week's
+    # run or last year's, and (paired with LC-4's exclusion flag) whether a
+    # law is overdue for re-extraction.
+    all_created_ats = [e.created_at for e in extraction_rows if e.created_at] + [
+        b.created_at for b in bill_rows if b.created_at
+    ]
+    law_section["last_extracted_at"] = (
+        max(all_created_ats).isoformat() if all_created_ats else None
+    )
+
     run_section = None
     if run_id is not None:
         run = db.get(ExtractionRun, run_id)
@@ -571,7 +634,54 @@ def assemble_card(
             "gaps": gaps,
             # Design Rule 7 — computed here, never left for the caller to
             # decide, so a caller can't accidentally request "full" for a
-            # law with nothing extracted.
-            "render_hint": "stub" if len(extractions) == 0 else "full",
+            # law with nothing extracted. Audit finding (2026-07-20): this
+            # used to key off clause-level extraction count alone, so a law
+            # with real bill-level enforcement/applicability/timeline data
+            # but zero clause extractions (bill-level agents run
+            # independently of clause-level ones) was routed to the stub
+            # card, hiding real data behind "no AI-relevant provisions
+            # extracted" — the exact failure mode Rule 7 exists to prevent,
+            # just from the other direction.
+            "render_hint": "stub" if len(extractions) == 0 and len(bill_rows) == 0 else "full",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Re-extraction exclusion (LC-4a-lite)
+# ---------------------------------------------------------------------------
+
+
+def set_law_exclusion(
+    db: Session,
+    canonical_key: str,
+    excluded: bool,
+    reason: str | None,
+    editor: str,
+) -> DocumentFamily | None:
+    """Toggle whether a law is skipped by future run_triage()/
+    run_extraction() passes (src/ingestion/extractor.py's
+    _excluded_document_version_ids). Returns the updated DocumentFamily, or
+    None if canonical_key matches no law. Caller commits.
+
+    Un-excluding clears reason/by/at rather than leaving them as stale
+    history — Rule 1's honest-unknown spirit applies here too: showing a
+    past exclusion reason on a law that is no longer excluded would read as
+    current information it isn't.
+    """
+    family = db.scalars(
+        select(DocumentFamily).where(DocumentFamily.canonical_key == canonical_key)
+    ).first()
+    if family is None:
+        return None
+    family.excluded_from_extraction = excluded
+    if excluded:
+        family.excluded_reason = reason.strip() if reason and reason.strip() else None
+        family.excluded_by = editor.strip() if editor and editor.strip() else None
+        family.excluded_at = datetime.now(UTC)
+    else:
+        family.excluded_reason = None
+        family.excluded_by = None
+        family.excluded_at = None
+    db.flush()
+    return family

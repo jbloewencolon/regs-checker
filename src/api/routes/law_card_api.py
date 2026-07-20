@@ -36,7 +36,7 @@ from src.core.edit_service import (
     revert_edit,
     validate_edit,
 )
-from src.core.law_card_assembler import assemble_card, list_law_summaries
+from src.core.law_card_assembler import assemble_card, list_law_summaries, set_law_exclusion
 from src.db.engine import get_db
 from src.db.models import DocumentFamily, Extraction, NormalizedSourceRecord
 
@@ -70,6 +70,8 @@ def list_laws(
             "extraction_count": s.extraction_count,
             "edited_count": s.edited_count,
             "human_review_state": s.human_review_state,
+            "last_extracted_at": s.last_extracted_at,
+            "excluded_from_extraction": s.excluded_from_extraction,
         }
         for s in summaries
     ]
@@ -210,3 +212,35 @@ def revert_edit_route(edit_id: int, db: Session = Depends(get_db)) -> dict[str, 
         raise HTTPException(status_code=400, detail=result.error)
     db.commit()
     return {"edit_id": edit_id, "reverted": True}
+
+
+# ---------------------------------------------------------------------------
+# Re-extraction exclusion (LC-4a-lite)
+# ---------------------------------------------------------------------------
+
+
+class SetExclusionRequest(BaseModel):
+    excluded: bool
+    reason: str | None = None
+    editor: str = Field(..., min_length=1)
+
+
+@router.post("/api/laws/{canonical_key}/exclusion")
+def set_exclusion_route(
+    canonical_key: str, body: SetExclusionRequest, db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Opt a law in/out of future run_triage()/run_extraction() passes —
+    see src/ingestion/extractor.py's _excluded_document_version_ids()."""
+    family = set_law_exclusion(
+        db, canonical_key, excluded=body.excluded, reason=body.reason, editor=body.editor,
+    )
+    if family is None:
+        raise HTTPException(status_code=404, detail=f"No law found for {canonical_key!r}")
+    db.commit()
+    return {
+        "canonical_key": canonical_key,
+        "excluded_from_extraction": family.excluded_from_extraction,
+        "excluded_reason": family.excluded_reason,
+        "excluded_by": family.excluded_by,
+        "excluded_at": family.excluded_at.isoformat() if family.excluded_at else None,
+    }

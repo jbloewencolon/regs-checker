@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% from "partials/lc_badges.html" import review_state_badge, gap_badge %}
+{% from "partials/lc_badges.html" import review_state_badge, gap_badge, excluded_badge %}
 {% set title = "Laws" %}
 {% set active_nav = "laws" %}
 
@@ -35,7 +35,11 @@
               {{ gap_badge("Not yet assembled") }}
             {% endif %}
           </span>
+          <span style="font-size:11px;color:var(--text-muted);" title="Most recent extraction across clause- and bill-level agents">
+            {{ humanize_extracted_at(law.last_extracted_at) }}
+          </span>
           {{ review_state_badge(law.human_review_state) }}
+          {% if law.excluded_from_extraction %}{{ excluded_badge() }}{% endif %}
         </div>
       {% endfor %}
     </div>

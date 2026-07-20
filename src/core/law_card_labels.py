@@ -8,6 +8,8 @@ field needs a catalog entry" pattern from field_catalog.py).
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 from src.db.models import TemporalStatus
 
 STATUS_LABELS: dict[str, str] = {
@@ -65,3 +67,34 @@ def is_enforcement_visible(status: str | None) -> bool:
     if status is None:
         return False
     return status not in _ENFORCEMENT_SUPPRESSED_STATUSES
+
+
+def humanize_extracted_at(iso_string: str | None) -> str:
+    """Absolute + relative "last extracted" display, mirroring
+    src/api/routes/_dashboard_helpers.py's `_format_last_updated` (same
+    "YYYY-MM-DD HH:MM UTC (Xh ago)" convention already used elsewhere in
+    this dashboard) so a law card's dating reads consistently with the
+    pipeline dashboard's own "last run" indicators. Extraction.created_at
+    is a naive datetime written via server_default=func.now(), assumed UTC
+    to match that helper's own assumption.
+    """
+    if not iso_string:
+        return "Never extracted"
+    try:
+        dt = datetime.fromisoformat(iso_string)
+    except ValueError:
+        return iso_string
+    now = datetime.utcnow()
+    delta = now - dt.replace(tzinfo=None)
+    seconds = delta.total_seconds()
+    if seconds < 0:
+        relative = "just now"
+    elif seconds < 60:
+        relative = f"{int(seconds)}s ago"
+    elif seconds < 3600:
+        relative = f"{int(seconds // 60)}m ago"
+    elif seconds < 86400:
+        relative = f"{int(seconds // 3600)}h ago"
+    else:
+        relative = f"{int(seconds // 86400)}d ago"
+    return f'{dt.strftime("%Y-%m-%d %H:%M UTC")} ({relative})'

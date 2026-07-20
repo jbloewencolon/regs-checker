@@ -44,6 +44,10 @@
 <span class="type-tag">{{ label }}</span>
 {% endmacro %}
 
+{% macro excluded_badge() %}
+<span class="excluded-badge" title="Excluded from future extraction/triage runs — see the Re-extraction section below">EXCLUDED</span>
+{% endmacro %}
+
 {# Evidence rendering — design Rule 3 (verbatim vs. paraphrase honesty).
    verified + tier(1,2)  -> real quote, char-offset markup attached.
    verified + other tier -> "near match" marker, no quote styling.
@@ -61,6 +65,52 @@
     {% endif %}
   {% endfor %}
 {%- endif %}
+{% endmacro %}
+
+{# Generic value renderer for schema-agnostic payloads (bill-level sections,
+   D-7 read-only). Audit finding (2026-07-20): law_card.html used to render
+   bill-level dict values with a scalar-only branch set that (a) silently
+   joined a nested dict's KEYS as if it were a string list — dropping every
+   value — and (b) crashed outright on a list of dicts (e.g. enforcement's
+   `penalty_tiers`, applicability's `key_deadlines`) via `value | join(", ")`
+   on non-string items. This recurses so any real agent-schema shape (dict,
+   list of scalars, list of dicts, bool, null, scalar) renders correctly
+   without the template needing to know every field name in advance. #}
+{% macro render_value(value) %}
+{%- if value is none -%}
+  {{ gap_badge() }}
+{%- elif value is mapping -%}
+  {%- if value|length == 0 -%}
+    {{ gap_badge("Not extracted") }}
+  {%- else -%}
+    <div style="margin-left:8px;">
+    {% for k, v in value.items() %}
+      {% if not k.startswith("_") %}
+        <div class="lc-field-row" style="padding:4px 0;">
+          <div class="lc-field-label" style="flex:0 0 160px;">{{ k | replace("_", " ") | capitalize }}</div>
+          <div class="lc-field-value">{{ render_value(v) }}</div>
+        </div>
+      {% endif %}
+    {% endfor %}
+    </div>
+  {%- endif -%}
+{%- elif value is sequence and value is not string -%}
+  {%- if value|length == 0 -%}
+    {{ gap_badge("Not extracted") }}
+  {%- elif value[0] is mapping -%}
+    <ul style="margin-left:16px;">
+      {% for item in value %}<li>{{ render_value(item) }}</li>{% endfor %}
+    </ul>
+  {%- else -%}
+    <ul style="margin-left:16px;">
+      {% for item in value %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  {%- endif -%}
+{%- elif value is sameas true or value is sameas false -%}
+  {{ "Yes" if value else "No" }}
+{%- else -%}
+  {{ value }}
+{%- endif -%}
 {% endmacro %}
 
 {# Paced-disclosure toggle (design Rule 4) — a real <button aria-expanded>,

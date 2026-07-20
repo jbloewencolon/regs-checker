@@ -16,6 +16,7 @@ comment on Settings.law_cards_enabled in src/core/config.py).
   POST /laws/{ck}/extractions/{id}/fields/{path}/check       — dry-run validate, message-only
   POST /laws/{ck}/extractions/{id}/fields/{path}/save        — propose+apply, returns updated row
   POST /laws/{ck}/extractions/{id}/fields/{path}/edits/{eid}/revert — revert, returns updated row
+  POST /laws/{ck}/exclusion                                 — toggle re-extraction opt-out (LC-4a-lite)
 
 The field-editor endpoints follow this repo's established HTMX-fragment
 convention (review_routes.py's `/api/review/{id}/edit`): they return
@@ -58,7 +59,7 @@ from src.core.edit_service import (
     validate_edit,
 )
 from src.core.field_catalog import LIST_TEXT, SELECT, TEXT, TEXTAREA
-from src.core.law_card_assembler import assemble_card, list_law_summaries
+from src.core.law_card_assembler import assemble_card, list_law_summaries, set_law_exclusion
 from src.db.engine import get_db
 from src.db.models import Extraction
 
@@ -131,7 +132,11 @@ def law_card_detail(
     if not result.found:
         raise HTTPException(status_code=404, detail=f"No law found for {canonical_key!r}")
     csrf_token = _get_csrf_token(request)
-    response = _render(request, "law_card.html", {"card": result.card, "csrf_token": csrf_token})
+    response = _render(request, "law_card.html", {
+        "card": result.card,
+        "csrf_token": csrf_token,
+        "editor_name": request.cookies.get(_EDITOR_COOKIE, ""),
+    })
     _set_csrf_cookie_if_new(request, response, csrf_token)
     return response
 
@@ -353,3 +358,36 @@ def field_revert(
         canonical_key=canonical_key, extraction_id=extraction_id, field=field,
         csrf_token=_get_csrf_token(request),
     )
+
+
+# ---------------------------------------------------------------------------
+# Re-extraction exclusion (LC-4a-lite)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/laws/{canonical_key}/exclusion")
+def set_exclusion(
+    request: Request, canonical_key: str,
+    excluded: bool = Form(default=False),
+    reason: str = Form(default=""),
+    editor: str = Form(default=""),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db), _gate: None = Depends(_require_enabled),
+) -> HTMLResponse:
+    _verify_csrf(request, csrf_token)
+    family = set_law_exclusion(db, canonical_key, excluded=excluded, reason=reason, editor=editor)
+    if family is None:
+        raise HTTPException(status_code=404, detail=f"No law found for {canonical_key!r}")
+    db.commit()
+
+    result = assemble_card(db, canonical_key)
+    response = _render_macro(
+        request, "partials/lc_exclusion.html", "exclusion_panel",
+        canonical_key=canonical_key, law=result.card["law"],
+        csrf_token=_get_csrf_token(request), editor_name=editor,
+    )
+    if editor.strip():
+        response.set_cookie(
+            _EDITOR_COOKIE, editor.strip(), samesite="lax", max_age=_COOKIE_MAX_AGE,
+        )
+    return response
