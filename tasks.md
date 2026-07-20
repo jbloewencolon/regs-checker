@@ -1670,6 +1670,124 @@ aliases) — the card consumes both when they land; `dashboard.py` is never grow
 
 ---
 
+## Extraction Run Resilience Plan (ERR) — interruption/crash audit (2026-07-20)
+
+> User question: "What currently happens if an extraction run is interrupted
+> or terminated mid-run? Do the extractions get lost? How do we change that?
+> Can it be added to the 'extraction log' output?" Answered by tracing
+> `run_extraction()`/`run_triage()` (`src/ingestion/extractor.py`),
+> `RunArchiver` (`src/core/run_archiver.py`), and startup recovery
+> (`_recover_stale_jobs()`, `src/api/app.py`) end to end — not guessed from
+> the docstrings. Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+
+### Audit findings (no code changed yet — this is the "what happens today" record)
+
+Three distinct interruption paths exist and are handled inconsistently:
+
+1. **Graceful cancel** (dashboard Cancel button, `is_cancelled()` checked
+   between passages, `extractor.py:2747`) — handled reasonably: commits,
+   marks `ExtractionJob.status = "cancelled"`, calls `archiver.finalize()`
+   so `run_summary.json` records `"cancelled": true`
+   (`extractor.py:2748-2756`). **But** this is an early `return summary`
+   that never reaches the `ExtractionRun.status = "completed"` block near
+   the function's end (`extractor.py:2975`) — so even a *deliberate,
+   clean* cancel leaves the run-level DB record stuck at `"running"`
+   forever.
+2. **Unhandled exception inside the extraction thread** — extraction runs
+   as a `threading.Thread` inside the same FastAPI process
+   (`dashboard.py:103`), wrapped in a generic `try/except Exception`
+   (`dashboard.py:91-98`) that rolls back the current transaction (safe —
+   everything already committed survives) and stashes the error in an
+   **in-memory** `_background_jobs` dict, deleted the first time anyone
+   polls `/api/job-status/{step}` (`dashboard.py:125`) — gone if nobody's
+   watching. Neither `ExtractionJob`/`ExtractionRun` status nor
+   `archiver.finalize()` ever run on this path, so **no `run_summary.json`
+   entry is written for a failed run at all.**
+3. **Hard kill** (SIGKILL / OOM / container restart / deploy) — no Python
+   code runs, nothing gets marked. The only recovery is
+   `_recover_stale_jobs()` on the *next app startup*
+   (`app.py:37-97`), which resets `ExtractionJob` rows stuck at
+   `"running"` to `"interrupted"` — but **only `ExtractionJob`, never
+   `ExtractionRun`** (confirmed by grep: `ExtractionRun.status` is set in
+   exactly one place in the whole codebase, `extractor.py:2975`, on the
+   unreachable-from-any-interruption happy path).
+
+**Data loss:** bounded, not total. Extractions commit periodically — every
+10 passages within the loop (`extractor.py:2751,3624`) or at
+document-version boundaries — so everything up to the last commit is
+durable. The uncommitted tail (up to ~10 passages' worth of already-made
+LLM calls) is rolled back on a hard kill; the `ExtractionAttempt` dedup
+mechanism (`extractor.py:253-324`) means a re-run correctly redoes that
+work rather than silently skipping it, so nothing is *permanently* lost —
+but the wasted inference cost is real, and there's currently no visibility
+into how often this happens.
+
+### Phase ERR-1 — Always finalize the run record, on every exit path ✅ (2026-07-20)
+- ✅ **ERR-1a** — Migration `116c7fbe8389` adds `ExtractionRun.termination_reason`
+  (String(30), nullable). New `_finalize_extraction_run(db, run_id, status,
+  termination_reason, summary)` helper in `extractor.py` is now the single
+  choke point every `ExtractionRun` status transition routes through — it
+  sets `status`/`termination_reason`/`completed_at`/`extraction_count`/
+  `passage_count`/`summary`, and only promotes `is_serving=True` on a clean
+  `"completed"` (demoting any previous serving row first, since the DB has
+  a real partial-unique constraint allowing at most one serving row). All 4
+  in-function exit points (no-work early return, graceful cancel,
+  circuit-breaker abort, natural completion) now call it — previously only
+  the natural-completion path touched `ExtractionRun.status` at all. The
+  helper also mutates `summary["run_status"]`/`summary["termination_reason"]`
+  in place before `archiver.finalize()` runs (call order swapped at all 4
+  sites), so `run_summary.json` — the file-based "extraction log" — shows
+  why a run ended, not just that one exists. `run_extraction()` was split
+  into a thin public wrapper + `_run_extraction_impl` (original body moved
+  verbatim, no re-indentation) so the wrapper can catch any exception
+  escaping the impl, via a mutable `_run_id_sink` dict populated as soon as
+  the `ExtractionRun` row is created (also now `db.commit()`ted immediately,
+  not just flushed, so the row is durable from the earliest possible
+  moment), and finalize it as `status="failed"`,
+  `termination_reason="exception"` before re-raising. *(BE)*
+- ✅ **ERR-1b** — confirmed: the background-thread wrapper
+  (`dashboard.py`'s `_run_in_background`) needed no changes — its existing
+  rollback+log behavior is now backed by a durable DB record (every
+  exception path finalizes `ExtractionRun` before propagating) instead of
+  only an in-memory dict entry that vanished on first read. *(BE)*
+- **Tests**: `tests/integration/test_extraction_run_resilience_e2e.py` (new,
+  real Postgres) — 10/10 passing. `TestFinalizeExtractionRun` (7 tests)
+  covers completed/cancelled/failed/no-op/idempotent-double-call paths
+  directly, including the previously-unknown `uq_extraction_runs_serving`
+  DB constraint (only one `is_serving=True` row allowed — test setup
+  explicitly demotes any pre-existing serving row first, since this
+  session's scratch DB is shared and never reset).
+  `TestRunExtractionWrapperFinalizesOnException` (3 tests) mocks
+  `_run_extraction_impl` to simulate a crash after/before the
+  `ExtractionRun` row exists, and a clean success, verifying the wrapper
+  finalizes correctly and always re-raises/returns unchanged.
+  `pytest tests/ -q -k "extract"` → 315 passed, 2 skipped, no regressions.
+  `ruff check --select E9,F` clean on both changed files.
+
+### Phase ERR-2 — Startup recovery + durable interruption record
+- ⏳ **ERR-2a** — `_recover_stale_jobs()` (`app.py`) extended to also catch
+  `ExtractionRun` rows stuck at `status="running"` on startup (previously
+  only `ExtractionJob`), marking them `"interrupted"` — closes the
+  asymmetry the audit found. *(BE)*
+- ⏳ **ERR-2b** — the recovery pass writes a `PipelineEvent` row
+  (`event_type="run_interrupted"`) per recovered run with how many
+  passages it had processed before dying, so "Run #N was interrupted after
+  X/Y passages" is queryable/visible in run history — not silently
+  absorbed by the next run's dedup. *(BE)*
+
+### Phase ERR-3 — Shrink the uncommitted-work loss window
+- ⏳ **ERR-3a** — evaluate per-passage vs. per-agent-call commit cadence
+  against the added DB round-trip cost; land whichever tradeoff bounds the
+  loss window without materially slowing a normal run. *(BE)*
+
+### Phase ERR-4 — Tests + landed status
+- ⏳ **ERR-4a** — integration tests simulating an interrupted run (forced
+  exception mid-loop) asserting `ExtractionRun`/`ExtractionJob` status,
+  `run_summary.json`, and the `PipelineEvent` recovery record all reflect
+  it correctly; full suite + blocking ruff gate clean.
+
+---
+
 ## Repository Cleanup Plan (RC) — from 2026-07-03 audit report
 
 > Source: external cleanup-audit report (backups, archived code, docs sprawl,

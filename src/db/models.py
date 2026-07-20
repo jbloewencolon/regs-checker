@@ -489,7 +489,13 @@ class ExtractionRun(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     run_type = Column(String(50), nullable=False, default="extract")
+    # "running" | "completed" | "cancelled" | "failed" | "interrupted"
     status = Column(String(20), nullable=False, default="running")
+    # ERR-1: why the run ended — "completed" | "cancelled" | "failed" |
+    # "no_work" | "circuit_breaker" | "exception" | "crash_recovered".
+    # NULL means still running (or a pre-ERR-1 row this migration didn't
+    # backfill). See src/ingestion/extractor.py's _finalize_extraction_run.
+    termination_reason = Column(String(30), nullable=True)
     is_serving = Column(Boolean, nullable=False, default=False)
 
     # Reproducibility pinning

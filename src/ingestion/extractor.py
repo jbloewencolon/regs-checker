@@ -2395,6 +2395,63 @@ def _run_bill_level_agents(
     return succeeded
 
 
+def _finalize_extraction_run(
+    db,
+    run_id: int | None,
+    status: str,
+    termination_reason: str,
+    summary: dict,
+) -> None:
+    """Update the ExtractionRun row's terminal state — the single place
+    every exit path from run_extraction() routes through (ERR-1).
+
+    Before this existed, ExtractionRun.status only ever transitioned away
+    from "running" on the natural end-of-function path; a graceful cancel,
+    a circuit-breaker abort, an empty-corpus early return, and any
+    unhandled exception all left the row stuck at "running" forever with
+    no record of what actually happened. Safe to call more than once for
+    the same run_id (each call just overwrites the row with the latest
+    known state) — callers don't need to track whether an earlier call
+    already ran.
+    """
+    if run_id is None:
+        return
+    try:
+        from src.db.models import ExtractionRun
+        run = db.get(ExtractionRun, run_id)
+        if run is None:
+            return
+        if status == "completed":
+            # Demote the previous serving run before promoting this one —
+            # only a cleanly completed run should ever become "serving".
+            db.execute(
+                sa_update(ExtractionRun)
+                .where(ExtractionRun.is_serving.is_(True), ExtractionRun.id != run_id)
+                .values(is_serving=False)
+            )
+            run.is_serving = True
+        run.status = status
+        run.termination_reason = termination_reason
+        run.completed_at = datetime.utcnow()
+        run.extraction_count = summary.get("total_extractions", 0)
+        run.passage_count = summary.get("records_processed", 0)
+        # Mutated in place (not just read) so callers that pass this same
+        # dict on to RunArchiver.finalize() afterward get run_status/
+        # termination_reason mirrored into run_summary.json too — the
+        # file-based "extraction log" should show why a run ended, not
+        # just that the DB row does.
+        summary["run_status"] = status
+        summary["termination_reason"] = termination_reason
+        run.summary = summary
+        db.commit()
+        logger.info(
+            "extraction_run_finalized", run_id=run_id, status=status,
+            termination_reason=termination_reason,
+        )
+    except Exception as e:
+        logger.warning("extraction_run_finalize_failed", run_id=run_id, reason=str(e))
+
+
 def run_extraction(
     db,
     limit: int | None = None,
@@ -2418,7 +2475,53 @@ def run_extraction(
 
     Returns:
         Summary dict with counts and token usage.
+
+    ERR-1: this is a thin wrapper around _run_extraction_impl() whose only
+    job is to guarantee the ExtractionRun row gets finalized even when an
+    exception escapes every internal handler (a bug in loop-management code
+    outside the per-passage try/except, a DB error mid-commit, etc.) —
+    previously that case left the row stuck at status="running" forever,
+    identical to what a hard process kill does, but silently, while the
+    process was still alive to report it. _run_id_sink lets the impl hand
+    back its ExtractionRun id the moment it's created (before any of the
+    risky loop logic runs), so this wrapper can finalize the right row
+    without needing to catch every possible exception site individually.
+    Behavior on success is unchanged; on failure, the same exception is
+    re-raised after finalizing, so existing callers (e.g. dashboard.py's
+    background-thread error handling) see identical behavior to before.
     """
+    _run_id_sink: dict[str, int | None] = {"run_id": None}
+    try:
+        return _run_extraction_impl(
+            db, limit=limit, on_progress=on_progress, batch_mode=batch_mode,
+            purge=purge, _run_id_sink=_run_id_sink,
+        )
+    except Exception as e:
+        run_id = _run_id_sink.get("run_id")
+        if run_id is not None:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            _finalize_extraction_run(
+                db, run_id, "failed", "exception",
+                {"error": str(e), "records_processed": 0, "total_extractions": 0},
+            )
+        raise
+
+
+def _run_extraction_impl(
+    db,
+    limit: int | None = None,
+    on_progress: Callable[[str], None] | None = None,
+    batch_mode: bool = False,
+    purge: bool = False,
+    _run_id_sink: dict[str, int | None] | None = None,
+) -> dict:
+    """Implementation body for run_extraction() — see that function's
+    docstring for the public contract. Split out solely so run_extraction()
+    can wrap it in exception handling without restructuring this function's
+    internals (ERR-1)."""
     # Clear any stale cancellation/pause from a previous run
     clear_cancel()
     clear_pause()
@@ -2497,6 +2600,15 @@ def run_extraction(
         db.add(_run)
         db.flush()
         current_run_id = _run.id
+        # ERR-1: commit immediately, not just flush — a flush is only
+        # visible inside this transaction. Without this commit, a crash in
+        # the first few passages (before the next periodic commit) would
+        # roll back the ExtractionRun row along with everything else,
+        # leaving no record a run was ever attempted for startup recovery
+        # to find.
+        db.commit()
+        if _run_id_sink is not None:
+            _run_id_sink["run_id"] = current_run_id
         logger.info("extraction_run_created", run_id=current_run_id, git_sha=_git_sha)
     except Exception as _e:
         logger.warning("extraction_run_create_skipped", reason=str(_e))
@@ -2617,6 +2729,7 @@ def run_extraction(
             )
         else:
             _log("No triaged-relevant passages found.")
+        _finalize_extraction_run(db, current_run_id, "completed", "no_work", summary)
         archiver.finalize(db, summary, run_id=current_run_id)
         return summary
 
@@ -2752,6 +2865,7 @@ def run_extraction(
                 summary["total_extractions"] += job_extractions
                 summary["cancelled"] = True
                 _monitor.stop_run(cancelled=True)
+                _finalize_extraction_run(db, current_run_id, "cancelled", "cancelled", summary)
                 archiver.finalize(db, summary, run_id=current_run_id)
                 return summary
 
@@ -2809,6 +2923,7 @@ def run_extraction(
                 _log(f"\n{cb}")
                 _monitor.record_circuit_breaker(str(cb))
                 _monitor.stop_run()
+                _finalize_extraction_run(db, current_run_id, "failed", "circuit_breaker", summary)
                 archiver.finalize(db, summary, run_id=current_run_id)
                 return summary
 
@@ -2958,30 +3073,10 @@ def run_extraction(
         f"{token_usage.agents_skipped} agent calls avoided by signal filtering"
     )
     _monitor.stop_run()
-    archiver.finalize(db, summary, run_id=current_run_id)
 
     # Finalize the ExtractionRun record: mark as serving, write summary (Phase 1b)
-    if current_run_id is not None:
-        try:
-            from src.db.models import ExtractionRun
-            _run_rec = db.get(ExtractionRun, current_run_id)
-            if _run_rec:
-                # Demote the previous serving run
-                db.execute(
-                    sa_update(ExtractionRun)
-                    .where(ExtractionRun.is_serving.is_(True), ExtractionRun.id != current_run_id)
-                    .values(is_serving=False)
-                )
-                _run_rec.status = "completed"
-                _run_rec.is_serving = True
-                _run_rec.completed_at = datetime.utcnow()
-                _run_rec.extraction_count = summary.get("total_extractions", 0)
-                _run_rec.passage_count = summary.get("records_processed", 0)
-                _run_rec.summary = summary
-                db.commit()
-                logger.info("extraction_run_finalized", run_id=current_run_id)
-        except Exception as _e:
-            logger.warning("extraction_run_finalize_failed", reason=str(_e))
+    _finalize_extraction_run(db, current_run_id, "completed", "completed", summary)
+    archiver.finalize(db, summary, run_id=current_run_id)
 
     return summary
 
