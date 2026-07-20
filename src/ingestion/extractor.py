@@ -2907,9 +2907,17 @@ def _run_extraction_impl(
                 if tracker is not None and tracker.consecutive_failures > 0:
                     tracker._consecutive = 0
 
-                # Commit in batches of 10 to avoid holding huge transactions
+                # ERR-3: commit after every passage, not every 10th. A passage
+                # can involve several LLM agent calls each taking seconds; a
+                # 10-passage batch could lose several minutes of already-done
+                # LLM work to a hard kill, which would have to be redone since
+                # dedup (ExtractionAttempt) only sees committed rows. Each
+                # passage's writes are already a single, small transaction —
+                # committing every one doesn't hold anything larger than what
+                # committing every 10 held per-passage anyway, it just closes
+                # the transaction sooner.
+                db.commit()
                 if (i + 1) % 10 == 0:
-                    db.commit()
                     _log(f"  {i + 1}/{len(merged_passages)} passages processed...")
 
             except CircuitBreakerTripped as cb:

@@ -1795,16 +1795,76 @@ into how often this happens.
   and without this change via `git stash`) shows no regressions.
   `ruff check --select E9,F` clean.
 
-### Phase ERR-3 — Shrink the uncommitted-work loss window
-- ⏳ **ERR-3a** — evaluate per-passage vs. per-agent-call commit cadence
-  against the added DB round-trip cost; land whichever tradeoff bounds the
-  loss window without materially slowing a normal run. *(BE)*
+### Phase ERR-3 — Shrink the uncommitted-work loss window ✅ (2026-07-20)
+- ✅ **ERR-3a** — evaluated per-passage vs. per-agent-call commit cadence in
+  `_run_extraction_impl`'s main loop (`extractor.py`, previously committing
+  every 10th passage). Landed **per-passage**: each passage can involve
+  several LLM agent calls (several seconds to tens of seconds each), so a
+  10-passage batch could lose several minutes of already-completed LLM work
+  to a hard kill — work that has to be redone since dedup
+  (`ExtractionAttempt`) only sees committed rows. Per-agent-call commits
+  (mid-passage) were considered and rejected: `extract_single_record()` runs
+  agents within the same model group concurrently, so committing between
+  individual agent writes would mean coordinating commits across that
+  concurrent execution — a materially riskier change (thread-safety of a
+  shared session) for comparatively little extra benefit over per-passage,
+  since a single passage's agents typically complete in the same rough time
+  window anyway. Per-passage commits: (a) bound the loss window to at most
+  one passage's LLM work — a 10x reduction — using the exact same
+  transaction the old code held per passage internally anyway (nothing
+  larger is now held open, commits just close sooner), and (b) cost one
+  extra local-Postgres round-trip per passage, negligible next to LLM call
+  latency. Progress logging kept at its original every-10th-passage cadence
+  (only the commit moved) so normal-run log volume is unchanged. Scoped to
+  `run_extraction`'s main loop only — `run_recovery_extraction`'s separate
+  10-passage batching (line ~3717) is a different, lower-stakes path not
+  tracked by `ExtractionRun` and out of scope for this audit, matching
+  ERR-1's established boundary. *(BE)*
+- **Tests**: no dedicated test added — this is a mechanical change to when
+  an existing, already-covered `db.commit()` call fires (every passage
+  instead of every 10th), not new logic; asserting exact commit-call
+  cadence would need a large scaffold (an `_run_extraction_impl` run over
+  10+ real-or-heavily-mocked passages spying on `db.commit`) disproportionate
+  to a one-line, mechanically low-risk change. Confirmed no existing test
+  depends on the old batch-of-10 cadence (`grep` swept for cadence-sensitive
+  commit-count assertions — none found; the one `mock_db.commit.assert_*`
+  hit is in `test_retag_endpoint.py`, unrelated). Full suite: 1747 passed, 6
+  pre-existing/unrelated failures (same as ERR-2, confirmed present without
+  this change too). `pytest -k "extract or pipeline"`: 335 passed, 2
+  skipped. `ruff check --select E9,F` clean.
 
-### Phase ERR-4 — Tests + landed status
-- ⏳ **ERR-4a** — integration tests simulating an interrupted run (forced
-  exception mid-loop) asserting `ExtractionRun`/`ExtractionJob` status,
-  `run_summary.json`, and the `PipelineEvent` recovery record all reflect
-  it correctly; full suite + blocking ruff gate clean.
+### Phase ERR-4 — Tests + landed status ✅ (2026-07-20)
+- ✅ **ERR-4a** — coverage landed incrementally with ERR-1/2/3 rather than as
+  a separate pass (`tests/integration/test_extraction_run_resilience_e2e.py`,
+  real Postgres, 14 tests total):
+  - `TestFinalizeExtractionRun` (8 tests) — every `ExtractionRun` status
+    transition (completed/cancelled/failed/no-op/idempotent-double-call),
+    the `is_serving` demote-on-completion behavior against the DB's real
+    `uq_extraction_runs_serving` constraint, and the summary-dict mutation
+    (`run_status`/`termination_reason`) that's the only mechanism by which
+    `run_summary.json` reflects why a run ended.
+  - `TestRunExtractionWrapperFinalizesOnException` (3 tests) — the
+    forced-exception-mid-loop scenario ERR-4a asked for: a crash after the
+    `ExtractionRun` row exists finalizes it `failed`/`exception`; a crash
+    before it exists propagates cleanly; a clean success passes the summary
+    through unchanged.
+  - `TestRecoverStaleExtractionRuns` (3 tests) — the `PipelineEvent`
+    recovery record ERR-4a asked for: a stuck run recovers with correct
+    passage/extraction counts and the right event; a non-running run is
+    left untouched; a run with zero recorded attempts recovers cleanly
+    instead of raising.
+  - **Landed status**: full suite green — final run 1749 passed, 9 skipped,
+    5 failed (all 5 pre-existing/unrelated: `test_v1_api.py` auth-middleware
+    env var + one flaky shared-DB pagination test in
+    `test_law_card_api_e2e.py`, confirmed via `git stash` to exist
+    identically without any ERR-1/2/3 change). `ruff check src/
+    --select E9,F` clean.
+  - **Not done, deliberately out of scope**: `ExtractionJob` status
+    transitions on the interrupt path were already correct before this
+    plan (per the original audit) and untouched by ERR-1/2/3, so no new
+    `ExtractionJob`-specific test was added — the plan's audit already
+    confirmed that surface, and this phase's job was closing the
+    `ExtractionRun` gap.
 
 ---
 

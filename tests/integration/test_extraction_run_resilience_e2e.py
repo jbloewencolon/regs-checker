@@ -72,6 +72,21 @@ class TestFinalizeExtractionRun:
         assert run.extraction_count == 5
         assert run.passage_count == 3
 
+    def test_mutates_summary_dict_in_place_for_run_summary_json(self, db, running_run):
+        """RunArchiver.finalize() writes run_summary.json (the file-based
+        "extraction log") as `{**summary, ...}` — the only way it can show
+        why a run ended is if _finalize_extraction_run mutates the same
+        summary dict object the caller then hands to archiver.finalize()
+        (call order was swapped at all 4 extractor.py call sites for this).
+        """
+        summary = {"total_extractions": 5, "records_processed": 3}
+        extractor._finalize_extraction_run(db, running_run, "failed", "circuit_breaker", summary)
+        assert summary["run_status"] == "failed"
+        assert summary["termination_reason"] == "circuit_breaker"
+        # Original keys survive the mutation.
+        assert summary["total_extractions"] == 5
+        assert summary["records_processed"] == 3
+
     def test_completed_demotes_previous_serving_run(self, db, running_run):
         # This shared scratch DB is never reset between test runs, so a prior
         # run may have already left an is_serving=True row behind; the DB's
