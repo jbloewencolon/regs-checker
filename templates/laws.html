@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% from "partials/lc_badges.html" import review_state_badge, gap_badge %}
+{% set title = "Laws" %}
+{% set active_nav = "laws" %}
+
+{% block content %}
+
+<section class="section">
+  <div class="section-header">
+    <h2>Laws</h2>
+    <span style="font-size:13px;color:var(--text-muted);">{{ total }} law{{ "s" if total != 1 else "" }}</span>
+  </div>
+
+  <form method="get" action="/laws" style="display:flex;gap:8px;margin-bottom:12px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search title or citation…"
+           style="flex:1 1 auto;font-size:13px;padding:6px 10px;">
+    <button type="submit" class="btn btn-sm">Search</button>
+    {% if q %}<a class="btn btn-sm" href="/laws">Clear</a>{% endif %}
+  </form>
+
+  {% if laws %}
+    <div class="tracker-list">
+      {% for law in laws %}
+        <div class="lc-law-list-row">
+          <div class="lc-law-list-title">
+            <a href="/laws/{{ law.canonical_key }}">{{ law.title }}</a>
+            {% if law.short_cite %}<span style="color:var(--text-muted);font-size:12px;"> — {{ law.short_cite }}</span>{% endif %}
+          </div>
+          <span class="type-tag">{{ law.jurisdiction or "?" }}</span>
+          <span style="font-size:12px;color:var(--text-muted);">
+            {% if law.extraction_count is not none %}
+              {{ law.extraction_count }} extraction{{ "s" if law.extraction_count != 1 else "" }}
+              {% if law.edited_count %}({{ law.edited_count }} edited){% endif %}
+            {% else %}
+              {{ gap_badge("Not yet assembled") }}
+            {% endif %}
+          </span>
+          {{ review_state_badge(law.human_review_state) }}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="lc-stub-card">No laws match{{ (' “' ~ q ~ '”') if q else '' }}.</div>
+  {% endif %}
+
+  {% if total_pages > 1 %}
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+      {% if page > 1 %}<a class="btn btn-sm" href="/laws?q={{ q }}&page={{ page - 1 }}">&larr; Prev</a>{% endif %}
+      <span style="font-size:12px;color:var(--text-muted);">Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}<a class="btn btn-sm" href="/laws?q={{ q }}&page={{ page + 1 }}">Next &rarr;</a>{% endif %}
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "layout.html" %}
+{% from "partials/lc_badges.html" import status_chip, tier_chip, gap_badge, type_tag, truncated_badge %}
+{% from "partials/lc_extraction_panel.html" import extraction_panel %}
+{% set title = card.law.title %}
+{% set active_nav = "laws" %}
+
+{% block content %}
+
+{% if card.render_hint == "stub" %}
+<section class="section">
+  <div class="section-header">
+    <h2>{{ card.law.title }}</h2>
+    {{ status_chip(card.law.status) }}
+  </div>
+  <div class="lc-stub-card">
+    <p><strong>No AI-relevant provisions extracted.</strong></p>
+    <p style="font-size:12px;margin-top:6px;">
+      This means the pipeline has not yet extracted structured obligations for
+      this law — it does not mean the law was checked and found to have none.
+    </p>
+  </div>
+</section>
+
+{% else %}
+
+<section class="section">
+  <div class="section-header">
+    <h2>{{ card.law.title }}</h2>
+    <a class="btn btn-sm" href="/laws">&larr; All laws</a>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+    {{ status_chip(card.law.status) }}
+    {{ type_tag(card.law.jurisdiction or "?") }}
+    {% if card.law.short_cite %}<span style="font-size:12px;color:var(--text-muted);">{{ card.law.short_cite }}</span>{% endif %}
+  </div>
+  <div style="font-size:12px;color:var(--text-muted);">
+    {% if card.law.effective_date %}Effective {{ card.law.effective_date }}{% else %}{{ gap_badge("Effective date unknown") }}{% endif %}
+    {% if card.law.sunset_date %} &middot; Sunsets {{ card.law.sunset_date }}{% endif %}
+  </div>
+  {% if card.law.source_urls.primary %}
+    <div style="margin-top:6px;">
+      <a href="{{ card.law.source_urls.primary }}" target="_blank" rel="noopener" style="font-size:12px;">Primary source &#8599;</a>
+    </div>
+  {% endif %}
+</section>
+
+{% if card.gaps %}
+<section class="section">
+  <div class="section-header"><h3>Known gaps</h3></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    {% for gap in card.gaps %}{{ gap_badge(gap | replace("_", " ") | capitalize) }}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="section-header"><h3>Tracker summary</h3></div>
+  {% if card.law.tracker.ai_scope %}
+    <div class="lc-field-row"><div class="lc-field-label">AI scope</div><div class="lc-field-value">{{ card.law.tracker.ai_scope }}</div></div>
+  {% endif %}
+  {% if card.law.tracker.orrick_key_requirements %}
+    <div class="lc-field-row"><div class="lc-field-label">Key requirements</div><div class="lc-field-value">{{ card.law.tracker.orrick_key_requirements }}</div></div>
+  {% endif %}
+  {% if card.law.tracker.orrick_enforcement_summary %}
+    <div class="lc-field-row"><div class="lc-field-label">Orrick enforcement summary</div><div class="lc-field-value">{{ card.law.tracker.orrick_enforcement_summary }}</div></div>
+  {% endif %}
+  {% if not card.law.tracker.ai_scope and not card.law.tracker.orrick_key_requirements and not card.law.tracker.orrick_enforcement_summary %}
+    <div style="padding:8px 0;">{{ gap_badge("Not yet triaged") }}</div>
+  {% endif %}
+</section>
+
+{# Bill-level sections — read-only per decision D-7. #}
+{% set app_ = card.bill_level.applicability %}
+{% if app_ and app_.payload %}
+<section class="section">
+  <div class="section-header"><h3>Applicability</h3></div>
+  {% for key, value in app_.payload.items() %}
+    {% if not key.startswith("_") %}
+      <div class="lc-field-row">
+        <div class="lc-field-label">{{ key | replace("_", " ") | capitalize }}</div>
+        <div class="lc-field-value">
+          {% if value is none %}{{ gap_badge() }}
+          {% elif value is sequence and value is not string %}{{ value | join(", ") if value else gap_badge("Not extracted") }}
+          {% elif value is sameas true or value is sameas false %}{{ "Yes" if value else "No" }}
+          {% else %}{{ value }}{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+  {% if app_.input_truncated %}<div style="margin-top:4px;">{{ truncated_badge() }} <span style="font-size:11px;color:var(--text-muted);">bill-level input was truncated before this agent ran</span></div>{% endif %}
+</section>
+{% endif %}
+
+{% set tl = card.bill_level.compliance_timeline %}
+{% if tl and tl.payload %}
+<section class="section">
+  <div class="section-header"><h3>Compliance timeline</h3></div>
+  {% for key, value in tl.payload.items() %}
+    {% if not key.startswith("_") %}
+      <div class="lc-field-row">
+        <div class="lc-field-label">{{ key | replace("_", " ") | capitalize }}</div>
+        <div class="lc-field-value">
+          {% if value is none %}{{ gap_badge() }}
+          {% elif value is sequence and value is not string %}{{ value | join(", ") if value else gap_badge("Not extracted") }}
+          {% elif value is sameas true or value is sameas false %}{{ "Yes" if value else "No" }}
+          {% else %}{{ value }}{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+  {% if tl.input_truncated %}<div style="margin-top:4px;">{{ truncated_badge() }} <span style="font-size:11px;color:var(--text-muted);">bill-level input was truncated before this agent ran</span></div>{% endif %}
+</section>
+{% endif %}
+
+{# Enforcement — design Rule 2: gated on in-force status AND actual data
+   presence; a "TBD" penalty amount still renders the panel with an explicit
+   gap badge rather than being suppressed outright. #}
+{% set enf = card.bill_level.enforcement %}
+{% set enf_present = enf and enf.payload and (enf.payload.enforcing_body or enf.payload.penalty_type or enf.payload.penalty_description or enf.payload.max_civil_penalty_usd is not none) %}
+{% if enf_present and is_enforcement_visible(card.law.status) %}
+<section class="section">
+  <div class="section-header"><h3>Enforcement</h3></div>
+  {% if enf.payload.enforcing_body %}
+    <div class="lc-field-row"><div class="lc-field-label">Enforcing body</div><div class="lc-field-value">{{ enf.payload.enforcing_body }}</div></div>
+  {% endif %}
+  {% if enf.payload.penalty_type %}
+    <div class="lc-field-row"><div class="lc-field-label">Penalty type</div><div class="lc-field-value">{{ enf.payload.penalty_type }}</div></div>
+  {% endif %}
+  <div class="lc-field-row">
+    <div class="lc-field-label">Max civil penalty</div>
+    <div class="lc-field-value">
+      {% if enf.payload.max_civil_penalty_usd is not none %}
+        ${{ "{:,}".format(enf.payload.max_civil_penalty_usd) }}
+      {% elif enf.payload.enforcement_text and "tbd" in (enf.payload.enforcement_text | lower) %}
+        {{ gap_badge("Penalty amount not yet specified") }}
+      {% else %}
+        {{ gap_badge() }}
+      {% endif %}
+    </div>
+  </div>
+  {% if enf.payload.penalty_description %}
+    <div class="lc-field-row"><div class="lc-field-label">Penalty description</div><div class="lc-field-value">{{ enf.payload.penalty_description }}</div></div>
+  {% endif %}
+  {% if enf.payload.enforcement_text %}
+    <div class="lc-field-row">
+      <div class="lc-field-label">Enforcement text</div>
+      <div class="lc-field-value" style="font-style:italic;">&ldquo;{{ enf.payload.enforcement_text }}&rdquo;</div>
+    </div>
+  {% endif %}
+  {% if enf.input_truncated %}<div style="margin-top:4px;">{{ truncated_badge() }} <span style="font-size:11px;color:var(--text-muted);">bill-level input was truncated before this agent ran</span></div>{% endif %}
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="section-header"><h3>Extractions ({{ card.extractions|length }})</h3></div>
+  {% if card.extractions %}
+    {% for extraction in card.extractions %}{{ extraction_panel(extraction) }}{% endfor %}
+  {% else %}
+    <div class="lc-stub-card">No extractions for this law.</div>
+  {% endif %}
+</section>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}<script src="/static/lawcard.js"></script>{% endblock %}

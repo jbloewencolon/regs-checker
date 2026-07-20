@@ -1,0 +1,77 @@
+{% from "partials/lc_badges.html" import tier_chip, gap_badge, edited_badge, review_state_badge, truncated_badge, repaired_badge, type_tag, evidence_list, disclosure %}
+
+{# One field row — design Rule 1 (honest-unknown): branches on presence
+   before rendering, never renders a null/empty placeholder as if it were a
+   real value. #}
+{% macro field_row(field) %}
+<div class="lc-field-row">
+  <div class="lc-field-label">
+    {{ field.label }}
+    {% if field.edited %}{{ edited_badge() }}{% endif %}
+  </div>
+  <div class="lc-field-value">
+    {% if field.value is none %}
+      {{ gap_badge("Unknown field — no catalog entry" if field.catalog_gap else "Not extracted") }}
+    {% elif field.value is mapping %}
+      <pre style="white-space:pre-wrap;font-size:12px;">{{ field.value | tojson(indent=2) }}</pre>
+    {% elif field.value is sequence and field.value is not string %}
+      {% if field.value|length == 0 %}
+        {{ gap_badge("Not extracted") }}
+      {% else %}
+        <ul style="margin-left:16px;">
+          {% for item in field.value %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% elif field.value is sameas true or field.value is sameas false %}
+      {{ "Yes" if field.value else "No" }}
+    {% else %}
+      {{ field.value }}
+    {% endif %}
+    {% if field.unit %}<span style="color:var(--text-muted);font-size:11px;"> {{ field.unit }}</span>{% endif %}
+    {{ evidence_list(field.evidence) }}
+  </div>
+</div>
+{% endmacro %}
+
+{# Full extraction card — L1 (material fields, always visible once the
+   extraction section is open) + L2 disclosure (full field list) + L3
+   disclosure (provenance/raw details), per design Rule 4. #}
+{% macro extraction_panel(extraction) %}
+{% set material_fields = extraction.fields | selectattr("material") | list %}
+{% set other_fields = extraction.fields | rejectattr("material") | list %}
+<div class="section" style="margin-bottom:12px;">
+  <div class="section-header">
+    <h4 style="display:flex;align-items:center;gap:8px;">
+      {{ type_tag(extraction.type | replace("_", " ") | title) }}
+      {{ tier_chip(extraction.confidence.tier) }}
+      {% if extraction.flags.truncated %}{{ truncated_badge() }}{% endif %}
+      {% if extraction.flags.was_repaired %}{{ repaired_badge() }}{% endif %}
+      {{ review_state_badge(extraction.review.human_review_state) }}
+    </h4>
+    <span style="font-size:11px;color:var(--text-muted);">{{ extraction.section_path or "" }}</span>
+  </div>
+
+  {# L1 — material fields only #}
+  {% if material_fields %}
+    {% for field in material_fields %}{{ field_row(field) }}{% endfor %}
+  {% else %}
+    <div style="padding:8px 0;">{{ gap_badge("No material fields extracted") }}</div>
+  {% endif %}
+
+  {# L2 — full field list #}
+  {% if other_fields %}
+    {% call disclosure("ext-" ~ extraction.id ~ "-fields", "Full field list (" ~ extraction.fields|length ~ ")") %}
+      {% for field in other_fields %}{{ field_row(field) }}{% endfor %}
+    {% endcall %}
+  {% endif %}
+
+  {# L3 — provenance / raw details #}
+  {% call disclosure("ext-" ~ extraction.id ~ "-provenance", "Provenance & raw details") %}
+    <div class="lc-field-row"><div class="lc-field-label">Model</div><div class="lc-field-value">{{ extraction.provenance.model_id or gap_badge() }}</div></div>
+    <div class="lc-field-row"><div class="lc-field-label">Template version</div><div class="lc-field-value">{{ extraction.provenance.template_version or gap_badge() }}</div></div>
+    <div class="lc-field-row"><div class="lc-field-label">Prompt hash</div><div class="lc-field-value" style="font-family:monospace;font-size:11px;">{{ extraction.provenance.prompt_hash or gap_badge() }}</div></div>
+    <div class="lc-field-row"><div class="lc-field-label">Confidence score</div><div class="lc-field-value">{{ "%.2f"|format(extraction.confidence.score) if extraction.confidence.score is not none else gap_badge() }}</div></div>
+    <div class="lc-field-row"><div class="lc-field-label">Review status</div><div class="lc-field-value">{{ extraction.review.status }}</div></div>
+  {% endcall %}
+</div>
+{% endmacro %}

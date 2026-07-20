@@ -183,7 +183,7 @@ def normalize_enforcement_for_law(db, document_version_id: int) -> dict[str, Any
       - Orrick parsed enforcement facts (via bill context),
     then merges them.  Returns the normalized record (does not persist).
     """
-    from sqlalchemy import select
+    from sqlalchemy import func, select
 
     from src.db.models import (
         BillLevelExtraction,
@@ -202,8 +202,10 @@ def normalize_enforcement_for_law(db, document_version_id: int) -> dict[str, Any
     bill_payload = bill_row.payload if bill_row else None
 
     # 2. Embedded obligation.enforcement across this law's obligation rows
+    # (LC-1e: reads the edit-aware overlay so a human-corrected enforcement
+    # field is what this reconciliation sees, not the stale model output).
     obligation_payloads = db.scalars(
-        select(Extraction.payload)
+        select(func.coalesce(Extraction.effective_payload, Extraction.payload))
         .join(
             NormalizedSourceRecord,
             Extraction.source_record_id == NormalizedSourceRecord.id,

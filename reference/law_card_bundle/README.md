@@ -1,5 +1,19 @@
 # Law Card Component Bundle
 
+> **Relocated 2026-07-19 (LC-0b)** from the repo-root `Law Card Copy/` (space in
+> path caused tooling friction) to `reference/law_card_bundle/`. **Reference-only —
+> this JSX does not run as shipped** (broken internal imports: `../data/constants`
+> vs. the actual `constants-extract.js`; `../services/normalize` vs.
+> `normalize-extract.js`; missing `CoverageCard` and `services/supabase.js`;
+> `engines/priority.js` imports `PENDING_STATUSES`/`DISCUSSION_STATUSES`/
+> `TERMINAL_STATUSES` which `constants-extract.js` never exports). See
+> `docs/law_card_dashboard_plan.md` §1 for the full review and the
+> port-don't-copy verdict (D-2: ported into Jinja2/HTMX, not run as React). The
+> transferable artifacts — design tokens (`css/lawcard-tokens.css`, now also at
+> `static/css/lawcard-tokens.css`) and the four reference-law fixtures (now also
+> at `tests/fixtures/law_cards/*.json`) — are the parts actually consumed by the
+> Law Card Dashboard implementation (`tasks.md` Phase LC).
+
 This folder contains a self-contained, portable version of the **LawCard** component system from the ai-ethics-evaluator project. It includes all necessary components, utilities, data structures, CSS, and test fixtures to integrate Law Cards into the Regs Checker pipeline or any other downstream system.
 
 ## Structure

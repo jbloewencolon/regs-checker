@@ -26,6 +26,7 @@
                 hx-swap="none"></span>
         </a>
         <a href="/dashboard/concepts" class="nav-link {% if active_nav == 'concepts' %}active{% endif %}">Concepts</a>
+        <a href="/laws" class="nav-link {% if active_nav == 'laws' %}active{% endif %}">Laws</a>
         <a href="/dashboard/triage" class="nav-link {% if active_nav == 'triage' %}active{% endif %}">Triage</a>
         <a href="/dashboard/models" class="nav-link {% if active_nav == 'models' %}active{% endif %}" style="display:inline-flex;align-items:center;gap:4px;">
           Models
@@ -64,6 +65,8 @@
       Consult a licensed attorney before relying on any regulatory content.
     </div>
   </footer>
+
+  {% block extra_scripts %}{% endblock %}
 
   <script>
     function copyToClipboard(elementId) {

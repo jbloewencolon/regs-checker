@@ -1,0 +1,209 @@
+{
+  "id": 48,
+  "identifier": "SB 24-205",
+  "canonical_law_id": "US-CO-SB24-205",
+  "name": "Colorado AI Act — SB 24-205 (C.R.S.A. § 6-1-1701)",
+  "title": "Colorado AI Act — SB 24-205 (C.R.S.A. § 6-1-1701)",
+  "level": "state",
+  "jurisdiction": "Colorado",
+  "stateCode": "CO",
+  "status": "enacted",
+  "priority": "P2",
+  "is_stub": false,
+  "relevance_score": 3,
+  "government_only": false,
+  "effectiveDate": "2026-06-30",
+  "enforcementNote": null,
+  "coveredEntities": [
+    "deployer",
+    "developer"
+  ],
+  "domainTags": [
+    "generative_ai"
+  ],
+  "description": "Requires developers and deployers of high-risk AI systems to use reasonable care to protect consumers from algorithmic discrimination.",
+  "fullSummary": "Requires developers and deployers of high-risk AI systems to use reasonable care to protect consumers from algorithmic discrimination. Requires developers to address internal documentation requirements and risk management measures. Requires deployers to implement an appropriate risk management program, conduct comprehensive impact assessments, and provide consumers a right to correct information and appeal adverse decisions.",
+  "sourceUrl": "https://infobytes.orrick.com/wp-content/uploads/Colorado-AI-Act-Amended.pdf",
+  "obligations": [
+    {
+      "id": 964,
+      "type": "risk_management",
+      "requirement_type": "risk_management",
+      "description": "Governance Program",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 965,
+      "type": "risk_management",
+      "requirement_type": "risk_management",
+      "description": "[analyst_curated] Developer must implement risk-management or reasonable-care program for high-risk AI systems before deployment and throughout lifecycle. Colorado AI Act.",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 966,
+      "type": "assessment",
+      "requirement_type": "assessment",
+      "description": "[analyst_curated] Deployer must complete impact assessment and maintain governance records before deployment and at regular intervals",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 967,
+      "type": "assessment",
+      "requirement_type": "assessment",
+      "description": "Assessments",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 968,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 969,
+      "type": "training",
+      "requirement_type": "training",
+      "description": "Training",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 970,
+      "type": "human_oversight",
+      "requirement_type": "human_oversight",
+      "description": "Responsible Individual",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 971,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "General Notice",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 972,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "General Notice",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 973,
+      "type": "disclosure",
+      "requirement_type": "disclosure",
+      "description": "Labeling/Notification",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 974,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "Explanation/Incident Reporting",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 975,
+      "type": "reporting",
+      "requirement_type": "reporting",
+      "description": "[analyst_curated] Developer must document and disclose material risk information to deployers/regulator promptly after discovery. 60-day cure period.",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 976,
+      "type": "documentation",
+      "requirement_type": "documentation",
+      "description": "Provider Documentation",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 977,
+      "type": "documentation",
+      "requirement_type": "documentation",
+      "description": "Provider Documentation",
+      "actorRole": "developer",
+      "actorTags": [
+        "developer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    },
+    {
+      "id": 978,
+      "type": "opt_out",
+      "requirement_type": "opt_out",
+      "description": "[analyst_curated] Deployer must provide notice and means for review, contest, appeal, or human oversight at or before time of consequential decision",
+      "actorRole": "deployer",
+      "actorTags": [
+        "deployer"
+      ],
+      "isMandatory": true,
+      "policyId": 48
+    }
+  ]
+}

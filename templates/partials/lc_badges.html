@@ -1,0 +1,79 @@
+{# Law Card badge/chip macros (LC-2b) — ported from reference/law_card_bundle's
+   PolicyBadges.jsx, adapted to this repo's existing style.css classes rather
+   than the bundle's own token set. Import with:
+     {% from "partials/lc_badges.html" import status_chip, tier_chip, gap_badge %}
+#}
+
+{% macro status_chip(status) %}
+{%- if status -%}
+<span class="status-chip status-{{ status }}">{{ humanize_status(status) }}</span>
+{%- else -%}
+<span class="gap-badge">Status unknown</span>
+{%- endif -%}
+{% endmacro %}
+
+{% macro tier_chip(tier) %}
+{%- if tier -%}
+<span class="tier-badge tier-{{ tier }}" title="Confidence tier {{ tier }}">{{ tier }}</span>
+{%- else -%}
+<span class="tier-badge tier-none" title="No confidence signal yet">?</span>
+{%- endif -%}
+{% endmacro %}
+
+{% macro gap_badge(text="Not extracted") %}
+<span class="gap-badge">{{ text }}</span>
+{% endmacro %}
+
+{% macro edited_badge() %}
+<span class="edited-badge" title="Value has been manually edited">EDITED</span>
+{% endmacro %}
+
+{% macro review_state_badge(state) %}
+<span class="type-tag" title="Human review state">{{ humanize_review_state(state) }}</span>
+{% endmacro %}
+
+{% macro truncated_badge() %}
+<span class="truncated-badge" title="Model output was truncated — this extraction may be incomplete">TRUNCATED</span>
+{% endmacro %}
+
+{% macro repaired_badge() %}
+<span class="repaired-badge" title="Malformed model output was auto-repaired before storage">REPAIRED</span>
+{% endmacro %}
+
+{% macro type_tag(label) %}
+<span class="type-tag">{{ label }}</span>
+{% endmacro %}
+
+{# Evidence rendering — design Rule 3 (verbatim vs. paraphrase honesty).
+   verified + tier(1,2)  -> real quote, char-offset markup attached.
+   verified + other tier -> "near match" marker, no quote styling.
+   not verified          -> plain text + explicit could-not-verify warning,
+                             NEVER wrapped in quote styling. #}
+{% macro evidence_list(evidence) %}
+{%- if evidence %}
+  {% for span in evidence %}
+    {% if span.verified and span.match_tier in (1, 2) %}
+<div class="lc-evidence-quote" data-char-start="{{ span.char_start }}" data-char-end="{{ span.char_end }}">&ldquo;{{ span.text }}&rdquo;</div>
+    {% elif span.verified %}
+<div class="lc-evidence-near-match"><span class="lc-near-match-tag">Near match</span>&ldquo;{{ span.text }}&rdquo;</div>
+    {% else %}
+<div class="lc-evidence-unverified"><span class="lc-unverified-tag">Unverified</span>{{ span.text }} &mdash; could not be verified against the source text.</div>
+    {% endif %}
+  {% endfor %}
+{%- endif %}
+{% endmacro %}
+
+{# Paced-disclosure toggle (design Rule 4) — a real <button aria-expanded>,
+   never a <div onclick>. Wrap the hidden content in a {% call %} block:
+     {% call disclosure('ext-42-fields', 'Full field list (12)') %}
+       ...content...
+     {% endcall %} #}
+{% macro disclosure(id, label, expanded=false) %}
+<button type="button" class="lc-disclosure-btn" data-lc-toggle
+        aria-expanded="{{ 'true' if expanded else 'false' }}" aria-controls="{{ id }}">
+  <span class="lc-disclosure-caret">&#9656;</span> {{ label }}
+</button>
+<div id="{{ id }}" class="lc-disclosure-body"{{ '' if expanded else ' hidden' }}>
+  {{ caller() }}
+</div>
+{% endmacro %}

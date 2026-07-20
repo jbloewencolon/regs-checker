@@ -819,6 +819,695 @@ $/law in `run_summary.json` before/after so the trade is explicit.
 
 ---
 
+## Extraction Accuracy Plan v2 (EAR) — Architecture Re-Review Findings (2026-07-19)
+
+> Source: full second-pass extraction-architecture review (2026-07-19) covering
+> prompts (`prompts/*.yml`), agent base logic (`src/agents/base.py`), schemas
+> (`src/schemas/extraction.py`), routing/triage, span grounding
+> (`src/core/text_grounding.py`), confidence model (`src/core/confidence.py`),
+> the orchestrator (`src/ingestion/extractor.py`), the verification layer
+> (CV / gap / citation, `verification_runner.py`), model routing
+> (`config/agent_models.json`), and the eval harness. **Successor to the EA
+> plan above**: it verifies what EA landed, corrects four stale premises, and
+> phases the remaining + newly-found work. Same goal: hyper-accurate,
+> auditable legal data — precision, traceability, defensibility over
+> speed/cost. Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+> Severity in **[ ]**.
+>
+> **Re-review verdict:** the skeleton is right — verbatim spans with
+> deterministic verification, abstention protocol, fail-closed CV/gap
+> statuses, truncation/repair tier caps + forced review, conservation ledger,
+> per-extraction provenance. Remaining risk concentrates in four places:
+> (1) model routing inverted vs. task difficulty (EA4-4's finding, confirmed
+> still live in config); (2) confidence dominated by Orrick token-similarity,
+> which is also **circular** (premise P-2 below); (3) spans are verified but
+> **fields are not** — nothing binds subject/modality/action/condition to a
+> verified quote; (4) several verification layers produce findings nothing
+> consumes (gap candidates, unmatched CV extractions, citation issues never
+> reaching the score).
+>
+> **Premise corrections to the EA plan (verified against code 2026-07-19):**
+> - **P-1 (EA4-1 premise stale):** CV/gap no longer run gpt-oss-20b —
+>   `agent_models.json` now routes both to `meta/llama-3.1-70b-instruct`
+>   under `nvidia`. That fixes lineage overlap vs. the gpt-oss-120b heavy
+>   agents, but (a) the capability inversion remains (70B judging 120B
+>   output), (b) it creates NEW lineage overlap with the llama-8b agents it
+>   audits (definition_actor, preemption, triage — Llama judging Llama), and
+>   (c) the `local` provider still has ZERO diversity: the same Gemma model
+>   extracts and validates itself. EA4-1's scope is refreshed as EAR-4-1.
+> - **P-2 (EA3-1 under-scoped — circularity):** Orrick alignment isn't just
+>   over-weighted; it's circular. `_build_context()` injects
+>   `key_requirements` into agent prompts, and
+>   `validate_extraction_against_orrick` then scores the payload against the
+>   same text. The 0.50-weight signal partially measures **prompt echo**, and
+>   a hallucination that parrots tracker vocabulary earns full credit while a
+>   correct extraction from a provision the tracker summary skips is dragged
+>   down. EA3-1/SFH-3a must add circularity mitigation (EAR-3-1).
+> - **P-3 (fixture counts moved):** gold set is now 40 clause fixtures /
+>   12 statutes + 2 bill-level (EA1-1 progress) — still CO-SB205-heavy,
+>   still zero positive preemption fixtures, still zero bill-level
+>   applicability/timeline fixtures.
+> - **P-4 (QA-6 half-applied):** the schema description for
+>   `related_authority` removed its example values because small models
+>   parroted them verbatim (`extraction.py:709-715`) — but the prompt
+>   actually sent still ships them (`prompts/preemption.yml:19`:
+>   `"Dec 2025 Federal EO on AI"`, `"US Constitution Art. I § 8"`), on the
+>   smallest model in the fleet. The parrot risk QA-6 diagnosed is still
+>   live in the YAML. Fixed via EAR-1-5 (prompt change → goes through the
+>   regression gate, not landed blind).
+
+### Phase EAR-0 — Deterministic hardening (sandbox-actionable now; no prompt or weight changes)
+- ⏳ **EAR-0-1** **[High]** CV scores become lower-only until verifier parity is
+  proven. `_recompute_confidence_with_cv()` (`verification_runner.py`) currently
+  lets a CV accuracy score *raise* confidence/tier — but the verifier is a
+  weaker model than the extractor (P-1), so a rubber-stamp from a model that
+  can't see the error inflates tier, and under the P3 tier-only publish gate
+  that inflation ships to Policy Navigator. Clamp the recompute: score/tier may
+  drop or hold, never rise. EA0-3's priority escalation is untouched. Remove
+  the clamp only when EAR-4-1's catch-rate acceptance passes. Unit tests:
+  raise-blocked, lower-preserved, tier-boundary cases. *(BE)*
+- ⏳ **EAR-0-2** **[High]** Gap-candidate evidence gets the same guard as every
+  primary agent (deterministic half of EA4-2, split out so it stops waiting on
+  the re-extraction design). `gap_detector.py` demands verbatim
+  `evidence_text` but never string-verifies it — the one layer whose whole
+  purpose is recall has no hallucination guard. Run each candidate's
+  `evidence_text` through `verify_evidence_spans()` against the passage before
+  accepting; drop + count unverifiable candidates
+  (`gap_candidates_unverified` in `VerificationRunSummary`). *(BE)*
+- ⏳ **EAR-0-3** **[High]** Citation self-consistency + match-method
+  provenance (deterministic telemetry half of EA3-2; the number-only *removal*
+  stays in EAR-3-2 because it changes the verification rate the confidence
+  coupling will read):
+  (a) **NEW check** — compare the extraction's claimed `section_reference`
+  against its own source record's `section_path`; we already know where the
+  passage came from, and a claim contradicting it is the cheapest
+  hallucination catch available. Doesn't exist anywhere today.
+  (b) Tag every `_build_section_index` entry as heading-derived vs.
+  body-derived — the index currently ingests section numbers scraped from the
+  first 500 chars of `text_content`, so a passage that merely *references*
+  "Section 5" makes a fabricated "Section 5" citation verify.
+  (c) Persist the match method per citation (exact / prefix / substring /
+  number-only) instead of a bare verified count, so EAR-3-2 can set its
+  threshold from measured data. *(BE, NLP)*
+- ⏳ **EAR-0-4** **[High]** Audit-trail stamps — reproduce-or-it-didn't-happen:
+  (a) persist effective sampling params (temperature / top_p /
+  reasoning_effort / max_tokens) per extraction in `extraction_meta` — today
+  they live only in mutable config, so a challenged extraction cannot be
+  re-derived after a config edit; (b) capture the provider's reported
+  model/build identifiers from the response (hosted NIM models are not
+  version-pinned; a stable model string does not mean a stable model);
+  (c) raw-response retention: store the raw model output content-hash-keyed
+  and compressed (e.g. `output/raw_responses/<sha>.json.gz`), referenced from
+  `extraction_meta` — clause-level extractions currently keep only
+  `model_reasoning[:2000]`; the bill-level path holds `raw_output` in memory
+  and never persists it. Retention: per run, purge when a superseding run is
+  approved. *(BE, DevOps)*
+- ⏳ **EAR-0-5** **[Medium]** Verifier-lineage honesty flag: stamp
+  `verifier_model_id` + `verifier_lineage_overlap` (same family as any audited
+  agent / identical model) on `VerificationRunSummary` and surface in
+  `run_summary.json`. A `local`-provider run where CV model == extraction
+  model is self-validation and must say so instead of reading like
+  independent review. *(BE)*
+- ⏳ **EAR-0-6** **[Medium]** Fix the `compliance_date` dead-code bug EA6-5
+  flagged-but-deferred: `concept_grouping.py` reads
+  `timeline.get("compliance_date")` — the schema field is
+  `compliance_deadline`, so real deadlines never reach `bucket.deadlines`
+  today. Fix the field name; regression test that a `compliance_deadline`-only
+  timeline contributes to the earliest-deadline sort. *(BE)*
+- ⏳ **EAR-0-7** **[Medium]** Loose-match telemetry: per-run distribution of
+  span `match_tier` (1–4), tier-3/4 match lengths, and per-agent loose-match
+  rate into `run_summary.json`. The 15-alnum-char Tier-3 floor is a guess and
+  formulaic statutory prose makes short coincidental runs cheap ("the
+  developer shall" is 17). Measure before tuning (EAR-5-6). *(BE)*
+- ⏳ **EAR-0-8** **[Low]** Docstring honesty: `schemas/extraction.py` and
+  `base.py` claim "Pydantic v2 strict mode"; the models are deliberately
+  coercive (list→str joins, null→[], str→[str], first-of-list). Correct the
+  docstrings — an auditor reading "strict mode" over-trusts validation.
+  *(BE)*
+
+### Phase EAR-1 — Measurement substrate (operator-gated; still the long pole)
+- ⏳ **EAR-1-1** **[Critical]** = **EA1-3** (pointer, unchanged): capture the
+  per-agent per-field P/R/F1 baseline on the operator's machine **before any
+  prompt/model/weight change in this plan** (EA amendment #1 discipline).
+  Every EAR item marked 🔒-on-baseline blocks here. *(NLP, DevOps, operator)*
+- ⏳ **EAR-1-2** **[High]** Gold-set gap closure = EA1-1 remainder,
+  re-prioritized by this review (P-3): positive preemption fixture first
+  (the agent is currently scored on abstention only), bill-level
+  applicability + compliance_timeline fixtures (zero today), then
+  rights_protection / compliance_mechanism breadth (2 laws each), then non-CO
+  obligation depth. *(RPR, NLP)*
+- ⏳ **EAR-1-3** **[High]** Seeded-error verification benchmark (new
+  instrument): programmatically corrupt gold payloads in the failure modes
+  that matter legally — flipped modality, wrong subject, dropped
+  exception/condition, fabricated penalty amount, wrong section_reference —
+  and measure CV catch-rate per error class. EA4-1 says "measure CV
+  catch-rate before/after" but no instrument exists; this is it, and it
+  doubles as the standing verifier-quality regression. *(NLP, BE)*
+- 🔒 **EAR-1-4** **[High]** Drift canary (gated on EAR-1-1 baseline artifact):
+  scheduled harness run (weekly + before each production extraction run)
+  against the live provider; alert on per-agent F1 drop vs. the committed
+  baseline; log EAR-0-4(b)'s provider build identifiers alongside so a drift
+  alert can be attributed to a provider-side model update vs. our change.
+  *(DevOps, NLP)*
+- 🔒 **EAR-1-5** **[High]** First prompt fix through the gate (gated on
+  EAR-1-1 + the preemption fixture from EAR-1-2): remove the parrot example
+  values from `prompts/preemption.yml:19` (`related_authority`), bump
+  template version, verify via baseline diff. P-4 has the full rationale —
+  QA-6 fixed the schema description but the prompt actually sent still
+  carries the examples, on the smallest model in the fleet. *(NLP)*
+
+### Phase EAR-2 — Grounding v2: bind fields, not just spans (the hinge phase)
+- ⏳ **EAR-2-1** **[Critical]** Material-field span binding — the single
+  highest-leverage item in this plan. Today `evidence_grounding` = fraction
+  of spans that verify, so one verified span + a hallucinated `action` scores
+  **1.0**: the signal measures *quoting*, not *support*, and `field_name` on
+  spans is optional so nothing ties `modality`, `condition`,
+  `trigger_condition`, or `related_authority` to any quote. Define per-agent
+  material fields (obligation: subject / modality / action / condition;
+  rights: right_type / trigger_condition / duty_bearer; threshold: value +
+  unit + condition; compliance: mechanism_type / responsible_party;
+  preemption: conflict_type / related_authority). Deterministic post-pass:
+  each populated material field requires a verified span with matching
+  `field_name` (or whose text contains the field's normalized value); record
+  `ungrounded_fields: [...]` in `extraction_meta` + surface in review UI.
+  **Informational first** (EA2-1's landed pattern — no confidence change),
+  then becomes the dominant evidence input to EAR-3-1. This is the EA
+  amendment-#2 prerequisite made concrete: do NOT promote evidence weight
+  while evidence measures quoting. EA2-1 (numerics) already did this for
+  typed numbers; this extends it to the fields that change legal meaning.
+  *(NLP, BE)*
+- 🔒 **EAR-2-2** **[High]** Clause/bill enforcement separation (gated on
+  EAR-1-1 — prompt + context change): `obligation.yml` and
+  `_append_bill_context()` (`base.py:330-338`) instruct clause agents to
+  populate enforcement fields **from the bill-context block** — text not in
+  the passage, so those values are ungroundable *by design* (they can never
+  span-verify, permanently depressing grounding or floating unverified).
+  Remove the instruction; clause-level enforcement/timeline comes from
+  passage text only; cross-section enforcement facts are the bill-level
+  `enforcement_agent`'s job, merged per-law via
+  `normalize_enforcement_for_law()` — which EA5-2 verified has **zero
+  callers**. Wire it as the per-law reconciliation step (run at verification
+  pass + before sync, idempotent) — this is the call-site decision EA5-2
+  explicitly deferred, now answered. *(NLP, BE; product sign-off on merge
+  precedence)*
+- ⏳ **EAR-2-3** **[High]** = **EA5-1** (pointer, unchanged): per-field
+  verified quotes for bill-level payloads, then
+  `check_numeric_grounding()` against them. The most product-visible data
+  (`law_enforcement_details`) still ships with one unverified ≤300-char
+  quote. *(NLP)*
+- ⏳ **EAR-2-4** **[Medium]** Input targeting for the other two bill-level
+  agents: EA5-3 fixed `enforcement_agent`'s prefix-truncation bias;
+  `applicability_agent` and `compliance_timeline_agent` still consume
+  `full_text[:128k]` raw. Mirror the landed pattern — scope/definitions
+  sections + bounded tail for applicability; effective-date/deadline pattern
+  passages for timeline. Same "strictly better than a biased prefix"
+  argument EA5-3 landed under. *(NLP)*
+
+### Phase EAR-3 — Confidence v4 (= EA3 + SFH-3a, one merged plan; gated: EAR-1-1 + EAR-2-1 + contradiction-#1 ruling)
+- 🔒 **EAR-3-1** **[Critical]** = **EA3-1 / SFH-3a** (pointer) with two spec
+  additions from this review: (a) **circularity mitigation** (P-2) — tracker
+  alignment must become a corroboration/`tracker_status` axis that can flag
+  disagreement but never lift a tier, because the model is shown the tracker
+  text it is later scored against (holding tracker text out of prompts is the
+  alternative, but demotion is simpler and keeps the context value);
+  (b) the evidence signal input switches from span-count ratio to EAR-2-1
+  material-field coverage. Kill the ≥0.25-Jaccard→1.0 saturation and the
+  0.3 any-data floor as already specified. This review is a further
+  independent vote for evidence-first on contradiction #1: a signal cannot be
+  the trust anchor while it is also prompt input. *(NLP, product owner)*
+- 🔒 **EAR-3-2** **[Critical]** = **EA3-2** (pointer): citation credit
+  contingent on citation-verifier resolution; number-only substring match
+  removed **here** (its removal changes the verification rate the new weight
+  reads — EAR-0-3's telemetry sets the threshold from data). *(NLP, BE)*
+- ⏳ **EAR-3-3** **[High]** = **EA3-3** (pointer): inject `jurisdiction` +
+  default `section_reference` deterministically from ingestion metadata;
+  EAR-0-3(a)'s self-consistency check graduates from telemetry to hard
+  reject here. *(NLP)*
+- 🔒 **EAR-3-4** **[High]** = **EA3-4** (pointer): confirmed critical CV
+  issue → hard tier cap, not a 0.08 nudge. *(NLP)*
+- 🔒 **EAR-3-5** **[High]** = **EA3-5** (pointer): recompute + backfill under
+  v4, before/after persisted, coordinated with the P3 publish gate. *(BE,
+  DevOps)*
+
+### Phase EAR-4 — Verification independence & recall (EA4 with refreshed premises)
+- ⏳ **EAR-4-1** **[High]** = **EA4-1** refreshed per P-1. Requirement
+  restated as a **matrix, not a model pick**: the verifier must be
+  ≥-extractor-class AND different-lineage *per audited agent*. Llama-70B is
+  acceptable for gpt-oss-120b output; it is NOT independent for the llama-8b
+  agents' output (moot once EAR-4-4 moves those agents off Llama). `local`
+  provider: single-model is accepted as a hardware reality, but EAR-0-5's
+  flag must be set and CV must be excluded from confidence entirely under
+  lineage overlap. **Acceptance test:** catch-rate on EAR-1-3 seeded errors,
+  per error class, before removing EAR-0-1's lower-only clamp. *(NLP)*
+- 🔒 **EAR-4-2** **[High]** = **EA4-2** remainder (gated on EAR-0-2):
+  verified gap candidates spawn targeted re-extraction (route the named
+  agent to that passage) → rows enter the normal confidence + review path.
+  Review-volume budget per EA amendment #3: cap candidates/run, report
+  inflow in run summary. *(NLP, BE)*
+- ⏳ **EAR-4-3** **[High]** = **EA4-3** (pointer) + interim threshold raise:
+  `triage_passage` (`section_triage.py`) trusts `not_relevant` at LLM
+  confidence ≥ 0.4 from an 8B model — a terminal kill with no sampling
+  audit (the 5% recall sampling audits *agent routing*, not triage
+  rejections; nothing measures triage FNs today). Raise the trust threshold
+  to 0.6 interim (recall-safe direction — more passages reach extraction;
+  cost delta visible in run_summary) and land the 5–10% rejection-sampling
+  audit. States regulate AI without saying "AI"; the `_ADJACENT_AI_KEYWORDS`
+  set is exactly the vocabulary at risk. *(NLP, RPR)*
+- 🔒 **EAR-4-4** **[High]** = **EA4-4** (pointer; gated on EAR-1-1 baseline).
+  Re-review adds two aggravators to the original finding:
+  (a) definition errors **propagate** — `defined_terms`/`bill_definitions`
+  from definition_actor feed every other agent's context, so the weakest
+  model anchors the whole bill's terminology; (b) temp 0.2 / top_p 0.7
+  breaks re-run reproducibility — a defensibility cost independent of
+  accuracy (the same document re-run should yield the same legal data).
+  Move definition_actor + preemption to gpt-oss-120b, temp 0, top_p off.
+  *(NLP)*
+- 🔒 **EAR-4-5** **[Medium]** = **EA4-5** (pointer): dual-model agreement on
+  matrix numerics; rename/split `model_agreement_count` first — today it is
+  incremented by same-model duplicate emissions (extractor.py payload-hash
+  path), which is agreement-washing, and exact-hash agreement essentially
+  never fires across models on free-text payloads anyway. Field-level
+  canonical comparison (normalized subject, modality, penalty ints, ISO
+  dates) is the workable unit. *(NLP, BE)*
+- ⏳ **EAR-4-6** **[Medium]** Unmatched-CV honesty: `unmatched_extraction_ids`
+  (extractions the CV model returned no validation item for — never actually
+  reviewed) are logged and then dropped; any "CV ran on this document"
+  reading silently counts them as covered. Either re-run CV once for the
+  unmatched batch or stamp `cv_status: unreviewed` on the extraction so
+  coverage queries are honest. *(BE)*
+
+### Phase EAR-5 — Prompt & schema hardening (eval-gated batch; after EAR-1)
+- 🔒 **EAR-5-1** **[Medium]** Category-field vocabulary guards: `right_type`,
+  `mechanism_type`, `threshold_type`, `exception_type`, `conflict_type`,
+  `reference_type`, `consent_type` are free strings feeding the PN matrix —
+  silent category forks ("opt-out" vs "opt_out") split aggregations. Add
+  alias-normalizing validators (reuse the `actor_normalizer` +
+  `vocab_loader` pattern); unknown values **pass through and enqueue** to
+  `vocab_review_queue` — never reject, rejection drops legal data.
+  Coordinate with 3f enum injection so prompts and validators cite the same
+  ratified codes. *(NLP, BE)*
+- 🔒 **EAR-5-2** **[Medium]** CV rulebook ↔ extraction canon alignment
+  (+ EA6-4 trim, one measured prompt change): the CV prompt hard-codes
+  "'shall' vs 'must' is NOT an error" while `_MODALITY_MAP` deliberately
+  preserves the shall/must/may_not distinctions — extractor and verifier
+  disagree about what a modality error *is*. Give CV the canonical modality
+  equivalence table; land together with EA6-4's payload trim. *(NLP)*
+- 🔒 **EAR-5-3** **[Medium]** Per-agent bill-context tailoring:
+  `_append_bill_context()` sends definitions + scope + enforcement to all 6
+  clause agents × every passage. Tailor: definition_actor needs the
+  defined-terms list only; the enforcement block leaves the clause level
+  entirely once EAR-2-2 lands; threshold/rights get scope. Token savings
+  reported in run_summary; eval-gated because it changes model input.
+  *(NLP)*
+- 🔒 **EAR-5-4** **[Medium]** = **EA6-2 / SFH-3b** (pointer): NIM structured
+  outputs; the 5-strategy repair chain becomes telemetry + local-provider
+  fallback. *(NLP, BE)*
+- 🔒 **EAR-5-5** **[High]** = **EA6-1** (pointer): implied-rights
+  `derivation: textual | implied_from_obligation` field; RPR ruling
+  required. *(RPR, NLP)*
+- 🔒 **EAR-5-6** **[Low]** Tier-3/4 loose-match floor tuning, from EAR-0-7
+  telemetry only (no guess-tuning); consider recording a similarity score
+  per loose match so review can sort by match quality. *(NLP)*
+
+### Phase EAR-6 — Reconciliation cleanups (low risk; anytime after EAR-0)
+- ⏳ **EAR-6-1** **[Low]** Definition-dedup completeness reconciliation:
+  QA-4's first-write-wins keeps the *first* copy even when a later
+  near-duplicate is more complete (truncated-tail variants) — correct
+  mid-run (payload-hash desync risk), wrong as a final state for legal
+  reference data. Post-run pass promotes the most complete member of each
+  near-duplicate cluster; safe once the run is finished. *(BE)*
+
+**Sequencing:**
+1. **EAR-0 lands first and entirely** — all eight items are pure code /
+   telemetry / honesty fixes, unit-testable with mocked providers, no prompt
+   or weight touched: the exact pattern EA0/EA2 landed under. EAR-0-1 is the
+   most urgent (it closes an active tier-inflation path into the P3 publish
+   gate).
+2. **EAR-2-1 immediately after** (also sandbox-actionable, informational
+   metadata only) and in parallel with EAR-1 — it is the hard prerequisite
+   for EAR-3-1 and needs soak time on real runs before its signal drives
+   weights.
+3. **EAR-1 remains the long pole** and is operator-gated (live LLM + RPR
+   annotation). Nothing in EAR-1-4/1-5, EAR-2-2, EAR-3, EAR-4-2/4-4, or
+   EAR-5 moves before EAR-1-1. This is unchanged from the EA plan — two
+   reviews in a row have now concluded the eval substrate is the binding
+   constraint; treat that as settled.
+4. **EAR-3 requires the contradiction-#1 product ruling** (tracker-first vs
+   evidence-first), which now blocks three plans (EA3, SFH-3a, EAR-3).
+   Escalate: this review adds the circularity finding (P-2) as a technical
+   argument that tracker alignment *cannot* be the trust anchor while
+   tracker text is also prompt input.
+5. **Review-capacity budget** (EA amendment #3 applies): EAR-0-2, EAR-0-3,
+   EAR-4-2, EAR-4-3, and EAR-4-6 all add review volume. Each states expected
+   items/run at implementation time; total inflow stays capped (top-N by
+   severity), queue age on the dashboard.
+6. **Token-spend ledger:** EAR-4 raises per-law cost (bigger models on two
+   agents, dual-model numerics); EAR-5-3 + EA6-4 claw some back. Capture
+   $/law in `run_summary.json` before/after each change — the precision
+   mandate covers the increase, but the trade stays explicit.
+7. **Do-not list, carried forward:** no routing-threshold tuning without the
+   gold set (EA0-2 discipline); no prompt edit without a baseline diff
+   (amendment #1); no confidence reweighting before field-level grounding
+   exists (amendment #2, now concretely EAR-2-1 → EAR-3-1).
+
+---
+
+## Law Card Dashboard Plan (LC) — Editable Per-Law Cards (2026-07-19)
+
+> Full plan: [`docs/law_card_dashboard_plan.md`](docs/law_card_dashboard_plan.md)
+> (bundle review, lifecycle trace, data model, per-phase a11y/testing/acceptance,
+> decision table D-1…D-7). **Reactivates** the Run-1 plan's deferred "law-card data
+> model" line item as a concrete feature: one editable dashboard card per extracted
+> law — review the full extraction, edit fields with validation, compare phased
+> runs, preserve source ↔ original ↔ edited lineage, usable by non-specialists.
+> Status: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated. Effort in **( )**.
+>
+> **Bundle verdict (`Law Card Copy/`, reviewed 2026-07-19):** a read-only React 18
+> component snapshot from ai-ethics-evaluator. It contributes a **design contract**
+> (honest-unknown rules, paced disclosure, verbatim-vs-paraphrase semantics, status
+> taxonomy, data-gap badges), **design tokens** (`lawcard-tokens.css`), and a
+> **4-law test-fixture matrix** — but it has ZERO editing/validation/comparison
+> code, does not run as shipped (broken internal imports: `../data/constants`,
+> `../services/normalize`, missing `CoverageCard` + `supabase.js`;
+> `priority.js` imports constants the bundle doesn't export), and its data shapes
+> don't match ours. Decision D-2: port the design system into the existing
+> Jinja2/HTMX stack; do NOT introduce a React island for one page.
+>
+> **Two pre-existing defects this plan owns fixing:**
+> - **G-1 (Critical):** `POST /api/review/{queue_id}/edit` (`review_routes.py`)
+>   mutates `extraction.payload` in place — the model's original output is
+>   destroyed on first edit; `payload_hash` desyncs the dedup unique index; no
+>   schema validation; spans never re-verified; edits sync to PN as if
+>   model-produced. Fixed in LC-1 (immutable base + edit overlay).
+> - **G-2 (Critical):** full runs purge all extractions (`run_extraction(purge=
+>   True)`), which makes cross-run comparison impossible AND would delete human
+>   edits. `run_id` + `is_serving` already exist for retention (Run-1 1b deferred
+>   the query refactor). Fixed in LC-4 behind decision D-1.
+>
+> **Blocking decisions (LC-0 resolves; recommendations in the doc):** D-1 run
+> retention (recommend: keep last 3, serving-run scoping) · D-2 stack (HTMX port)
+> · D-3 edit storage (immutable base + `ExtractionFieldEdit` overlay +
+> `effective_payload`) · D-4 edits never alter confidence tier (separate
+> `human_review_state`; precedence applied at sync, human > orrick) · D-5 edit
+> survival across runs (hash-match carry-forward, else orphan + review item) ·
+> D-6 interim editor identity + CSRF (full auth stays Run-1 6a) · D-7 bill-level
+> payloads read-only in MVP.
+
+### Phase LC-0 — Repository alignment & technical discovery (S) — ✅ LANDED 2026-07-19
+- ✅ **LC-0a** — `docs/law_card_decisions.md`: D-1…D-7 ratified with working
+  resolutions; D-1/D-4/D-6 explicitly flagged as provisional pending
+  product-owner sign-off (none present in the implementation session), with
+  the rework blast-radius of each spelled out.
+- ✅ **LC-0b** — `Law Card Copy/` → `reference/law_card_bundle/`;
+  `lawcard-tokens.css` → `static/css/`; `fixtures/refLaws.js` → `tests/fixtures/
+  law_cards/*.json` (converted via a Node dump script, byte-identical to
+  source, not hand-transcribed).
+- ✅ **LC-0c** — `docs/law_card_design_rules.md` written as 9 numbered,
+  testable assertions. Corrects the plan's dark-scheme assumption: the real
+  dashboard theme (`static/css/style.css`) is light, not dark — no
+  reconciliation needed.
+- ✅ **LC-0d** — card-JSON spike run against real committed data (`fact_laws
+  .csv` row 48 + 11 CO SB205 gold-standard fixtures; no live DB reachable in
+  the planning session). Findings folded into the plan doc and directly
+  informed LC-1c: `status_id` blank for real in-force laws (confirms
+  `DocumentVersion.temporal_status`'s own non-null default already solves
+  this at the DB layer — no CSV-side inference needed in the assembler),
+  `iapp_scope`/`iapp_section` need their own card surface, clause- vs.
+  bill-level enforcement confirmed as genuinely separate data paths.
+
+### Phase LC-1 — Law-card data model & API foundation (M) — ✅ LANDED 2026-07-19 (the keystone; fixes G-1)
+> **Implementation note:** this phase was built and verified with a full
+> local dev environment (venv + pinned deps + a real Postgres 16 instance)
+> that no prior session in this repo's history had access to — every
+> migration and every DB-touching code path below was verified against a
+> live database (up/down/re-up round trips, real seeded data, real FastAPI
+> `TestClient` calls), not just unit-tested with mocks. 1686/1686 tests
+> passing across the phase (baseline 1549 + 137 new); CI's blocking `E9,F`
+> ruff gate clean throughout.
+- ✅ **LC-1a** — migration `72ad4147a628`: `extraction_field_edits`
+  (canonical_key + extraction_identity for run survival, field_path,
+  old/new JSONB, required reason, status proposed|applied|reverted|
+  superseded|orphaned with a partial unique index enforcing one active
+  edit per field, validation_report, editor, lock_token),
+  `law_card_states` (per law × run rollup + invalidatable card cache),
+  `extractions.effective_payload` + `human_review_state` (base `payload`
+  now write-once) + `Extraction.current_payload` property. Live-verified:
+  full 40-migration chain applied clean to a scratch DB, then this
+  migration's own upgrade/downgrade/re-upgrade round-trip — which caught
+  and fixed a real SQLAlchemy postgres-ENUM double-create bug
+  (`create_type=False` needed when an enum is both pre-created and
+  referenced in the same `create_table`). 20 tests.
+- ✅ **LC-1b** — `src/core/field_catalog.py`: plain-language label/help/
+  widget/material-flag registry for all 19 Pydantic models (6 clause
+  payloads + nested) via schema reflection (`iter_schema_models`/
+  `iter_schema_fields` walk `EXTRACTION_TYPE_SCHEMAS` through Pydantic's
+  own `model_fields`, so coverage tracks the real schemas, not a mirror
+  list). The reflection-based coverage test caught two real bugs while
+  authoring: `EvidenceSpan`'s own fields weren't cataloged (added a new
+  `READONLY` widget — evidence quotes are proof, never hand-edited to
+  match a corrected fact) and `ObligationPayload.object_`'s alias mismatch
+  (Pydantic exposes the Python attribute name, but `model_dump(by_alias=
+  True)` — what's actually persisted — writes the key as `"object"`;
+  `iter_schema_fields` now resolves each field's storage alias). Verified
+  against real gold-standard extraction payloads with zero unresolved
+  fields. `material_fields_for()` implements the EAR-2-1 material-field
+  spec. 25 tests.
+- ✅ **LC-1c** — `src/core/law_card_assembler.py` (assembles law + run +
+  bill-level + extractions w/ field_catalog-annotated fields, per-field
+  evidence honoring verification tier, `render_hint` computed server-side
+  per Design Rule 7) + `src/core/edit_service.py` (propose → dry-run
+  validate per-widget incl. `check_numeric_grounding` warnings → apply w/
+  optimistic lock → revert; `effective_payload` always rebuilt from the
+  immutable base + every applied edit replayed in order). Live-DB
+  verification caught a real bug: `SessionLocal` runs with `autoflush=
+  False` project-wide, so the recompute's own query for "applied" edits
+  was running against pre-update DB state and silently missing the edit
+  just applied in the same call — `apply_edit` reported `success=True`
+  while the payload underneath never changed. Fixed with an explicit
+  `db.flush()`; a unit-test-only (mocked-session) suite would not have
+  caught this. 32 tests (19 unit incl. a parametrized drift-check pinning
+  edit_service's and the assembler's independent
+  `ExtractionType → catalog-model` mappings to agreement; 13 integration
+  against real Postgres).
+- ✅ **LC-1d** — `src/api/routes/law_card_api.py`: `GET /api/laws`, `GET
+  /api/laws/{key}/card`, `POST .../extractions/{id}/validate` (dry-run
+  "Check"), `POST .../extractions/{id}/edits` (propose+apply in one call —
+  "Save"), `POST /api/edits/{id}/revert`. New module, mounted directly in
+  `app.py` — `dashboard.py` (6,424 lines) was not touched.
+  `_load_extraction_for_law` guards against a cross-law extraction id
+  mismatch (400, not a silent wrong-law write). 12 integration tests
+  against a real `TestClient` + live Postgres; required a fixture fix
+  mid-authoring (unique canonical_key per test run, since the routes
+  correctly `db.commit()` and a fixed key collided with the prior run's
+  committed row).
+- ✅ **LC-1e** — **both destructive edit paths killed** (a grep-audit found
+  a second one beyond the plan's named target): `review_routes.py`'s
+  `POST /api/review/{id}/edit` AND `internal.py`'s `POST /review/queue/
+  {id}/action` (approve-with-corrections) both reimplemented on
+  edit_service — same external contracts, zero prior test coverage on
+  either before this. `apply_edit`/`revert_edit` now write the audit
+  `ReviewAction` centrally (using the previously-unused `corrections`
+  JSONB column) instead of each call site remembering to. Consumer sweep
+  went beyond the three named targets after a full grep-audit of every
+  `.payload` site in `src/`: `sync_extractions.py`'s 3 raw-SQL SELECTs →
+  `COALESCE(effective_payload, payload)`; the 3 product-serving
+  materialized views + dependency-tree query (`src/db/views.py` +
+  migration `4457bebc03c0` — materialized views can't `CREATE OR REPLACE`,
+  so this needed a real drop+recreate, live-verified end-to-end including
+  firing the actual `trg_refresh_on_review` trigger and confirming
+  `served_obligations` showed a corrected value with the stale original
+  gone); `concept_grouping.py`, `condition_parser.py`,
+  `summary_generator.py` (one-line `current_payload` switches);
+  `enforcement_normalizer.py` (`func.coalesce()`, a raw-column SELECT not
+  an ORM instance); `dashboard.py`'s 4 export/display sites. Explicitly
+  scoped out and documented, not silently skipped: `verification_runner
+  .py`'s CV/gap-detection reads (touches confidence-recompute semantics —
+  a separate decision), `extractor.py`'s live dedup and `run_archiver.py`'s
+  export snapshots (both are point-in-time records of what the pipeline
+  produced, same reasoning as why `payload` itself stays write-once),
+  `manual_extraction.py`'s CLI dedup check. `rollup_matrix.py` needed no
+  direct fix — it reads Policy Navigator's own `rollup_eligible_extractions`
+  view (lives entirely outside this repo, fed by `sync_extractions.py`),
+  so the sync fix already makes it edit-aware transitively. 8 new
+  integration tests (`test_g1_fix_e2e.py`).
+  **Deferred to product/operator, not done here:** `edited_by_analyst`
+  sync provenance stamp (P3-gate coordination) — the remote
+  `sync_extractions.py` COALESCE fix requires the LC-1a migration applied
+  to the Regs Checker Supabase target first, an operator action this
+  sandbox can't perform.
+
+### Phase LC-2 — Read-only law-card dashboard (M) — ✅ LANDED 2026-07-19
+> **Implementation note:** built and live-verified in the same real-Postgres
+> sandbox environment as LC-1 (real FastAPI `TestClient` against the actual
+> `src.api.app.app` instance — not a stripped-down router-only app — so
+> `request.app.state.templates` and the Jinja globals registered in `app.py`
+> are exercised exactly as production runs them). Visually screenshotted via
+> the sandbox's headless Chromium (list page + a rich detail card covering
+> all three evidence tiers, a TBD enforcement panel, and disclosure toggles)
+> to confirm real rendering, not just assertion coverage. 1709/1715 tests
+> passing after landing (the 6 failures are pre-existing/unrelated: 5 are
+> the long-standing `test_v1_api.py` 401-auth gap, 1 is scratch-DB row
+> pollution from this session's own repeated `test_law_card_api_e2e.py`
+> runs sharing a fixed search string — confirmed by row count, not a code
+> defect, and won't occur against CI's fresh-per-run Postgres). CI's
+> blocking `E9,F` ruff gate clean; zero new findings in the full advisory
+> `ruff check src/` pass.
+- ✅ **LC-2a** — `src/api/routes/law_card_routes.py` (`GET /laws` list,
+  `GET /laws/{canonical_key}` detail; both 404 when `law_cards_enabled` is
+  off) + `templates/laws.html` (search box, rollup counts from
+  `list_law_summaries()` — the same function LC-1d's JSON API uses, so list
+  logic exists in exactly one place) + `templates/law_card.html`. Registered
+  in `app.py` alongside the existing route groups; a "Laws" nav link added to
+  `layout.html`. New `src/core/law_card_labels.py` is the single Python
+  source of truth for status-label humanization (Design Rule 5), registered
+  as Jinja globals rather than duplicated as a template-local dict, so LC-2c's
+  exhaustiveness test can import the exact table the pages render from.
+- ✅ **LC-2b** — ported design system as Jinja2 partials:
+  `partials/lc_badges.html` (status/tier/gap/edited/review-state/truncated/
+  repaired chips, an `evidence_list()` macro implementing Design Rule 3's
+  three-way verified/near-match/unverified split, and a `disclosure()` macro
+  using Jinja's `{% call %}` block to pair a real `<button aria-expanded>`
+  with its content — never a `<div onclick>`), `partials/lc_extraction_panel.
+  html` (per-extraction L1 material-fields-only view + L2 "full field list"
+  and L3 "provenance" disclosures). Evidence rendering honors verification
+  tier exactly as specified: Tier-1/2 verified spans get real quote styling
+  with `char_start`/`char_end` carried as data attributes, Tier-3/4 get a
+  "near match" marker, unverified spans render plain with an explicit
+  could-not-verify warning and are never wrapped in quote markup. Bill-level
+  sections (applicability, compliance_timeline, enforcement) are read-only
+  per D-7; enforcement is additionally gated by Design Rule 2 (
+  `is_enforcement_visible()`, suppressing withdrawn/vetoed/dead/stayed laws
+  even when the underlying payload has data) with the TBD-refinement:  a
+  `max_civil_penalty_usd: null` + "TBD" enforcement_text still renders the
+  panel with an explicit "penalty amount not yet specified" gap badge rather
+  than suppressing it outright. `static/lawcard.js` (vanilla, ~25 lines: one
+  delegated click listener toggling `aria-expanded` + `hidden`; no extra key
+  handling needed since real `<button>`s already get Enter/Space for free).
+  New CSS block in `style.css` (`.gap-badge`, `.tier-badge.tier-none`,
+  `.lc-evidence-*`, `.lc-disclosure-*`, `.lc-stub-card`, plus status-chip
+  variants for `future_effective`/`stayed`/`passed_one_chamber`/`repealed`/
+  `withdrawn`, none of which the pre-existing tracker-status trio covered).
+- ✅ **LC-2c** — `tests/integration/test_law_card_pages_e2e.py` (12 tests,
+  real Postgres + real `TestClient`): Rule 1 (null field → gap badge, never
+  raw `None`/`null`), Rule 2 both directions (TBD penalty renders with a gap
+  badge rather than being suppressed; a withdrawn law's enforcement panel is
+  fully suppressed even with real payload data present), Rule 3 (all three
+  evidence tiers render with distinct markup; a regex assertion confirms the
+  unverified span's own block never carries the quote class), Rule 4 (every
+  `aria-controls` value in rendered HTML resolves to a real element `id` in
+  the same document — a structural a11y check, not just presence), Rule 5
+  (status renders humanized, `status-active` + `>Active<`, never the raw
+  enum token) via a dedicated exhaustiveness test asserting every
+  `TemporalStatus` value has a `STATUS_LABELS` entry, Rule 7 (zero-extraction
+  law routes to `lc-stub-card`, no Extractions section rendered at all), and
+  the flag-scope contract (`/laws*` 404s when `law_cards_enabled=False`, but
+  `/api/laws/.../card` keeps working — confirming LC-1d's API truly isn't
+  gated by the LC-2 flag). Full WCAG manual audit (contrast ratios,
+  200%-zoom reflow, screen-reader pass) deferred to LC-5a as originally
+  scoped — LC-2c covers the structural a11y assertions (real buttons,
+  resolvable aria-controls) that are cheap to make load-bearing now.
+
+### Phase LC-3 — Field-level editing & validation (M/L) — MVP completes here
+- 🔒 **LC-3a** *(after LC-2)* — `partials/lc_field_editor.html`: widget per
+  field_catalog (vocab selects w/ unknown → vocab-review enqueue, date input w/
+  normalize-on-blur, number+unit, textarea; nested timeline/enforcement as
+  grouped sub-forms — NO raw JSON for cataloged fields). HTMX flows: Check
+  (dry-run → inline plain-language messages), Save (required reason, edited
+  chip, view-original/revert), numeric-vs-span warning shows the quote. *(FE, NLP)*
+- 🔒 **LC-3b** — editor identity + safety: reviewer-name session (D-6), CSRF on
+  all mutating routes, optimistic-lock conflict UX ("someone else changed
+  this…"), unsaved-edit navigation guard. `review.html` gains an "edited"
+  filter; approval of an edited extraction records it covers the edited state.
+  *(BE)*
+- 🔒 **LC-3c** — acceptance gate: a non-specialist corrects a penalty amount, a
+  date, a modality, and a nested enforcement field on real data using only
+  on-screen guidance; originals recoverable; audit trail carries identity.
+  Validation-message copy externally read-through. *(RPR/operator, FE)*
+
+### Phase LC-4 — Phased-run comparison & change visualization (M/L; 🔒 gated on D-1)
+- 🔒 **LC-4a** — retention refactor: full runs stop purging; serving-run scoping
+  on dashboard stats / review / concepts / sync; `prune_runs(keep=3)`; behind
+  `multi_run_retention` flag with pre/post count-audit script (highest-risk
+  change in the plan — flips the "all rows are current" invariant). Finishes
+  Run-1 1b's deferred query refactor. *(BE, DevOps, operator)*
+- 🔒 **LC-4b** — `src/core/run_comparison.py`: cross-run extraction matching
+  (type + canonicalized material fields; reuse `_payload_hash` canonicalization
+  + QA-4 similarity) → added/removed/changed with field-level deltas; compares
+  BASE payloads, edits overlaid as a separate annotation (model-change vs
+  human-edit never conflated); match confidence surfaced, not overclaimed
+  ("possibly the same requirement, reworded"). Adversarial tests: split 1→2,
+  merged 2→1, reworded, retagged. *(NLP, BE)*
+- 🔒 **LC-4c** — edit carry-forward (D-5) on run finalize: payload_hash match →
+  carry edits to new row; changed → status=orphaned + review item ("law text
+  changed — re-apply?"). Never silent-drop, never silent-apply. *(BE)*
+- 🔒 **LC-4d** — Runs tab UI: run picker (date, model summary, serving badge),
+  per-law change summary, `partials/lc_diff_row.html` in three states (icon +
+  text + color, never color-only), "only changes" default, side-by-side values
+  stacking at narrow widths. *(FE)*
+
+### Phase LC-5 — Accessibility & non-specialist usability hardening (M)
+- 🔒 **LC-5a** *(after LC-2/3)* — full WCAG 2.2 AA manual audit (keyboard, screen
+  reader, zoom/reflow, contrast) with recorded checklist + fix list; `aria-live`
+  validation announcements, focus-to-first-error, `prefers-reduced-motion` /
+  color-scheme resolution per LC-0c. *(FE, operator)*
+- 🔒 **LC-5b** — glossary layer from field_catalog (every specialist term gets a
+  hover/expand definition; "What am I looking at?" panel per tab); plain-language
+  pass over every label/help/error/empty state with external read-through; undo
+  toast after apply (calls revert). *(FE, RPR)*
+
+### Phase LC-6 — Testing, migration, rollout, monitoring (M)
+- 🔒 **LC-6a** *(MVP rollout after LC-3)* — `src/scripts/backfill_law_cards.py`
+  (idempotent `law_card_states` for serving run, all 232 laws); flag-on bake
+  period with the analyst doing real review work in LC UI (≥3 laws end-to-end);
+  legacy review edit form redirected to LC editor; then default-on. *(BE, operator)*
+- 🔒 **LC-6b** — monitoring: edits/day, validation-failure rate by field (rising
+  rate on one field = catalog or model problem), orphaned-edit count per run,
+  card-assembly latency, lock conflicts — existing dashboard-stats pattern +
+  `run_summary.json` where run-coupled. Data-integrity sweeps in CI: no
+  `effective_payload` without applied edits, no applied edit without overlay,
+  every edit resolvable to a law via canonical_key. *(BE, DevOps)*
+- 🔒 **LC-6c** — docs: analyst guide (non-specialist voice), operator runbook
+  (retention/prune/backfill), `architecture.md` section. *(BE)*
+
+**Sequencing & MVP boundary:** LC-0 → LC-1 → LC-2 → LC-3 = **MVP** (every law
+browsable + editable with validation/identity/audit/revert, serving run only) →
+LC-6a rollout → LC-4 (comparison; needs D-1 + an operator run under retention) →
+LC-5 polish → LC-6 full. **LC-1 is worth shipping even if the UI slips** — it
+fixes the active G-1 destructive-edit defect. Deferred past MVP: run comparison,
+bill-level editing (waits on EA5-1/EAR-2-3 per-field spans), triage-engine port,
+role-based filtering, concept-layer cards, full authn/z (Run-1 6a).
+**Coordination:** don't duplicate EAR-0-4 (provenance stamps) or EAR-5-1 (vocab
+aliases) — the card consumes both when they land; `dashboard.py` is never grown
+(split remains deferred); P3 tier-only sync gate is why D-4's
+`edited_by_analyst` provenance stamp is non-optional.
+
+> **Status (2026-07-19, implementation session):** LC-0, LC-1, and LC-2 all
+> fully landed and live-verified (commits: LC-0 repo alignment; four LC-1
+> commits — data model/field catalog, assembler/edit service, JSON API,
+> consumer sweep; LC-2 read-only dashboard). G-1 is fixed at both sites it
+> existed. The law-card dashboard is browsable end-to-end today (flagged off
+> by default via `law_cards_enabled`): list page with search, detail page
+> with honest-unknown fields, tiered evidence rendering, gated enforcement,
+> and stub routing for thin-data laws — all screenshotted and structurally
+> a11y-checked, not just unit-tested. **Next up: LC-3** (field-level editing
+> UI) is now unblocked — LC-1's edit_service/validate/apply/revert plumbing
+> and LC-1d's JSON API already exist and are tested; LC-3 is the HTMX form
+> layer (`partials/lc_field_editor.html`) plus editor-identity/CSRF (D-6)
+> wiring on top of them, which completes the plan's MVP boundary. Three
+> operator actions this session could not perform: (1) apply migrations
+> `72ad4147a628` + `4457bebc03c0` to the real dev/prod database (`python
+> start.py` → `alembic upgrade head`, per CLAUDE.md) — everything above was
+> verified against a disposable local scratch Postgres this sandbox stood up
+> itself, not the project's real DB; (2) product-owner sign-off on decisions
+> D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently shipped under the
+> documented provisional resolutions; (3) a full WCAG 2.2 AA audit (contrast
+> measurement, screen-reader pass, 200%-zoom reflow) — scoped to LC-5a as
+> originally planned; LC-2c added the structural a11y assertions (real
+> `<button>` disclosures, resolvable `aria-controls`) that don't need a human
+> pass to verify.
+
+---
+
 ## Repository Cleanup Plan (RC) — from 2026-07-03 audit report
 
 > Source: external cleanup-audit report (backups, archived code, docs sprawl,
@@ -1827,17 +2516,26 @@ parallel with EA1-1 fixture work without touching the EA1-3 baseline's validity.
 
 ---
 
-### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-13, after EA1-2)
+### ⚠️ IMMEDIATE NEXT STEPS (updated 2026-07-19, after the EAR re-review)
 
 **Status:** QA-1–QA-5 **and EA1-2** complete, tested, pushed to branch
 `claude/legal-extraction-architecture-1exlem`. CI green (1314 unit tests). The
 evaluation harness now consumes `ExtractionResult`, covers all 9 agents
 (6 clause + 3 bill-level), and emits a deterministic baseline artifact.
+**2026-07-19:** second-pass architecture re-review landed as the EAR plan
+(above, after the EA plan) — it confirms EA's state, corrects four stale
+premises (P-1–P-4), and adds a sandbox-actionable Phase EAR-0 batch
+(CV lower-only clamp, gap-evidence verification, citation self-consistency,
+audit-trail stamps, verifier-lineage flag, `compliance_date` bug,
+loose-match telemetry) plus EAR-2-1 (material-field span binding) as the new
+highest-leverage deterministic item.
 
 **Remaining blockage:** EA1-3 (baseline capture) **requires a live LLM** —
 this sandbox has no `NVIDIA_API_KEY` and no reachable LM Studio, and the
 harness calls real providers. This is now the long pole and needs the
-operator's machine.
+operator's machine. Two reviews in a row (EA 2026-07-03, EAR 2026-07-19)
+have reached the same conclusion; treat the eval substrate as the settled
+binding constraint.
 
 **Sequencing (1→2, operator-gated):**
 
@@ -1863,10 +2561,17 @@ operator's machine.
    - Owner: NLP (iterate with operator rerunning the baseline diff)
    - Acceptance: tuned settings committed; delta report showing measured F1 impact
 
-**Parallel, still sandbox-actionable:** EA1-1 fixture expansion toward the
-8-law stratified set (SFH-2c) — more clause fixtures and bill-level ground
-truth can be authored here from the committed `output/law_texts/` sources
-without a live LLM (annotation, not extraction).
+**Parallel, still sandbox-actionable:** (a) **Phase EAR-0 (all eight items)**
+— pure code/telemetry fixes, no prompts or weights touched, unit-testable
+with mocked providers; EAR-0-1 (CV lower-only clamp) first, it closes an
+active tier-inflation path into the P3 publish gate. (b) **EAR-2-1**
+(material-field span binding, informational metadata) — the hard
+prerequisite for the EAR-3/EA3-1 confidence rebalance; needs soak time on
+real runs, so land early. (c) EA1-1 fixture expansion toward the 8-law
+stratified set (SFH-2c) — more clause fixtures and bill-level ground truth
+can be authored here from the committed `output/law_texts/` sources without
+a live LLM (annotation, not extraction); EAR-1-2 re-prioritizes: positive
+preemption fixture first, then bill-level applicability + timeline.
 
 ### ⚠️ MERGE REQUIRED BEFORE NEXT RUN
 - **Merge `claude/brave-lamport-d9zgjx` → main** — contains 3 NameError crash fixes in `extract_single_record` (introduced by RR7g dedup refactor, would crash every passage on the next extraction run), the full **2026-06-15 NVIDIA-backend hardening** (429 + transport retry, reasoning_effort coercion, bare-array handling, evidence-span loosening, Re-triage Failed, archiver fix), plus lint cleanup, CI gate fix, repo cleanup. CI green (Unit tests + Ruff lint). **Do this before hitting Extract All.**

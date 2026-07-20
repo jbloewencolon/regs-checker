@@ -9,6 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from src.core.edit_service import (
+    EditServiceError,
+    apply_edit,
+    extraction_canonical_key,
+    extraction_identity_string,
+    propose_edit,
+)
 from src.db.engine import get_db
 from src.db.models import (
     Extraction,
@@ -107,12 +114,48 @@ def submit_review_action(
     item.status = action_status
     item.extraction.review_status = action_status
 
-    # Apply corrections if provided
+    # Apply corrections if provided — routed through edit_service (LC-1e) so
+    # the model's original payload stays write-once (G-1 fix) instead of
+    # being merged over in place; each corrected key becomes its own
+    # ExtractionFieldEdit row (validated, revertible, audited) rather than an
+    # untracked dict merge. Kept the requirement narrow (top-level fields
+    # only) to match what this dict-of-corrections shape has always
+    # supported — a dotted-path correction should go through the Law Card
+    # editor (POST /api/laws/{key}/extractions/{id}/edits), which accepts one
+    # field per call and can express nesting.
+    correction_errors: list[str] = []
     if decision.corrections and action_status == ReviewStatus.approved:
-        item.extraction.payload = {**item.extraction.payload, **decision.corrections}
+        extraction = item.extraction
+        canonical_key = extraction_canonical_key(extraction)
+        if canonical_key is None:
+            raise HTTPException(
+                status_code=400,
+                detail="This law has no canonical_key assigned yet — corrections "
+                "can't be filed until it does.",
+            )
+        for field_path, new_value in decision.corrections.items():
+            try:
+                edit = propose_edit(
+                    db, extraction,
+                    canonical_key=canonical_key,
+                    extraction_identity=extraction_identity_string(extraction),
+                    field_path=field_path,
+                    new_value=new_value,
+                    reason=decision.comment or "Correction submitted with review approval",
+                    editor=decision.reviewer,
+                )
+            except EditServiceError as e:
+                correction_errors.append(str(e))
+                continue
+            result = apply_edit(db, edit.id, editor=decision.reviewer)
+            if not result.success:
+                correction_errors.append(result.error or f"Failed to apply correction to {field_path!r}")
 
     db.commit()
-    return {"status": "ok", "action": decision.action, "queue_id": queue_id}
+    response: dict = {"status": "ok", "action": decision.action, "queue_id": queue_id}
+    if correction_errors:
+        response["correction_errors"] = correction_errors
+    return response
 
 
 @router.get("/extractions")
@@ -171,7 +214,7 @@ def _extraction_to_response(e: Extraction) -> ExtractionResponse:
     return ExtractionResponse(
         id=e.id,
         extraction_type=e.extraction_type.value if isinstance(e.extraction_type, ExtractionType) else e.extraction_type,
-        payload=e.payload,
+        payload=e.current_payload,
         evidence_spans=e.evidence_spans,
         confidence_score=e.confidence_score,
         confidence_tier=e.confidence_tier.value if hasattr(e.confidence_tier, "value") else e.confidence_tier,

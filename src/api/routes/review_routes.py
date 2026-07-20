@@ -10,6 +10,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.api.routes._dashboard_helpers import _render
+from src.core.edit_service import (
+    EditServiceError,
+    apply_edit,
+    extraction_canonical_key,
+    extraction_identity_string,
+    propose_edit,
+)
 from src.db.engine import get_db
 from src.db.models import (
     Extraction,
@@ -105,7 +112,7 @@ def review_page(
             "queue_id": qi.id,
             "extraction_id": e.id if e else None,
             "extraction_type": e.extraction_type.value if e and hasattr(e.extraction_type, 'value') else str(e.extraction_type),
-            "payload": e.payload if e else {},
+            "payload": e.current_payload if e else {},
             "confidence_score": e.confidence_score if e else 0,
             "confidence_tier": e.confidence_tier.value if e and hasattr(e.confidence_tier, 'value') else 'D',
             "confidence_breakdown": breakdown,
@@ -188,7 +195,16 @@ def edit_extraction(
     payload_json: str = Form(...),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    """Update extraction payload fields from the review UI."""
+    """Update extraction payload fields from the review UI.
+
+    LC-1e: reimplemented on edit_service instead of merging updates
+    in-place onto Extraction.payload (the G-1 defect — that destroyed the
+    model's original output on first edit, with no validation and no
+    re-verification). Same external contract (route, form field name,
+    HTMLResponse shape) so the existing review.html form needs no changes;
+    every corrected field now becomes its own validated, revertible,
+    audited ExtractionFieldEdit row instead of an untracked dict merge.
+    """
     item = db.get(ReviewQueueItem, queue_id)
     if not item:
         return HTMLResponse(
@@ -211,26 +227,50 @@ def edit_extraction(
             status_code=404,
         )
 
-    # Merge updates into existing payload
-    current = dict(extraction.payload) if extraction.payload else {}
-    for key, value in updates.items():
-        if key in current or value:  # only add new keys if they have values
-            current[key] = value
+    canonical_key = extraction_canonical_key(extraction)
+    if canonical_key is None:
+        return HTMLResponse(
+            '<div class="result-panel danger">This law has no canonical_key assigned '
+            'yet — edits are not available until it does.</div>',
+            status_code=400,
+        )
 
-    extraction.payload = current
+    saved: list[str] = []
+    errors: list[str] = []
+    for field_path, new_value in updates.items():
+        try:
+            edit = propose_edit(
+                db, extraction,
+                canonical_key=canonical_key,
+                extraction_identity=extraction_identity_string(extraction),
+                field_path=field_path,
+                new_value=new_value,
+                reason="Edited via review UI",
+                editor="dashboard",  # D-6: interim identity, matches prior behavior
+            )
+        except EditServiceError as e:
+            errors.append(f"{field_path}: {e}")
+            continue
+        result = apply_edit(db, edit.id, editor="dashboard")
+        if result.success:
+            saved.append(field_path)
+        else:
+            errors.append(f"{field_path}: {result.error}")
 
-    # Record the edit as a review action
-    db.add(ReviewAction(
-        queue_item_id=queue_id,
-        action=ReviewStatus.pending,  # stays pending after edit
-        reviewer="dashboard",
-        comment=f"Edited fields: {', '.join(updates.keys())}",
-    ))
     db.commit()
 
+    if errors and not saved:
+        return HTMLResponse(
+            '<div class="result-panel danger" style="padding:6px 12px;font-size:12px;">'
+            f'Could not save: {"; ".join(errors)}</div>',
+            status_code=422,
+        )
+    message = f"Saved changes to {len(saved)} field(s)."
+    if errors:
+        message += f" {len(errors)} field(s) had errors: {'; '.join(errors)}"
     return HTMLResponse(
-        '<div class="result-panel success" style="padding:6px 12px;font-size:12px;">'
-        f'Saved changes to {len(updates)} field(s).</div>'
+        f'<div class="result-panel success" style="padding:6px 12px;font-size:12px;">'
+        f"{message}</div>"
     )
 
 

@@ -98,6 +98,15 @@ class Settings(BaseSettings):
     # regardless of this flag.
     qa9b_prescope_enabled: bool = False
 
+    # LC-2: Law Card dashboard (docs/law_card_dashboard_plan.md). Read-only
+    # pages over law_card_assembler.py; the write endpoints in
+    # law_card_api.py are unaffected by this flag (LC-1's data layer is safe
+    # to expose via API today — it's a defensible boundary for external/API
+    # consumers even before the UI is enabled for browsing). Defaults to
+    # False per the plan's "every phase ships flagged until LC-6a rollout"
+    # commitment; flip on to browse/develop against it locally.
+    law_cards_enabled: bool = False
+
     # Orrick PDF Tracker
     orrick_pdf_path: str = "data/trackers/Orrick-US-AI-Law-Tracker.pdf"
 
