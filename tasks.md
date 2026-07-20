@@ -127,15 +127,20 @@ Law-card data model, applicability product, API, productionization — resume on
   `is_eligible` now checks `confidence_tier in eligible_tiers and review_status != 'rejected'`.
   Docstring updated to reflect tier-only + rejection-gate design (no longer
   "RC leads, PN backs up" approval-gated). Paired with P3-1 in same commit. *(sync strategy finalized)*
-- ⏳ **P3-4** — Dashboard: new panel/route for **Tier-D extractions** (permanently
-  ineligible under the tier-only gate) so analysts have a queue of what still needs
-  re-extraction or prompt/model tuning to reach C+. Mirror the existing
-  `/api/low-confidence/export.csv` pattern in `src/api/routes/dashboard.py`.
-- ⏳ **P3-5** — Dashboard: new **audit panel** listing `synced_extractions` rows in
+- ✅ **P3-4** **[Done 2026-07-20]** Dashboard: new panel/route for **Tier-D extractions**
+  (permanently ineligible under the tier-only gate) so analysts have a queue of what
+  still needs re-extraction or prompt/model tuning to reach C+. Implemented as dual
+  `/api/tier-d/export.csv` and `/api/tier-d/export.jsonl` endpoints mirroring the
+  low-confidence export pattern, with detailed docstrings explaining Tier-D semantics
+  (failures in tracker alignment or evidence grounding, not just confidence score
+  tuning). UI integration deferred to a session with live app/database access for
+  browser testing per project guidelines. *(BE)*
+- 🔒 **P3-5** — Dashboard: new **audit panel** listing `synced_extractions` rows in
   Policy Navigator whose `review_status` is not `approved`/`verified` — i.e., rows now
   live in the product without RC human sign-off. This is the visibility backstop for
   removing the P2 review gate; without it there's no way to see what shipped
-  unreviewed.
+  unreviewed. **Blocked on P3-2**: requires SyncedExtraction table + synced_extractions
+  view from the live PN migration. *(deferred until P3-2)*
 - ✅ **P3-6** **[Done 2026-07-06]** Unit tests for P3 eligibility logic added to
   `tests/unit/test_sync_extractions.py`. 22 tests covering: tier-eligible helper,
   sync eligibility logic (tier + rejection gate), regression tests showing
@@ -1408,21 +1413,173 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   resolvable aria-controls) that are cheap to make load-bearing now.
 
 ### Phase LC-3 — Field-level editing & validation (M/L) — MVP completes here
-- 🔒 **LC-3a** *(after LC-2)* — `partials/lc_field_editor.html`: widget per
-  field_catalog (vocab selects w/ unknown → vocab-review enqueue, date input w/
-  normalize-on-blur, number+unit, textarea; nested timeline/enforcement as
-  grouped sub-forms — NO raw JSON for cataloged fields). HTMX flows: Check
-  (dry-run → inline plain-language messages), Save (required reason, edited
-  chip, view-original/revert), numeric-vs-span warning shows the quote. *(FE, NLP)*
-- 🔒 **LC-3b** — editor identity + safety: reviewer-name session (D-6), CSRF on
-  all mutating routes, optimistic-lock conflict UX ("someone else changed
-  this…"), unsaved-edit navigation guard. `review.html` gains an "edited"
-  filter; approval of an edited extraction records it covers the edited state.
-  *(BE)*
-- 🔒 **LC-3c** — acceptance gate: a non-specialist corrects a penalty amount, a
-  date, a modality, and a nested enforcement field on real data using only
-  on-screen guidance; originals recoverable; audit trail carries identity.
-  Validation-message copy externally read-through. *(RPR/operator, FE)*
+> **Implementation note (2026-07-20):** LC-3a/LC-3b landed and live-verified
+> the same way as LC-1/LC-2 (real Postgres + real `TestClient` against the
+> actual app instance; 22 new integration tests). LC-3c is an RPR/operator
+> acceptance gate — a real non-specialist walking through real data — and
+> is explicitly NOT something this sandbox session can perform; it's left
+> open below with exactly what's needed to close it.
+- ✅ **LC-3a** — `src/core/law_card_assembler.py`'s `_fields_for_extraction`
+  now flattens every NESTED field (`enforcement`, `timeline`, `safe_harbor`,
+  `consent_requirements`) into its leaf sub-fields — path `"enforcement.
+  max_civil_penalty_usd"`, not one row holding a raw dict — which is both a
+  real LC-2 rendering fix (a material leaf like a penalty amount no longer
+  gets buried in a `<pre>{{ tojson }}</pre>` dump) and exactly the path
+  shape `edit_service.validate_edit` already accepts, so the editor can
+  target these fields directly with no `edit_service` changes. Each field
+  now carries a precise, single-field `edit_id`/`edited` (previously LC-2
+  set an extraction-wide `edited` flag off `effective_payload is not None`,
+  which would have shown an EDITED badge on every field the moment any one
+  field was corrected — fixed by sourcing it from `Extraction.field_edits`
+  per exact `field_path` instead). `templates/partials/lc_field_editor.html`
+  (widget-per-`field_catalog.widget`: text/textarea/number+unit/date/
+  tri-state boolean select/list-as-one-item-per-line textarea/select-as-
+  datalist-combo for vocab fields) + HTMX fragment routes in
+  `law_card_routes.py` (`.../fields/{path}/edit|view|check|save|
+  edits/{id}/revert`), following `review_routes.py`'s established
+  HTML-fragment-response convention rather than round-tripping through
+  `law_card_api.py`'s JSON endpoints. `LIST_NESTED` fields (e.g.
+  `exceptions`) are deliberately NOT flattened or made editable —
+  `edit_service` itself doesn't support per-item list edits yet, so the
+  editor never offers a control it can't submit. 12 integration tests
+  (`test_law_card_editor_e2e.py`) cover check/save/revert on both top-level
+  and nested-leaf fields, base-payload immutability (G-1 holds), a
+  READONLY/LIST_NESTED field correctly rejecting edit mode, and a
+  precisely-scoped revert (reverting one field leaves a sibling edit on the
+  same extraction untouched).
+- ✅ **LC-3b** — D-6's interim resolution, implemented without adding session
+  middleware (none exists in this repo): `lc_editor_name` cookie pre-fills
+  the editor-name field instead of retyping it per edit; `lc_csrf_token`
+  double-submit cookie + a matching hidden form field, verified on every
+  mutating POST (`save`, `revert` — `check` performs no write, so it's
+  unguarded) via `_verify_csrf`, 403 on missing/mismatched token. Optimistic
+  lock: the edit form captures the field's `edit_id` at open time in a
+  `known_edit_id` hidden field; `field_save` rejects the save ("Someone else
+  changed this field since you started editing…") if that no longer matches
+  the field's current `edit_id`, rather than silently superseding a
+  concurrent edit to the same field. `lawcard.js` gained a `beforeunload`
+  guard that warns before navigating away while any field row is mid-edit.
+  `review.html`/`review_routes.py` gained an "Edited" tab (`edited_only`
+  query param, `Extraction.human_review_state == "edited"`) alongside the
+  existing Truncated tab, plus a per-row EDITED badge. 10 more integration
+  tests (2 in `test_law_card_editor_e2e.py` for CSRF-rejection and
+  optimistic-lock conflict, 2 in `test_review_edited_filter_e2e.py` for the
+  new review-queue filter).
+- ⏳ **LC-3c** — acceptance gate, **not run**: needs a real non-specialist
+  reviewer, real production data, and RPR sign-off on validation-message
+  copy — none of which a sandbox session can supply. What's ready for it:
+  the editor is reachable at `/laws/{canonical_key}` today (flag off by
+  default), supports correcting a penalty amount
+  (`enforcement.max_civil_penalty_usd`), a date, a modality (`modality`
+  select), and other nested-enforcement fields with Check/Save/Revert and a
+  required reason, all audited via `ReviewAction`/`ExtractionFieldEdit`.
+  Flip `law_cards_enabled` on, pick 3 real laws, and this phase can close.
+
+### Phase LC-Audit — Dashboard audit + re-extraction exclusion (2026-07-20) — ✅ LANDED
+> User request: "Do a full review and audit of the 'law card' dashboard
+> elements so that we know they are functioning properly, and that the data
+> being extracted is sent there, reviewable, and editable (and dated with
+> its most recent extraction). Then add a checkbox to determine whether
+> that law needs to be included in future extractions."
+
+- ✅ **Audit method** — rather than re-testing LC-1/2/3's already-covered
+  code paths, seeded the DB with genuinely **real** data: `data/fact_laws
+  .csv`'s actual row for Arkansas HB1877, the real bill text file
+  (`output/law_texts/TMP-AR-OFARKANSASCSAM.txt`), and real gold-standard
+  extraction payloads from `tests/fixtures/gold_standard/` (AR HB1877's
+  definition/threshold_exception + bill-level enforcement fixtures, CO
+  SB205's obligation/enforcement/definition fixtures) — not hand-typed
+  synthetic fixtures. This surfaced three real defects synthetic fixtures
+  had never exercised:
+  - **Bug 1 (crash)** — `law_card.html`'s bill-level Enforcement panel was
+    built against the wrong schema: it hardcoded `penalty_type`/
+    `penalty_description` (fields that belong to the per-clause
+    `EnforcementInfo` nested model, `src/core/field_catalog.py`) instead of
+    the real bill-level `enforcement_agent` schema (`enforcing_body`,
+    `max_civil_penalty_usd`, `penalty_tiers`, `penalty_per`,
+    `cure_period_days`, `private_right_of_action`, `criminal_penalties`,
+    `criminal_penalty_description`, `enforcement_text` —
+    `src/agents/enforcement_agent.py`). AR HB1877's real enforcement data is
+    criminal-only (`{"criminal_penalties": true, "private_right_of_action":
+    false}`, no civil-penalty fields at all) and crashed the whole card:
+    Jinja's dot-access on a dict returns its `Undefined` sentinel (not
+    `None`) for a genuinely absent key, so `enf.payload.max_civil_penalty_usd
+    is not none` was `True` even though the key didn't exist, and
+    `"{:,}".format(Undefined)` raised `TypeError`. Fixed by rendering every
+    real field generically and switching the two still-special-cased fields
+    (`max_civil_penalty_usd`'s TBD handling, `enforcement_text`'s quote
+    styling) to `.get()`.
+  - **Bug 2 (silent data loss / crash)** — the bill-level sections'
+    scalar-only rendering couldn't handle a nested dict (applicability's
+    `size_thresholds`) or a list of dicts (enforcement's `penalty_tiers`,
+    timeline's `key_deadlines`): a dict was misclassified as a
+    string-joinable sequence (`value | join(", ")` on a dict joins its
+    *keys*, silently dropping every value), and a list of dicts crashed
+    outright. Fixed with a new recursive `render_value()` macro
+    (`partials/lc_badges.html`) used generically across all three bill-level
+    sections.
+  - **Bug 3 (real data hidden)** — `render_hint` (Design Rule 7's stub
+    routing) keyed off clause-level extraction count alone, so a law with
+    real bill-level enforcement/applicability/timeline data but zero clause
+    extractions (bill-level agents run independently of clause-level ones)
+    was routed to the stub card — "no AI-relevant provisions extracted" —
+    hiding real data behind the exact failure mode Rule 7 exists to
+    prevent, just from the other direction. Fixed:
+    `law_card_assembler.py`'s `render_hint` is now `"stub"` only when
+    *both* `extractions` and `bill_rows` are empty.
+  - All three fixes are covered by regression tests using the real-shaped
+    payloads that caught them (`TestBillLevelRenderingRegressions` in
+    `test_law_card_pages_e2e.py`), not just the ad-hoc audit script.
+- ✅ **"Dated with its most recent extraction"** — confirmed via the audit
+  that no extraction timestamp was surfaced anywhere on the card (a real
+  gap, not just an oversight to double-check). Added: `Extraction.created_at`
+  → `provenance.extracted_at` per clause-level extraction;
+  `BillLevelExtraction.created_at` → `extracted_at` per bill-level section;
+  a law-level `law.last_extracted_at` (max across both) computed in
+  `assemble_card()`; the same figure computed per-page (two aggregate
+  queries, not per-family reassembly) in `list_law_summaries()` for the list
+  view. `src/core/law_card_labels.py` gained `humanize_extracted_at()`
+  (absolute + relative, "2026-07-20 04:32 UTC (57m ago)" — mirrors
+  `_dashboard_helpers.py`'s existing `_format_last_updated` convention so
+  this dating reads consistently with the pipeline dashboard's own "last
+  run" indicators), registered as a Jinja global. Rendered on both
+  `law_card.html`'s L0 header and each `laws.html` list row.
+- ✅ **Re-extraction exclusion checkbox (LC-4a-lite)** — a durable,
+  law-level opt-out distinct from LC-4a's (still-gated-on-D-1) full run-
+  retention refactor: `DocumentFamily.excluded_from_extraction` (+
+  `excluded_reason`/`excluded_by`/`excluded_at`, migration `195d64f44ff2`,
+  live-verified up/down/re-up). Consumed at the source: both
+  `run_triage()` and `run_extraction()` in `src/ingestion/extractor.py` now
+  skip passages whose law is excluded, via a shared
+  `_excluded_document_version_ids()` subquery — so a re-extraction pass
+  spends LLM calls only on laws that still need work, not every law in the
+  corpus. Verified two ways: a direct query-construction test against real
+  seeded data, and an end-to-end `run_triage()` call (real Postgres, only
+  the one genuinely-external dependency — the LLM triage call — mocked,
+  matching `test_pipeline_e2e.py`'s own "real data flow, mock LLM
+  responses" convention) proving an excluded law's passage is never
+  triaged while a control law's is. Surfaced as an actual `<input
+  type="checkbox">` (per the request) on `law_card.html` (both the stub and
+  full card branches) via a new `partials/lc_exclusion.html` fragment,
+  HTMX-posted to a CSRF-protected route in `law_card_routes.py`
+  (`POST /laws/{key}/exclusion`, same double-submit-cookie pattern as
+  LC-3b) and mirrored as an ungated JSON endpoint in `law_card_api.py`
+  (`POST /api/laws/{key}/exclusion`). An EXCLUDED badge shows on
+  `laws.html`'s list rows. Un-excluding clears reason/by/at rather than
+  leaving them as stale history (Rule 1's honest-unknown spirit). Reuses
+  the LC-3b editor-name cookie so the name field pre-fills.
+- 29 new integration tests across 3 new files (`test_law_card_exclusion_e2e
+  .py` — 13, `test_extraction_exclusion_filter_e2e.py` — 3, plus 6 bill-
+  level-regression + 4 last-extracted-date tests added to
+  `test_law_card_pages_e2e.py`) plus the ad-hoc real-data audit script
+  (not committed — scratch verification, superseded by the regression
+  tests it motivated). Full suite: 1734 passed (same 6 pre-existing/
+  unrelated `test_v1_api.py` + scratch-DB-pollution failures as every prior
+  LC phase); blocking `E9,F` ruff gate clean.
+- **Not done, explicitly out of scope for this pass**: filtering `LIST_NESTED`
+  fields (e.g. exceptions) still render as read-only lists, not individually
+  editable — matches `edit_service`'s own documented scope limit, not a new
+  gap. Full WCAG audit remains LC-5a's job, unchanged by this pass.
 
 ### Phase LC-4 — Phased-run comparison & change visualization (M/L; 🔒 gated on D-1)
 - 🔒 **LC-4a** — retention refactor: full runs stop purging; serving-run scoping
@@ -1481,30 +1638,238 @@ aliases) — the card consumes both when they land; `dashboard.py` is never grow
 (split remains deferred); P3 tier-only sync gate is why D-4's
 `edited_by_analyst` provenance stamp is non-optional.
 
-> **Status (2026-07-19, implementation session):** LC-0, LC-1, and LC-2 all
+> **Status (2026-07-20, implementation session):** LC-0 through LC-3a/3b all
 > fully landed and live-verified (commits: LC-0 repo alignment; four LC-1
 > commits — data model/field catalog, assembler/edit service, JSON API,
-> consumer sweep; LC-2 read-only dashboard). G-1 is fixed at both sites it
-> existed. The law-card dashboard is browsable end-to-end today (flagged off
-> by default via `law_cards_enabled`): list page with search, detail page
-> with honest-unknown fields, tiered evidence rendering, gated enforcement,
-> and stub routing for thin-data laws — all screenshotted and structurally
-> a11y-checked, not just unit-tested. **Next up: LC-3** (field-level editing
-> UI) is now unblocked — LC-1's edit_service/validate/apply/revert plumbing
-> and LC-1d's JSON API already exist and are tested; LC-3 is the HTMX form
-> layer (`partials/lc_field_editor.html`) plus editor-identity/CSRF (D-6)
-> wiring on top of them, which completes the plan's MVP boundary. Three
-> operator actions this session could not perform: (1) apply migrations
-> `72ad4147a628` + `4457bebc03c0` to the real dev/prod database (`python
-> start.py` → `alembic upgrade head`, per CLAUDE.md) — everything above was
-> verified against a disposable local scratch Postgres this sandbox stood up
-> itself, not the project's real DB; (2) product-owner sign-off on decisions
-> D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently shipped under the
-> documented provisional resolutions; (3) a full WCAG 2.2 AA audit (contrast
-> measurement, screen-reader pass, 200%-zoom reflow) — scoped to LC-5a as
-> originally planned; LC-2c added the structural a11y assertions (real
-> `<button>` disclosures, resolvable `aria-controls`) that don't need a human
-> pass to verify.
+> consumer sweep; LC-2 read-only dashboard; LC-3 field editor). G-1 is fixed
+> at both sites it existed, and its fix is now exercised through the actual
+> UI, not just the API. The law-card dashboard is fully browsable AND
+> editable end-to-end today (flagged off by default via `law_cards_enabled`):
+> list page with search, detail page with honest-unknown fields, tiered
+> evidence rendering, gated enforcement, stub routing for thin-data laws,
+> and inline field editing with Check/Save/Revert, CSRF, an optimistic lock,
+> and an editor-identity cookie — all screenshotted and structurally
+> a11y-checked, not just unit-tested. **MVP boundary is one step away:**
+> everything LC-3c's acceptance gate needs is live; it just needs a human
+> (see LC-3c above). Remaining known gaps, all explicitly scoped to later
+> phases rather than silently skipped: LIST_NESTED per-item editing (not
+> supported by `edit_service` itself yet — a real scope decision, not an
+> oversight); the ported `lawcard-tokens.css` file remains unused (LC-2's
+> CSS-audit decision to reuse `style.css`'s existing classes instead still
+> stands). Four operator/product actions this session could not perform:
+> (1) apply migrations `72ad4147a628` + `4457bebc03c0` to the real dev/prod
+> database (`python start.py` → `alembic upgrade head`, per CLAUDE.md) —
+> everything above was verified against a disposable local scratch Postgres
+> this sandbox stood up itself, not the project's real DB; (2) product-owner
+> sign-off on decisions D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently
+> shipped under the documented provisional resolutions; (3) a full WCAG 2.2
+> AA audit (contrast measurement, screen-reader pass, 200%-zoom reflow) —
+> scoped to LC-5a as originally planned; (4) LC-3c's non-specialist
+> walkthrough itself. Also worth noting for whoever picks this up next: this
+> sandbox's headless-Chromium environment cannot reach the `unpkg.com` htmx
+> CDN this dashboard has always depended on (works fine via `curl`/the proxy,
+> fails specifically from the browser process — a sandbox network-policy
+> detail, not a code issue), so the htmx wiring itself was verified by
+> driving the exact HTTP requests htmx would make rather than a live click-
+> through; a real browser with normal internet access should just work.
+
+---
+
+## Extraction Run Resilience Plan (ERR) — interruption/crash audit (2026-07-20)
+
+> User question: "What currently happens if an extraction run is interrupted
+> or terminated mid-run? Do the extractions get lost? How do we change that?
+> Can it be added to the 'extraction log' output?" Answered by tracing
+> `run_extraction()`/`run_triage()` (`src/ingestion/extractor.py`),
+> `RunArchiver` (`src/core/run_archiver.py`), and startup recovery
+> (`_recover_stale_jobs()`, `src/api/app.py`) end to end — not guessed from
+> the docstrings. Status legend: ✅ done · 🔧 in progress · ⏳ ready · 🔒 gated.
+
+### Audit findings (no code changed yet — this is the "what happens today" record)
+
+Three distinct interruption paths exist and are handled inconsistently:
+
+1. **Graceful cancel** (dashboard Cancel button, `is_cancelled()` checked
+   between passages, `extractor.py:2747`) — handled reasonably: commits,
+   marks `ExtractionJob.status = "cancelled"`, calls `archiver.finalize()`
+   so `run_summary.json` records `"cancelled": true`
+   (`extractor.py:2748-2756`). **But** this is an early `return summary`
+   that never reaches the `ExtractionRun.status = "completed"` block near
+   the function's end (`extractor.py:2975`) — so even a *deliberate,
+   clean* cancel leaves the run-level DB record stuck at `"running"`
+   forever.
+2. **Unhandled exception inside the extraction thread** — extraction runs
+   as a `threading.Thread` inside the same FastAPI process
+   (`dashboard.py:103`), wrapped in a generic `try/except Exception`
+   (`dashboard.py:91-98`) that rolls back the current transaction (safe —
+   everything already committed survives) and stashes the error in an
+   **in-memory** `_background_jobs` dict, deleted the first time anyone
+   polls `/api/job-status/{step}` (`dashboard.py:125`) — gone if nobody's
+   watching. Neither `ExtractionJob`/`ExtractionRun` status nor
+   `archiver.finalize()` ever run on this path, so **no `run_summary.json`
+   entry is written for a failed run at all.**
+3. **Hard kill** (SIGKILL / OOM / container restart / deploy) — no Python
+   code runs, nothing gets marked. The only recovery is
+   `_recover_stale_jobs()` on the *next app startup*
+   (`app.py:37-97`), which resets `ExtractionJob` rows stuck at
+   `"running"` to `"interrupted"` — but **only `ExtractionJob`, never
+   `ExtractionRun`** (confirmed by grep: `ExtractionRun.status` is set in
+   exactly one place in the whole codebase, `extractor.py:2975`, on the
+   unreachable-from-any-interruption happy path).
+
+**Data loss:** bounded, not total. Extractions commit periodically — every
+10 passages within the loop (`extractor.py:2751,3624`) or at
+document-version boundaries — so everything up to the last commit is
+durable. The uncommitted tail (up to ~10 passages' worth of already-made
+LLM calls) is rolled back on a hard kill; the `ExtractionAttempt` dedup
+mechanism (`extractor.py:253-324`) means a re-run correctly redoes that
+work rather than silently skipping it, so nothing is *permanently* lost —
+but the wasted inference cost is real, and there's currently no visibility
+into how often this happens.
+
+### Phase ERR-1 — Always finalize the run record, on every exit path ✅ (2026-07-20)
+- ✅ **ERR-1a** — Migration `116c7fbe8389` adds `ExtractionRun.termination_reason`
+  (String(30), nullable). New `_finalize_extraction_run(db, run_id, status,
+  termination_reason, summary)` helper in `extractor.py` is now the single
+  choke point every `ExtractionRun` status transition routes through — it
+  sets `status`/`termination_reason`/`completed_at`/`extraction_count`/
+  `passage_count`/`summary`, and only promotes `is_serving=True` on a clean
+  `"completed"` (demoting any previous serving row first, since the DB has
+  a real partial-unique constraint allowing at most one serving row). All 4
+  in-function exit points (no-work early return, graceful cancel,
+  circuit-breaker abort, natural completion) now call it — previously only
+  the natural-completion path touched `ExtractionRun.status` at all. The
+  helper also mutates `summary["run_status"]`/`summary["termination_reason"]`
+  in place before `archiver.finalize()` runs (call order swapped at all 4
+  sites), so `run_summary.json` — the file-based "extraction log" — shows
+  why a run ended, not just that one exists. `run_extraction()` was split
+  into a thin public wrapper + `_run_extraction_impl` (original body moved
+  verbatim, no re-indentation) so the wrapper can catch any exception
+  escaping the impl, via a mutable `_run_id_sink` dict populated as soon as
+  the `ExtractionRun` row is created (also now `db.commit()`ted immediately,
+  not just flushed, so the row is durable from the earliest possible
+  moment), and finalize it as `status="failed"`,
+  `termination_reason="exception"` before re-raising. *(BE)*
+- ✅ **ERR-1b** — confirmed: the background-thread wrapper
+  (`dashboard.py`'s `_run_in_background`) needed no changes — its existing
+  rollback+log behavior is now backed by a durable DB record (every
+  exception path finalizes `ExtractionRun` before propagating) instead of
+  only an in-memory dict entry that vanished on first read. *(BE)*
+- **Tests**: `tests/integration/test_extraction_run_resilience_e2e.py` (new,
+  real Postgres) — 10/10 passing. `TestFinalizeExtractionRun` (7 tests)
+  covers completed/cancelled/failed/no-op/idempotent-double-call paths
+  directly, including the previously-unknown `uq_extraction_runs_serving`
+  DB constraint (only one `is_serving=True` row allowed — test setup
+  explicitly demotes any pre-existing serving row first, since this
+  session's scratch DB is shared and never reset).
+  `TestRunExtractionWrapperFinalizesOnException` (3 tests) mocks
+  `_run_extraction_impl` to simulate a crash after/before the
+  `ExtractionRun` row exists, and a clean success, verifying the wrapper
+  finalizes correctly and always re-raises/returns unchanged.
+  `pytest tests/ -q -k "extract"` → 315 passed, 2 skipped, no regressions.
+  `ruff check --select E9,F` clean on both changed files.
+
+### Phase ERR-2 — Startup recovery + durable interruption record ✅ (2026-07-20)
+- ✅ **ERR-2a** — `_recover_stale_jobs()` (`app.py`) extended to also catch
+  `ExtractionRun` rows stuck at `status="running"` on startup (previously
+  only `ExtractionJob`/`IngestionJob`), marking them `status="interrupted"`,
+  `termination_reason="crash_recovered"` — closes the asymmetry the audit
+  found: ERR-1's wrapper only finalizes runs that exit *this* process, so a
+  hard kill (SIGKILL/OOM/container eviction) still needed this. *(BE)*
+- ✅ **ERR-2b** — the recovery pass computes progress per recovered run from
+  `ExtractionAttempt.run_id` (unaffected by the crash — attempts are
+  recorded per-agent-call as they complete, before the process could die):
+  `passages_processed` = distinct `source_record_id` among `status=
+  "succeeded"` attempts, `extractions_produced` = sum of
+  `extractions_produced` across them. Both are written back onto
+  `ExtractionRun.passage_count`/`extraction_count` and into a new
+  `PipelineEvent(event_type="run_interrupted", run_id=..., details={...})`
+  row, so "Run #N was interrupted after processing X passages / producing Y
+  extractions" is queryable/visible in run history — not silently absorbed
+  by the next run's dedup. *(BE)*
+- **Tests**: extended `test_extraction_run_resilience_e2e.py` with
+  `TestRecoverStaleExtractionRuns` (3 tests, real Postgres) — a stuck
+  `"running"` run with mixed succeeded/failed `ExtractionAttempt` rows
+  recovers with correct distinct-passage and summed-extraction counts and
+  the right `PipelineEvent`; a `"completed"` run is left untouched (no
+  event written); a run with zero attempts recorded (crashed before any
+  agent call completed) recovers cleanly with zero counts instead of
+  raising on the aggregate query. 13/13 passing in the file; full suite
+  (1747 passed, 6 pre-existing/unrelated failures — auth-middleware env var
+  and shared-DB pagination pollution, confirmed present identically with
+  and without this change via `git stash`) shows no regressions.
+  `ruff check --select E9,F` clean.
+
+### Phase ERR-3 — Shrink the uncommitted-work loss window ✅ (2026-07-20)
+- ✅ **ERR-3a** — evaluated per-passage vs. per-agent-call commit cadence in
+  `_run_extraction_impl`'s main loop (`extractor.py`, previously committing
+  every 10th passage). Landed **per-passage**: each passage can involve
+  several LLM agent calls (several seconds to tens of seconds each), so a
+  10-passage batch could lose several minutes of already-completed LLM work
+  to a hard kill — work that has to be redone since dedup
+  (`ExtractionAttempt`) only sees committed rows. Per-agent-call commits
+  (mid-passage) were considered and rejected: `extract_single_record()` runs
+  agents within the same model group concurrently, so committing between
+  individual agent writes would mean coordinating commits across that
+  concurrent execution — a materially riskier change (thread-safety of a
+  shared session) for comparatively little extra benefit over per-passage,
+  since a single passage's agents typically complete in the same rough time
+  window anyway. Per-passage commits: (a) bound the loss window to at most
+  one passage's LLM work — a 10x reduction — using the exact same
+  transaction the old code held per passage internally anyway (nothing
+  larger is now held open, commits just close sooner), and (b) cost one
+  extra local-Postgres round-trip per passage, negligible next to LLM call
+  latency. Progress logging kept at its original every-10th-passage cadence
+  (only the commit moved) so normal-run log volume is unchanged. Scoped to
+  `run_extraction`'s main loop only — `run_recovery_extraction`'s separate
+  10-passage batching (line ~3717) is a different, lower-stakes path not
+  tracked by `ExtractionRun` and out of scope for this audit, matching
+  ERR-1's established boundary. *(BE)*
+- **Tests**: no dedicated test added — this is a mechanical change to when
+  an existing, already-covered `db.commit()` call fires (every passage
+  instead of every 10th), not new logic; asserting exact commit-call
+  cadence would need a large scaffold (an `_run_extraction_impl` run over
+  10+ real-or-heavily-mocked passages spying on `db.commit`) disproportionate
+  to a one-line, mechanically low-risk change. Confirmed no existing test
+  depends on the old batch-of-10 cadence (`grep` swept for cadence-sensitive
+  commit-count assertions — none found; the one `mock_db.commit.assert_*`
+  hit is in `test_retag_endpoint.py`, unrelated). Full suite: 1747 passed, 6
+  pre-existing/unrelated failures (same as ERR-2, confirmed present without
+  this change too). `pytest -k "extract or pipeline"`: 335 passed, 2
+  skipped. `ruff check --select E9,F` clean.
+
+### Phase ERR-4 — Tests + landed status ✅ (2026-07-20)
+- ✅ **ERR-4a** — coverage landed incrementally with ERR-1/2/3 rather than as
+  a separate pass (`tests/integration/test_extraction_run_resilience_e2e.py`,
+  real Postgres, 14 tests total):
+  - `TestFinalizeExtractionRun` (8 tests) — every `ExtractionRun` status
+    transition (completed/cancelled/failed/no-op/idempotent-double-call),
+    the `is_serving` demote-on-completion behavior against the DB's real
+    `uq_extraction_runs_serving` constraint, and the summary-dict mutation
+    (`run_status`/`termination_reason`) that's the only mechanism by which
+    `run_summary.json` reflects why a run ended.
+  - `TestRunExtractionWrapperFinalizesOnException` (3 tests) — the
+    forced-exception-mid-loop scenario ERR-4a asked for: a crash after the
+    `ExtractionRun` row exists finalizes it `failed`/`exception`; a crash
+    before it exists propagates cleanly; a clean success passes the summary
+    through unchanged.
+  - `TestRecoverStaleExtractionRuns` (3 tests) — the `PipelineEvent`
+    recovery record ERR-4a asked for: a stuck run recovers with correct
+    passage/extraction counts and the right event; a non-running run is
+    left untouched; a run with zero recorded attempts recovers cleanly
+    instead of raising.
+  - **Landed status**: full suite green — final run 1749 passed, 9 skipped,
+    5 failed (all 5 pre-existing/unrelated: `test_v1_api.py` auth-middleware
+    env var + one flaky shared-DB pagination test in
+    `test_law_card_api_e2e.py`, confirmed via `git stash` to exist
+    identically without any ERR-1/2/3 change). `ruff check src/
+    --select E9,F` clean.
+  - **Not done, deliberately out of scope**: `ExtractionJob` status
+    transitions on the interrupt path were already correct before this
+    plan (per the original audit) and untouched by ERR-1/2/3, so no new
+    `ExtractionJob`-specific test was added — the plan's audit already
+    confirmed that surface, and this phase's job was closing the
+    `ExtractionRun` gap.
 
 ---
 

@@ -44,6 +44,13 @@
             hx-get="/dashboard/review?status=rejected" hx-target="main" hx-push-url="true">
       Rejected <span class="tab-count">{{ counts.get('rejected', 0) }}</span>
     </button>
+    {% if edited_count > 0 %}
+    <button class="tab {% if edited_only %}active{% endif %}"
+            hx-get="/dashboard/review?status=pending&edited_only=true" hx-target="main" hx-push-url="true"
+            style="{% if not truncated_count %}margin-left: auto;{% endif %} border-color: #c4b5fd; color: #7c3aed;">
+      Edited <span class="tab-count" style="background: #ede9fe; color: #7c3aed;">{{ edited_count }}</span>
+    </button>
+    {% endif %}
     {% if truncated_count > 0 %}
     <button class="tab {% if truncated_only %}active{% endif %}"
             hx-get="/dashboard/review?status=pending&truncated_only=true" hx-target="main" hx-push-url="true"
@@ -81,6 +88,9 @@
             {% endif %}
             {% if item.confidence_breakdown and item.confidence_breakdown.get('orrick_gated') %}
             <span class="truncated-badge" style="background:#fef2f2;color:#ea580c;border-color:#fed7aa;" title="No Orrick validation data available for this law. Auto-Tier D until Orrick reference data is added.">NO ORRICK</span>
+            {% endif %}
+            {% if item.edited %}
+            <span class="edited-badge" title="A field on this extraction has been manually edited">EDITED</span>
             {% endif %}
           </td>
           <td style="max-width: 280px;">

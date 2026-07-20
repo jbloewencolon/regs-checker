@@ -40,6 +40,7 @@ def review_page(
     status: str = "pending",
     page: int = Query(default=1, ge=1),
     truncated_only: bool = Query(default=False),
+    edited_only: bool = Query(default=False),
     db: Session = Depends(get_db),
 ):
     """Review queue page with filtering and pagination."""
@@ -67,6 +68,21 @@ def review_page(
         )
     ) or 0
 
+    # LC-3b: count human-edited items (pending only) — a "someone corrected
+    # this" filter, distinct from truncated/tier flags. human_review_state
+    # is edit_service's own axis (never blended into confidence_tier — D-4).
+    edited_count = db.scalar(
+        select(func.count()).select_from(
+            select(ReviewQueueItem)
+            .join(Extraction)
+            .where(
+                ReviewQueueItem.status == "pending",
+                Extraction.human_review_state == "edited",
+            )
+            .subquery()
+        )
+    ) or 0
+
     # Get items for current status
     query = (
         select(ReviewQueueItem)
@@ -78,6 +94,9 @@ def review_page(
         query = query.where(
             Extraction.metadata_["truncated"].as_boolean() == True,  # noqa: E712
         )
+
+    if edited_only:
+        query = query.where(Extraction.human_review_state == "edited")
 
     query = (
         query
@@ -102,6 +121,7 @@ def review_page(
             breakdown = e.metadata_.get("confidence_breakdown")
 
         truncated = bool(e and e.metadata_ and e.metadata_.get("truncated"))
+        edited = bool(e and e.human_review_state == "edited")
         model_reasoning = None
         plain_summary = None
         if e and e.metadata_:
@@ -125,6 +145,7 @@ def review_page(
             "short_cite": df.short_cite if df else None,
             "source_text": nsr.text_content if nsr else None,
             "truncated": truncated,
+            "edited": edited,
         })
 
     total = counts.get(status, 0)
@@ -138,6 +159,8 @@ def review_page(
         "total_pages": total_pages,
         "truncated_only": truncated_only,
         "truncated_count": truncated_count,
+        "edited_only": edited_only,
+        "edited_count": edited_count,
     })
 
 

@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
-{% from "partials/lc_badges.html" import status_chip, tier_chip, gap_badge, type_tag, truncated_badge %}
+{% from "partials/lc_badges.html" import status_chip, tier_chip, gap_badge, type_tag, truncated_badge, render_value %}
 {% from "partials/lc_extraction_panel.html" import extraction_panel %}
+{% from "partials/lc_exclusion.html" import exclusion_panel %}
 {% set title = card.law.title %}
 {% set active_nav = "laws" %}
 
@@ -21,6 +22,8 @@
   </div>
 </section>
 
+{{ exclusion_panel(card.law.canonical_key, card.law, csrf_token=csrf_token, editor_name=editor_name) }}
+
 {% else %}
 
 <section class="section">
@@ -37,12 +40,17 @@
     {% if card.law.effective_date %}Effective {{ card.law.effective_date }}{% else %}{{ gap_badge("Effective date unknown") }}{% endif %}
     {% if card.law.sunset_date %} &middot; Sunsets {{ card.law.sunset_date }}{% endif %}
   </div>
+  <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+    Last extracted: {{ humanize_extracted_at(card.law.last_extracted_at) }}
+  </div>
   {% if card.law.source_urls.primary %}
     <div style="margin-top:6px;">
       <a href="{{ card.law.source_urls.primary }}" target="_blank" rel="noopener" style="font-size:12px;">Primary source &#8599;</a>
     </div>
   {% endif %}
 </section>
+
+{{ exclusion_panel(card.law.canonical_key, card.law, csrf_token=csrf_token, editor_name=editor_name) }}
 
 {% if card.gaps %}
 <section class="section">
@@ -69,7 +77,12 @@
   {% endif %}
 </section>
 
-{# Bill-level sections — read-only per decision D-7. #}
+{# Bill-level sections — read-only per decision D-7. Rendered generically via
+   render_value() (schema-agnostic: handles nested dicts like applicability's
+   size_thresholds, lists of dicts like key_deadlines/penalty_tiers, lists of
+   scalars, booleans, and null) rather than assuming a scalar-only shape —
+   audit finding (2026-07-20): the old scalar-only rendering silently dropped
+   nested-dict values and crashed on lists of dicts. #}
 {% set app_ = card.bill_level.applicability %}
 {% if app_ and app_.payload %}
 <section class="section">
@@ -78,12 +91,7 @@
     {% if not key.startswith("_") %}
       <div class="lc-field-row">
         <div class="lc-field-label">{{ key | replace("_", " ") | capitalize }}</div>
-        <div class="lc-field-value">
-          {% if value is none %}{{ gap_badge() }}
-          {% elif value is sequence and value is not string %}{{ value | join(", ") if value else gap_badge("Not extracted") }}
-          {% elif value is sameas true or value is sameas false %}{{ "Yes" if value else "No" }}
-          {% else %}{{ value }}{% endif %}
-        </div>
+        <div class="lc-field-value">{{ render_value(value) }}</div>
       </div>
     {% endif %}
   {% endfor %}
@@ -99,12 +107,7 @@
     {% if not key.startswith("_") %}
       <div class="lc-field-row">
         <div class="lc-field-label">{{ key | replace("_", " ") | capitalize }}</div>
-        <div class="lc-field-value">
-          {% if value is none %}{{ gap_badge() }}
-          {% elif value is sequence and value is not string %}{{ value | join(", ") if value else gap_badge("Not extracted") }}
-          {% elif value is sameas true or value is sameas false %}{{ "Yes" if value else "No" }}
-          {% else %}{{ value }}{% endif %}
-        </div>
+        <div class="lc-field-value">{{ render_value(value) }}</div>
       </div>
     {% endif %}
   {% endfor %}
@@ -114,37 +117,53 @@
 
 {# Enforcement — design Rule 2: gated on in-force status AND actual data
    presence; a "TBD" penalty amount still renders the panel with an explicit
-   gap badge rather than being suppressed outright. #}
+   gap badge rather than being suppressed outright.
+
+   Audit finding (2026-07-20): this section used to hardcode fields from the
+   WRONG schema — "penalty_type"/"penalty_description" belong to the
+   per-clause EnforcementInfo nested model (src/core/field_catalog.py), not
+   the bill-level enforcement_agent (src/agents/enforcement_agent.py), whose
+   real fields are enforcing_body/max_civil_penalty_usd/penalty_tiers/
+   penalty_per/cure_period_days/private_right_of_action/criminal_penalties/
+   criminal_penalty_description/enforcement_text. A real criminal-only bill
+   (e.g. AR HB1877 — criminal_penalties=true, no civil fields at all) hit
+   Jinja's Undefined.__format__ on the old max_civil_penalty_usd access and
+   crashed the whole page. `enf_present` is now presence-of-any-value across
+   the real payload, not a guess at specific field names; every field except
+   the two given special treatment below (max_civil_penalty_usd's TBD
+   handling, enforcement_text's quote styling) renders generically. #}
 {% set enf = card.bill_level.enforcement %}
-{% set enf_present = enf and enf.payload and (enf.payload.enforcing_body or enf.payload.penalty_type or enf.payload.penalty_description or enf.payload.max_civil_penalty_usd is not none) %}
+{% set enf_present = enf and enf.payload and (enf.payload.values() | reject("none") | list | length > 0) %}
 {% if enf_present and is_enforcement_visible(card.law.status) %}
 <section class="section">
   <div class="section-header"><h3>Enforcement</h3></div>
-  {% if enf.payload.enforcing_body %}
-    <div class="lc-field-row"><div class="lc-field-label">Enforcing body</div><div class="lc-field-value">{{ enf.payload.enforcing_body }}</div></div>
-  {% endif %}
-  {% if enf.payload.penalty_type %}
-    <div class="lc-field-row"><div class="lc-field-label">Penalty type</div><div class="lc-field-value">{{ enf.payload.penalty_type }}</div></div>
-  {% endif %}
+  {% for key, value in enf.payload.items() %}
+    {% if not key.startswith("_") and key not in ("max_civil_penalty_usd", "penalty_per", "enforcement_text") %}
+      <div class="lc-field-row">
+        <div class="lc-field-label">{{ key | replace("_", " ") | capitalize }}</div>
+        <div class="lc-field-value">{{ render_value(value) }}</div>
+      </div>
+    {% endif %}
+  {% endfor %}
+  {% set max_penalty = enf.payload.get("max_civil_penalty_usd") %}
+  {% set penalty_per = enf.payload.get("penalty_per") %}
+  {% set enforcement_text = enf.payload.get("enforcement_text") %}
   <div class="lc-field-row">
     <div class="lc-field-label">Max civil penalty</div>
     <div class="lc-field-value">
-      {% if enf.payload.max_civil_penalty_usd is not none %}
-        ${{ "{:,}".format(enf.payload.max_civil_penalty_usd) }}
-      {% elif enf.payload.enforcement_text and "tbd" in (enf.payload.enforcement_text | lower) %}
+      {% if max_penalty is not none %}
+        ${{ "{:,}".format(max_penalty) }}{% if penalty_per %} per {{ penalty_per }}{% endif %}
+      {% elif enforcement_text and "tbd" in (enforcement_text | lower) %}
         {{ gap_badge("Penalty amount not yet specified") }}
       {% else %}
         {{ gap_badge() }}
       {% endif %}
     </div>
   </div>
-  {% if enf.payload.penalty_description %}
-    <div class="lc-field-row"><div class="lc-field-label">Penalty description</div><div class="lc-field-value">{{ enf.payload.penalty_description }}</div></div>
-  {% endif %}
-  {% if enf.payload.enforcement_text %}
+  {% if enforcement_text %}
     <div class="lc-field-row">
       <div class="lc-field-label">Enforcement text</div>
-      <div class="lc-field-value" style="font-style:italic;">&ldquo;{{ enf.payload.enforcement_text }}&rdquo;</div>
+      <div class="lc-field-value" style="font-style:italic;">&ldquo;{{ enforcement_text }}&rdquo;</div>
     </div>
   {% endif %}
   {% if enf.input_truncated %}<div style="margin-top:4px;">{{ truncated_badge() }} <span style="font-size:11px;color:var(--text-muted);">bill-level input was truncated before this agent ran</span></div>{% endif %}
@@ -154,7 +173,7 @@
 <section class="section">
   <div class="section-header"><h3>Extractions ({{ card.extractions|length }})</h3></div>
   {% if card.extractions %}
-    {% for extraction in card.extractions %}{{ extraction_panel(extraction) }}{% endfor %}
+    {% for extraction in card.extractions %}{{ extraction_panel(card.law.canonical_key, extraction, csrf_token=csrf_token) }}{% endfor %}
   {% else %}
     <div class="lc-stub-card">No extractions for this law.</div>
   {% endif %}

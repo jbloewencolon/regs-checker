@@ -21,7 +21,12 @@ from starlette.templating import Jinja2Templates
 from src.api.middleware.auth import verify_api_key
 from src.api.routes import dashboard, internal, law_card_api, law_card_routes, v1
 from src.core.config import settings
-from src.core.law_card_labels import humanize_review_state, humanize_status, is_enforcement_visible
+from src.core.law_card_labels import (
+    humanize_extracted_at,
+    humanize_review_state,
+    humanize_status,
+    is_enforcement_visible,
+)
 from src.db.engine import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -31,10 +36,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 def _recover_stale_jobs() -> None:
     """Reset jobs left in transient states (fetching/parsing/running) from a prior crash."""
+    from datetime import datetime
+
     from sqlalchemy import update
 
     from src.db.engine import SessionLocal
-    from src.db.models import ExtractionJob, IngestionJob, IngestionStatus, RawArtifact
+    from src.db.models import (
+        ExtractionAttempt,
+        ExtractionJob,
+        ExtractionRun,
+        IngestionJob,
+        IngestionStatus,
+        PipelineEvent,
+        RawArtifact,
+    )
 
     db = SessionLocal()
     try:
@@ -74,17 +89,56 @@ def _recover_stale_jobs() -> None:
             )
         )
 
+        # ExtractionRuns stuck in "running" — a prior crash (ERR-1's wrapper
+        # only finalizes runs that exit *this* process; a killed process
+        # never gets the chance). Mark interrupted and record how far each
+        # run got via ExtractionAttempt.run_id (unaffected by the crash —
+        # attempts are recorded per-agent-call, before the process could
+        # die) so run history shows it was interrupted, not silently
+        # abandoned mid-"running".
+        stale_runs = db.scalars(
+            select(ExtractionRun).where(ExtractionRun.status == "running")
+        ).all()
+        for run in stale_runs:
+            passages_processed, extractions_produced = db.execute(
+                select(
+                    func.count(func.distinct(ExtractionAttempt.source_record_id)),
+                    func.coalesce(func.sum(ExtractionAttempt.extractions_produced), 0),
+                ).where(
+                    ExtractionAttempt.run_id == run.id,
+                    ExtractionAttempt.status == "succeeded",
+                )
+            ).one()
+            run.status = "interrupted"
+            run.termination_reason = "crash_recovered"
+            run.completed_at = datetime.utcnow()
+            run.passage_count = passages_processed
+            run.extraction_count = int(extractions_produced)
+            db.add(
+                PipelineEvent(
+                    run_id=run.id,
+                    event_type="run_interrupted",
+                    details={
+                        "passages_processed": passages_processed,
+                        "extractions_produced": int(extractions_produced),
+                        "recovered_at_startup": True,
+                    },
+                )
+            )
+
         db.commit()
 
         counts = (
             len(stale_fetching),
             stale_parsing.rowcount,
             stale_extraction.rowcount,
+            len(stale_runs),
         )
         if any(counts):
             logger.warning(
                 "Recovered stale jobs from prior crash: "
-                f"{counts[0]} fetching, {counts[1]} parsing, {counts[2]} extracting"
+                f"{counts[0]} fetching, {counts[1]} parsing, {counts[2]} extraction jobs, "
+                f"{counts[3]} extraction runs"
             )
     except Exception:
         db.rollback()
@@ -125,6 +179,7 @@ app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.state.templates.env.globals["humanize_status"] = humanize_status
 app.state.templates.env.globals["humanize_review_state"] = humanize_review_state
 app.state.templates.env.globals["is_enforcement_visible"] = is_enforcement_visible
+app.state.templates.env.globals["humanize_extracted_at"] = humanize_extracted_at
 
 # Mount route groups
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])

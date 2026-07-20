@@ -27,18 +27,27 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dc_field
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.core.field_catalog import get_entry
+from src.core.field_catalog import (
+    CATALOG,
+    LIST_NESTED,
+    NESTED,
+    READONLY,
+    get_entry,
+    nested_model_name,
+)
 from src.db.models import (
     BillLevelExtraction,
     DocumentFamily,
     DocumentVersion,
     Extraction,
     ExtractionRun,
+    FieldEditStatus,
     LawCardState,
     NormalizedSourceRecord,
 )
@@ -124,6 +133,12 @@ def _build_law_section(family: DocumentFamily, version: DocumentVersion) -> dict
             "iapp_status": meta.get("iapp_status"),
             "iapp_ai_topic": meta.get("iapp_ai_topic"),
         },
+        # LC-4a-lite: re-extraction opt-out (see docs/law_card_decisions.md
+        # and src/ingestion/extractor.py's _excluded_document_version_ids).
+        "excluded_from_extraction": bool(family.excluded_from_extraction),
+        "excluded_reason": family.excluded_reason,
+        "excluded_by": family.excluded_by,
+        "excluded_at": family.excluded_at.isoformat() if family.excluded_at else None,
     }
 
 
@@ -157,12 +172,60 @@ def _extraction_type_model_name(extraction_type: str) -> str:
     return mapping.get(extraction_type, extraction_type)
 
 
+def _field_dict(
+    *, path: str, label: str, value: Any, widget: str, material: bool,
+    help_text: str | None, unit: str | None, choices: list[str] | None,
+    glossary: str | None, evidence: list[dict], edit_id: int | None = None,
+    catalog_gap: bool = False, group: str | None = None,
+) -> dict[str, Any]:
+    """One field's card-JSON entry. `editable` mirrors edit_service's own
+    scope (src/core/edit_service.py's `validate_edit`): READONLY/NESTED/
+    LIST_NESTED fields cannot be saved through the field editor (LC-3), so
+    the template never offers an edit control it can't actually submit.
+    `edited`/`edit_id` are precise per-field (an applied ExtractionFieldEdit
+    for THIS exact path), not "this extraction has some edit somewhere" —
+    a card must never show an EDITED badge on a field that wasn't actually
+    changed, and `edit_id` is what LC-3's revert button targets."""
+    return {
+        "path": path,
+        "label": label,
+        "value": value,
+        "widget": widget,
+        "material": material,
+        "help": help_text,
+        "unit": unit,
+        "choices": choices,
+        "glossary": glossary,
+        "evidence": evidence,
+        "edited": edit_id is not None,
+        "edit_id": edit_id,
+        "catalog_gap": catalog_gap,
+        "editable": (not catalog_gap) and widget not in (READONLY, NESTED, LIST_NESTED),
+        "group": group,
+    }
+
+
 def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
     """Build the card's per-field list for one extraction.
 
     Reads current_payload (LC-1e's edit-aware read path) so a card shows
     edited values, not stale originals, from the moment an edit is applied
     — even before LC-1e's consumer sweep touches sync/rollup/concepts.
+
+    NESTED fields (e.g. "enforcement", "timeline") are flattened into their
+    leaf sub-fields here — path "enforcement.max_civil_penalty_usd", not one
+    field row holding a raw dict — so (a) a material leaf like a penalty
+    amount or a compliance deadline gets proper honest-unknown/evidence
+    treatment instead of being buried in a JSON dump, and (b) LC-3's field
+    editor can target it directly: edit_service's field_path scope is
+    exactly "top-level scalar" or "one level into a NESTED field", so this
+    flattening produces exactly the paths edit_service accepts. Evidence
+    lookup for a flattened leaf uses the dotted path ("enforcement.
+    max_civil_penalty_usd"), matching how agents actually tag nested-field
+    evidence spans (see tests/integration/test_law_card_e2e.py's seeded
+    fixture). LIST_NESTED fields (e.g. "exceptions") are NOT flattened —
+    edit_service explicitly doesn't support per-item list edits in this
+    version — and render as a single read-only field row.
     """
     model_name = _extraction_type_model_name(
         extraction.extraction_type.value
@@ -170,7 +233,10 @@ def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
         else str(extraction.extraction_type)
     )
     payload = extraction.current_payload or {}
-    edited_payload = extraction.effective_payload is not None
+    active_edit_by_path: dict[str, int] = {
+        e.field_path: e.id for e in extraction.field_edits
+        if e.status == FieldEditStatus.applied
+    }
     evidence_by_field: dict[str, list[dict]] = {}
     for span in extraction.evidence_spans or []:
         if not isinstance(span, dict):
@@ -195,31 +261,50 @@ def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
             # A payload key with no catalog entry is a real gap (schema/
             # catalog drift) — surface it rather than silently dropping the
             # field, but don't crash the whole card over one field.
-            fields.append({
-                "path": field_name,
-                "label": field_name,
-                "value": value,
-                "widget": "text",
-                "material": False,
-                "help": None,
-                "catalog_gap": True,
-                "evidence": evidence_by_field.get(field_name, []),
-                "edited": edited_payload,
-            })
+            fields.append(_field_dict(
+                path=field_name, label=field_name, value=value, widget="text",
+                material=False, help_text=None, unit=None, choices=None, glossary=None,
+                evidence=evidence_by_field.get(field_name, []),
+                edit_id=active_edit_by_path.get(field_name),
+                catalog_gap=True,
+            ))
             continue
-        fields.append({
-            "path": field_name,
-            "label": entry.label,
-            "value": value,
-            "widget": entry.widget,
-            "material": entry.material,
-            "help": entry.help,
-            "unit": entry.unit,
-            "choices": list(entry.choices) if entry.choices else None,
-            "glossary": entry.glossary,
-            "evidence": evidence_by_field.get(field_name, []),
-            "edited": edited_payload,
-        })
+
+        if entry.widget == NESTED:
+            nested_name = nested_model_name(model_name, field_name)
+            nested_entries = CATALOG.get(nested_name, {}) if nested_name else {}
+            if not nested_entries:
+                # No catalog for the nested model (shouldn't happen — LC-1b's
+                # coverage test guards this) — fall back to a single raw row
+                # rather than silently dropping the field.
+                fields.append(_field_dict(
+                    path=field_name, label=entry.label, value=value, widget=entry.widget,
+                    material=entry.material, help_text=entry.help, unit=entry.unit,
+                    choices=list(entry.choices) if entry.choices else None,
+                    glossary=entry.glossary, evidence=evidence_by_field.get(field_name, []),
+                    edit_id=active_edit_by_path.get(field_name),
+                ))
+                continue
+            nested_value = value if isinstance(value, dict) else {}
+            for leaf_name, leaf_entry in nested_entries.items():
+                leaf_path = f"{field_name}.{leaf_name}"
+                fields.append(_field_dict(
+                    path=leaf_path, label=leaf_entry.label, value=nested_value.get(leaf_name),
+                    widget=leaf_entry.widget, material=leaf_entry.material,
+                    help_text=leaf_entry.help, unit=leaf_entry.unit,
+                    choices=list(leaf_entry.choices) if leaf_entry.choices else None,
+                    glossary=leaf_entry.glossary, evidence=evidence_by_field.get(leaf_path, []),
+                    edit_id=active_edit_by_path.get(leaf_path), group=entry.label,
+                ))
+            continue
+
+        fields.append(_field_dict(
+            path=field_name, label=entry.label, value=value, widget=entry.widget,
+            material=entry.material, help_text=entry.help, unit=entry.unit,
+            choices=list(entry.choices) if entry.choices else None,
+            glossary=entry.glossary, evidence=evidence_by_field.get(field_name, []),
+            edit_id=active_edit_by_path.get(field_name),
+        ))
     return fields
 
 
@@ -265,6 +350,7 @@ def _extraction_card_entry(extraction: Extraction) -> dict[str, Any]:
             "template_version": extraction.template_version,
             "prompt_hash": extraction.prompt_hash,
             "run_id": extraction.run_id,
+            "extracted_at": extraction.created_at.isoformat() if extraction.created_at else None,
         },
         "fields": _fields_for_extraction(extraction),
     }
@@ -294,6 +380,7 @@ def _build_bill_level_section(rows: list[BillLevelExtraction]) -> dict[str, Any]
             "model_id": row.model_id,
             "truncated": row.truncated,
             "input_truncated": bool(payload.get("_input_truncated")),
+            "extracted_at": row.created_at.isoformat() if row.created_at else None,
         }
     return section
 
@@ -338,6 +425,8 @@ class LawSummary:
     edited_count: int | None
     tier_counts: dict[str, int] | None
     human_review_state: str | None
+    last_extracted_at: str | None
+    excluded_from_extraction: bool
 
 
 def list_law_summaries(
@@ -379,9 +468,42 @@ def list_law_summaries(
         ).all()
     } if keys else {}
 
+    # "Last extracted" per family — two aggregate queries (clause-level via
+    # NormalizedSourceRecord/DocumentVersion, bill-level directly on
+    # DocumentVersion), combined in Python. Deliberately not scoped to each
+    # family's single "current" version (see _resolve_current_version) —
+    # pre-LC-4 there's normally only one version per family anyway, and a
+    # list page showing the max across all versions is a reasonable
+    # approximation; the detail page (assemble_card) computes the precise
+    # current-version figure.
+    family_ids = [f.id for f in families]
+    last_extracted_by_family_id: dict[int, datetime] = {}
+    if family_ids:
+        clause_rows = db.execute(
+            select(DocumentVersion.family_id, func.max(Extraction.created_at))
+            .select_from(Extraction)
+            .join(NormalizedSourceRecord, NormalizedSourceRecord.id == Extraction.source_record_id)
+            .join(DocumentVersion, DocumentVersion.id == NormalizedSourceRecord.document_version_id)
+            .where(DocumentVersion.family_id.in_(family_ids))
+            .group_by(DocumentVersion.family_id)
+        ).all()
+        bill_rows = db.execute(
+            select(DocumentVersion.family_id, func.max(BillLevelExtraction.created_at))
+            .select_from(BillLevelExtraction)
+            .join(DocumentVersion, DocumentVersion.id == BillLevelExtraction.document_version_id)
+            .where(DocumentVersion.family_id.in_(family_ids))
+            .group_by(DocumentVersion.family_id)
+        ).all()
+        for fid, ts in [*clause_rows, *bill_rows]:
+            if ts is None:
+                continue
+            if fid not in last_extracted_by_family_id or ts > last_extracted_by_family_id[fid]:
+                last_extracted_by_family_id[fid] = ts
+
     summaries = []
     for family in families:
         rollup = rollups.get(family.canonical_key)
+        last_extracted = last_extracted_by_family_id.get(family.id)
         summaries.append(LawSummary(
             canonical_key=family.canonical_key,
             title=family.canonical_title,
@@ -391,6 +513,8 @@ def list_law_summaries(
             edited_count=rollup.edited_count if rollup else None,
             tier_counts=rollup.tier_counts if rollup else None,
             human_review_state=rollup.human_review_state if rollup else None,
+            last_extracted_at=last_extracted.isoformat() if last_extracted else None,
+            excluded_from_extraction=bool(family.excluded_from_extraction),
         ))
     return summaries, total
 
@@ -442,6 +566,11 @@ def assemble_card(
                         "iapp": family.iapp_reference_url,
                     },
                     "tracker": {},
+                    "last_extracted_at": None,
+                    "excluded_from_extraction": bool(family.excluded_from_extraction),
+                    "excluded_reason": family.excluded_reason,
+                    "excluded_by": family.excluded_by,
+                    "excluded_at": family.excluded_at.isoformat() if family.excluded_at else None,
                 },
                 "run": None,
                 "bill_level": _build_bill_level_section([]),
@@ -470,6 +599,18 @@ def assemble_card(
         bill_query = bill_query.where(BillLevelExtraction.run_id == run_id)
     bill_rows = db.scalars(bill_query).all()
 
+    # "Last extracted" — the most recent Extraction/BillLevelExtraction
+    # created_at for this law, across both clause- and bill-level agents.
+    # Surfaced so a reviewer can tell whether the card reflects last week's
+    # run or last year's, and (paired with LC-4's exclusion flag) whether a
+    # law is overdue for re-extraction.
+    all_created_ats = [e.created_at for e in extraction_rows if e.created_at] + [
+        b.created_at for b in bill_rows if b.created_at
+    ]
+    law_section["last_extracted_at"] = (
+        max(all_created_ats).isoformat() if all_created_ats else None
+    )
+
     run_section = None
     if run_id is not None:
         run = db.get(ExtractionRun, run_id)
@@ -493,7 +634,54 @@ def assemble_card(
             "gaps": gaps,
             # Design Rule 7 — computed here, never left for the caller to
             # decide, so a caller can't accidentally request "full" for a
-            # law with nothing extracted.
-            "render_hint": "stub" if len(extractions) == 0 else "full",
+            # law with nothing extracted. Audit finding (2026-07-20): this
+            # used to key off clause-level extraction count alone, so a law
+            # with real bill-level enforcement/applicability/timeline data
+            # but zero clause extractions (bill-level agents run
+            # independently of clause-level ones) was routed to the stub
+            # card, hiding real data behind "no AI-relevant provisions
+            # extracted" — the exact failure mode Rule 7 exists to prevent,
+            # just from the other direction.
+            "render_hint": "stub" if len(extractions) == 0 and len(bill_rows) == 0 else "full",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Re-extraction exclusion (LC-4a-lite)
+# ---------------------------------------------------------------------------
+
+
+def set_law_exclusion(
+    db: Session,
+    canonical_key: str,
+    excluded: bool,
+    reason: str | None,
+    editor: str,
+) -> DocumentFamily | None:
+    """Toggle whether a law is skipped by future run_triage()/
+    run_extraction() passes (src/ingestion/extractor.py's
+    _excluded_document_version_ids). Returns the updated DocumentFamily, or
+    None if canonical_key matches no law. Caller commits.
+
+    Un-excluding clears reason/by/at rather than leaving them as stale
+    history — Rule 1's honest-unknown spirit applies here too: showing a
+    past exclusion reason on a law that is no longer excluded would read as
+    current information it isn't.
+    """
+    family = db.scalars(
+        select(DocumentFamily).where(DocumentFamily.canonical_key == canonical_key)
+    ).first()
+    if family is None:
+        return None
+    family.excluded_from_extraction = excluded
+    if excluded:
+        family.excluded_reason = reason.strip() if reason and reason.strip() else None
+        family.excluded_by = editor.strip() if editor and editor.strip() else None
+        family.excluded_at = datetime.now(UTC)
+    else:
+        family.excluded_reason = None
+        family.excluded_by = None
+        family.excluded_at = None
+    db.flush()
+    return family

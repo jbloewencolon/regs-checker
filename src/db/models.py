@@ -198,6 +198,17 @@ class DocumentFamily(Base):
     metadata_ = Column("metadata", JSONB, default=dict)
     created_at = Column(DateTime, server_default=func.now())
 
+    # LC-4a-lite: opt a law out of future extraction/triage runs (e.g. once
+    # an analyst has verified it and re-running would waste LLM calls and
+    # reopen review work nobody asked for). Consumed by
+    # src/ingestion/extractor.py's run_triage()/run_extraction() passage
+    # selection; toggled from the Law Card dashboard. A durable law-level
+    # setting, not tied to any particular extraction run.
+    excluded_from_extraction = Column(Boolean, nullable=False, default=False, server_default="false")
+    excluded_reason = Column(Text, nullable=True)
+    excluded_by = Column(String(200), nullable=True)  # D-6-style interim free-text identity
+    excluded_at = Column(DateTime, nullable=True)
+
     source = relationship("Source", back_populates="document_families")
     versions = relationship("DocumentVersion", back_populates="family")
 
@@ -478,7 +489,13 @@ class ExtractionRun(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     run_type = Column(String(50), nullable=False, default="extract")
+    # "running" | "completed" | "cancelled" | "failed" | "interrupted"
     status = Column(String(20), nullable=False, default="running")
+    # ERR-1: why the run ended — "completed" | "cancelled" | "failed" |
+    # "no_work" | "circuit_breaker" | "exception" | "crash_recovered".
+    # NULL means still running (or a pre-ERR-1 row this migration didn't
+    # backfill). See src/ingestion/extractor.py's _finalize_extraction_run.
+    termination_reason = Column(String(30), nullable=True)
     is_serving = Column(Boolean, nullable=False, default=False)
 
     # Reproducibility pinning
