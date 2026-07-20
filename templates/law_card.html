@@ -154,7 +154,7 @@
 <section class="section">
   <div class="section-header"><h3>Extractions ({{ card.extractions|length }})</h3></div>
   {% if card.extractions %}
-    {% for extraction in card.extractions %}{{ extraction_panel(extraction) }}{% endfor %}
+    {% for extraction in card.extractions %}{{ extraction_panel(card.law.canonical_key, extraction, csrf_token=csrf_token) }}{% endfor %}
   {% else %}
     <div class="lc-stub-card">No extractions for this law.</div>
   {% endif %}

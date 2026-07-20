@@ -24,4 +24,17 @@
   // Keyboard-complete per Rule 4: real buttons already get Enter/Space from
   // the browser, so no extra key handling is needed here — this comment
   // exists so a future edit doesn't reach for a <div> and think it needs one.
+
+  // LC-3b: unsaved-edit navigation guard. A field row swapped into edit
+  // mode carries class "lc-field-row-editing" (see lc_field_editor.html);
+  // if any are still open when the tab is about to close/navigate away,
+  // warn rather than silently discard an in-progress correction. htmx
+  // swaps replace the row wholesale on Save/Cancel, so this check is
+  // always reading live DOM state, not a stale snapshot.
+  window.addEventListener("beforeunload", function (event) {
+    if (document.querySelector(".lc-field-row-editing")) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
 })();

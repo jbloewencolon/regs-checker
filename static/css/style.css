@@ -2077,6 +2077,46 @@ select.edit-field-input {
 .lc-law-list-title a { color: var(--text); text-decoration: none; }
 .lc-law-list-title a:hover { color: var(--primary); text-decoration: underline; }
 
+/* Field editor (LC-3) */
+.lc-field-row { position: relative; }
+
+.lc-field-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-left: auto;
+}
+
+.lc-field-row-editing {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.lc-field-group-heading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 10px 0 2px;
+}
+
+.lc-edit-messages:empty { display: none; }
+
+.lc-edit-error {
+  font-size: 12px;
+  color: var(--danger);
+  padding: 3px 0;
+}
+
+.lc-edit-warning {
+  font-size: 12px;
+  color: #854d0e;
+  padding: 3px 0;
+}
+
 /* ================================================================== */
 /* Responsive                                                          */
 /* ================================================================== */

@@ -32,13 +32,21 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from src.core.field_catalog import get_entry
+from src.core.field_catalog import (
+    CATALOG,
+    LIST_NESTED,
+    NESTED,
+    READONLY,
+    get_entry,
+    nested_model_name,
+)
 from src.db.models import (
     BillLevelExtraction,
     DocumentFamily,
     DocumentVersion,
     Extraction,
     ExtractionRun,
+    FieldEditStatus,
     LawCardState,
     NormalizedSourceRecord,
 )
@@ -157,12 +165,60 @@ def _extraction_type_model_name(extraction_type: str) -> str:
     return mapping.get(extraction_type, extraction_type)
 
 
+def _field_dict(
+    *, path: str, label: str, value: Any, widget: str, material: bool,
+    help_text: str | None, unit: str | None, choices: list[str] | None,
+    glossary: str | None, evidence: list[dict], edit_id: int | None = None,
+    catalog_gap: bool = False, group: str | None = None,
+) -> dict[str, Any]:
+    """One field's card-JSON entry. `editable` mirrors edit_service's own
+    scope (src/core/edit_service.py's `validate_edit`): READONLY/NESTED/
+    LIST_NESTED fields cannot be saved through the field editor (LC-3), so
+    the template never offers an edit control it can't actually submit.
+    `edited`/`edit_id` are precise per-field (an applied ExtractionFieldEdit
+    for THIS exact path), not "this extraction has some edit somewhere" —
+    a card must never show an EDITED badge on a field that wasn't actually
+    changed, and `edit_id` is what LC-3's revert button targets."""
+    return {
+        "path": path,
+        "label": label,
+        "value": value,
+        "widget": widget,
+        "material": material,
+        "help": help_text,
+        "unit": unit,
+        "choices": choices,
+        "glossary": glossary,
+        "evidence": evidence,
+        "edited": edit_id is not None,
+        "edit_id": edit_id,
+        "catalog_gap": catalog_gap,
+        "editable": (not catalog_gap) and widget not in (READONLY, NESTED, LIST_NESTED),
+        "group": group,
+    }
+
+
 def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
     """Build the card's per-field list for one extraction.
 
     Reads current_payload (LC-1e's edit-aware read path) so a card shows
     edited values, not stale originals, from the moment an edit is applied
     — even before LC-1e's consumer sweep touches sync/rollup/concepts.
+
+    NESTED fields (e.g. "enforcement", "timeline") are flattened into their
+    leaf sub-fields here — path "enforcement.max_civil_penalty_usd", not one
+    field row holding a raw dict — so (a) a material leaf like a penalty
+    amount or a compliance deadline gets proper honest-unknown/evidence
+    treatment instead of being buried in a JSON dump, and (b) LC-3's field
+    editor can target it directly: edit_service's field_path scope is
+    exactly "top-level scalar" or "one level into a NESTED field", so this
+    flattening produces exactly the paths edit_service accepts. Evidence
+    lookup for a flattened leaf uses the dotted path ("enforcement.
+    max_civil_penalty_usd"), matching how agents actually tag nested-field
+    evidence spans (see tests/integration/test_law_card_e2e.py's seeded
+    fixture). LIST_NESTED fields (e.g. "exceptions") are NOT flattened —
+    edit_service explicitly doesn't support per-item list edits in this
+    version — and render as a single read-only field row.
     """
     model_name = _extraction_type_model_name(
         extraction.extraction_type.value
@@ -170,7 +226,10 @@ def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
         else str(extraction.extraction_type)
     )
     payload = extraction.current_payload or {}
-    edited_payload = extraction.effective_payload is not None
+    active_edit_by_path: dict[str, int] = {
+        e.field_path: e.id for e in extraction.field_edits
+        if e.status == FieldEditStatus.applied
+    }
     evidence_by_field: dict[str, list[dict]] = {}
     for span in extraction.evidence_spans or []:
         if not isinstance(span, dict):
@@ -195,31 +254,50 @@ def _fields_for_extraction(extraction: Extraction) -> list[dict[str, Any]]:
             # A payload key with no catalog entry is a real gap (schema/
             # catalog drift) — surface it rather than silently dropping the
             # field, but don't crash the whole card over one field.
-            fields.append({
-                "path": field_name,
-                "label": field_name,
-                "value": value,
-                "widget": "text",
-                "material": False,
-                "help": None,
-                "catalog_gap": True,
-                "evidence": evidence_by_field.get(field_name, []),
-                "edited": edited_payload,
-            })
+            fields.append(_field_dict(
+                path=field_name, label=field_name, value=value, widget="text",
+                material=False, help_text=None, unit=None, choices=None, glossary=None,
+                evidence=evidence_by_field.get(field_name, []),
+                edit_id=active_edit_by_path.get(field_name),
+                catalog_gap=True,
+            ))
             continue
-        fields.append({
-            "path": field_name,
-            "label": entry.label,
-            "value": value,
-            "widget": entry.widget,
-            "material": entry.material,
-            "help": entry.help,
-            "unit": entry.unit,
-            "choices": list(entry.choices) if entry.choices else None,
-            "glossary": entry.glossary,
-            "evidence": evidence_by_field.get(field_name, []),
-            "edited": edited_payload,
-        })
+
+        if entry.widget == NESTED:
+            nested_name = nested_model_name(model_name, field_name)
+            nested_entries = CATALOG.get(nested_name, {}) if nested_name else {}
+            if not nested_entries:
+                # No catalog for the nested model (shouldn't happen — LC-1b's
+                # coverage test guards this) — fall back to a single raw row
+                # rather than silently dropping the field.
+                fields.append(_field_dict(
+                    path=field_name, label=entry.label, value=value, widget=entry.widget,
+                    material=entry.material, help_text=entry.help, unit=entry.unit,
+                    choices=list(entry.choices) if entry.choices else None,
+                    glossary=entry.glossary, evidence=evidence_by_field.get(field_name, []),
+                    edit_id=active_edit_by_path.get(field_name),
+                ))
+                continue
+            nested_value = value if isinstance(value, dict) else {}
+            for leaf_name, leaf_entry in nested_entries.items():
+                leaf_path = f"{field_name}.{leaf_name}"
+                fields.append(_field_dict(
+                    path=leaf_path, label=leaf_entry.label, value=nested_value.get(leaf_name),
+                    widget=leaf_entry.widget, material=leaf_entry.material,
+                    help_text=leaf_entry.help, unit=leaf_entry.unit,
+                    choices=list(leaf_entry.choices) if leaf_entry.choices else None,
+                    glossary=leaf_entry.glossary, evidence=evidence_by_field.get(leaf_path, []),
+                    edit_id=active_edit_by_path.get(leaf_path), group=entry.label,
+                ))
+            continue
+
+        fields.append(_field_dict(
+            path=field_name, label=entry.label, value=value, widget=entry.widget,
+            material=entry.material, help_text=entry.help, unit=entry.unit,
+            choices=list(entry.choices) if entry.choices else None,
+            glossary=entry.glossary, evidence=evidence_by_field.get(field_name, []),
+            edit_id=active_edit_by_path.get(field_name),
+        ))
     return fields
 
 

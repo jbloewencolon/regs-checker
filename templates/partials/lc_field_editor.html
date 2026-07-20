@@ -1,0 +1,129 @@
+{% from "partials/lc_badges.html" import gap_badge, edited_badge, evidence_list %}
+
+{# LC-3: field-level editing. Companion to lc_extraction_panel.html's old
+   read-only field_row — field_display() below supersedes it, adding Edit/
+   Revert affordances gated on the field's own `editable`/`edited` flags
+   (computed server-side in law_card_assembler.py, never guessed here). #}
+
+{% macro field_display(canonical_key, extraction_id, field, csrf_token="") %}
+{% set fid = "field-" ~ extraction_id ~ "-" ~ (field.path | replace(".", "--")) %}
+<div class="lc-field-row" id="{{ fid }}">
+  <div class="lc-field-label">
+    {{ field.label }}
+    {% if field.edited %}{{ edited_badge() }}{% endif %}
+  </div>
+  <div class="lc-field-value">
+    {% if field.value is none %}
+      {{ gap_badge("Unknown field — no catalog entry" if field.catalog_gap else "Not extracted") }}
+    {% elif field.value is mapping %}
+      <pre style="white-space:pre-wrap;font-size:12px;">{{ field.value | tojson(indent=2) }}</pre>
+    {% elif field.value is sequence and field.value is not string %}
+      {% if field.value|length == 0 %}
+        {{ gap_badge("Not extracted") }}
+      {% else %}
+        <ul style="margin-left:16px;">
+          {% for item in field.value %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% elif field.value is sameas true or field.value is sameas false %}
+      {{ "Yes" if field.value else "No" }}
+    {% else %}
+      {{ field.value }}
+    {% endif %}
+    {% if field.unit %}<span style="color:var(--text-muted);font-size:11px;"> {{ field.unit }}</span>{% endif %}
+    {{ evidence_list(field.evidence) }}
+  </div>
+  <div class="lc-field-actions">
+    {% if field.editable %}
+      <button type="button" class="btn btn-sm"
+              hx-get="/laws/{{ canonical_key }}/extractions/{{ extraction_id }}/fields/{{ field.path }}/edit"
+              hx-target="#{{ fid }}" hx-swap="outerHTML">Edit</button>
+    {% endif %}
+    {% if field.edited and field.edit_id %}
+      <button type="button" class="btn btn-sm"
+              hx-post="/laws/{{ canonical_key }}/extractions/{{ extraction_id }}/fields/{{ field.path }}/edits/{{ field.edit_id }}/revert"
+              hx-vals='{"csrf_token": "{{ csrf_token }}"}'
+              hx-target="#{{ fid }}" hx-swap="outerHTML"
+              hx-confirm="Revert to the originally extracted value?">Revert</button>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{# The widget input itself — only called for editable widgets (TEXT,
+   TEXTAREA, SELECT, NUMBER, DATE, BOOLEAN, LIST_TEXT); edit_service rejects
+   anything else before this template is ever reached. #}
+{% macro _widget_input(field) %}
+{% set fid = "field-" ~ field.path %}
+{% if field.widget == "textarea" %}
+  <textarea name="value" rows="3" style="width:100%;font-size:13px;">{{ field.value if field.value is not none else "" }}</textarea>
+{% elif field.widget == "select" %}
+  <input type="text" name="value" list="{{ fid }}-choices" style="width:100%;font-size:13px;"
+         value="{{ field.value if field.value is not none else "" }}">
+  <datalist id="{{ fid }}-choices">
+    {% for c in (field.choices or []) %}<option value="{{ c }}">{% endfor %}
+  </datalist>
+{% elif field.widget == "number" %}
+  <input type="number" step="any" name="value" style="width:100%;font-size:13px;"
+         value="{{ field.value if field.value is not none else "" }}">
+  {% if field.unit %}<span style="font-size:11px;color:var(--text-muted);">{{ field.unit }}</span>{% endif %}
+{% elif field.widget == "date" %}
+  <input type="date" name="value" style="font-size:13px;"
+         value="{{ field.value if field.value is not none else "" }}">
+{% elif field.widget == "boolean" %}
+  <select name="value" style="font-size:13px;">
+    <option value="" {% if field.value is none %}selected{% endif %}>Unknown</option>
+    <option value="true" {% if field.value is sameas true %}selected{% endif %}>Yes</option>
+    <option value="false" {% if field.value is sameas false %}selected{% endif %}>No</option>
+  </select>
+{% elif field.widget == "list_text" %}
+  <textarea name="value" rows="3" style="width:100%;font-size:13px;"
+            placeholder="One item per line">{{ (field.value | join("\n")) if field.value else "" }}</textarea>
+{% else %}
+  <input type="text" name="value" style="width:100%;font-size:13px;"
+         value="{{ field.value if field.value is not none else "" }}">
+{% endif %}
+{% endmacro %}
+
+{% macro field_editor_form(
+    canonical_key, extraction_id, field, errors=None, warnings=None,
+    editor_name="", reason="", csrf_token=""
+) %}
+{% set fid = "field-" ~ extraction_id ~ "-" ~ (field.path | replace(".", "--")) %}
+{% set base_url = "/laws/" ~ canonical_key ~ "/extractions/" ~ extraction_id ~ "/fields/" ~ field.path %}
+<div class="lc-field-row lc-field-row-editing" id="{{ fid }}">
+  <div class="lc-field-label">{{ field.label }}</div>
+  <div class="lc-field-value">
+    {% if field.glossary %}<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">{{ field.glossary }}</div>{% endif %}
+    {{ _widget_input(field) }}
+    {# Optimistic lock (LC-3b): the field's edit_id at the moment this form
+       was opened. field_save compares it against the field's CURRENT
+       edit_id and rejects the save as a conflict if someone else applied
+       an edit to this exact field in between — see D-5/LC-3b in
+       docs/law_card_decisions.md. #}
+    <input type="hidden" name="known_edit_id" value="{{ field.edit_id or '' }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div id="{{ fid }}-messages" class="lc-edit-messages">
+      {% if errors %}{% for e in errors %}<div class="lc-edit-error">{{ e }}</div>{% endfor %}{% endif %}
+      {% if warnings %}{% for w in warnings %}<div class="lc-edit-warning">{{ w }}</div>{% endfor %}{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <input type="text" name="reason" placeholder="Reason for this change (required)" required
+             value="{{ reason }}" style="flex:1 1 auto;font-size:12px;padding:4px 6px;">
+      <input type="text" name="editor" placeholder="Your name (required)" required
+             value="{{ editor_name }}" style="flex:0 0 160px;font-size:12px;padding:4px 6px;">
+    </div>
+    <div class="lc-field-actions" style="margin-top:6px;">
+      <button type="button" class="btn btn-sm"
+              hx-post="{{ base_url }}/check" hx-include="closest .lc-field-row"
+              hx-target="#{{ fid }}-messages" hx-swap="innerHTML">Check</button>
+      <button type="button" class="btn btn-sm btn-primary"
+              hx-post="{{ base_url }}/save" hx-include="closest .lc-field-row"
+              hx-target="#{{ fid }}" hx-swap="outerHTML">Save</button>
+      <button type="button" class="btn btn-sm"
+              hx-get="{{ base_url }}/view"
+              hx-target="#{{ fid }}" hx-swap="outerHTML">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endmacro %}

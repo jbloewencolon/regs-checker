@@ -1408,21 +1408,67 @@ $/law in `run_summary.json` before/after so the trade is explicit.
   resolvable aria-controls) that are cheap to make load-bearing now.
 
 ### Phase LC-3 — Field-level editing & validation (M/L) — MVP completes here
-- 🔒 **LC-3a** *(after LC-2)* — `partials/lc_field_editor.html`: widget per
-  field_catalog (vocab selects w/ unknown → vocab-review enqueue, date input w/
-  normalize-on-blur, number+unit, textarea; nested timeline/enforcement as
-  grouped sub-forms — NO raw JSON for cataloged fields). HTMX flows: Check
-  (dry-run → inline plain-language messages), Save (required reason, edited
-  chip, view-original/revert), numeric-vs-span warning shows the quote. *(FE, NLP)*
-- 🔒 **LC-3b** — editor identity + safety: reviewer-name session (D-6), CSRF on
-  all mutating routes, optimistic-lock conflict UX ("someone else changed
-  this…"), unsaved-edit navigation guard. `review.html` gains an "edited"
-  filter; approval of an edited extraction records it covers the edited state.
-  *(BE)*
-- 🔒 **LC-3c** — acceptance gate: a non-specialist corrects a penalty amount, a
-  date, a modality, and a nested enforcement field on real data using only
-  on-screen guidance; originals recoverable; audit trail carries identity.
-  Validation-message copy externally read-through. *(RPR/operator, FE)*
+> **Implementation note (2026-07-20):** LC-3a/LC-3b landed and live-verified
+> the same way as LC-1/LC-2 (real Postgres + real `TestClient` against the
+> actual app instance; 22 new integration tests). LC-3c is an RPR/operator
+> acceptance gate — a real non-specialist walking through real data — and
+> is explicitly NOT something this sandbox session can perform; it's left
+> open below with exactly what's needed to close it.
+- ✅ **LC-3a** — `src/core/law_card_assembler.py`'s `_fields_for_extraction`
+  now flattens every NESTED field (`enforcement`, `timeline`, `safe_harbor`,
+  `consent_requirements`) into its leaf sub-fields — path `"enforcement.
+  max_civil_penalty_usd"`, not one row holding a raw dict — which is both a
+  real LC-2 rendering fix (a material leaf like a penalty amount no longer
+  gets buried in a `<pre>{{ tojson }}</pre>` dump) and exactly the path
+  shape `edit_service.validate_edit` already accepts, so the editor can
+  target these fields directly with no `edit_service` changes. Each field
+  now carries a precise, single-field `edit_id`/`edited` (previously LC-2
+  set an extraction-wide `edited` flag off `effective_payload is not None`,
+  which would have shown an EDITED badge on every field the moment any one
+  field was corrected — fixed by sourcing it from `Extraction.field_edits`
+  per exact `field_path` instead). `templates/partials/lc_field_editor.html`
+  (widget-per-`field_catalog.widget`: text/textarea/number+unit/date/
+  tri-state boolean select/list-as-one-item-per-line textarea/select-as-
+  datalist-combo for vocab fields) + HTMX fragment routes in
+  `law_card_routes.py` (`.../fields/{path}/edit|view|check|save|
+  edits/{id}/revert`), following `review_routes.py`'s established
+  HTML-fragment-response convention rather than round-tripping through
+  `law_card_api.py`'s JSON endpoints. `LIST_NESTED` fields (e.g.
+  `exceptions`) are deliberately NOT flattened or made editable —
+  `edit_service` itself doesn't support per-item list edits yet, so the
+  editor never offers a control it can't submit. 12 integration tests
+  (`test_law_card_editor_e2e.py`) cover check/save/revert on both top-level
+  and nested-leaf fields, base-payload immutability (G-1 holds), a
+  READONLY/LIST_NESTED field correctly rejecting edit mode, and a
+  precisely-scoped revert (reverting one field leaves a sibling edit on the
+  same extraction untouched).
+- ✅ **LC-3b** — D-6's interim resolution, implemented without adding session
+  middleware (none exists in this repo): `lc_editor_name` cookie pre-fills
+  the editor-name field instead of retyping it per edit; `lc_csrf_token`
+  double-submit cookie + a matching hidden form field, verified on every
+  mutating POST (`save`, `revert` — `check` performs no write, so it's
+  unguarded) via `_verify_csrf`, 403 on missing/mismatched token. Optimistic
+  lock: the edit form captures the field's `edit_id` at open time in a
+  `known_edit_id` hidden field; `field_save` rejects the save ("Someone else
+  changed this field since you started editing…") if that no longer matches
+  the field's current `edit_id`, rather than silently superseding a
+  concurrent edit to the same field. `lawcard.js` gained a `beforeunload`
+  guard that warns before navigating away while any field row is mid-edit.
+  `review.html`/`review_routes.py` gained an "Edited" tab (`edited_only`
+  query param, `Extraction.human_review_state == "edited"`) alongside the
+  existing Truncated tab, plus a per-row EDITED badge. 10 more integration
+  tests (2 in `test_law_card_editor_e2e.py` for CSRF-rejection and
+  optimistic-lock conflict, 2 in `test_review_edited_filter_e2e.py` for the
+  new review-queue filter).
+- ⏳ **LC-3c** — acceptance gate, **not run**: needs a real non-specialist
+  reviewer, real production data, and RPR sign-off on validation-message
+  copy — none of which a sandbox session can supply. What's ready for it:
+  the editor is reachable at `/laws/{canonical_key}` today (flag off by
+  default), supports correcting a penalty amount
+  (`enforcement.max_civil_penalty_usd`), a date, a modality (`modality`
+  select), and other nested-enforcement fields with Check/Save/Revert and a
+  required reason, all audited via `ReviewAction`/`ExtractionFieldEdit`.
+  Flip `law_cards_enabled` on, pick 3 real laws, and this phase can close.
 
 ### Phase LC-4 — Phased-run comparison & change visualization (M/L; 🔒 gated on D-1)
 - 🔒 **LC-4a** — retention refactor: full runs stop purging; serving-run scoping
@@ -1481,30 +1527,40 @@ aliases) — the card consumes both when they land; `dashboard.py` is never grow
 (split remains deferred); P3 tier-only sync gate is why D-4's
 `edited_by_analyst` provenance stamp is non-optional.
 
-> **Status (2026-07-19, implementation session):** LC-0, LC-1, and LC-2 all
+> **Status (2026-07-20, implementation session):** LC-0 through LC-3a/3b all
 > fully landed and live-verified (commits: LC-0 repo alignment; four LC-1
 > commits — data model/field catalog, assembler/edit service, JSON API,
-> consumer sweep; LC-2 read-only dashboard). G-1 is fixed at both sites it
-> existed. The law-card dashboard is browsable end-to-end today (flagged off
-> by default via `law_cards_enabled`): list page with search, detail page
-> with honest-unknown fields, tiered evidence rendering, gated enforcement,
-> and stub routing for thin-data laws — all screenshotted and structurally
-> a11y-checked, not just unit-tested. **Next up: LC-3** (field-level editing
-> UI) is now unblocked — LC-1's edit_service/validate/apply/revert plumbing
-> and LC-1d's JSON API already exist and are tested; LC-3 is the HTMX form
-> layer (`partials/lc_field_editor.html`) plus editor-identity/CSRF (D-6)
-> wiring on top of them, which completes the plan's MVP boundary. Three
-> operator actions this session could not perform: (1) apply migrations
-> `72ad4147a628` + `4457bebc03c0` to the real dev/prod database (`python
-> start.py` → `alembic upgrade head`, per CLAUDE.md) — everything above was
-> verified against a disposable local scratch Postgres this sandbox stood up
-> itself, not the project's real DB; (2) product-owner sign-off on decisions
-> D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently shipped under the
-> documented provisional resolutions; (3) a full WCAG 2.2 AA audit (contrast
-> measurement, screen-reader pass, 200%-zoom reflow) — scoped to LC-5a as
-> originally planned; LC-2c added the structural a11y assertions (real
-> `<button>` disclosures, resolvable `aria-controls`) that don't need a human
-> pass to verify.
+> consumer sweep; LC-2 read-only dashboard; LC-3 field editor). G-1 is fixed
+> at both sites it existed, and its fix is now exercised through the actual
+> UI, not just the API. The law-card dashboard is fully browsable AND
+> editable end-to-end today (flagged off by default via `law_cards_enabled`):
+> list page with search, detail page with honest-unknown fields, tiered
+> evidence rendering, gated enforcement, stub routing for thin-data laws,
+> and inline field editing with Check/Save/Revert, CSRF, an optimistic lock,
+> and an editor-identity cookie — all screenshotted and structurally
+> a11y-checked, not just unit-tested. **MVP boundary is one step away:**
+> everything LC-3c's acceptance gate needs is live; it just needs a human
+> (see LC-3c above). Remaining known gaps, all explicitly scoped to later
+> phases rather than silently skipped: LIST_NESTED per-item editing (not
+> supported by `edit_service` itself yet — a real scope decision, not an
+> oversight); the ported `lawcard-tokens.css` file remains unused (LC-2's
+> CSS-audit decision to reuse `style.css`'s existing classes instead still
+> stands). Four operator/product actions this session could not perform:
+> (1) apply migrations `72ad4147a628` + `4457bebc03c0` to the real dev/prod
+> database (`python start.py` → `alembic upgrade head`, per CLAUDE.md) —
+> everything above was verified against a disposable local scratch Postgres
+> this sandbox stood up itself, not the project's real DB; (2) product-owner
+> sign-off on decisions D-1/D-4/D-6 (`docs/law_card_decisions.md`), currently
+> shipped under the documented provisional resolutions; (3) a full WCAG 2.2
+> AA audit (contrast measurement, screen-reader pass, 200%-zoom reflow) —
+> scoped to LC-5a as originally planned; (4) LC-3c's non-specialist
+> walkthrough itself. Also worth noting for whoever picks this up next: this
+> sandbox's headless-Chromium environment cannot reach the `unpkg.com` htmx
+> CDN this dashboard has always depended on (works fine via `curl`/the proxy,
+> fails specifically from the browser process — a sandbox network-policy
+> detail, not a code issue), so the htmx wiring itself was verified by
+> driving the exact HTTP requests htmx would make rather than a live click-
+> through; a real browser with normal internet access should just work.
 
 ---
 
