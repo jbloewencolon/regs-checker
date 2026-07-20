@@ -1764,16 +1764,36 @@ into how often this happens.
   `pytest tests/ -q -k "extract"` → 315 passed, 2 skipped, no regressions.
   `ruff check --select E9,F` clean on both changed files.
 
-### Phase ERR-2 — Startup recovery + durable interruption record
-- ⏳ **ERR-2a** — `_recover_stale_jobs()` (`app.py`) extended to also catch
+### Phase ERR-2 — Startup recovery + durable interruption record ✅ (2026-07-20)
+- ✅ **ERR-2a** — `_recover_stale_jobs()` (`app.py`) extended to also catch
   `ExtractionRun` rows stuck at `status="running"` on startup (previously
-  only `ExtractionJob`), marking them `"interrupted"` — closes the
-  asymmetry the audit found. *(BE)*
-- ⏳ **ERR-2b** — the recovery pass writes a `PipelineEvent` row
-  (`event_type="run_interrupted"`) per recovered run with how many
-  passages it had processed before dying, so "Run #N was interrupted after
-  X/Y passages" is queryable/visible in run history — not silently
-  absorbed by the next run's dedup. *(BE)*
+  only `ExtractionJob`/`IngestionJob`), marking them `status="interrupted"`,
+  `termination_reason="crash_recovered"` — closes the asymmetry the audit
+  found: ERR-1's wrapper only finalizes runs that exit *this* process, so a
+  hard kill (SIGKILL/OOM/container eviction) still needed this. *(BE)*
+- ✅ **ERR-2b** — the recovery pass computes progress per recovered run from
+  `ExtractionAttempt.run_id` (unaffected by the crash — attempts are
+  recorded per-agent-call as they complete, before the process could die):
+  `passages_processed` = distinct `source_record_id` among `status=
+  "succeeded"` attempts, `extractions_produced` = sum of
+  `extractions_produced` across them. Both are written back onto
+  `ExtractionRun.passage_count`/`extraction_count` and into a new
+  `PipelineEvent(event_type="run_interrupted", run_id=..., details={...})`
+  row, so "Run #N was interrupted after processing X passages / producing Y
+  extractions" is queryable/visible in run history — not silently absorbed
+  by the next run's dedup. *(BE)*
+- **Tests**: extended `test_extraction_run_resilience_e2e.py` with
+  `TestRecoverStaleExtractionRuns` (3 tests, real Postgres) — a stuck
+  `"running"` run with mixed succeeded/failed `ExtractionAttempt` rows
+  recovers with correct distinct-passage and summed-extraction counts and
+  the right `PipelineEvent`; a `"completed"` run is left untouched (no
+  event written); a run with zero attempts recorded (crashed before any
+  agent call completed) recovers cleanly with zero counts instead of
+  raising on the aggregate query. 13/13 passing in the file; full suite
+  (1747 passed, 6 pre-existing/unrelated failures — auth-middleware env var
+  and shared-DB pagination pollution, confirmed present identically with
+  and without this change via `git stash`) shows no regressions.
+  `ruff check --select E9,F` clean.
 
 ### Phase ERR-3 — Shrink the uncommitted-work loss window
 - ⏳ **ERR-3a** — evaluate per-passage vs. per-agent-call commit cadence
